@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactive H-R Diagram</title>
+<title>Interactive H-R Diagram — Main Sequence</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: #fff; color: #333; padding: 1rem; }
-  .readout { display: flex; gap: 32px; margin: 0 0 1rem 60px; }
-  .readout-card { background: #f3f3f3; border-radius: 8px; padding: 10px 20px; min-width: 120px; }
-  .readout-label { font-size: 12px; color: #777; margin-bottom: 2px; }
+  h2 { font-size: 16px; font-weight: 500; margin-bottom: 0.75rem; }
+  .readout { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 0.75rem 70px; }
+  .readout-card { background: #f3f3f3; border-radius: 8px; padding: 8px 16px; min-width: 110px; }
+  .readout-label { font-size: 11px; color: #777; margin-bottom: 2px; }
   .readout-value { font-size: 20px; font-weight: 500; color: #111; }
-  .slider-row { display: flex; align-items: center; gap: 12px; margin: 0.75rem 0 0 60px; }
-  .slider-row label { font-size: 13px; color: #666; white-space: nowrap; }
-  .slider-row input[type=range] { flex: 1; }
-  h2 { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+  .diagram-wrap { position: relative; width: 560px; }
+  .slider-wrap { position: absolute; bottom: -32px; left: 70px; width: 460px; display: flex; align-items: center; }
+  .slider-wrap .hot-label { font-size: 13px; color: #666; white-space: nowrap; position: absolute; right: 100%; padding-right: 8px; }
+  .slider-wrap .cool-label { font-size: 13px; color: #666; white-space: nowrap; position: absolute; left: 100%; padding-left: 8px; }
+  .slider-wrap input[type=range] { width: 100%; margin: 0; padding: 0; }
 </style>
 </head>
 <body>
@@ -28,28 +30,28 @@
   </div>
   <div class="readout-card">
     <div class="readout-label">Absolute magnitude</div>
-    <div class="readout-value" id="out-mag">+4.4</div>
+    <div class="readout-value" id="out-mag">+4.8</div>
   </div>
 </div>
 
-<svg id="hr" viewBox="0 0 680 440" width="100%" height="440" style="display:block;"></svg>
-
-<div class="slider-row">
-  <label>← Hot</label>
-  <input type="range" id="slider" min="0" max="70" value="52" step="0.5">
-  <label>Cool →</label>
+<div class="diagram-wrap">
+  <svg id="hr" viewBox="0 0 560 560" width="560" height="560" style="display:block;"></svg>
+  <div class="slider-wrap">
+    <span class="hot-label">← Hot</span>
+    <input type="range" id="slider" min="0" max="70" value="42" step="0.5">
+    <span class="cool-label">Cool →</span>
+  </div>
 </div>
+<div style="height:40px;"></div>
 
 <script>
-
-
 var svg = document.getElementById('hr');
 var NS = 'http://www.w3.org/2000/svg';
-var L=60, R=30, T=30, B=50, W=680, H=440;
+var L=70, R=30, T=20, B=60, W=560, H=560;
 var pw=W-L-R, ph=H-T-B;
 var maxT=70;
 var textCol='#333', gridCol='rgba(0,0,0,0.07)', axisCol='rgba(0,0,0,0.25)';
-var curveCol='#111', crossCol='#378ADD', sunCol='#EF9F27';
+var sunCol='#EF9F27', crossCol='#378ADD';
 var magMin=-12, magMax=18, magRange=30;
 
 function magY(m) { return T+((m-magMin)/magRange)*ph; }
@@ -60,84 +62,80 @@ function typeLabel(t) {
 }
 
 var msPoints=[
-  [0, -10.0],[3,  -8.0],[6,  -6.0],[10, -4.2],
-  [14,-2.5], [18, -1.0],[20,  0.2],[25,  1.5],
-  [30, 2.2], [35,  2.9],[40,  3.5],[45,  4.0],
-  [48, 4.5], [50,  4.8],[55,  5.5],[60,  6.5],
-  [65, 7.8], [70,  9.5]
+  [0,-10.0],[3,-8.0],[6,-6.0],[10,-4.2],
+  [14,-2.5],[18,-1.0],[20,0.2],[25,1.5],
+  [30,2.2],[35,2.9],[40,3.5],[45,4.0],
+  [48,4.5],[50,4.8],[55,5.5],[60,6.5],
+  [65,7.8],[70,9.5]
 ];
 
 function interpMag(t) {
-  for (var i=0; i<msPoints.length-1; i++) {
-    var t0=msPoints[i][0], m0=msPoints[i][1];
-    var t1=msPoints[i+1][0], m1=msPoints[i+1][1];
-    if (t>=t0 && t<=t1) return m0+(t-t0)/(t1-t0)*(m1-m0);
+  if (t<=msPoints[0][0]) return msPoints[0][1];
+  if (t>=msPoints[msPoints.length-1][0]) return msPoints[msPoints.length-1][1];
+  for (var i=0;i<msPoints.length-1;i++) {
+    var t0=msPoints[i][0],m0=msPoints[i][1],t1=msPoints[i+1][0],m1=msPoints[i+1][1];
+    if (t>=t0&&t<=t1) return m0+(t-t0)/(t1-t0)*(m1-m0);
   }
   return msPoints[msPoints.length-1][1];
 }
 
-function mk(tag, attrs) {
-  var el=document.createElementNS(NS, tag);
-  for (var k in attrs) el.setAttribute(k, attrs[k]);
+function mk(tag,attrs) {
+  var el=document.createElementNS(NS,tag);
+  for (var k in attrs) el.setAttribute(k,attrs[k]);
   return el;
 }
-function txt(content, attrs) {
-  var el=mk('text', attrs);
-  el.textContent=content;
-  return el;
+function txt(content,attrs) {
+  var el=mk('text',attrs); el.textContent=content; return el;
 }
 
 svg.appendChild(mk('rect',{x:0,y:0,width:W,height:H,fill:'none'}));
 
-for (var m=-10; m<=15; m+=5) {
-  var y=magY(m);
-  svg.appendChild(mk('line',{x1:L,y1:y,x2:L+pw,y2:y,stroke:gridCol,'stroke-width':'0.5'}));
-  svg.appendChild(txt(m>0?'+'+m:String(m),{x:L-6,y:y+4,'text-anchor':'end','font-size':'11',fill:textCol}));
+for (var m=-10;m<=15;m+=5) {
+  var gy=magY(m);
+  svg.appendChild(mk('line',{x1:L,y1:gy,x2:L+pw,y2:gy,stroke:gridCol,'stroke-width':'0.5'}));
+  svg.appendChild(txt(m>0?'+'+m:String(m),{x:L-6,y:gy+4,'text-anchor':'end','font-size':'11',fill:textCol}));
 }
-
 svg.appendChild(txt('Absolute magnitude',{
-  x:14, y:T+ph/2, 'text-anchor':'middle', 'font-size':'12', fill:textCol,
-  transform:'rotate(-90, 14, '+(T+ph/2)+')'
+  x:14,y:T+ph/2,'text-anchor':'middle','font-size':'12',fill:textCol,
+  transform:'rotate(-90,14,'+(T+ph/2)+')'
 }));
-svg.appendChild(txt('Bright',{x:L-6,y:magY(-12)+4,'text-anchor':'end','font-size':'10',fill:textCol}));
-svg.appendChild(txt('Dim',   {x:L-6,y:magY(18)+4, 'text-anchor':'end','font-size':'10',fill:textCol}));
+svg.appendChild(txt('Bright',{x:L-6,y:T-10,'text-anchor':'end','font-size':'10',fill:textCol}));
+svg.appendChild(txt('Dim',   {x:L-6,y:T+ph+18,'text-anchor':'end','font-size':'10',fill:textCol}));
 
-['O','B','A','F','G','K','M'].forEach(function(cls, ci) {
+['O','B','A','F','G','K','M'].forEach(function(cls,ci) {
   var xStart=typeX(ci*10), xEnd=typeX((ci+1)*10), xMid=(xStart+xEnd)/2;
-  // thick boundary line at start of each class
-  svg.appendChild(mk('line',{x1:xStart,y1:T,x2:xStart,y2:H-B,stroke:axisCol,'stroke-width':'1.5'}));
-  svg.appendChild(txt(cls,{x:xMid,y:H-B+20,'text-anchor':'middle','font-size':'13','font-weight':'500',fill:textCol}));
-  for (var s=1; s<=9; s++) {
+  svg.appendChild(mk('line',{x1:xStart,y1:T,x2:xStart,y2:T+ph,stroke:axisCol,'stroke-width':'1.5'}));
+  svg.appendChild(txt(cls,{x:xMid,y:T+ph+20,'text-anchor':'middle','font-size':'14','font-weight':'600',fill:textCol}));
+  for (var s=1;s<=9;s++) {
     var xs=typeX(ci*10+s);
-    svg.appendChild(mk('line',{x1:xs,y1:H-B,x2:xs,y2:H-B+5,stroke:axisCol,'stroke-width':'0.5'}));
+    svg.appendChild(mk('line',{x1:xs,y1:T+ph,x2:xs,y2:T+ph+5,stroke:axisCol,'stroke-width':'0.5'}));
   }
 });
-svg.appendChild(txt('Spectral type',{x:L+pw/2,y:H-2,'text-anchor':'middle','font-size':'12',fill:textCol}));
+svg.appendChild(txt('Spectral type',{x:L+pw/2,y:T+ph+42,'text-anchor':'middle','font-size':'13',fill:textCol}));
+svg.appendChild(mk('rect',{x:L,y:T,width:pw,height:ph,fill:'none',stroke:axisCol,'stroke-width':'0.75'}));
 
 var d=msPoints.map(function(p,i){
   return (i===0?'M':'L')+typeX(p[0]).toFixed(1)+','+magY(p[1]).toFixed(1);
 }).join(' ');
-svg.appendChild(mk('path',{d:d,fill:'none',stroke:curveCol,'stroke-width':'2','stroke-linejoin':'round'}));
+svg.appendChild(mk('path',{d:d,fill:'none',stroke:'#111','stroke-width':'2','stroke-linejoin':'round'}));
 
-var labelT=8, labelM=interpMag(labelT);
+var labelT=8;
 svg.appendChild(txt('Main sequence stars',{
-  x:typeX(labelT)+8, y:magY(labelM)-10,
-  'font-size':'12', fill:textCol, 'text-anchor':'start'
+  x:typeX(labelT)+8,y:magY(interpMag(labelT))-10,
+  'font-size':'12',fill:textCol,'text-anchor':'start'
 }));
 
-var sunT=42, sunX=typeX(sunT), sunY=magY(interpMag(sunT));
-var starPts=[];
-for (var i=0; i<10; i++) {
-  var r=i%2===0?8:4, a=(i*36-90)*Math.PI/180;
-  starPts.push((r*Math.cos(a)).toFixed(1)+','+(r*Math.sin(a)).toFixed(1));
+var sunT=42, sunPts=[];
+for (var si=0;si<10;si++){
+  var sr=si%2===0?8:4,sa=(si*36-90)*Math.PI/180;
+  sunPts.push((sr*Math.cos(sa)).toFixed(1)+','+(sr*Math.sin(sa)).toFixed(1));
 }
-svg.appendChild(mk('polygon',{points:starPts.join(' '),fill:sunCol,transform:'translate('+sunX+','+sunY+')'}));
+var sunX=typeX(sunT), sunY=magY(interpMag(sunT));
+svg.appendChild(mk('polygon',{points:sunPts.join(' '),fill:sunCol,transform:'translate('+sunX+','+sunY+')'}));
 svg.appendChild(txt('Sun',{x:sunX+12,y:sunY-10,'font-size':'11',fill:textCol}));
 
-svg.appendChild(mk('rect',{x:L,y:T,width:pw,height:ph,fill:'none',stroke:axisCol,'stroke-width':'0.5'}));
-
 var crossG=document.createElementNS(NS,'g');
-var vLine=mk('line',{x1:0,y1:T,x2:0,y2:H-B,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
+var vLine=mk('line',{x1:0,y1:T,x2:0,y2:T+ph,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
 var hLine=mk('line',{x1:L,y1:0,x2:L+pw,y2:0,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
 var dot=mk('circle',{r:'5',fill:crossCol});
 crossG.appendChild(vLine); crossG.appendChild(hLine); crossG.appendChild(dot);
@@ -148,15 +146,16 @@ var outType=document.getElementById('out-type');
 var outMag=document.getElementById('out-mag');
 
 function update(t) {
-  var x=typeX(t), mag=interpMag(t), y=magY(mag);
+  var mag=interpMag(t);
+  var x=typeX(t), y=Math.max(T,Math.min(T+ph,magY(mag)));
   vLine.setAttribute('x1',x); vLine.setAttribute('x2',x);
   hLine.setAttribute('y1',y); hLine.setAttribute('y2',y);
-  dot.setAttribute('cx',x);   dot.setAttribute('cy',y);
+  dot.setAttribute('cx',x); dot.setAttribute('cy',y);
   outType.textContent=typeLabel(t);
   outMag.textContent=(mag>=0?'+':'')+mag.toFixed(1);
 }
 
-slider.addEventListener('input', function(){ update(parseFloat(slider.value)); });
+slider.addEventListener('input',function(){ update(parseFloat(slider.value)); });
 update(parseFloat(slider.value));
 </script>
 </body>
