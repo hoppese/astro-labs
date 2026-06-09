@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive H-R Diagram</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #fff; color: #333; padding: 1rem; }
+  .readout { display: flex; gap: 32px; margin: 0 0 1rem 60px; }
+  .readout-card { background: #f3f3f3; border-radius: 8px; padding: 10px 20px; min-width: 120px; }
+  .readout-label { font-size: 12px; color: #777; margin-bottom: 2px; }
+  .readout-value { font-size: 20px; font-weight: 500; color: #111; }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin: 0.75rem 0 0 60px; }
+  .slider-row label { font-size: 13px; color: #666; white-space: nowrap; }
+  .slider-row input[type=range] { flex: 1; }
+  h2 { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+
+<h2>H-R Diagram — Main Sequence</h2>
+
+<div class="readout">
+  <div class="readout-card">
+    <div class="readout-label">Spectral type</div>
+    <div class="readout-value" id="out-type">G2</div>
+  </div>
+  <div class="readout-card">
+    <div class="readout-label">Absolute magnitude</div>
+    <div class="readout-value" id="out-mag">+4.4</div>
+  </div>
+</div>
+
+<svg id="hr" viewBox="0 0 680 420" width="100%" style="display:block;"></svg>
+
+<div class="slider-row">
+  <label>← hot</label>
+  <input type="range" id="slider" min="0" max="100" value="55" step="0.5">
+  <label>cool →</label>
+</div>
+
+<script>
+var API = window.API || window.parent.API || null;
+if (API) {
+  try {
+    API.LMSInitialize("");
+    API.LMSSetValue("cmi.core.lesson_status", "completed");
+    API.LMSCommit("");
+  } catch(e) {}
+}
+
+var svg = document.getElementById('hr');
+var NS = 'http://www.w3.org/2000/svg';
+var L=60, R=20, T=20, B=50, W=680, H=420;
+var pw=W-L-R, ph=H-T-B;
+var textCol='#333', gridCol='rgba(0,0,0,0.07)', axisCol='rgba(0,0,0,0.25)';
+var curveCol='#111', crossCol='#378ADD', sunCol='#EF9F27';
+var magMin=-10, magMax=15, magRange=25;
+
+function magY(m) { return T+((m-magMin)/magRange)*ph; }
+function typeX(t) { return L+(t/100)*pw; }
+function typeLabel(t) {
+  var cls=Math.min(Math.floor(t/10),6), sub=Math.round(t%10);
+  return ['O','B','A','F','G','K','M'][cls]+sub;
+}
+
+var msPoints=[
+  [0,-10.0],[4,-7.5],[8,-5.8],[10,-4.2],[14,-2.5],[18,-1.0],
+  [20,0.2],[25,1.5],[30,2.2],[35,2.9],[40,3.5],[45,4.0],
+  [50,4.4],[55,4.8],[58,5.5],[62,6.5],[66,7.5],[70,9.0],
+  [75,11.0],[80,12.5],[85,13.5],[90,14.2],[100,15.0]
+];
+
+function interpMag(t) {
+  for (var i=0; i<msPoints.length-1; i++) {
+    var t0=msPoints[i][0], m0=msPoints[i][1];
+    var t1=msPoints[i+1][0], m1=msPoints[i+1][1];
+    if (t>=t0 && t<=t1) return m0+(t-t0)/(t1-t0)*(m1-m0);
+  }
+  return msPoints[msPoints.length-1][1];
+}
+
+function mk(tag, attrs) {
+  var el=document.createElementNS(NS, tag);
+  for (var k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function txt(content, attrs) {
+  var el=mk('text', attrs);
+  el.textContent=content;
+  return el;
+}
+
+svg.appendChild(mk('rect',{x:0,y:0,width:W,height:H,fill:'none'}));
+
+for (var m=-10; m<=15; m+=5) {
+  var y=magY(m);
+  svg.appendChild(mk('line',{x1:L,y1:y,x2:W-R,y2:y,stroke:gridCol,'stroke-width':'0.5'}));
+  svg.appendChild(txt(m>0?'+'+m:String(m),{x:L-6,y:y+4,'text-anchor':'end','font-size':'11',fill:textCol}));
+}
+
+svg.appendChild(txt('Absolute magnitude',{
+  x:14, y:T+ph/2, 'text-anchor':'middle', 'font-size':'12', fill:textCol,
+  transform:'rotate(-90, 14, '+(T+ph/2)+')'
+}));
+svg.appendChild(txt('Bright',{x:L-6,y:magY(-10)+4,'text-anchor':'end','font-size':'10',fill:textCol}));
+svg.appendChild(txt('Dim',   {x:L-6,y:magY(15)+4, 'text-anchor':'end','font-size':'10',fill:textCol}));
+
+['O','B','A','F','G','K','M'].forEach(function(cls, ci) {
+  var xStart=typeX(ci*10), xEnd=typeX((ci+1)*10), xMid=(xStart+xEnd)/2;
+  svg.appendChild(mk('line',{x1:xStart,y1:T,x2:xStart,y2:H-B,stroke:gridCol,'stroke-width':'0.5'}));
+  svg.appendChild(txt(cls,{x:xMid,y:H-B+20,'text-anchor':'middle','font-size':'13','font-weight':'500',fill:textCol}));
+  for (var s=1; s<=9; s++) {
+    var xs=typeX(ci*10+s);
+    svg.appendChild(mk('line',{x1:xs,y1:H-B,x2:xs,y2:H-B+5,stroke:axisCol,'stroke-width':'0.5'}));
+  }
+});
+svg.appendChild(mk('line',{x1:typeX(70),y1:T,x2:typeX(70),y2:H-B,stroke:gridCol,'stroke-width':'0.5'}));
+svg.appendChild(txt('Hot', {x:L,   y:H-B+38,'text-anchor':'start','font-size':'11',fill:textCol}));
+svg.appendChild(txt('Cool',{x:W-R, y:H-B+38,'text-anchor':'end',  'font-size':'11',fill:textCol}));
+svg.appendChild(txt('Spectral type',{x:L+pw/2,y:H-2,'text-anchor':'middle','font-size':'12',fill:textCol}));
+
+var d=msPoints.map(function(p,i){
+  return (i===0?'M':'L')+typeX(p[0]).toFixed(1)+','+magY(p[1]).toFixed(1);
+}).join(' ');
+svg.appendChild(mk('path',{d:d,fill:'none',stroke:curveCol,'stroke-width':'2','stroke-linejoin':'round'}));
+
+svg.appendChild(txt('Main sequence stars',{x:typeX(14)+14,y:magY(-5.5)-8,'font-size':'12',fill:textCol}));
+var arrowX=typeX(18), arrowY=magY(-3.5);
+svg.appendChild(mk('line',{x1:typeX(14)+12,y1:magY(-5.5)-2,x2:arrowX,y2:arrowY,stroke:textCol,'stroke-width':'1'}));
+svg.appendChild(mk('polygon',{
+  points:arrowX+','+arrowY+' '+(arrowX-5)+','+(arrowY-8)+' '+(arrowX+5)+','+(arrowY-8),
+  fill:textCol
+}));
+
+var sunT=52, sunX=typeX(sunT), sunY=magY(interpMag(sunT));
+var starPts=[];
+for (var i=0; i<10; i++) {
+  var r=i%2===0?8:4, a=(i*36-90)*Math.PI/180;
+  starPts.push((r*Math.cos(a)).toFixed(1)+','+(r*Math.sin(a)).toFixed(1));
+}
+svg.appendChild(mk('polygon',{points:starPts.join(' '),fill:sunCol,transform:'translate('+sunX+','+sunY+')'}));
+svg.appendChild(txt('Sun',{x:sunX+12,y:sunY+4,'font-size':'11',fill:textCol}));
+
+svg.appendChild(mk('rect',{x:L,y:T,width:pw,height:ph,fill:'none',stroke:axisCol,'stroke-width':'0.5'}));
+
+var crossG=document.createElementNS(NS,'g');
+var vLine=mk('line',{x1:0,y1:T,x2:0,y2:H-B,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
+var hLine=mk('line',{x1:L,y1:0,x2:W-R,y2:0,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
+var dot=mk('circle',{r:'5',fill:crossCol});
+crossG.appendChild(vLine); crossG.appendChild(hLine); crossG.appendChild(dot);
+svg.appendChild(crossG);
+
+var slider=document.getElementById('slider');
+var outType=document.getElementById('out-type');
+var outMag=document.getElementById('out-mag');
+
+function update(t) {
+  var x=typeX(t), mag=interpMag(t), y=magY(mag);
+  vLine.setAttribute('x1',x); vLine.setAttribute('x2',x);
+  hLine.setAttribute('y1',y); hLine.setAttribute('y2',y);
+  dot.setAttribute('cx',x);   dot.setAttribute('cy',y);
+  outType.textContent=typeLabel(t);
+  outMag.textContent=(mag>=0?'+':'')+mag.toFixed(1);
+}
+
+slider.addEventListener('input', function(){ update(parseFloat(slider.value)); });
+update(parseFloat(slider.value));
+</script>
+</body>
+</html>
