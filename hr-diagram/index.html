@@ -41,14 +41,7 @@
 </div>
 
 <script>
-var API = window.API || window.parent.API || null;
-if (API) {
-  try {
-    API.LMSInitialize("");
-    API.LMSSetValue("cmi.core.lesson_status", "completed");
-    API.LMSCommit("");
-  } catch(e) {}
-}
+
 
 var svg = document.getElementById('hr');
 var NS = 'http://www.w3.org/2000/svg';
