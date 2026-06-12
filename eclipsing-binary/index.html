@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eclipsing Binary Light Curve</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0E1320; --panel: #161D2E; --panel2: #1C2438;
+    --ink: #E8ECF5; --muted: #8E99B3; --accent: #F87171; --rule: #2A3450;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; justify-content: center; padding: 20px 12px;
+  }
+  .card { width: 100%; max-width: 720px; }
+  .eyebrow { color: var(--accent); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: 24px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  canvas { width: 100%; height: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; display: block; margin-bottom: 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin: 10px 0; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .ctl label .val { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ink); }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px; border-radius: 3px;
+    background: var(--rule); outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #FFFFFF; border: 2px solid var(--accent);
+    cursor: pointer; box-sizing: border-box;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #FFFFFF; border: 2px solid var(--accent);
+    cursor: pointer; box-sizing: border-box;
+  }
+  input[type="range"]::-moz-range-track { background: transparent; border: none; }
+  .playrow { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  .playrow button {
+    background: var(--panel2); color: var(--ink); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 8px 18px; font-size: 14px; cursor: pointer;
+  }
+  .playrow button:hover { border-color: var(--accent); }
+  .playrow .phasectl { flex: 1; }
+  .readouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+  .ro { background: var(--panel2); border: 1px solid var(--rule); border-radius: 10px; padding: 8px 12px; }
+  .ro .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .ro .v { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 16px; margin-top: 2px; }
+  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } .readouts { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Binary Stars &middot; Interactive 1 of 2</div>
+  <h1>Eclipsing Binary Light Curve</h1>
+  <p class="sub">Two stars orbit their center of mass. When one passes in front of the other, light is blocked. Adjust the system and watch how the light curve responds.</p>
+
+  <canvas id="orbit" width="720" height="250"></canvas>
+  <canvas id="lc" width="720" height="250"></canvas>
+
+  <div class="playrow">
+    <button id="play">Pause</button>
+    <div class="ctl phasectl">
+      <label>Orbital phase <span class="val" id="phaseVal">0.00</span></label>
+      <input type="range" id="phase" min="0" max="1000" value="0">
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="ctl"><label>Radius of star A <span class="val" id="r1v"></span></label><input type="range" id="r1" min="3" max="40" value="16"></div>
+    <div class="ctl"><label>Radius of star B <span class="val" id="r2v"></span></label><input type="range" id="r2" min="3" max="40" value="9"></div>
+    <div class="ctl"><label>Temperature of star A <span class="val" id="t1v"></span></label><input type="range" id="t1" min="3000" max="12000" step="100" value="6500"></div>
+    <div class="ctl"><label>Temperature of star B <span class="val" id="t2v"></span></label><input type="range" id="t2" min="3000" max="12000" step="100" value="4000"></div>
+    <div class="ctl"><label>Separation <span class="val" id="av"></span></label><input type="range" id="a" min="6" max="40" step="0.5" value="12"></div>
+    <div class="ctl"><label>Inclination <span class="val" id="iv"></span></label><input type="range" id="inc" min="60" max="90" step="0.2" value="88"></div>
+    <div class="ctl"><label>Mass ratio M&#66;/M&#65; <span class="val" id="qv"></span></label><input type="range" id="q" min="20" max="100" step="5" value="70"></div>
+  </div>
+
+  <div class="readouts">
+    <div class="ro"><div class="k">Eclipses?</div><div class="v" id="roE">&mdash;</div></div>
+    <div class="ro"><div class="k">Deep eclipse</div><div class="v" id="roP">&mdash;</div></div>
+    <div class="ro"><div class="k">Shallow eclipse</div><div class="v" id="roS">&mdash;</div></div>
+  </div>
+</div>
+
+<script>
+function bbRGB(T){
+  var t=T/100,r,g,b;
+  if(t<=66){r=255;}else{r=329.698727446*Math.pow(t-60,-0.1332047592);}
+  if(t<=66){g=99.4708025861*Math.log(t)-161.1195681661;}else{g=288.1221695283*Math.pow(t-60,-0.0755148492);}
+  if(t>=66){b=255;}else if(t<=19){b=0;}else{b=138.5177312231*Math.log(t-10)-305.0447927307;}
+  function c(x){return Math.max(0,Math.min(255,Math.round(x)));}
+  return "rgb("+c(r)+","+c(g)+","+c(b)+")";
+}
+
+// area of overlap of two disks with center distance d
+function overlapArea(d,r1,r2){
+  if(d>=r1+r2) return 0;
+  var rmin=Math.min(r1,r2);
+  if(d<=Math.abs(r1-r2)) return Math.PI*rmin*rmin;
+  var d1=(d*d+r1*r1-r2*r2)/(2*d), d2=d-d1;
+  var c1=Math.max(-1,Math.min(1,d1/r1)), c2=Math.max(-1,Math.min(1,d2/r2));
+  return r1*r1*Math.acos(c1)-d1*Math.sqrt(Math.max(0,r1*r1-d1*d1))
+       + r2*r2*Math.acos(c2)-d2*Math.sqrt(Math.max(0,r2*r2-d2*d2));
+}
+
+// system state
+var S={};
+
+function readControls(){
+  S.R1=+r1.value/10; S.R2=+r2.value/10;
+  S.T1=+t1.value; S.T2=+t2.value;
+  S.a=+a.value; S.i=+inc.value*Math.PI/180; S.q=+q.value/100;
+  S.a1=S.a*S.q/(1+S.q); S.a2=S.a/(1+S.q);   // orbit radii about barycenter
+  S.F1=S.R1*S.R1*Math.pow(S.T1/6000,4);
+  S.F2=S.R2*S.R2*Math.pow(S.T2/6000,4);
+  r1v.innerHTML=S.R1.toFixed(1)+" R\u2609"; r2v.innerHTML=S.R2.toFixed(1)+" R\u2609";
+  t1v.textContent=S.T1.toLocaleString()+" K"; t2v.textContent=S.T2.toLocaleString()+" K";
+  av.innerHTML=S.a.toFixed(1)+" R\u2609"; iv.textContent=(+inc.value).toFixed(1)+"\u00B0";
+  qv.textContent=S.q.toFixed(2);
+}
+
+// flux at orbital phase phi (0..1); theta = 2*pi*phi
+function flux(phi){
+  var th=2*Math.PI*phi;
+  var d=S.a*Math.sqrt(Math.cos(th)*Math.cos(th)+Math.sin(th)*Math.sin(th)*Math.cos(S.i)*Math.cos(S.i));
+  var Ftot=S.F1+S.F2;
+  if(d>=S.R1+S.R2) return 1;
+  var A=overlapArea(d,S.R1,S.R2);
+  // which star is behind? z1 = a1 sin(th) sin(i); z2 = -a2 sin(th) sin(i)
+  var behindIs1=(Math.sin(th)<0);   // z1<z2 when sin(th)<0
+  var lost = behindIs1 ? S.F1*A/(Math.PI*S.R1*S.R1) : S.F2*A/(Math.PI*S.R2*S.R2);
+  return (Ftot-lost)/Ftot;
+}
+
+function paintSlider(el){
+  if(!el) return;
+  var pct=(el.value-el.min)/(el.max-el.min)*100;
+  el.style.background="linear-gradient(to right, #F87171 0%, #F87171 "+pct+"%, #2A3450 "+pct+"%, #2A3450 100%)";
+}
+function paintAll(){
+  ["phase","r1","r2","t1","t2","a","inc","q"].forEach(function(id){
+    paintSlider(document.getElementById(id));
+  });
+}
+
+// light curve cache
+var curve=[];
+function recompute(){
+  readControls();
+  paintAll();
+  curve=[];
+  var N=1440;
+  for(var k=0;k<=N;k++) curve.push(flux(k/N));
+  // eclipse depths: dips near phi=0.25 and 0.75
+  function dipIn(lo,hi){
+    var m=1;
+    for(var k=0;k<=1440;k++){ var p=k/1440; if(p>=lo&&p<=hi) m=Math.min(m,curve[k]); }
+    return 1-m;
+  }
+  var dA=dipIn(0.1,0.4), dB=dipIn(0.6,0.9);
+  var eclipsing = S.a*Math.cos(S.i) < S.R1+S.R2;
+  roE.textContent = eclipsing ? "Yes" : "No \u2014 tilt is too large";
+  if(eclipsing){
+    roP.textContent=(100*Math.max(dA,dB)).toFixed(1)+"%";
+    roS.textContent=(100*Math.min(dA,dB)).toFixed(1)+"%";
+  } else { roP.textContent="\u2014"; roS.textContent="\u2014"; }
+  drawLC();
+}
+
+// ---------- drawing ----------
+var ocv=document.getElementById("orbit"), octx=ocv.getContext("2d");
+var lcv=document.getElementById("lc"), lctx=lcv.getContext("2d");
+
+function drawOrbit(phi){
+  var W=ocv.width,H=ocv.height;
+  octx.clearRect(0,0,W,H);
+  var cx=W/2, cy=H/2;
+  var scale=(W/2-30)/(Math.max(S.a1,S.a2)+Math.max(S.R1,S.R2));
+  var th=2*Math.PI*phi, ci=Math.cos(S.i);
+  // orbit paths
+  [[S.a1],[S.a2]].forEach(function(arr){
+    var r=arr[0];
+    octx.strokeStyle="#2A3450"; octx.beginPath();
+    octx.ellipse(cx,cy,r*scale,Math.max(0.5,r*scale*ci),0,0,7); octx.stroke();
+  });
+  // barycenter
+  octx.strokeStyle="#5E6B8C";
+  octx.beginPath(); octx.moveTo(cx-5,cy-5); octx.lineTo(cx+5,cy+5); octx.stroke();
+  octx.beginPath(); octx.moveTo(cx-5,cy+5); octx.lineTo(cx+5,cy-5); octx.stroke();
+  // star positions (projected)
+  var s1={x:S.a1*Math.cos(th), y:S.a1*Math.sin(th)*ci, z:S.a1*Math.sin(th), R:S.R1, T:S.T1, lab:"A"};
+  var s2={x:-S.a2*Math.cos(th), y:-S.a2*Math.sin(th)*ci, z:-S.a2*Math.sin(th), R:S.R2, T:S.T2, lab:"B"};
+  var order=(s1.z<s2.z)?[s1,s2]:[s2,s1];   // draw farther star first
+  order.forEach(function(s){
+    var col=bbRGB(s.T);
+    octx.shadowColor=col; octx.shadowBlur=12;
+    octx.fillStyle=col;
+    octx.beginPath(); octx.arc(cx+s.x*scale, cy-s.y*scale, Math.max(2,s.R*scale),0,7); octx.fill();
+    octx.shadowBlur=0;
+  });
+  octx.fillStyle="#8E99B3"; octx.font="12px sans-serif"; octx.textAlign="left";
+  octx.fillText("view from Earth", 12, 20);
+}
+
+function drawLC(){
+  var W=lcv.width,H=lcv.height,mLp=56,mRp=14,mTp=16,mBp=34;
+  lctx.clearRect(0,0,W,H);
+  var fmin=Math.min.apply(null,curve);
+  var ylo=Math.min(0.995,fmin)-0.02, yhi=1.01;
+  function xx(p){ return mLp+p*(W-mLp-mRp); }
+  function yy(f){ return mTp+(yhi-f)/(yhi-ylo)*(H-mTp-mBp); }
+  // gridline at flux 1
+  lctx.strokeStyle="#222B42"; lctx.beginPath(); lctx.moveTo(mLp,yy(1)); lctx.lineTo(W-mRp,yy(1)); lctx.stroke();
+  lctx.fillStyle="#8E99B3"; lctx.font="12px sans-serif"; lctx.textAlign="right";
+  lctx.fillText("1.00", mLp-6, yy(1)+4);
+  lctx.fillText(fmin.toFixed(2), mLp-6, yy(fmin)+4);
+  lctx.strokeStyle="#222B42"; lctx.beginPath(); lctx.moveTo(mLp,yy(fmin)); lctx.lineTo(W-mRp,yy(fmin)); lctx.stroke();
+  // axes labels
+  lctx.textAlign="center";
+  [0,0.25,0.5,0.75,1].forEach(function(p){ lctx.fillText(p.toFixed(2), xx(p), H-10); });
+  lctx.fillText("orbital phase", W/2, H-10+0); // overlaps ticks? move:
+  lctx.clearRect(W/2-44,H-22,88,12);
+  lctx.fillText("orbital phase", W/2, H-12+1);
+  lctx.save(); lctx.translate(14,H/2); lctx.rotate(-Math.PI/2);
+  lctx.fillText("brightness",0,0); lctx.restore();
+  // curve
+  lctx.strokeStyle="#F87171"; lctx.lineWidth=2; lctx.beginPath();
+  curve.forEach(function(f,k){
+    var x=xx(k/(curve.length-1)), y=yy(f);
+    if(k===0)lctx.moveTo(x,y); else lctx.lineTo(x,y);
+  });
+  lctx.stroke(); lctx.lineWidth=1;
+}
+
+function drawMarker(phi){
+  // redraw curve then marker
+  drawLC();
+  var W=lcv.width,H=lcv.height,mLp=56,mRp=14,mTp=16,mBp=34;
+  var x=mLp+phi*(W-mLp-mRp);
+  lctx.strokeStyle="#E8ECF5"; lctx.setLineDash([4,4]);
+  lctx.beginPath(); lctx.moveTo(x,mTp); lctx.lineTo(x,H-mBp); lctx.stroke();
+  lctx.setLineDash([]);
+}
+
+// ---------- animation ----------
+var phi=0, playing=true, last=null;
+var playBtn=document.getElementById("play"), phaseSl=document.getElementById("phase"), phaseVal=document.getElementById("phaseVal");
+
+function frame(ts){
+  if(last===null) last=ts;
+  var dt=(ts-last)/1000; last=ts;
+  if(playing){
+    phi=(phi+dt/8)%1;            // one orbit every 8 s
+    phaseSl.value=Math.round(phi*1000);
+  }
+  phaseVal.textContent=phi.toFixed(2);
+  paintSlider(phaseSl);
+  drawOrbit(phi);
+  drawMarker(phi);
+  requestAnimationFrame(frame);
+}
+playBtn.addEventListener("click",function(){
+  playing=!playing;
+  playBtn.textContent=playing?"Pause":"Play";
+});
+phaseSl.addEventListener("input",function(){
+  playing=false; playBtn.textContent="Play";
+  phi=phaseSl.value/1000;
+});
+["r1","r2","t1","t2","a","inc","q"].forEach(function(id){
+  document.getElementById(id).addEventListener("input",recompute);
+});
+recompute();
+paintAll();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
