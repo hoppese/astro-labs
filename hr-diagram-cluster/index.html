@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cluster Ages from the Main-Sequence Turnoff</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0E1320; --panel: #161D2E; --panel2: #1C2438;
+    --ink: #E8ECF5; --muted: #8E99B3; --accent: #6EE7B7; --rule: #2A3450;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; justify-content: center; padding: 20px 12px;
+  }
+  .card { width: 100%; max-width: 720px; }
+  .eyebrow { color: var(--accent); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: 24px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  canvas { width: 100%; height: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; display: block; }
+  .ctl { margin: 14px 0 8px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .ctl label .val { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ink); }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px; border-radius: 3px;
+    background: var(--rule); outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #FFFFFF; border: 2px solid var(--accent);
+    cursor: pointer; box-sizing: border-box;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #FFFFFF; border: 2px solid var(--accent);
+    cursor: pointer; box-sizing: border-box;
+  }
+  input[type="range"]::-moz-range-track { background: transparent; border: none; }
+
+  .presets-row { margin-top: 10px; }
+  .presets-row .lab { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .presets button {
+    appearance: none; -webkit-appearance: none;
+    background-color: var(--panel2); color: var(--ink);
+    border: 1px solid var(--muted); border-radius: 8px;
+    padding: 10px 18px; font-family: inherit; font-size: 14px;
+    cursor: pointer; text-align: center;
+  }
+  .presets button:hover { border-color: var(--accent); }
+  .presets button.active { border-color: var(--accent); color: var(--accent); }
+
+  .readouts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+  .ro { background: var(--panel2); border: 1px solid var(--rule); border-radius: 10px; padding: 8px 12px; }
+  .ro .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .ro .v { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 16px; margin-top: 2px; }
+
+  .note { background: var(--panel2); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--muted); }
+  .note strong { color: var(--ink); }
+
+  @media (max-width: 560px) { .readouts { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Stellar Evolution &middot; Interactive 2 of 2</div>
+  <h1>Cluster Ages from the Turnoff Point</h1>
+  <p class="sub">All the stars in a cluster form at once. Drag the age slider and watch the most massive stars leave the main sequence first &mdash; the turnoff point is the cluster's clock.</p>
+
+  <div class="note" style="margin-bottom: 12px;">As the cluster ages, stars near the turnoff leave the main sequence, swell into <strong>red giants in the upper right</strong>, and eventually fade as <strong>white dwarfs in the lower left</strong>.</div>
+
+  <canvas id="hr" width="720" height="540"></canvas>
+
+  <div class="ctl">
+    <label>Cluster age <span class="val" id="ageVal">1 Myr</span></label>
+    <input type="range" id="age" min="0" max="1000" value="0">
+    <div class="presets-row">
+      <div class="lab">Match a real cluster:</div>
+      <div class="presets">
+        <button data-age="100">Pleiades (100 Myr)</button>
+        <button data-age="625">Hyades (625 Myr)</button>
+        <button data-age="12000">M13 (12 Gyr)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="readouts">
+    <div class="ro"><div class="k">Turnoff mass</div><div class="v" id="roM">&mdash;</div></div>
+    <div class="ro"><div class="k">Turnoff temp</div><div class="v" id="roT">&mdash;</div></div>
+    <div class="ro"><div class="k">Spectral type</div><div class="v" id="roS">&mdash;</div></div>
+    <div class="ro"><div class="k">MS lifetime at turnoff</div><div class="v" id="roLife">&mdash;</div></div>
+  </div>
+
+  <div class="note">A star's main-sequence lifetime: <strong>t = 10 / M<sup>2.5</sup> Gyr</strong> (M in solar masses). The turnoff star is the one whose lifetime exactly equals the cluster's age.</div>
+</div>
+
+<script>
+function bbRGB(T){
+  var t=Math.max(10,T)/100,r,g,b;
+  if(t<=66){r=255;}else{r=329.698727446*Math.pow(t-60,-0.1332047592);}
+  if(t<=66){g=99.4708025861*Math.log(t)-161.1195681661;}else{g=288.1221695283*Math.pow(t-60,-0.0755148492);}
+  if(t>=66){b=255;}else if(t<=19){b=0;}else{b=138.5177312231*Math.log(t-10)-305.0447927307;}
+  function c(x){return Math.max(0,Math.min(255,Math.round(x)));}
+  return "rgb("+c(r)+","+c(g)+","+c(b)+")";
+}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function specType(T){
+  if(T>=30000)return"O"; if(T>=10000)return"B"; if(T>=7500)return"A";
+  if(T>=6000)return"F"; if(T>=5200)return"G"; if(T>=3700)return"K"; return"M";
+}
+function fmtAge(tMyr){
+  if(tMyr<1) return (tMyr*1000).toFixed(0)+" kyr";
+  if(tMyr<1000) return Math.round(tMyr)+" Myr";
+  return (tMyr/1000).toPrecision(3)+" Gyr";
+}
+
+// ---------- synthetic cluster ----------
+var rnd=mulberry32(42);
+function gauss(){ var u=1-rnd(), v=rnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+var stars=[];
+for(var i=0;i<420;i++){
+  var M=0.3*Math.pow(50, rnd());
+  stars.push({
+    M:M,
+    Tz:5772*Math.pow(M,0.6)*(1+0.015*gauss()),
+    Lz:Math.pow(M,3.5)*Math.pow(10,0.06*gauss()),
+    tms:10000*Math.pow(M,-2.5),
+    jT:1+0.03*gauss(), jL:0.15*gauss()
+  });
+}
+function starPos(s,t){
+  if(t<s.tms){
+    return {T:s.Tz, L:s.Lz*(1+0.9*t/s.tms)};
+  }
+  var post=(t-s.tms)/(0.25*s.tms);
+  if(post<1){
+    var Tg=3700*s.jT, Lg=Math.max(1200,s.Lz*8)*Math.pow(10,s.jL);
+    var lT=Math.log10(s.Tz)+post*(Math.log10(Tg)-Math.log10(s.Tz));
+    var lL=Math.log10(s.Lz*1.9)+post*(Math.log10(Lg)-Math.log10(s.Lz*1.9));
+    return {T:Math.pow(10,lT), L:Math.pow(10,lL), giant:true};
+  }
+  if(s.M>=8) return null;
+  var tc=t-1.25*s.tms;
+  return {T:25000*Math.pow(1+tc/400,-0.3), L:0.03*Math.pow(1+tc/400,-1.4), wd:true};
+}
+
+// ---------- plot ----------
+var cv=document.getElementById("hr"), ctx=cv.getContext("2d");
+var W=cv.width,H=cv.height,mL=62,mR=16,mT=34,mB=58;
+var logTmax=Math.log10(60000), logTmin=Math.log10(2500);
+var logLmin=-4.4, logLmax=5.4;
+function px(T){ return mL+(logTmax-Math.log10(T))/(logTmax-logTmin)*(W-mL-mR); }
+function py(L){ return mT+(logLmax-Math.log10(L))/(logLmax-logLmin)*(H-mT-mB); }
+
+function drawLogLabel(rightX, y, exp){
+  ctx.font="9px sans-serif";
+  var sExp=String(exp);
+  var wExp=ctx.measureText(sExp).width;
+  ctx.font="12px sans-serif";
+  var w10=ctx.measureText("10").width;
+  var xLeft = rightX - (w10 + 1 + wExp);
+  ctx.textAlign="left";
+  ctx.fillText("10", xLeft, y);
+  ctx.font="9px sans-serif";
+  ctx.fillText(sExp, xLeft+w10+1, y-5);
+  ctx.font="12px sans-serif";
+}
+
+function draw(t){
+  ctx.clearRect(0,0,W,H);
+  ctx.font="12px sans-serif";
+  for(var e=-4;e<=5;e++){
+    var y=py(Math.pow(10,e));
+    ctx.strokeStyle="#222B42"; ctx.beginPath(); ctx.moveTo(mL,y); ctx.lineTo(W-mR,y); ctx.stroke();
+    ctx.fillStyle="#8E99B3";
+    if(e===0){ ctx.textAlign="right"; ctx.fillText("1", mL-6, y+4); }
+    else drawLogLabel(mL-6, y+4, e);
+  }
+  var Ts=[50000,20000,10000,5000,3000];
+  ctx.textAlign="center";
+  Ts.forEach(function(T){
+    var x=px(T);
+    ctx.strokeStyle="#222B42"; ctx.beginPath(); ctx.moveTo(x,mT); ctx.lineTo(x,H-mB); ctx.stroke();
+    ctx.fillStyle="#8E99B3"; ctx.font="12px sans-serif";
+    ctx.fillText(T.toLocaleString(), x, H-mB+16);
+  });
+  ctx.fillStyle="#A8B5D1"; ctx.font="bold 12px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("Hot", px(50000), H-mB+32);
+  ctx.fillText("Cool", px(3000), H-mB+32);
+  ctx.fillStyle="#8E99B3"; ctx.font="12px sans-serif";
+  ctx.fillText("Surface temperature (K)", W/2, H-8);
+  ctx.save(); ctx.translate(14,H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText("Luminosity (L\u2609)",0,0); ctx.restore();
+  var cls=[["O",45000],["B",17000],["A",8700],["F",6700],["G",5600],["K",4400],["M",3000]];
+  ctx.fillStyle="#5E6B8C"; ctx.font="bold 13px sans-serif"; ctx.textAlign="center";
+  cls.forEach(function(c){ ctx.fillText(c[0], px(c[1]), mT-10); });
+
+  // stars
+  stars.forEach(function(s){
+    var p=starPos(s,t);
+    if(!p) return;
+    if(p.T<2500||p.T>60000||p.L<Math.pow(10,logLmin)||p.L>Math.pow(10,logLmax)) return;
+    ctx.fillStyle=bbRGB(p.T);
+    ctx.beginPath(); ctx.arc(px(p.T),py(p.L),2.6,0,7); ctx.fill();
+  });
+
+  // turnoff marker
+  var Mto=Math.pow(10000/t,0.4);
+  if(Mto<=15){
+    var Tto=5772*Math.pow(Mto,0.6), Lto=Math.pow(Mto,3.5)*1.7;
+    var x=px(Tto), y=py(Lto);
+    ctx.strokeStyle="#6EE7B7"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y,12,0,7); ctx.stroke();
+    ctx.fillStyle="#6EE7B7"; ctx.font="bold 13px sans-serif"; ctx.textAlign="left";
+    ctx.fillText("turnoff", x+18, y+4);
+    ctx.lineWidth=1;
+    return {Mto:Mto,Tto:Tto};
+  }
+  return {Mto:null};
+}
+
+// ---------- wiring ----------
+var ageSl=document.getElementById("age"), ageVal=document.getElementById("ageVal");
+var roM=document.getElementById("roM"), roT=document.getElementById("roT"),
+    roS=document.getElementById("roS"), roLife=document.getElementById("roLife");
+
+function getAge(){ return 1*Math.pow(13000, ageSl.value/1000); }
+function paintSlider(el){
+  var pct=(el.value-el.min)/(el.max-el.min)*100;
+  el.style.background="linear-gradient(to right, #6EE7B7 0%, #6EE7B7 "+pct+"%, #2A3450 "+pct+"%, #2A3450 100%)";
+}
+function update(){
+  var t=getAge();
+  ageVal.textContent=fmtAge(t);
+  paintSlider(ageSl);
+  var res=draw(t);
+  if(res && res.Mto){
+    roM.innerHTML=res.Mto.toPrecision(2)+" M\u2609";
+    roT.innerHTML=Math.round(res.Tto).toLocaleString()+" K";
+    roS.textContent=specType(res.Tto);
+    roLife.innerHTML=fmtAge(t)+" \u2713";
+  } else {
+    roM.textContent="\u2014"; roT.textContent="\u2014"; roS.textContent="\u2014";
+    roLife.textContent="all stars still on MS";
+  }
+  // active preset highlight
+  document.querySelectorAll(".presets button").forEach(function(b){
+    var presetAge=parseFloat(b.dataset.age);
+    if(Math.abs(t-presetAge)/presetAge < 0.005) b.classList.add("active");
+    else b.classList.remove("active");
+  });
+}
+ageSl.addEventListener("input",update);
+document.querySelectorAll(".presets button").forEach(function(b){
+  b.addEventListener("click",function(){
+    var t=parseFloat(b.dataset.age);
+    ageSl.value=Math.round(1000*Math.log(t)/Math.log(13000));
+    update();
+  });
+});
+update();
+</script>
+</body>
+</html>
