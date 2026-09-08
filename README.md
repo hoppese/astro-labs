@@ -1,8 +1,10 @@
-# Intro Astronomy Sims
+# astro-labs
 
 Interactive simulations for an introductory (non-majors) astronomy course, built
 as a companion to [`Intro-physics-sims`](https://github.com/hoppese/Intro-physics-sims)
-and in the same house style.
+and in the same house style. (This repo grew out of an earlier set of H–R
+diagram and binary-star apps; those have been reworked into the shared style and
+folded in.)
 
 Each sim is **one self-contained HTML file** (`<sim-name>/index.html`): fonts and
 KaTeX load from a CDN, everything else is inline, and the page works dropped into
@@ -42,6 +44,15 @@ python3 -m http.server 8000
 | `stellar-parallax/` | Earth's orbit + swinging sight line, the star's yearly ellipse on the sky, d[pc] = 1/p["]. |
 | `inverse-square-brightness/` | Light spreading over 4× the area per doubling; flux-vs-distance (log), apparent/absolute magnitude, distance modulus. |
 | `hr-diagram/` | L-vs-T plot with the main sequence, giants, white dwarfs, constant-R diagonals; click to place a star (radius, region, mass, lifetime). |
+| `hr-diagram-full/` | Spectral classification: OBAFGKM types × I–V luminosity classes as bands on the diagram; read off absolute magnitude. |
+
+### Stellar lives & pairs
+| Sim | What it shows |
+|---|---|
+| `hr-diagram-evolution/` | One star's whole life as a path across the H–R diagram, from protostar to white dwarf / brown dwarf / supernova, set by starting mass. |
+| `hr-diagram-cluster/` | A synthetic cluster ageing; the main-sequence turnoff slides down and gives the cluster's age (Pleiades → M13). |
+| `eclipsing-binary/` | Two stars eclipsing each other; the light curve's deep and shallow dips give relative sizes and temperatures. |
+| `spectroscopic-binary/` | One absorption line splitting in two as the stars swing toward/away; K_A/K_B = M_B/M_A; RV curve. |
 
 ### Cosmology
 | Sim | What it shows |

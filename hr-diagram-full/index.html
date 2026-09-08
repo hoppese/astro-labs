@@ -1,283 +1,276 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactive H-R Diagram</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spectral Classification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #fff; color: #333; padding: 1rem; }
-  h2 { font-size: 16px; font-weight: 500; margin-bottom: 0.75rem; }
-  .readout { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 0.75rem 70px; }
-  .readout-card { background: #f3f3f3; border-radius: 8px; padding: 8px 16px; min-width: 110px; }
-  .readout-label { font-size: 11px; color: #777; margin-bottom: 2px; }
-  .readout-value { font-size: 20px; font-weight: 500; color: #111; }
-  .readout-value.range { font-size: 15px; padding-top: 4px; }
-  .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 0.75rem 0; max-width:560px; justify-content: center; }
-  .toggle-btn {
-    padding: 5px 14px; border-radius: 20px; border: 2px solid #ccc;
-    background: #fff; cursor: pointer; font-size: 13px; font-weight: 500;
-    color: #555; transition: all 0.15s;
-  }
-  .toggle-btn.active { color: #fff; border-color: transparent; }
-  .diagram-wrap { position: relative; width: 560px; }
-  .slider-wrap { position: absolute; bottom: -32px; left: 70px; width: 460px; display:flex; align-items:center; gap:0; }
-  .slider-wrap .hot-label { font-size:13px; color:#666; white-space:nowrap; position:absolute; right: 100%; padding-right:8px; }
-  .slider-wrap .cool-label { font-size:13px; color:#666; white-space:nowrap; position:absolute; left: 100%; padding-left:8px; }
-  .slider-wrap input[type=range] { width: 100%; margin:0; padding:0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#5a7fb8; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  #hr { display:block; width:100%; height:auto; border-radius:10px; background:#0b0f16; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#3a5f9e; }
+  input[type=range] { width:100%; accent-color:#5a7fb8; }
+  .chips { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:8px; padding:8px 6px; font:600 11px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; text-align:left; }
+  .chips button:hover { border-color:#5a7fb8; }
+  .chips button.on { background:#e9eef7; border-color:#5a7fb8; color:#33517f; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#eaeef6; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#2c3c5a; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#33517f; text-align:right; }
+  .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:13px; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#eaeef6; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
 </style>
 </head>
 <body>
-
-<h2>H-R Diagram</h2>
-
-<div class="readout">
-  <div class="readout-card">
-    <div class="readout-label">Spectral type</div>
-    <div class="readout-value" id="out-type">G2</div>
-  </div>
-  <div class="readout-card">
-    <div class="readout-label">Luminosity class</div>
-    <div class="readout-value" id="out-class">V</div>
-  </div>
-  <div class="readout-card" style="min-width:180px;">
-    <div class="readout-label">Absolute magnitude range</div>
-    <div class="readout-value range" id="out-mag">+4.3 to +5.3</div>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Spectral Classification <span class="sub">— reading a star&rsquo;s type off the H&ndash;R diagram</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <svg id="hr" viewBox="0 0 560 500"></svg>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Luminosity class</div>
+        <div class="chips" id="classChips">
+          <button data-id="I">Supergiants (I)</button>
+          <button data-id="III">Giants (III)</button>
+          <button data-id="V" class="on">Main sequence (V)</button>
+          <button data-id="WD">White dwarfs</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>spectral type &nbsp;←&nbsp;hot · cool&nbsp;→</span><span class="val" id="typeVal">G2</span></div>
+          <input type="range" id="slider" min="0" max="70" value="42" step="0.5">
+        </div>
+        <div class="section-label" style="margin-top:4px;">This star</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; astro-labs. Schematic magnitude bands for each MK luminosity class.</div>
   </div>
 </div>
 
-<div class="toggles" id="toggles"></div>
-
-<div class="diagram-wrap">
-  <svg id="hr" viewBox="0 0 560 560" width="560" height="560" style="display:block;"></svg>
-  <div class="slider-wrap">
-    <span class="hot-label">← Hot</span>
-    <input type="range" id="slider" min="0" max="70" value="42" step="0.5">
-    <span class="cool-label">Cool →</span>
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Spectral Classification <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>A star&rsquo;s spectrum pins down two things: its surface <b>temperature</b> (the spectral type &mdash; the OBAFGKM sequence, hot to cool) and its <b>size / luminosity</b> (the luminosity class, I&nbsp;=&nbsp;supergiant down to V&nbsp;=&nbsp;main-sequence dwarf, plus WD for white dwarfs). Together they place the star in a specific band of the H&ndash;R diagram, and from that band you can read off its absolute magnitude &mdash; which, compared with how bright it looks, gives its distance (&ldquo;spectroscopic parallax&rdquo;).</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Pick a luminosity class, then slide the spectral type from O to M. The crosshair tracks the band on the diagram; the panel gives the full type (e.g. <b>G2&nbsp;V</b> for the Sun) and the range of absolute magnitudes stars of that type and class have. Compare a K0&nbsp;III giant with a K0&nbsp;V dwarf &mdash; same temperature, wildly different luminosity.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">The classification</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 26px;font-size:11.5px;line-height:1.5;color:#cdd7e0;">
+          <div><b style="color:#fff;">Spectral type</b> &mdash; O B A F G K M, each split 0&ndash;9, running from ~40,000&nbsp;K (O) to ~3,000&nbsp;K (M). &ldquo;Oh Be A Fine Guy/Girl, Kiss Me.&rdquo;</div>
+          <div><b style="color:#fff;">Luminosity class</b> &mdash; Ia/Ib bright/normal supergiant, II bright giant, III giant, IV subgiant, V main sequence (dwarf).</div>
+          <div><b style="color:#fff;">The Sun</b> is a <b>G2&nbsp;V</b> star: 5,772&nbsp;K, on the main sequence, absolute magnitude +4.8.</div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/17-3-the-spectra-of-stars-and-brown-dwarfs" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 17.3 The Spectra of Stars</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/18-4-the-h-r-diagram" target="_blank" rel="noopener" style="color:#8fc7ff;">18.4 The H&ndash;R Diagram</a></li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
-<div style="height:40px;"></div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; distance from spectroscopic parallax <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">A star&rsquo;s spectrum classifies it as <b>K0&nbsp;V</b>. From the diagram, a K0&nbsp;V star has absolute magnitude about M = +5.9. It appears at magnitude m = +10.9. How far away is it?</p>
+    <div class="step"><div class="h">1 &middot; Distance modulus</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; Solve for d</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Why the class matters</div><div style="font-size:11.5px;color:#e7d6e4;">If we had wrongly called it a K0&nbsp;III giant (M &asymp; +0.7), we would have put it 10&times; farther away. The luminosity class is doing real work here.</div></div>
+  </div>
+</div>
 
 <script>
-var svg = document.getElementById('hr');
-var NS = 'http://www.w3.org/2000/svg';
-var L=70, R=30, T=20, B=60, W=560, H=560;
-var pw=W-L-R, ph=H-T-B;
-var maxT=70;
-var textCol='#333', gridCol='rgba(0,0,0,0.07)', axisCol='rgba(0,0,0,0.3)';
-var sunCol='#EF9F27', crossCol='#378ADD';
-var magMin=-15, magMax=20, magRange=35;
+const $ = id => document.getElementById(id);
+const svg = $('hr'), NS = 'http://www.w3.org/2000/svg';
+const L = 56, R = 22, T = 18, B = 54, W = 560, H = 500;
+const pw = W - L - R, ph = H - T - B, maxT = 70;
+const textCol = 'rgba(232,236,245,0.75)', gridCol = 'rgba(255,255,255,0.08)', axisCol = 'rgba(255,255,255,0.28)';
+const magMin = -15, magRange = 35;
 
-function magY(m) { return T+((m-magMin)/magRange)*ph; }
-function typeX(t) { return L+(t/maxT)*pw; }
-function typeLabel(t) {
-  var cls=Math.min(Math.floor(t/10),6), sub=Math.round(t%10);
-  return ['O','B','A','F','G','K','M'][cls]+sub;
+function magY(m) { return T + ((m - magMin) / magRange) * ph; }
+function typeX(t) { return L + (t / maxT) * pw; }
+function typeLabel(t) { const cls = Math.min(Math.floor(t / 10), 6), sub = Math.round(t % 10); return ['O', 'B', 'A', 'F', 'G', 'K', 'M'][cls] + sub; }
+function interp(pts, t) {
+  if (t <= pts[0][0]) return pts[0][1];
+  if (t >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 0; i < pts.length - 1; i++) { const [t0, m0] = pts[i], [t1, m1] = pts[i + 1]; if (t >= t0 && t <= t1) return m0 + (t - t0) / (t1 - t0) * (m1 - m0); }
+  return pts[pts.length - 1][1];
 }
-function interp(points,t) {
-  if (t<=points[0][0]) return points[0][1];
-  if (t>=points[points.length-1][0]) return points[points.length-1][1];
-  for (var i=0;i<points.length-1;i++) {
-    var t0=points[i][0],m0=points[i][1],t1=points[i+1][0],m1=points[i+1][1];
-    if (t>=t0&&t<=t1) return m0+(t-t0)/(t1-t0)*(m1-m0);
-  }
-  return points[points.length-1][1];
-}
-function mk(tag,attrs) {
-  var el=document.createElementNS(NS,tag);
-  for (var k in attrs) el.setAttribute(k,attrs[k]);
-  return el;
-}
-function txt(content,attrs) {
-  var el=mk('text',attrs); el.textContent=content; return el;
-}
-function fmtMag(m) { return (m>=0?'+':'')+m.toFixed(1); }
-function bandPath(upper,lower) {
-  var d=upper.map(function(p,i){
-    return (i===0?'M':'L')+typeX(p[0]).toFixed(1)+','+magY(p[1]).toFixed(1);
-  }).join(' ');
-  var rev=lower.slice().reverse();
-  d+=' '+rev.map(function(p){
-    return 'L'+typeX(p[0]).toFixed(1)+','+magY(p[1]).toFixed(1);
-  }).join(' ')+' Z';
+function mk(tag, attrs) { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; }
+function txt(c, attrs) { const el = mk('text', attrs); el.textContent = c; return el; }
+function fmtMag(m) { return (m >= 0 ? '+' : '') + m.toFixed(1); }
+function bandPath(u, l) {
+  let d = u.map((p, i) => (i === 0 ? 'M' : 'L') + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ');
+  d += ' ' + l.slice().reverse().map(p => 'L' + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ') + ' Z';
   return d;
 }
-
-var classes=[
-  {
-    id:'I', label:'Supergiants (I)', shortLabel:'I',
-    color:'#C0392B',
-    upper:[[10,-9],[20,-8.5],[30,-8],[40,-7.5],[50,-7],[60,-6.5],[70,-5.5]],
-    lower:[[10,-6.5],[20,-6],[30,-5.5],[40,-5],[50,-4.5],[60,-4],[70,-3.5]]
-  },
-  {
-    id:'III', label:'Giants (III)', shortLabel:'III',
-    color:'#8E44AD',
-    upper:[[10,-3],[20,-1.5],[30,-0.5],[40,0],[50,0.5],[60,0],[65,-0.5],[70,-1]],
-    lower:[[10,-1],[20,0.5],[30,1.5],[40,2],[50,2.5],[60,2],[65,1.5],[70,1]]
-  },
-  {
-    id:'V', label:'Main Sequence (V)', shortLabel:'V',
-    color:'#1A5276',
-    upper:[[0,-10.5],[3,-8.5],[6,-6.5],[10,-4.7],[14,-3],[18,-1.5],[20,-0.3],[25,1],
-           [30,1.7],[35,2.4],[40,3],[45,3.5],[48,4],[50,4.3],[55,5],[60,6],[65,7.3],[70,9]],
-    lower:[[0,-9.5],[3,-7.5],[6,-5.5],[10,-3.7],[14,-2],[18,-0.5],[20,0.7],[25,2],
-           [30,2.7],[35,3.4],[40,4],[45,4.5],[48,5],[50,5.3],[55,6],[60,7],[65,8.3],[70,10]]
-  },
-  {
-    id:'WD', label:'White Dwarfs (WD)', shortLabel:'WD',
-    color:'#2980B9',
-    upper:[[10,9],[20,9.5],[30,10],[40,11],[50,12],[60,13],[70,14]],
-    lower:[[10,11],[20,11.5],[30,12],[40,13],[50,14],[60,15],[70,16]]
-  }
+const classes = [
+  { id: 'I', label: 'Supergiants (I)', color: '#e07f6a', upper: [[10, -9], [20, -8.5], [30, -8], [40, -7.5], [50, -7], [60, -6.5], [70, -5.5]], lower: [[10, -6.5], [20, -6], [30, -5.5], [40, -5], [50, -4.5], [60, -4], [70, -3.5]] },
+  { id: 'III', label: 'Giants (III)', color: '#c58ad0', upper: [[10, -3], [20, -1.5], [30, -0.5], [40, 0], [50, 0.5], [60, 0], [65, -0.5], [70, -1]], lower: [[10, -1], [20, 0.5], [30, 1.5], [40, 2], [50, 2.5], [60, 2], [65, 1.5], [70, 1]] },
+  { id: 'V', label: 'Main Sequence (V)', color: '#6fa8e0', upper: [[0, -10.5], [3, -8.5], [6, -6.5], [10, -4.7], [14, -3], [18, -1.5], [20, -0.3], [25, 1], [30, 1.7], [35, 2.4], [40, 3], [45, 3.5], [48, 4], [50, 4.3], [55, 5], [60, 6], [65, 7.3], [70, 9]], lower: [[0, -9.5], [3, -7.5], [6, -5.5], [10, -3.7], [14, -2], [18, -0.5], [20, 0.7], [25, 2], [30, 2.7], [35, 3.4], [40, 4], [45, 4.5], [48, 5], [50, 5.3], [55, 6], [60, 7], [65, 8.3], [70, 10]] },
+  { id: 'WD', label: 'White Dwarfs', color: '#9ec9ff', upper: [[10, 9], [20, 9.5], [30, 10], [40, 11], [50, 12], [60, 13], [70, 14]], lower: [[10, 11], [20, 11.5], [30, 12], [40, 13], [50, 14], [60, 15], [70, 16]] },
 ];
+const CLASS_NAME = { I: 'supergiant', III: 'giant', V: 'main-sequence (dwarf)', WD: 'white dwarf' };
 
-svg.appendChild(mk('rect',{x:0,y:0,width:W,height:H,fill:'none'}));
-
-for (var m=-15;m<=20;m+=5) {
-  var gy=magY(m);
-  if (gy<T||gy>T+ph) continue;
-  svg.appendChild(mk('line',{x1:L,y1:gy,x2:L+pw,y2:gy,stroke:gridCol,'stroke-width':'0.5'}));
-  svg.appendChild(txt(m>0?'+'+m:(m===0?'0':String(m)),
-    {x:L-6,y:gy+4,'text-anchor':'end','font-size':'11',fill:textCol}));
+svg.appendChild(mk('rect', { x: 0, y: 0, width: W, height: H, fill: '#0b0f16' }));
+for (let m = -15; m <= 20; m += 5) {
+  const gy = magY(m); if (gy < T || gy > T + ph) continue;
+  svg.appendChild(mk('line', { x1: L, y1: gy, x2: L + pw, y2: gy, stroke: gridCol, 'stroke-width': '0.5' }));
+  svg.appendChild(txt(m > 0 ? '+' + m : (m === 0 ? '0' : String(m)), { x: L - 6, y: gy + 4, 'text-anchor': 'end', 'font-size': '10', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
 }
-svg.appendChild(txt('Absolute magnitude',{
-  x:14,y:T+ph/2,'text-anchor':'middle','font-size':'12',fill:textCol,
-  transform:'rotate(-90,14,'+(T+ph/2)+')'
-}));
-svg.appendChild(txt('Bright',{x:L-6,y:T-10,'text-anchor':'end','font-size':'10',fill:textCol}));
-svg.appendChild(txt('Dim',   {x:L-6,y:T+ph+18,'text-anchor':'end','font-size':'10',fill:textCol}));
-
-['O','B','A','F','G','K','M'].forEach(function(cls,ci) {
-  var xStart=typeX(ci*10), xEnd=typeX((ci+1)*10), xMid=(xStart+xEnd)/2;
-  svg.appendChild(mk('line',{x1:xStart,y1:T,x2:xStart,y2:T+ph,stroke:axisCol,'stroke-width':'1.5'}));
-  svg.appendChild(txt(cls,{x:xMid,y:T+ph+20,'text-anchor':'middle',
-    'font-size':'14','font-weight':'600',fill:textCol}));
-  for (var s=1;s<=9;s++) {
-    var xs=typeX(ci*10+s);
-    svg.appendChild(mk('line',{x1:xs,y1:T+ph,x2:xs,y2:T+ph+5,stroke:axisCol,'stroke-width':'0.5'}));
-  }
+svg.appendChild(txt('absolute magnitude', { x: 13, y: T + ph / 2, 'text-anchor': 'middle', 'font-size': '11', fill: textCol, 'font-family': 'Source Sans 3, sans-serif', transform: 'rotate(-90,13,' + (T + ph / 2) + ')' }));
+svg.appendChild(txt('bright', { x: L - 6, y: T - 6, 'text-anchor': 'end', 'font-size': '9', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
+svg.appendChild(txt('dim', { x: L - 6, y: T + ph + 16, 'text-anchor': 'end', 'font-size': '9', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
+['O', 'B', 'A', 'F', 'G', 'K', 'M'].forEach((cls, ci) => {
+  const xStart = typeX(ci * 10), xMid = (xStart + typeX((ci + 1) * 10)) / 2;
+  svg.appendChild(mk('line', { x1: xStart, y1: T, x2: xStart, y2: T + ph, stroke: axisCol, 'stroke-width': '1' }));
+  svg.appendChild(txt(cls, { x: xMid, y: T + ph + 18, 'text-anchor': 'middle', 'font-size': '13', 'font-weight': '700', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
 });
-svg.appendChild(txt('Spectral type',{x:L+pw/2,y:T+ph+42,
-  'text-anchor':'middle','font-size':'13',fill:textCol}));
-svg.appendChild(mk('rect',{x:L,y:T,width:pw,height:ph,
-  fill:'none',stroke:axisCol,'stroke-width':'0.75'}));
+svg.appendChild(txt('spectral type', { x: L + pw / 2, y: T + ph + 40, 'text-anchor': 'middle', 'font-size': '11', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
+svg.appendChild(mk('rect', { x: L, y: T, width: pw, height: ph, fill: 'none', stroke: axisCol, 'stroke-width': '0.75' }));
 
-var bandEls={}, labelEls={};
-classes.forEach(function(cls) {
-  var band=mk('path',{d:bandPath(cls.upper,cls.lower),
-    fill:cls.color,opacity:'0.12','stroke-width':'0'});
-  svg.appendChild(band);
-  bandEls[cls.id]=band;
-
-  var centerPts=cls.upper.map(function(p){
-    return [p[0],(p[1]+interp(cls.lower,p[0]))/2];
-  });
-  var cd=centerPts.map(function(p,i){
-    return (i===0?'M':'L')+typeX(p[0]).toFixed(1)+','+magY(p[1]).toFixed(1);
-  }).join(' ');
-  var cline=mk('path',{d:cd,fill:'none',stroke:cls.color,'stroke-width':'1.5',
-    'stroke-linejoin':'round',
-    'stroke-dasharray':cls.id==='WD'?'6 3':'none',opacity:'0.2'});
-  svg.appendChild(cline);
-  bandEls[cls.id+'_line']=cline;
-
-  var lastU=cls.upper[cls.upper.length-1];
-  var lastL=cls.lower[cls.lower.length-1];
-  var lbl=txt(cls.shortLabel,{
-    x:typeX(lastU[0])+5,y:magY((lastU[1]+lastL[1])/2)+4,
-    'font-size':'11','font-weight':'600',fill:cls.color,opacity:'0.25'});
-  svg.appendChild(lbl);
-  labelEls[cls.id]=lbl;
+const bandEls = {}, labelEls = {};
+classes.forEach(cls => {
+  const band = mk('path', { d: bandPath(cls.upper, cls.lower), fill: cls.color, opacity: '0.14', 'stroke-width': '0' });
+  svg.appendChild(band); bandEls[cls.id] = band;
+  const centerPts = cls.upper.map(p => [p[0], (p[1] + interp(cls.lower, p[0])) / 2]);
+  const cd = centerPts.map((p, i) => (i === 0 ? 'M' : 'L') + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ');
+  const cline = mk('path', { d: cd, fill: 'none', stroke: cls.color, 'stroke-width': '1.5', 'stroke-linejoin': 'round', 'stroke-dasharray': cls.id === 'WD' ? '6 3' : 'none', opacity: '0.3' });
+  svg.appendChild(cline); bandEls[cls.id + '_line'] = cline;
+  const lu = cls.upper[cls.upper.length - 1], ll = cls.lower[cls.lower.length - 1];
+  const lbl = txt(cls.id, { x: typeX(lu[0]) + 5, y: magY((lu[1] + ll[1]) / 2) + 4, 'font-size': '11', 'font-weight': '700', fill: cls.color, opacity: '0.35', 'font-family': 'Source Sans 3, sans-serif' });
+  svg.appendChild(lbl); labelEls[cls.id] = lbl;
 });
 
-var sunT=42, sunPts=[];
-for (var si=0;si<10;si++){
-  var sr=si%2===0?8:4, sa=(si*36-90)*Math.PI/180;
-  sunPts.push((sr*Math.cos(sa)).toFixed(1)+','+(sr*Math.sin(sa)).toFixed(1));
-}
-var sunX=typeX(sunT);
-var sunMid=(interp(classes[2].upper,sunT)+interp(classes[2].lower,sunT))/2;
-var sunY=magY(sunMid);
-svg.appendChild(mk('polygon',{points:sunPts.join(' '),fill:sunCol,
-  transform:'translate('+sunX+','+sunY+')'}));
-svg.appendChild(txt('Sun',{x:sunX+12,y:sunY-10,'font-size':'11',fill:textCol}));
+// Sun marker
+const sunT = 42, sunMid = (interp(classes[2].upper, sunT) + interp(classes[2].lower, sunT)) / 2;
+let sunPts = '';
+for (let si = 0; si < 10; si++) { const sr = si % 2 === 0 ? 7 : 3.5, sa = (si * 36 - 90) * Math.PI / 180; sunPts += (sr * Math.cos(sa)).toFixed(1) + ',' + (sr * Math.sin(sa)).toFixed(1) + ' '; }
+svg.appendChild(mk('polygon', { points: sunPts, fill: '#ffd353', transform: 'translate(' + typeX(sunT) + ',' + magY(sunMid) + ')' }));
+svg.appendChild(txt('Sun (G2 V)', { x: typeX(sunT) + 11, y: magY(sunMid) - 9, 'font-size': '10', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
 
-var crossG=document.createElementNS(NS,'g');
-var vLine=mk('line',{x1:0,y1:T,x2:0,y2:T+ph,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
-var hLineU=mk('line',{x1:L,y1:0,x2:L+pw,y2:0,stroke:crossCol,'stroke-width':'1','stroke-dasharray':'2 3',opacity:'0.7'});
-var hLineL=mk('line',{x1:L,y1:0,x2:L+pw,y2:0,stroke:crossCol,'stroke-width':'1','stroke-dasharray':'2 3',opacity:'0.7'});
-var dotU=mk('circle',{r:'4',fill:crossCol,opacity:'0.8'});
-var dotL=mk('circle',{r:'4',fill:crossCol,opacity:'0.8'});
-crossG.appendChild(vLine);
-crossG.appendChild(hLineU); crossG.appendChild(hLineL);
-crossG.appendChild(dotU);   crossG.appendChild(dotL);
+const crossG = document.createElementNS(NS, 'g');
+const vLine = mk('line', { x1: 0, y1: T, x2: 0, y2: T + ph, stroke: '#ffd66b', 'stroke-width': '1.4', 'stroke-dasharray': '4 3' });
+const dotU = mk('circle', { r: '4', fill: '#ffd66b' });
+const dotL = mk('circle', { r: '4', fill: '#ffd66b' });
+crossG.appendChild(vLine); crossG.appendChild(dotU); crossG.appendChild(dotL);
 svg.appendChild(crossG);
 
-var slider=document.getElementById('slider');
-var outType=document.getElementById('out-type');
-var outMag=document.getElementById('out-mag');
-var outClass=document.getElementById('out-class');
-var activeId='V';
-
-function setActive(id) {
-  activeId=id;
-  classes.forEach(function(cls) {
-    var on=cls.id===id;
-    bandEls[cls.id].setAttribute('opacity',on?'0.25':'0.08');
-    bandEls[cls.id+'_line'].setAttribute('opacity',on?'0.9':'0.15');
-    labelEls[cls.id].setAttribute('opacity',on?'1':'0.2');
+let activeId = 'V';
+function getActive() { return classes.find(c => c.id === activeId) || classes[2]; }
+function update() {
+  const t = parseFloat($('slider').value), cls = getActive();
+  const mU = interp(cls.upper, t), mL = interp(cls.lower, t), mMid = (mU + mL) / 2;
+  const x = typeX(t);
+  const yU = Math.max(T, Math.min(T + ph, magY(mU))), yL = Math.max(T, Math.min(T + ph, magY(mL)));
+  vLine.setAttribute('x1', x); vLine.setAttribute('x2', x);
+  dotU.setAttribute('cx', x); dotU.setAttribute('cy', yU);
+  dotL.setAttribute('cx', x); dotL.setAttribute('cy', yL);
+  classes.forEach(c => {
+    const on = c.id === activeId;
+    bandEls[c.id].setAttribute('opacity', on ? '0.28' : '0.07');
+    bandEls[c.id + '_line'].setAttribute('opacity', on ? '0.9' : '0.12');
+    labelEls[c.id].setAttribute('opacity', on ? '1' : '0.22');
   });
-  outClass.textContent=id;
-  update(parseFloat(slider.value));
+  $('typeVal').textContent = typeLabel(t) + ' ' + activeId;
+  const ti = Math.min(Math.floor(t / 10), 6);
+  const temp = Math.round([40000, 20000, 9000, 7000, 5600, 4400, 3200][ti]);
+  const vMid = (interp(classes[2].upper, t) + interp(classes[2].lower, t)) / 2;   // main-seq magnitude at this type
+  const dm = vMid - mMid;   // how many mag brighter than a main-seq star of the same type
+  $('results').innerHTML =
+    '<div class="resrow big"><span class="k">full type</span><span class="v">' + typeLabel(t) + ' ' + activeId + '</span></div>' +
+    '<div class="resrow"><span class="k">luminosity class</span><span class="v">' + CLASS_NAME[activeId] + '</span></div>' +
+    '<div class="resrow"><span class="k">≈ surface temperature</span><span class="v">' + temp.toLocaleString() + ' K</span></div>' +
+    '<div class="resrow"><span class="k">absolute magnitude M</span><span class="v">' + fmtMag(mU) + ' to ' + fmtMag(mL) + '</span></div>' +
+    '<div class="resrow"><span class="k">vs a dwarf of this type</span><span class="v">' + (activeId === 'V' ? '—' : activeId === 'WD' ? '≈ 10⁴× fainter' : '≈ ' + Math.round(Math.pow(10, dm / 2.5)) + '× brighter') + '</span></div>';
+  $('note').textContent = activeId === 'V'
+    ? 'A main-sequence star of type ' + typeLabel(t) + ': fusing hydrogen in its core. Its position along the sequence is set by its mass — earlier (hotter) types are more massive and more luminous.'
+    : activeId === 'WD'
+    ? 'A white dwarf: same temperature as a ' + typeLabel(t) + ' main-sequence star but ~10,000× fainter, because it is only Earth-sized.'
+    : 'A ' + CLASS_NAME[activeId] + ' of type ' + typeLabel(t) + ': far more luminous than a main-sequence star of the same temperature, so it must be much larger — an evolved star.';
 }
+function fmtL(x) { return x >= 1e4 ? x.toExponential(1) : x >= 100 ? Math.round(x).toLocaleString() : x >= 1 ? x.toPrecision(2) : x.toPrecision(2); }
 
-var toggleContainer=document.getElementById('toggles');
-classes.forEach(function(cls) {
-  var btn=document.createElement('button');
-  btn.className='toggle-btn'+(cls.id===activeId?' active':'');
-  btn.textContent=cls.label;
-  btn.style.borderColor=cls.color;
-  if (cls.id===activeId){btn.style.backgroundColor=cls.color;btn.style.color='#fff';}
-  btn.addEventListener('click',function(){
-    document.querySelectorAll('.toggle-btn').forEach(function(b,bi){
-      b.classList.remove('active');
-      b.style.backgroundColor='#fff';
-      b.style.color='#555';
-      b.style.borderColor=classes[bi].color;
-    });
-    btn.classList.add('active');
-    btn.style.backgroundColor=cls.color;
-    btn.style.color='#fff';
-    setActive(cls.id);
-  });
-  toggleContainer.appendChild(btn);
-});
+$('slider').addEventListener('input', update);
+document.querySelectorAll('#classChips button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#classChips button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); activeId = b.dataset.id; update();
+}));
 
-function getActiveClass(){
-  for (var i=0;i<classes.length;i++) if(classes[i].id===activeId) return classes[i];
-  return classes[2];
+function katexAll() {
+  const specs = [
+    ['ex1', "m - M = 10.9 - 5.9 = 5.0"],
+    ['ex2', "d = 10^{\\,(5.0 + 5)/5} = 10^{2} = 100\\ \\text{pc}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
 }
-
-function update(t) {
-  var cls=getActiveClass();
-  var mU=interp(cls.upper,t), mL=interp(cls.lower,t);
-  var yU=Math.max(T,Math.min(T+ph,magY(mU)));
-  var yL=Math.max(T,Math.min(T+ph,magY(mL)));
-  var x=typeX(t);
-  vLine.setAttribute('x1',x); vLine.setAttribute('x2',x);
-  hLineU.setAttribute('y1',yU); hLineU.setAttribute('y2',yU);
-  hLineL.setAttribute('y1',yL); hLineL.setAttribute('y2',yL);
-  dotU.setAttribute('cx',x); dotU.setAttribute('cy',yU);
-  dotL.setAttribute('cx',x); dotL.setAttribute('cy',yL);
-  outType.textContent=typeLabel(t);
-  outMag.textContent=fmtMag(mU)+' to '+fmtMag(mL);
-  outClass.textContent=cls.id;
-}
-
-slider.addEventListener('input',function(){ update(parseFloat(slider.value)); });
-setActive('V');
-update(parseFloat(slider.value));
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); update(); });
 </script>
 </body>
 </html>
