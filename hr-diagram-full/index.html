@@ -287,6 +287,10 @@ document.querySelectorAll('#classChips button').forEach(b => b.addEventListener(
   document.querySelectorAll('#classChips button').forEach(x => x.classList.remove('on'));
   b.classList.add('on'); activeId = b.dataset.id; update();
 }));
+function rpAfter() {
+  const btns = [...document.querySelectorAll('#classChips button')];
+  btns[Math.floor(Math.random() * btns.length)].click();
+}
 
 function katexAll() {
   const specs = [
