@@ -59,6 +59,19 @@
   .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
   .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
   @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+  .hdr-actions { display:flex; align-items:center; gap:8px; }
+  .menuwrap { position:relative; }
+  .menu-toggle { font-size:15px; line-height:1; padding:7px 11px; }
+  .menu { position:absolute; top:calc(100% + 6px); right:0; z-index:60; background:#1b2836; border:1px solid rgba(255,255,255,0.14); border-radius:11px; padding:6px; min-width:196px; box-shadow:0 14px 34px rgba(0,0,0,0.45); display:flex; flex-direction:column; gap:2px; }
+  .menu a, .menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font:600 12.5px 'Source Sans 3',sans-serif; color:#dfe8f0; background:none; border:0; border-radius:7px; padding:8px 10px; cursor:pointer; text-decoration:none; }
+  .menu a:hover, .menu button:hover { background:rgba(255,255,255,0.08); }
+  .menu[hidden] { display:none; }
+  .menu .ico { width:18px; text-align:center; flex:none; }
+  .bugmodal .field { width:100%; box-sizing:border-box; font:400 13px 'Source Sans 3',sans-serif; color:#eef2f6; background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:9px 11px; outline:none; margin-bottom:9px; }
+  .bugmodal textarea.field { resize:vertical; line-height:1.5; }
+  .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #b0533b; background:#b0533b; color:#fff; cursor:pointer; }
+  .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
+  .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
 </style>
 </head>
 <body>
@@ -69,9 +82,17 @@
         <span class="dot"></span>
         <span class="name">Retrograde Motion <span class="sub">— why Mars loops backward</span></span>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="headbtn" id="infoBtn">&#9432; Info</button>
-        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      <div class="hdr-actions">
+        <button class="headbtn" id="randomBtn" hidden>&#127922; Random problem</button>
+        <div class="menuwrap">
+          <button class="headbtn menu-toggle" id="menuBtn" title="Menu" aria-haspopup="true">&#9776;</button>
+          <div class="menu" id="menu" hidden>
+            <a href="../" target="_blank" rel="noopener"><span class="ico">&#8592;</span>All sims</a>
+            <button id="mInfo"><span class="ico">&#9432;</span>Info</button>
+            <button id="mExample"><span class="ico">&#9998;</span>Worked example</button>
+            <button id="mBug"><span class="ico">&#128030;</span>Submit bug</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="body">
@@ -135,6 +156,8 @@
           <li><a href="https://openstax.org/books/astronomy-2e/pages/2-4-the-birth-of-modern-astronomy" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 2.4 The Birth of Modern Astronomy</a></li>
           <li><a href="https://openstax.org/books/astronomy-2e/pages/3-1-the-laws-of-planetary-motion" target="_blank" rel="noopener" style="color:#8fc7ff;">3.1 The Laws of Planetary Motion</a></li>
         </ul>
+        <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/introduction-to-the-solar-system-crash-course-astronomy-9/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #9 — Introduction to the Solar System</a></li></ul>
       </div>
     </div>
   </div>
@@ -147,6 +170,19 @@
     <div class="step"><div class="h">1 &middot; Retrograde happens once per synodic period</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Plug in the orbital periods</div><span class="formula" id="ex2"></span></div>
     <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">Earth laps Mars every <b>2.14 years</b>, so Mars goes retrograde a little less often than every two years, for about 10 weeks each time. Jupiter, much slower, gets lapped every 1.09 years &mdash; almost annually.</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop bugmodal" id="bugModal">
+  <div class="modal" style="max-width:460px;">
+    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
+    <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
+    <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="sendbtn" id="bugSend">Send report</button>
+      <span class="result" id="bugResult"></span>
+    </div>
   </div>
 </div>
 
@@ -398,12 +434,54 @@ function katexAll() {
     el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
   }
 }
-['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
-$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+const SIM_ID = 'retrograde-motion';
+const RP_IDS = [];
+
+// ---- header menu ----
+const _menu = $('menu'), _menuBtn = $('menuBtn');
+function closeMenu() { _menu.hidden = true; }
+_menuBtn.addEventListener('click', e => { e.stopPropagation(); _menu.hidden = !_menu.hidden; });
+document.addEventListener('click', e => { if (!_menu.hidden && !_menu.contains(e.target) && e.target !== _menuBtn) closeMenu(); });
+$('mInfo').addEventListener('click', () => { closeMenu(); $('infoModal').classList.add('show'); });
+$('mExample').addEventListener('click', () => { closeMenu(); $('exampleModal').classList.add('show'); });
+$('mBug').addEventListener('click', () => { closeMenu(); $('bugModal').classList.add('show'); $('bugText').focus(); });
 $('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
-$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
 $('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
-window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+$('bugClose').addEventListener('click', () => $('bugModal').classList.remove('show'));
+['infoModal', 'exampleModal', 'bugModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); } });
+
+// ---- bug report ----
+$('bugSend').addEventListener('click', () => {
+  const text = ($('bugText').value || '').trim(), rEl = $('bugResult');
+  if (text.length < 3) { rEl.textContent = 'Please describe the problem first.'; rEl.style.color = '#f0a58c'; return; }
+  const btn = $('bugSend'); btn.disabled = true; rEl.textContent = 'Sending…'; rEl.style.color = '#9fb0bf';
+  fetch('https://sims-api.sethhopper.com/report', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sim: SIM_ID, text: text.slice(0, 4000), email: ($('bugEmail').value || '').trim().slice(0, 200), pageUrl: location.href, userAgent: navigator.userAgent, website: '' })
+  }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j })))
+    .then(res => {
+      btn.disabled = false;
+      if (res.ok && res.j && res.j.ok) { rEl.textContent = 'Thanks — your report was filed.'; rEl.style.color = '#7fd08a'; $('bugText').value = ''; }
+      else { rEl.textContent = 'Could not send' + (res.j && res.j.error ? ' (' + res.j.error + ')' : '') + '. Try again later.'; rEl.style.color = '#f0a58c'; }
+    }).catch(() => { btn.disabled = false; rEl.textContent = 'Network error. Try again later.'; rEl.style.color = '#f0a58c'; });
+});
+
+// ---- random problem ----
+if (RP_IDS.length) {
+  $('randomBtn').hidden = false;
+  $('randomBtn').addEventListener('click', () => {
+    RP_IDS.forEach(id => {
+      const sl = $(id); if (!sl) return;
+      const mn = +sl.min, mx = +sl.max, st = +sl.step || 1;
+      const n = Math.max(1, Math.round((mx - mn) / st));
+      let v = mn + Math.round(Math.random() * n) * st;
+      sl.value = Math.abs(v) < 1e-9 ? 0 : +v.toFixed(6);
+      sl.dispatchEvent(new Event('input'));
+    });
+    if (typeof rpAfter === 'function') rpAfter();
+  });
+}
 window.addEventListener('load', () => { katexAll(); rebuildTrack(); render(); });
 </script>
 </body>
