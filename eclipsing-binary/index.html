@@ -1,221 +1,310 @@
-<div class="eb2" style="background:#0E1320; border-radius:12px; padding:20px 16px; color-scheme:dark;">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eclipsing Binary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <style>
-  .eb2 { color-scheme:dark; --panel:#161D2E; --panel2:#1C2438; --ink:#E8ECF5; --muted:#8E99B3; --accent:#F87171; --rule:#2A3450; --bg:#0E1320; color:#E8ECF5; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
-  .eb2, .eb2 * { box-sizing:border-box; }
-  .eb2 .eyebrow { color:var(--accent); font-size:12px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:6px; }
-  .eb2 h1 { font-size:22px; font-weight:500; margin:0 0 4px; color:var(--ink); }
-  .eb2 .sub { color:var(--muted); font-size:14px; margin:0 0 16px; }
-  .eb2 canvas { width:100%; height:auto; background:var(--panel); border:1px solid var(--rule); border-radius:10px; display:block; margin-bottom:10px; }
-  .eb2 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 22px; margin:10px 0; }
-  .eb2 .ctl label { display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:4px; }
-  .eb2 .ctl label .val { font-family:ui-monospace,Menlo,Consolas,monospace; color:var(--ink); }
-  .eb2 input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:3px; background:var(--rule); outline:none; cursor:pointer; }
-  .eb2 input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:#FFFFFF; border:2px solid var(--accent); cursor:pointer; box-sizing:border-box; }
-  .eb2 input[type="range"]::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:#FFFFFF; border:2px solid var(--accent); cursor:pointer; box-sizing:border-box; }
-  .eb2 input[type="range"]::-moz-range-track { background:transparent; border:none; }
-  .eb2 .playrow { display:flex; align-items:center; gap:12px; margin:10px 0; }
-  .eb2 .playrow button { appearance:none; -webkit-appearance:none; background-color:var(--panel2); color:var(--ink); border:1px solid var(--muted); border-radius:8px; padding:10px 22px; font-family:inherit; font-size:14px; cursor:pointer; }
-  .eb2 .playrow button:hover { border-color:var(--accent); }
-  .eb2 .playrow .phasectl { flex:1; }
-  .eb2 .readouts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0 0; }
-  .eb2 .ro { background:var(--panel2); border:1px solid var(--rule); border-radius:10px; padding:8px 12px; }
-  .eb2 .ro .k { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
-  .eb2 .ro .v { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:16px; margin-top:2px; }
-  @media (max-width:560px){ .eb2 .grid2{grid-template-columns:1fr;} .eb2 .readouts{grid-template-columns:1fr;} }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#c85b7c; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #orbit { aspect-ratio:520/210; }
+  #lc { aspect-ratio:520/190; background:#0d1420; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #a2456180; background:#a24561; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:4px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#a24561; }
+  input[type=range] { width:100%; accent-color:#c85b7c; }
+  .starcols { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; }
+  .starcols .hd { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9aa2ab; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f6e9ee; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4a2e38; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#a24561; text-align:right; }
+  .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:12.5px; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f6e9ee; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
 </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Eclipsing Binary <span class="sub">— two stars taking turns hiding each other</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="orbit" width="520" height="210"></canvas>
+        <canvas id="lc" width="520" height="190"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#10073;&#10073; Pause</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>orbital phase</span><span class="val" id="phaseVal">0.00</span></div>
+          <input type="range" id="phase" min="0" max="1000" step="1" value="0">
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">The two stars</div>
+        <div class="starcols">
+          <div class="hd">Star A (bluer)</div><div class="hd">Star B</div>
+          <div class="slider-row"><div class="lbl"><span>radius</span><span class="val" id="r1v">1.6</span></div><input type="range" id="r1" min="3" max="40" step="1" value="16"></div>
+          <div class="slider-row"><div class="lbl"><span>radius</span><span class="val" id="r2v">0.9</span></div><input type="range" id="r2" min="3" max="40" step="1" value="9"></div>
+          <div class="slider-row"><div class="lbl"><span>temp</span><span class="val" id="t1v">6500</span></div><input type="range" id="t1" min="3000" max="12000" step="100" value="6500"></div>
+          <div class="slider-row"><div class="lbl"><span>temp</span><span class="val" id="t2v">4000</span></div><input type="range" id="t2" min="3000" max="12000" step="100" value="4000"></div>
+        </div>
+        <div class="section-label" style="margin-top:4px;">The orbit</div>
+        <div class="slider-row"><div class="lbl"><span>separation a</span><span class="val" id="av">12 R☉</span></div><input type="range" id="a" min="6" max="40" step="0.5" value="12"></div>
+        <div class="slider-row"><div class="lbl"><span>inclination i</span><span class="val" id="iv">88°</span></div><input type="range" id="inc" min="60" max="90" step="0.2" value="88"></div>
+        <div class="slider-row"><div class="lbl"><span>mass ratio M_B / M_A</span><span class="val" id="qv">0.70</span></div><input type="range" id="q" min="20" max="100" step="5" value="70"></div>
+        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; astro-labs. Circular orbit, uniform-brightness discs (no limb darkening).</div>
+  </div>
+</div>
 
-  <div class="eyebrow">Binary stars &middot; interactive 1 of 2</div>
-  <h1>Eclipsing binary light curve</h1>
-  <p class="sub">Two stars orbit their center of mass. When one passes in front of the other, light is blocked. Adjust the system and watch how the light curve responds.</p>
-
-  <canvas id="eb2Orbit" width="720" height="250"></canvas>
-  <canvas id="eb2LC" width="720" height="250"></canvas>
-
-  <div class="playrow">
-    <button id="eb2Play">Pause</button>
-    <div class="ctl phasectl">
-      <label>Orbital phase <span class="val" id="eb2PhaseVal">0.00</span></label>
-      <input type="range" id="eb2Phase" min="0" max="1000" step="1" value="0">
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Eclipsing Binary <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Roughly half of all stars come in pairs. If a binary&rsquo;s orbit is tipped nearly edge-on to us, each star passes in front of the other once per orbit and the combined light dips. The <b>deeper</b> dip happens when the cooler star blocks the hotter one (more surface brightness hidden); the <b>shallower</b> dip is the reverse. From the shape and timing of those dips alone &mdash; no image needed &mdash; astronomers pull out the stars&rsquo; relative sizes, temperatures, and (with velocities) their masses. Eclipsing binaries are the main source of directly measured stellar masses.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Watch the light curve build as the stars orbit. Make the stars different sizes and temperatures and see how the two dips change depth. Tilt the orbit (lower the inclination) and the eclipses get shallower, then vanish once the tilt is too big for either disc to cross the other from our line of sight.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">a star&rsquo;s contribution to the total light &mdash; area times surface brightness (&prop; T&#8308;).</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">eclipses occur only if the orbit is tilted by less than this from edge-on.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">the ratio of the two dip depths gives the ratio of the stars&rsquo; surface brightnesses.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/18-1-a-stellar-census" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 18.1 A Stellar Census</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/18-2-measuring-stellar-masses" target="_blank" rel="noopener" style="color:#8fc7ff;">18.2 Measuring Stellar Masses</a></li>
+        </ul>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="grid2">
-    <div class="ctl"><label>Radius of star A <span class="val" id="eb2R1v"></span></label><input type="range" id="eb2R1" min="3" max="40" step="1" value="16"></div>
-    <div class="ctl"><label>Radius of star B <span class="val" id="eb2R2v"></span></label><input type="range" id="eb2R2" min="3" max="40" step="1" value="9"></div>
-    <div class="ctl"><label>Temperature of star A <span class="val" id="eb2T1v"></span></label><input type="range" id="eb2T1" min="3000" max="12000" step="100" value="6500"></div>
-    <div class="ctl"><label>Temperature of star B <span class="val" id="eb2T2v"></span></label><input type="range" id="eb2T2" min="3000" max="12000" step="100" value="4000"></div>
-    <div class="ctl"><label>Separation <span class="val" id="eb2Av"></span></label><input type="range" id="eb2A" min="6" max="40" step="0.5" value="12"></div>
-    <div class="ctl"><label>Inclination <span class="val" id="eb2Iv"></span></label><input type="range" id="eb2Inc" min="60" max="90" step="0.2" value="88"></div>
-    <div class="ctl"><label>Mass ratio MB/MA <span class="val" id="eb2Qv"></span></label><input type="range" id="eb2Q" min="20" max="100" step="5" value="70"></div>
-  </div>
-
-  <div class="readouts">
-    <div class="ro"><div class="k">Eclipses?</div><div class="v" id="eb2RoE">&mdash;</div></div>
-    <div class="ro"><div class="k">Deep eclipse</div><div class="v" id="eb2RoP">&mdash;</div></div>
-    <div class="ro"><div class="k">Shallow eclipse</div><div class="v" id="eb2RoS">&mdash;</div></div>
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; reading a light curve <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">An eclipsing binary shows a deep eclipse that removes 60% of the light and a shallow one that removes 20%. The two eclipses are equally long. What does that tell you?</p>
+    <div class="step"><div class="h">1 &middot; Equal-length eclipses → both discs fully overlap</div><div style="font-size:11.5px;color:#e7d6e4;">Each eclipse lasts the same time, so the smaller star passes completely across (and behind) the larger one. The flat bottoms confirm a total eclipse.</div></div>
+    <div class="step"><div class="h">2 &middot; Depth ratio → surface-brightness ratio</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">The hotter star&rsquo;s surface is 3&times; brighter per unit area, so its temperature is about 3<sup>1/4</sup> &asymp; 1.3&times; higher. The deep eclipse is the one where the cool star covers the hot one.</div></div>
   </div>
 </div>
 
 <script>
-(function(){
-function bbRGB(T){
-  var t=T/100,r,g,b;
-  if(t<=66){r=255;}else{r=329.698727446*Math.pow(t-60,-0.1332047592);}
-  if(t<=66){g=99.4708025861*Math.log(t)-161.1195681661;}else{g=288.1221695283*Math.pow(t-60,-0.0755148492);}
-  if(t>=66){b=255;}else if(t<=19){b=0;}else{b=138.5177312231*Math.log(t-10)-305.0447927307;}
-  function c(x){return Math.max(0,Math.min(255,Math.round(x)));}
-  return "rgb("+c(r)+","+c(g)+","+c(b)+")";
-}
-function overlapArea(d,r1,r2){
-  if(d>=r1+r2) return 0;
-  var rmin=Math.min(r1,r2);
-  if(d<=Math.abs(r1-r2)) return Math.PI*rmin*rmin;
-  var d1=(d*d+r1*r1-r2*r2)/(2*d), d2=d-d1;
-  var c1=Math.max(-1,Math.min(1,d1/r1)), c2=Math.max(-1,Math.min(1,d2/r2));
-  return r1*r1*Math.acos(c1)-d1*Math.sqrt(Math.max(0,r1*r1-d1*d1))
-       + r2*r2*Math.acos(c2)-d2*Math.sqrt(Math.max(0,r2*r2-d2*d2));
-}
-var $=function(id){return document.getElementById(id);};
-var r1=$("eb2R1"),r2=$("eb2R2"),t1=$("eb2T1"),t2=$("eb2T2"),a=$("eb2A"),inc=$("eb2Inc"),q=$("eb2Q");
-var r1v=$("eb2R1v"),r2v=$("eb2R2v"),t1v=$("eb2T1v"),t2v=$("eb2T2v"),av=$("eb2Av"),iv=$("eb2Iv"),qv=$("eb2Qv");
-var roE=$("eb2RoE"),roP=$("eb2RoP"),roS=$("eb2RoS");
-var phaseSl=$("eb2Phase"), phaseVal=$("eb2PhaseVal"), playBtn=$("eb2Play");
-var S={};
-var ALL_SLIDERS=[phaseSl,r1,r2,t1,t2,a,inc,q];
-function paintSlider(el){
-  var pct=(el.value-el.min)/(el.max-el.min)*100;
-  el.style.background="linear-gradient(to right, #F87171 0%, #F87171 "+pct+"%, #2A3450 "+pct+"%, #2A3450 100%)";
-}
-function paintAll(){ ALL_SLIDERS.forEach(paintSlider); }
+const $ = id => document.getElementById(id);
+let playing = true, rafId = null, last = null;
+let phi = 0;
+const S = {};
 
-function readControls(){
-  S.R1=+r1.value/10; S.R2=+r2.value/10;
-  S.T1=+t1.value; S.T2=+t2.value;
-  S.a=+a.value; S.i=+inc.value*Math.PI/180; S.q=+q.value/100;
-  S.a1=S.a*S.q/(1+S.q); S.a2=S.a/(1+S.q);
-  S.F1=S.R1*S.R1*Math.pow(S.T1/6000,4);
-  S.F2=S.R2*S.R2*Math.pow(S.T2/6000,4);
-  r1v.innerHTML=S.R1.toFixed(1)+" R\u2609"; r2v.innerHTML=S.R2.toFixed(1)+" R\u2609";
-  t1v.textContent=S.T1.toLocaleString()+" K"; t2v.textContent=S.T2.toLocaleString()+" K";
-  av.innerHTML=S.a.toFixed(1)+" R\u2609"; iv.textContent=(+inc.value).toFixed(1)+"\u00B0";
-  qv.textContent=S.q.toFixed(2);
+function bbRGB(T) {
+  let t = T / 100, r, g, b;
+  if (t <= 66) r = 255; else r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
+  if (t <= 66) g = 99.4708025861 * Math.log(t) - 161.1195681661; else g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+  if (t >= 66) b = 255; else if (t <= 19) b = 0; else b = 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  const c = x => Math.max(0, Math.min(255, Math.round(x)));
+  return 'rgb(' + c(r) + ',' + c(g) + ',' + c(b) + ')';
 }
-function flux(phi){
-  var th=2*Math.PI*phi;
-  var d=S.a*Math.sqrt(Math.cos(th)*Math.cos(th)+Math.sin(th)*Math.sin(th)*Math.cos(S.i)*Math.cos(S.i));
-  var Ftot=S.F1+S.F2;
-  if(d>=S.R1+S.R2) return 1;
-  var A=overlapArea(d,S.R1,S.R2);
-  var behindIs1=(Math.sin(th)<0);
-  var lost = behindIs1 ? S.F1*A/(Math.PI*S.R1*S.R1) : S.F2*A/(Math.PI*S.R2*S.R2);
-  return (Ftot-lost)/Ftot;
+function overlapArea(d, r1, r2) {
+  if (d >= r1 + r2) return 0;
+  const rmin = Math.min(r1, r2);
+  if (d <= Math.abs(r1 - r2)) return Math.PI * rmin * rmin;
+  const d1 = (d * d + r1 * r1 - r2 * r2) / (2 * d), d2 = d - d1;
+  const c1 = Math.max(-1, Math.min(1, d1 / r1)), c2 = Math.max(-1, Math.min(1, d2 / r2));
+  return r1 * r1 * Math.acos(c1) - d1 * Math.sqrt(Math.max(0, r1 * r1 - d1 * d1))
+    + r2 * r2 * Math.acos(c2) - d2 * Math.sqrt(Math.max(0, r2 * r2 - d2 * d2));
 }
-var curve=[];
-function recompute(){
+function readControls() {
+  S.R1 = +$('r1').value / 10; S.R2 = +$('r2').value / 10;
+  S.T1 = +$('t1').value; S.T2 = +$('t2').value;
+  S.a = +$('a').value; S.i = +$('inc').value * Math.PI / 180; S.q = +$('q').value / 100;
+  S.a1 = S.a * S.q / (1 + S.q); S.a2 = S.a / (1 + S.q);
+  S.F1 = S.R1 * S.R1 * Math.pow(S.T1 / 6000, 4);
+  S.F2 = S.R2 * S.R2 * Math.pow(S.T2 / 6000, 4);
+  $('r1v').textContent = S.R1.toFixed(1); $('r2v').textContent = S.R2.toFixed(1);
+  $('t1v').textContent = S.T1; $('t2v').textContent = S.T2;
+  $('av').textContent = S.a.toFixed(1) + ' R☉'; $('iv').textContent = (+$('inc').value).toFixed(1) + '°';
+  $('qv').textContent = S.q.toFixed(2);
+}
+function flux(p) {
+  const th = 2 * Math.PI * p;
+  const d = S.a * Math.sqrt(Math.cos(th) ** 2 + Math.sin(th) ** 2 * Math.cos(S.i) ** 2);
+  const Ftot = S.F1 + S.F2;
+  if (d >= S.R1 + S.R2) return 1;
+  const A = overlapArea(d, S.R1, S.R2);
+  const behindIs1 = Math.sin(th) < 0;
+  const lost = behindIs1 ? S.F1 * A / (Math.PI * S.R1 * S.R1) : S.F2 * A / (Math.PI * S.R2 * S.R2);
+  return (Ftot - lost) / Ftot;
+}
+let curve = [];
+function recompute() {
   readControls();
-  paintAll();
-  curve=[];
-  var N=1440;
-  for(var k=0;k<=N;k++) curve.push(flux(k/N));
-  function dipIn(lo,hi){
-    var m=1;
-    for(var k2=0;k2<=N;k2++){ var p=k2/N; if(p>=lo&&p<=hi) m=Math.min(m,curve[k2]); }
-    return 1-m;
-  }
-  var dA=dipIn(0.1,0.4), dB=dipIn(0.6,0.9);
-  var eclipsing = S.a*Math.cos(S.i) < S.R1+S.R2;
-  roE.textContent = eclipsing ? "Yes" : "No \u2014 tilt too large";
-  if(eclipsing){
-    roP.textContent=(100*Math.max(dA,dB)).toFixed(1)+"%";
-    roS.textContent=(100*Math.min(dA,dB)).toFixed(1)+"%";
-  } else { roP.textContent="\u2014"; roS.textContent="\u2014"; }
-}
-var ocv=$("eb2Orbit"), octx=ocv.getContext("2d");
-var lcv=$("eb2LC"), lctx=lcv.getContext("2d");
-function drawOrbit(phi){
-  var W=ocv.width,H=ocv.height;
-  octx.clearRect(0,0,W,H);
-  var cx=W/2, cy=H/2;
-  var scale=(W/2-30)/(Math.max(S.a1,S.a2)+Math.max(S.R1,S.R2));
-  var th=2*Math.PI*phi, ci=Math.cos(S.i);
-  [S.a1,S.a2].forEach(function(r){
-    octx.strokeStyle="#2A3450"; octx.beginPath();
-    octx.ellipse(cx,cy,r*scale,Math.max(0.5,r*scale*ci),0,0,7); octx.stroke();
-  });
-  octx.strokeStyle="#5E6B8C";
-  octx.beginPath(); octx.moveTo(cx-5,cy-5); octx.lineTo(cx+5,cy+5); octx.stroke();
-  octx.beginPath(); octx.moveTo(cx-5,cy+5); octx.lineTo(cx+5,cy-5); octx.stroke();
-  var s1={x:S.a1*Math.cos(th), y:S.a1*Math.sin(th)*ci, z:S.a1*Math.sin(th), R:S.R1, T:S.T1};
-  var s2={x:-S.a2*Math.cos(th), y:-S.a2*Math.sin(th)*ci, z:-S.a2*Math.sin(th), R:S.R2, T:S.T2};
-  var order=(s1.z<s2.z)?[s1,s2]:[s2,s1];
-  order.forEach(function(s){
-    var col=bbRGB(s.T);
-    octx.shadowColor=col; octx.shadowBlur=12;
-    octx.fillStyle=col;
-    octx.beginPath(); octx.arc(cx+s.x*scale, cy-s.y*scale, Math.max(2,s.R*scale),0,7); octx.fill();
-    octx.shadowBlur=0;
-  });
-  octx.fillStyle="#8E99B3"; octx.font="12px sans-serif"; octx.textAlign="left";
-  octx.fillText("view from Earth", 12, 20);
-}
-function drawLC(){
-  var W=lcv.width,H=lcv.height,mLp=56,mRp=14,mTp=16,mBp=34;
-  lctx.clearRect(0,0,W,H);
-  var fmin=Math.min.apply(null,curve);
-  var ylo=Math.min(0.995,fmin)-0.02, yhi=1.01;
-  function xx(p){ return mLp+p*(W-mLp-mRp); }
-  function yy(f){ return mTp+(yhi-f)/(yhi-ylo)*(H-mTp-mBp); }
-  lctx.strokeStyle="#222B42"; lctx.beginPath(); lctx.moveTo(mLp,yy(1)); lctx.lineTo(W-mRp,yy(1)); lctx.stroke();
-  lctx.fillStyle="#8E99B3"; lctx.font="12px sans-serif"; lctx.textAlign="right";
-  lctx.fillText("1.00", mLp-6, yy(1)+4);
-  if(fmin<0.999){
-    lctx.fillText(fmin.toFixed(2), mLp-6, yy(fmin)+4);
-    lctx.strokeStyle="#222B42"; lctx.beginPath(); lctx.moveTo(mLp,yy(fmin)); lctx.lineTo(W-mRp,yy(fmin)); lctx.stroke();
-  }
-  lctx.textAlign="center";
-  [0,0.25,0.5,0.75,1].forEach(function(p){ lctx.fillText(p.toFixed(2), xx(p), H-10); });
-  lctx.save(); lctx.translate(14,H/2); lctx.rotate(-Math.PI/2);
-  lctx.fillText("brightness",0,0); lctx.restore();
-  lctx.strokeStyle="#F87171"; lctx.lineWidth=2; lctx.beginPath();
-  curve.forEach(function(f,k){
-    var x=xx(k/(curve.length-1)), y=yy(f);
-    if(k===0)lctx.moveTo(x,y); else lctx.lineTo(x,y);
-  });
-  lctx.stroke(); lctx.lineWidth=1;
-}
-function drawMarker(phi){
+  curve = [];
+  const N = 1440;
+  for (let k = 0; k <= N; k++) curve.push(flux(k / N));
+  const dipIn = (lo, hi) => { let m = 1; for (let k = 0; k <= N; k++) { const p = k / N; if (p >= lo && p <= hi) m = Math.min(m, curve[k]); } return 1 - m; };
+  const dA = dipIn(0.1, 0.4), dB = dipIn(0.6, 0.9);
+  const eclipsing = S.a * Math.cos(S.i) < S.R1 + S.R2;
+  const deep = Math.max(dA, dB), shallow = Math.min(dA, dB);
+
+  $('results').innerHTML =
+    rowB('eclipses seen?', eclipsing ? 'yes' : 'no — tilt too large') +
+    row('deep eclipse', eclipsing ? (100 * deep).toFixed(1) + '%' : '—') +
+    row('shallow eclipse', eclipsing ? (100 * shallow).toFixed(1) + '%' : '—') +
+    row('bigger star', S.R1 > S.R2 ? 'A' : S.R2 > S.R1 ? 'B' : 'equal') +
+    row('hotter star', S.T1 > S.T2 ? 'A' : 'B') +
+    row('surface-brightness ratio', (Math.max(S.T1, S.T2) / Math.min(S.T1, S.T2)) ** 4 >= 1 ? ((Math.max(S.T1, S.T2) / Math.min(S.T1, S.T2)) ** 4).toFixed(1) + '×' : '—');
+
+  $('note').textContent = !eclipsing
+    ? 'The orbit is tilted too far from edge-on: from our line of sight neither star ever crosses the other, so the total light stays flat — this binary would only be detectable spectroscopically.'
+    : 'The deeper dip is the ' + (S.T1 > S.T2 ? 'transit of the cooler star B across the hotter star A' : 'transit of the cooler star A across the hotter star B')
+      + ' — more surface brightness is hidden. The shallower dip is when it passes behind.';
   drawLC();
-  var W=lcv.width,H=lcv.height,mLp=56,mRp=14,mTp=16,mBp=34;
-  var x=mLp+phi*(W-mLp-mRp);
-  lctx.strokeStyle="#E8ECF5"; lctx.setLineDash([4,4]);
-  lctx.beginPath(); lctx.moveTo(x,mTp); lctx.lineTo(x,H-mBp); lctx.stroke();
-  lctx.setLineDash([]);
 }
-var phi=0, playing=true, last=null;
-function frame(ts){
-  if(last===null) last=ts;
-  var dt=(ts-last)/1000; last=ts;
-  if(playing){
-    phi=(phi+dt/8)%1;
-    phaseSl.value=Math.round(phi*1000);
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function rowB(k, v) { return '<div class="resrow big"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+function drawOrbit() {
+  const c = $('orbit'), ctx = c.getContext('2d');
+  const W = 520, H = 210;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2;
+  const scale = (W / 2 - 30) / (Math.max(S.a1, S.a2) + Math.max(S.R1, S.R2));
+  const th = 2 * Math.PI * phi, ci = Math.cos(S.i);
+  [S.a1, S.a2].forEach(r => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath();
+    ctx.ellipse(cx, cy, r * scale, Math.max(0.5, r * scale * ci), 0, 0, 7); ctx.stroke();
+  });
+  ctx.strokeStyle = '#5E6B8C';
+  ctx.beginPath(); ctx.moveTo(cx - 5, cy - 5); ctx.lineTo(cx + 5, cy + 5); ctx.moveTo(cx - 5, cy + 5); ctx.lineTo(cx + 5, cy - 5); ctx.stroke();
+  const s1 = { x: S.a1 * Math.cos(th), y: S.a1 * Math.sin(th) * ci, z: S.a1 * Math.sin(th), R: S.R1, T: S.T1 };
+  const s2 = { x: -S.a2 * Math.cos(th), y: -S.a2 * Math.sin(th) * ci, z: -S.a2 * Math.sin(th), R: S.R2, T: S.T2 };
+  (s1.z < s2.z ? [s1, s2] : [s2, s1]).forEach(s => {
+    const col = bbRGB(s.T);
+    ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx + s.x * scale, cy - s.y * scale, Math.max(2, s.R * scale), 0, 7); ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+  ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('view from Earth', 12, 18);
+}
+function drawLC() {
+  const c = $('lc'), ctx = c.getContext('2d');
+  const W = 520, H = 190, mL = 46, mR = 12, mT = 16, mB = 26;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const fmin = Math.min(...curve);
+  const ylo = Math.min(0.995, fmin) - 0.02, yhi = 1.01;
+  const xx = p => mL + p * (W - mL - mR);
+  const yy = f => mT + (yhi - f) / (yhi - ylo) * (H - mT - mB);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(mL, yy(1)); ctx.lineTo(W - mR, yy(1)); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('1.00', mL - 5, yy(1) + 3);
+  if (fmin < 0.999) { ctx.fillText(fmin.toFixed(2), mL - 5, yy(fmin) + 3); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(mL, yy(fmin)); ctx.lineTo(W - mR, yy(fmin)); ctx.stroke(); }
+  ctx.textAlign = 'center';
+  [0, 0.25, 0.5, 0.75, 1].forEach(p => ctx.fillText(p.toFixed(2), xx(p), H - 9));
+  ctx.textAlign = 'left'; ctx.fillText('brightness vs orbital phase', mL, 11);
+  ctx.strokeStyle = '#e0748f'; ctx.lineWidth = 2; ctx.beginPath();
+  curve.forEach((f, k) => { const x = xx(k / (curve.length - 1)), y = yy(f); k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+  ctx.stroke(); ctx.lineWidth = 1;
+  const x = xx(phi);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, H - mB); ctx.stroke(); ctx.setLineDash([]);
+}
+
+function frame(ts) {
+  if (last === null) last = ts;
+  const dt = (ts - last) / 1000; last = ts;
+  if (playing) { phi = (phi + dt / 8) % 1; $('phase').value = Math.round(phi * 1000); }
+  $('phaseVal').textContent = phi.toFixed(2);
+  drawOrbit(); drawLC();
+  rafId = requestAnimationFrame(frame);
+}
+function setPlaying(p) { playing = p; $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play'; }
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => {
+  ['r1', 'r2', 't1', 't2', 'a', 'inc', 'q'].forEach((id, k) => { $(id).value = [16, 9, 6500, 4000, 12, 88, 70][k]; });
+  phi = 0; $('phase').value = 0; setPlaying(true); recompute();
+});
+$('phase').addEventListener('input', () => { setPlaying(false); phi = +$('phase').value / 1000; drawOrbit(); drawLC(); });
+['r1', 'r2', 't1', 't2', 'a', 'inc', 'q'].forEach(id => $(id).addEventListener('input', recompute));
+
+function katexAll() {
+  const specs = [
+    ['f1', "F_i \\propto R_i^{2}\\,T_i^{4}"],
+    ['f2', "a\\cos i < R_1 + R_2"],
+    ['f3', "\\dfrac{\\text{deep}}{\\text{shallow}} = \\left(\\dfrac{T_{\\text{hot}}}{T_{\\text{cool}}}\\right)^{4}"],
+    ['ex1', "\\dfrac{0.60}{0.20} = 3 = \\left(\\dfrac{T_{\\text{hot}}}{T_{\\text{cool}}}\\right)^{4}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
   }
-  phaseVal.textContent=phi.toFixed(2);
-  paintSlider(phaseSl);
-  drawOrbit(phi);
-  drawMarker(phi);
-  requestAnimationFrame(frame);
 }
-playBtn.addEventListener("click",function(){
-  playing=!playing;
-  playBtn.textContent=playing?"Pause":"Play";
-});
-phaseSl.addEventListener("input",function(){
-  playing=false; playBtn.textContent="Play";
-  phi=phaseSl.value/1000;
-});
-[r1,r2,t1,t2,a,inc,q].forEach(function(el){ el.addEventListener("input",recompute); });
-recompute();
-paintAll();
-requestAnimationFrame(frame);
-})();
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); recompute(); rafId = requestAnimationFrame(frame); });
 </script>
+</body>
+</html>
