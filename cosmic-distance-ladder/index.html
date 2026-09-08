@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosmic Distance Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#3f8f7a; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #ladder { aspect-ratio:520/380; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#2f7060; }
+  input[type=range] { width:100%; accent-color:#3f8f7a; }
+  .chips { display:grid; grid-template-columns:repeat(2,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 4px; font:600 10px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; text-align:left; }
+  .chips button:hover { border-color:#3f8f7a; }
+  .chips button.on { background:#e5f1ee; border-color:#3f8f7a; color:#28584b; }
+  .chain { font-size:11.5px; line-height:1.55; color:#3a4a45; background:#e7f1ee; border-radius:8px; padding:10px 12px; }
+  .chain b { color:#28584b; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#e7f1ee; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#2b463f; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:#28584b; text-align:right; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Cosmic Distance Ladder <span class="sub">— each method calibrates the next</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="ladder" width="520" height="380"></canvas>
+        <div class="chain" id="chain"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Jump to an object</div>
+        <div class="chips" id="chips">
+          <button data-d="1.28e-8">the Moon</button>
+          <button data-d="4.85e-6">the Sun</button>
+          <button data-d="1.30">Proxima Cen</button>
+          <button data-d="136" class="on">the Pleiades</button>
+          <button data-d="8.2e4">Galactic centre</button>
+          <button data-d="7.65e5">Andromeda</button>
+          <button data-d="1.65e7">Virgo Cluster</button>
+          <button data-d="3.0e9">a distant quasar</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>distance (log)</span><span class="val" id="dVal">136 pc</span></div>
+          <input type="range" id="dSlider" min="-8" max="9.6" step="0.02" value="2.13">
+        </div>
+        <div class="section-label" style="margin-top:4px;">This distance</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Method ranges are approximate; beyond z &asymp; 0.1 the simple v = H&#8320;d is only a rough guide.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Cosmic Distance Ladder <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>No single method reaches from the Moon to the edge of the observable universe. Instead astronomers use a <b>ladder</b>: a technique that works up close is used to calibrate one that reaches a bit farther, which calibrates the next, and so on. Radar and parallax are the only <i>direct</i> geometry; everything beyond depends on &ldquo;standard candles&rdquo; whose true brightness is fixed by a rung below. A shift in a lower rung ripples all the way up.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Drag the distance slider or pick an object. The ladder shows which methods can reach that far; the active one is highlighted, and the panel below traces the chain of calibration back to direct geometry. Notice how, far out, the chain is long &mdash; and every link adds uncertainty.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">The rungs</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 26px;font-size:11.5px;line-height:1.5;color:#cdd7e0;">
+          <div><b style="color:#fff;">Radar ranging</b> &mdash; bounce a radio pulse off a planet; distance = c&thinsp;&times;&thinsp;(round-trip time)/2. Solar-system only.</div>
+          <div><b style="color:#fff;">Parallax</b> &mdash; the star&rsquo;s yearly shift against the background; d[pc] = 1/p[&Prime;]. Gaia reaches several kpc.</div>
+          <div><b style="color:#fff;">Main-sequence fitting</b> &mdash; match a cluster&rsquo;s main sequence to a calibrated one; the vertical offset gives the distance.</div>
+          <div><b style="color:#fff;">Cepheid variables</b> &mdash; pulsation period fixes the true luminosity; compare with apparent brightness. Good to ~30 Mpc.</div>
+          <div><b style="color:#fff;">Type&nbsp;Ia supernovae</b> &mdash; explode with a near-standard peak luminosity; visible across billions of parsecs.</div>
+          <div><b style="color:#fff;">Hubble&rsquo;s law</b> &mdash; measure the redshift, divide by H&#8320;. The only tool for the most distant galaxies.</div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/19-3-variable-stars-one-key-to-cosmic-distances" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 19.3 Variable Stars &amp; Cosmic Distances</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/25-3-the-cosmic-distance-ladder-a-review" target="_blank" rel="noopener" style="color:#8fc7ff;">25.3 The Cosmic Distance Scale</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; the distance to Andromeda <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">A Cepheid in the Andromeda Galaxy has a pulsation period of 30 days and an apparent magnitude m = 19.5. The period&ndash;luminosity relation gives such a Cepheid an absolute magnitude M = &minus;5.0. How far away is Andromeda?</p>
+    <div class="step"><div class="h">1 &middot; Distance modulus</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; Solve for d</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; The chain behind it</div><div style="font-size:11.5px;color:#e7d6e4;">That M = &minus;5.0 came from the period&ndash;luminosity relation, calibrated on Milky Way Cepheids whose distances came from <b>parallax</b> &mdash; which itself rests on the <b>radar</b>-measured length of the AU. Three rungs to reach 800 kpc.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+// distance in parsecs, log10
+function logD() { return +$('dSlider').value; }
+function dPc() { return Math.pow(10, logD()); }
+
+// rungs: [name, log10 dmin, log10 dmax, colour, calibratedBy]
+const RUNGS = [
+  ['Radar ranging', -9, -4.3, '#5ec2e0', null],
+  ['Parallax', -5.5, 3.7, '#7fd08a', 'radar (the length of the AU)'],
+  ['Main-sequence fitting', 1.5, 5.0, '#c9d06a', 'parallax of nearby stars'],
+  ['Cepheid variables', 3.7, 7.6, '#e0b25e', 'parallax + main-sequence fitting'],
+  ['Type Ia supernovae', 6.0, 9.3, '#e07f6a', 'Cepheids in host galaxies'],
+  ["Hubble's law", 7.0, 10.3, '#c58ad0', 'Type Ia supernovae → H₀'],
+];
+function activeRung() {
+  const L = logD();
+  // pick the lowest-numbered rung that still covers this distance (most direct wins)
+  for (const r of RUNGS) if (L >= r[1] && L <= r[2]) return r;
+  return RUNGS[RUNGS.length - 1];
+}
+
+function fmtDist(pc) {
+  const ly = pc * 3.262, au = pc * 206265, km = pc * 3.086e13;
+  if (au < 0.02) return km < 1e6 ? (km).toFixed(0) + ' km' : (km / 1e6).toFixed(2) + ' million km';
+  if (pc < 3e-4) return au.toFixed(au < 1 ? 3 : au < 10 ? 2 : 0) + ' AU';
+  if (pc < 1e3) return pc.toFixed(pc < 10 ? 2 : pc < 100 ? 1 : 0) + ' pc  (' + ly.toFixed(0) + ' ly)';
+  if (pc < 1e6) return (pc / 1e3).toFixed(1) + ' kpc';
+  if (pc < 1e9) return (pc / 1e6).toFixed(pc < 1e7 ? 2 : 0) + ' Mpc';
+  return (pc / 1e9).toFixed(2) + ' Gpc';
+}
+
+// ---------- ladder diagram ----------
+const LMIN = -9, LMAX = 10.3;
+function draw() {
+  const c = $('ladder'), ctx = c.getContext('2d');
+  const W = 520, H = 380;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  const x0 = 12, x1 = W - 12, yTop = 30, rowH = 44;
+  const X = L => x0 + (L - LMIN) / (LMAX - LMIN) * (x1 - x0);
+
+  // scale ticks
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  const ticks = [[-8, '1 AU'], [-4.3, '10⁴ AU'], [0, '1 pc'], [3, '1 kpc'], [6, '1 Mpc'], [9, '1 Gpc']];
+  for (const [L, lab] of ticks) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(X(L), yTop - 6); ctx.lineTo(X(L), H - 14); ctx.stroke();
+    ctx.fillText(lab, X(L), H - 4);
+  }
+
+  const act = activeRung();
+  RUNGS.forEach((r, i) => {
+    const y = yTop + i * rowH;
+    const xa = X(Math.max(r[1], LMIN)), xb = X(Math.min(r[2], LMAX));
+    const on = r === act;
+    ctx.fillStyle = on ? r[3] : r[3] + '55';
+    roundRect(ctx, xa, y, xb - xa, 22, 6); ctx.fill();
+    ctx.fillStyle = on ? '#0b0f16' : 'rgba(255,255,255,0.9)';
+    ctx.font = (on ? '700 ' : '600 ') + '11px "Source Sans 3",sans-serif';
+    const tw = ctx.measureText(r[0]).width;
+    if (xa + 8 + tw > xb - 4 && xb - xa < tw + 16) { ctx.textAlign = 'right'; ctx.fillStyle = on ? r[3] : 'rgba(255,255,255,0.85)'; ctx.fillText(r[0], xa - 6, y + 15); }
+    else { ctx.textAlign = 'left'; ctx.fillText(r[0], xa + 8, y + 15); }
+    if (on) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; roundRect(ctx, xa, y, xb - xa, 22, 6); ctx.stroke(); ctx.lineWidth = 1; }
+  });
+
+  // current distance line
+  const cx = X(logD());
+  ctx.strokeStyle = '#ffd66b'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx, yTop - 8); ctx.lineTo(cx, H - 14); ctx.stroke();
+  ctx.setLineDash([]); ctx.lineWidth = 1;
+  ctx.fillStyle = '#ffd66b'; ctx.textAlign = cx > W - 90 ? 'right' : 'left'; ctx.font = '700 10px "Source Sans 3",sans-serif';
+  ctx.fillText(fmtDist(dPc()), cx + (cx > W - 90 ? -4 : 4), yTop - 12);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('bars span each method’s useful reach — highlighted = the best tool here', 10, 22);
+}
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function chainText() {
+  const r = activeRung();
+  const idx = RUNGS.indexOf(r);
+  let parts = ['<b>' + r[0] + '</b>'];
+  let cur = r;
+  const seen = new Set();
+  while (cur && cur[4] && !seen.has(cur[0])) {
+    seen.add(cur[0]);
+    parts.push(cur[4]);
+    // find the rung named in the calibratedBy string, roughly
+    const next = RUNGS.find(x => cur[4].toLowerCase().includes(x[0].split(' ')[0].toLowerCase()) && x !== cur);
+    cur = next;
+  }
+  return parts.join(' &nbsp;←&nbsp; ');
+}
+
+function render() {
+  const pc = dPc();
+  $('dVal').textContent = fmtDist(pc).replace(/\s+\(.*/, '');
+  document.querySelectorAll('#chips button').forEach(b =>
+    b.classList.toggle('on', Math.abs(Math.log10(+b.dataset.d) - logD()) < 0.04));
+
+  const r = activeRung();
+  const idxR = RUNGS.indexOf(r);
+  const z = pc > 1e6 ? (70 * pc / 1e6) / 299792 : null;
+  let extra;
+  if (idxR === 0) extra = row('radar round-trip', (pc * 3.086e13 / 299792 * 2).toFixed(1) + ' s');
+  else if (z != null) extra = row('redshift z (H₀=70)', z.toFixed(3));
+  else extra = row('parallax angle', (1 / pc < 1e-3 ? (1e6 / pc).toFixed(1) + ' μas' : (1 / pc).toFixed(4) + '″'));
+  $('results').innerHTML =
+    row('distance', fmtDist(pc)) +
+    row('best method', r[0]) +
+    row('light travel time', ltt(pc)) +
+    extra;
+
+  const idx = RUNGS.indexOf(r);
+  $('chain').innerHTML = idx <= 1
+    ? '<b>' + r[0] + '</b> is <b>direct geometry</b> — it measures the distance itself, with nothing below it to calibrate.'
+    : 'How this distance is anchored: &nbsp;' + chainText() + '. &nbsp;<b>' + idx + ' rungs down to direct geometry.</b>';
+
+  draw();
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function ltt(pc) {
+  const yr = pc * 3.262;
+  if (yr < 1 / 525600) return (yr * 31557600).toFixed(1) + ' s';
+  if (yr < 1 / 365) return (yr * 525600).toFixed(0) + ' min';
+  if (yr < 1) return (yr * 365).toFixed(1) + ' days';
+  if (yr < 1e6) return yr.toFixed(0) + ' yr';
+  if (yr < 1e9) return (yr / 1e6).toFixed(1) + ' Myr';
+  if (yr > 1.2e10) return '≳ 10 Gyr (simple law breaks down)';
+  return (yr / 1e9).toFixed(2) + ' Gyr';
+}
+
+$('dSlider').addEventListener('input', render);
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('dSlider').value = Math.log10(+b.dataset.d).toFixed(2); render(); }));
+
+function katexAll() {
+  const specs = [
+    ['ex1', "m - M = 19.5 - (-5.0) = 24.5"],
+    ['ex2', "d = 10^{\\,(24.5 + 5)/5} = 10^{5.9} \\approx 790{,}000\\ \\text{pc}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>

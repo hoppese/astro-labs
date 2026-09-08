@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Celestial Sphere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#5b6bb0; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #dome { aspect-ratio:520/300; }
+  #alt { aspect-ratio:520/150; background:#0d1420; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #46508a; background:#46508a; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#46508a; }
+  input[type=range] { width:100%; accent-color:#5b6bb0; }
+  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 3px; font:600 9.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button:hover { border-color:#5b6bb0; }
+  .chips button.on { background:#e9ebf5; border-color:#5b6bb0; color:#3a4179; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#edeef6; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#33375a; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#3a4179; text-align:right; }
+  .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:12.5px; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#edeef6; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">The Celestial Sphere <span class="sub">— what rises, what sets, what never does</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="dome" width="520" height="300"></canvas>
+        <canvas id="alt" width="520" height="150"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Run the night</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Your latitude</div>
+        <div class="slider-row">
+          <div class="lbl"><span id="latLbl">40&deg; N</span><span class="val" id="latVal">40&deg;</span></div>
+          <input type="range" id="latSlider" min="-90" max="90" step="1" value="40">
+        </div>
+        <div class="section-label">Pick a star</div>
+        <div class="chips" id="chips">
+          <button data-d="89.3">Polaris</button>
+          <button data-d="38.8" class="on">Vega</button>
+          <button data-d="7.4">Betelgeuse</button>
+          <button data-d="0">Mintaka (equ.)</button>
+          <button data-d="-16.7">Sirius</button>
+          <button data-d="-60.8">Acrux</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>declination &delta;</span><span class="val" id="decVal">+38.8&deg;</span></div>
+          <input type="range" id="decSlider" min="-90" max="90" step="0.5" value="38.8">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>time (hour angle)</span><span class="val" id="haVal">0.0 h</span></div>
+          <input type="range" id="haSlider" min="-12" max="12" step="0.1" value="-3">
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Azimuthal sky map: centre = straight up, edge = the horizon.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>The Celestial Sphere <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Pretend the stars are painted on a giant sphere that turns once a day around the line through Earth&rsquo;s poles. From where you stand you see half of it &mdash; the dome above your horizon. The <b>celestial pole</b> sits at an altitude equal to your latitude, and everything wheels around it. Stars close enough to the pole (declination &gt; 90&deg; &minus; latitude) never dip below the horizon &mdash; they are <b>circumpolar</b>. Stars far on the other side never come up at all.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Set your latitude, pick a star (or dial its declination), and drag the time slider or hit <b>Run the night</b>. The map shows the star&rsquo;s whole daily circle; the solid arc is above the horizon, the dashed part is below. The lower strip is its altitude over the night &mdash; the shaded band is when it is up.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">altitude of a star from your latitude &phi;, its declination &delta;, and the hour angle H (0 at transit, 15&deg; per hour).</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">a star is circumpolar (never sets) if this holds; flip the sign and it never rises.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">how high the star gets at its best &mdash; its altitude when it crosses the meridian.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/2-1-the-sky-above" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 2.1 The Sky Above</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/4-1-earth-and-sky" target="_blank" rel="noopener" style="color:#8fc7ff;">4.1 Earth and Sky</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; is the Big Dipper circumpolar from Chicago? <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Chicago is at latitude 42&deg; N. The lowest star of the Big Dipper&rsquo;s bowl has declination about +54&deg;. Does it ever set?</p>
+    <div class="step"><div class="h">1 &middot; Circumpolar limit</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">Any star with &delta; &gt; 48&deg; stays above the horizon all night.</div></div>
+    <div class="step"><div class="h">2 &middot; Compare</div><div style="font-size:11.5px;color:#e7d6e4;">+54&deg; &gt; 48&deg; &mdash; yes, it is circumpolar. The whole Dipper wheels around Polaris without ever setting.</div></div>
+    <div class="step"><div class="h">3 &middot; From Miami (26&deg; N)?</div><div style="font-size:11.5px;color:#e7d6e4;">Limit is 90&deg; &minus; 26&deg; = 64&deg;. Now +54&deg; &lt; 64&deg;, so from Miami the Dipper dips below the northern horizon for part of the night.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const D = Math.PI / 180;
+let playing = false, rafId = null, lastTs = null;
+
+function lat() { return +$('latSlider').value; }
+function dec() { return +$('decSlider').value; }
+function ha() { return +$('haSlider').value; }   // hours
+
+// alt/az from latitude φ, declination δ, hour angle H (degrees)
+function altaz(phi, d, Hdeg) {
+  phi *= D; d *= D; const H = Hdeg * D;
+  const sinAlt = Math.sin(phi) * Math.sin(d) + Math.cos(phi) * Math.cos(d) * Math.cos(H);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+  let A = Math.atan2(-Math.cos(d) * Math.sin(H),
+    Math.sin(d) * Math.cos(phi) - Math.cos(d) * Math.sin(phi) * Math.cos(H));
+  let az = (A / D + 360) % 360;   // 0 = North, increasing toward East
+  return { alt: alt / D, az };
+}
+function transitAlt(phi, d) { return 90 - Math.abs(phi - d); }
+function status(phi, d) {
+  const lim = 90 - Math.abs(phi);
+  if (phi >= 0) {
+    if (d >= lim) return 'circumpolar';
+    if (d <= -lim) return 'never rises';
+  } else {
+    if (d <= -lim) return 'circumpolar';
+    if (d >= lim) return 'never rises';
+  }
+  return 'rises and sets';
+}
+
+// ---------- azimuthal sky map ----------
+function proj(cx, cy, R, alt, az) {
+  let r = (90 - alt) / 90 * R;
+  if (r > R * 1.16) r = R * 1.16;   // keep deep-below-horizon arcs from ballooning off-canvas
+  // screen: North at top, East to the right (looking down on the dome from outside/above,
+  // but we want the sky as seen looking up, so East is to the LEFT... use compass convention:
+  // put N up, E right — a plan view of the horizon.
+  const a = az * D;
+  return { x: cx + r * Math.sin(a), y: cy - r * Math.cos(a) };
+}
+function drawDome() {
+  const c = $('dome'), ctx = c.getContext('2d');
+  const W = 520, H = 300;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2, R = H / 2 - 16;
+
+  // horizon disc
+  ctx.fillStyle = '#0c1220'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#39506e'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
+  // altitude rings
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  for (const a of [30, 60]) { ctx.beginPath(); ctx.arc(cx, cy, (90 - a) / 90 * R, 0, 7); ctx.stroke(); }
+  // cardinal points
+  ctx.fillStyle = '#9fb0bf'; ctx.font = '600 11px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('N', cx, cy - R - 5); ctx.fillText('S', cx, cy + R + 12);
+  ctx.fillText('E', cx + R + 9, cy + 4); ctx.fillText('W', cx - R - 9, cy + 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText('zenith', cx, cy - 6);
+
+  const phi = lat(), d = dec();
+
+  // celestial pole
+  const poleAlt = Math.abs(phi), poleAz = phi >= 0 ? 0 : 180;
+  const pp = proj(cx, cy, R, poleAlt, poleAz);
+  ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(pp.x, pp.y, 3, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffd66b'; ctx.font = '9px "Source Sans 3",sans-serif';
+  ctx.fillText(phi >= 0 ? 'NCP' : 'SCP', pp.x, pp.y - 8);
+
+  // the star's full diurnal circle
+  ctx.beginPath(); let started = false;
+  const seg = [];
+  for (let Hh = -12; Hh <= 12.001; Hh += 0.15) {
+    const aa = altaz(phi, d, Hh * 15);
+    const p = proj(cx, cy, R, aa.alt, aa.az);
+    seg.push({ p, up: aa.alt >= 0 });
+  }
+  // draw above-horizon solid, below dashed
+  for (let i = 1; i < seg.length; i++) {
+    const A = seg[i - 1], B = seg[i];
+    ctx.beginPath(); ctx.moveTo(A.p.x, A.p.y); ctx.lineTo(B.p.x, B.p.y);
+    if (B.up && A.up) { ctx.strokeStyle = 'rgba(120,180,255,0.85)'; ctx.setLineDash([]); ctx.lineWidth = 2; }
+    else { ctx.strokeStyle = 'rgba(120,140,170,0.35)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1; }
+    // clip below-horizon points to the disc edge visually
+    ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.lineWidth = 1;
+
+  // current star position
+  const now = altaz(phi, d, ha() * 15);
+  if (now.alt >= -0.5) {
+    const p = proj(cx, cy, R, Math.max(now.alt, 0), now.az);
+    ctx.fillStyle = now.alt >= 0 ? '#fff' : '#556';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#7bb4ff'; ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 7); ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('solid = above the horizon, dashed = below', 10, H - 10);
+}
+
+// ---------- altitude vs time ----------
+function drawAlt() {
+  const c = $('alt'), ctx = c.getContext('2d');
+  const W = 520, H = 150;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const x0 = 34, x1 = W - 10, y0 = H - 22, y1 = 12;
+  const X = h => x0 + (h + 12) / 24 * (x1 - x0);
+  const Y = a => y0 + (a - (-20)) / (90 - (-20)) * (y1 - y0);
+
+  // horizon
+  ctx.fillStyle = 'rgba(60,80,50,0.25)'; ctx.fillRect(x0, Y(0), x1 - x0, y0 - Y(0));
+  ctx.strokeStyle = '#3c5230'; ctx.beginPath(); ctx.moveTo(x0, Y(0)); ctx.lineTo(x1, Y(0)); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('90°', x0 - 4, Y(90) + 3); ctx.fillText('0°', x0 - 4, Y(0) + 3);
+  ctx.textAlign = 'center';
+  for (const h of [-12, -6, 0, 6, 12]) ctx.fillText((h === 0 ? 'transit' : (h > 0 ? '+' + h + 'h' : h + 'h')), X(h), y0 + 13);
+
+  const phi = lat(), d = dec();
+  ctx.beginPath();
+  for (let h = -12; h <= 12.001; h += 0.1) {
+    const a = altaz(phi, d, h * 15).alt;
+    const px = X(h), py = Y(Math.max(a, -20));
+    h === -12 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#7bb4ff'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+
+  // current time marker
+  ctx.strokeStyle = 'rgba(255,214,107,0.8)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(X(ha()), y1); ctx.lineTo(X(ha()), y0); ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('altitude of the star through the night', 8, 11);
+}
+
+function render() {
+  $('latVal').innerHTML = Math.abs(lat()) + '&deg;';
+  $('latLbl').innerHTML = lat() === 0 ? 'Equator' : Math.abs(lat()) + '&deg; ' + (lat() > 0 ? 'N' : 'S');
+  $('decVal').textContent = (dec() >= 0 ? '+' : '') + dec().toFixed(1) + '°';
+  $('haVal').textContent = (ha() >= 0 ? '+' : '') + ha().toFixed(1) + ' h';
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.d - dec()) < 0.3));
+
+  const phi = lat(), d = dec();
+  const now = altaz(phi, d, ha() * 15);
+  const st = status(phi, d);
+  const tA = transitAlt(phi, d);
+
+  $('results').innerHTML =
+    rowB('right now', now.alt >= 0 ? ('up — alt ' + now.alt.toFixed(0) + '°, az ' + now.az.toFixed(0) + '°') : 'below the horizon') +
+    rowB('this star', st) +
+    row('highest it gets', (tA > 0 ? tA.toFixed(0) + '° at transit' : 'stays down')) +
+    row('celestial pole altitude', Math.abs(phi).toFixed(0) + '°') +
+    row('circumpolar if δ >', (90 - Math.abs(phi)).toFixed(0) + '°' + (phi < 0 ? ' (south)' : ''));
+
+  $('note').textContent =
+    st === 'circumpolar' ? 'This star never sets from your latitude — it circles the pole all night, all year.'
+    : st === 'never rises' ? 'This star never climbs above your horizon — you would have to travel toward its hemisphere to see it.'
+    : 'This star rises in the east, arcs across to a maximum of ' + tA.toFixed(0) + '° at transit, and sets in the west.';
+
+  drawDome(); drawAlt();
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function rowB(k, v) { return '<div class="resrow big"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; lastTs = ts;
+  let h = ha() + dt * 3; if (h > 12) h -= 24;
+  $('haSlider').value = h; render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Run the night';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+}
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('haSlider').value = -3; render(); });
+$('latSlider').addEventListener('input', render);
+$('decSlider').addEventListener('input', render);
+$('haSlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('decSlider').value = b.dataset.d; render(); }));
+
+function katexAll() {
+  const specs = [
+    ['f1', "\\sin a = \\sin\\varphi\\sin\\delta + \\cos\\varphi\\cos\\delta\\cos H"],
+    ['f2', "\\delta > 90^\\circ - |\\varphi| \\;\\Rightarrow\\; \\text{circumpolar}"],
+    ['f3', "a_{\\text{transit}} = 90^\\circ - |\\varphi - \\delta|"],
+    ['ex1', "90^\\circ - 42^\\circ = 48^\\circ"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>

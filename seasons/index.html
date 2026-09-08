@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seasons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#5aa06b; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #space { aspect-ratio:520/270; }
+  #ground { aspect-ratio:520/232; background:#0d1420; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #3f7a4e; background:#3f7a4e; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#3f7a4e; }
+  input[type=range] { width:100%; accent-color:#5aa06b; }
+  .chips { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 3px; font:600 9.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button:hover { border-color:#5aa06b; }
+  .chips button.on { background:#e9f3ec; border-color:#5aa06b; color:#2f5a3b; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#eef5f0; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#33402f; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#2f5a3b; text-align:right; }
+  .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:13px; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#eef5f0; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Seasons <span class="sub">— it&rsquo;s the tilt, not the distance</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="space" width="520" height="270"></canvas>
+        <canvas id="ground" width="520" height="232"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Play year</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Time of year</div>
+        <div class="slider-row">
+          <div class="lbl"><span id="dateLbl">Date</span><span class="val" id="dateVal">Mar 20</span></div>
+          <input type="range" id="daySlider" min="0" max="364" step="1" value="79">
+        </div>
+        <div class="chips" id="chips">
+          <button data-n="79">Mar equinox</button>
+          <button data-n="172">Jun solstice</button>
+          <button data-n="265">Sep equinox</button>
+          <button data-n="355">Dec solstice</button>
+        </div>
+        <div class="section-label" style="margin-top:4px;">Your latitude</div>
+        <div class="slider-row">
+          <div class="lbl"><span id="latLbl">40&deg; N</span><span class="val" id="latVal">40&deg;</span></div>
+          <input type="range" id="latSlider" min="-90" max="90" step="1" value="40">
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results &mdash; you compute</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Earth is actually <em>closest</em> to the Sun in early January.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Seasons <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Earth&rsquo;s axis is tilted 23.5&deg; and keeps pointing the same way all year. So for half the year your hemisphere leans toward the Sun and for half it leans away. Leaning toward the Sun does two things: the noon Sun climbs <b>higher</b> (its light hits the ground more squarely, concentrating the energy) and the <b>days get longer</b>. Both add heat. That is summer. Distance from the Sun barely matters &mdash; Earth is actually closest to the Sun in January.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Drag the date through the year and watch the top view: the axis never changes direction, but which hemisphere catches the Sun does. Pick your latitude and read off the noon Sun altitude and the length of the day. The lower panel shows how the same sunbeam spreads over more ground when the Sun is low.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">solar declination &delta; &mdash; the latitude where the Sun is straight overhead at noon. Swings between &plusmn;23.5&deg; over the year.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">altitude of the noon Sun at latitude &phi;.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">length of daylight from the hour angle H (clamped to 0&ndash;24 h inside the polar circles).</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/4-2-the-seasons" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 4.2 The Seasons</a></li>
+          <li><a href="https://www.pbslearningmedia.org/resource/buac17-912-sci-ess-seasonsmodel/a-private-universe-seasons/" target="_blank" rel="noopener" style="color:#8fc7ff;"><em>A Private Universe</em> &mdash; the classic seasons misconception</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; June noon Sun at 40&deg; N <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">How high is the noon Sun at latitude 40&deg; N on the June solstice, and how does that compare with the December solstice?</p>
+    <div class="step"><div class="h">1 &middot; Declination at each solstice</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">June: &delta; = +23.5&deg;. December: &delta; = &minus;23.5&deg;.</div></div>
+    <div class="step"><div class="h">2 &middot; Noon Sun altitude, a = 90&deg; &minus; |&phi; &minus; &delta;|</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; The difference</div><div style="font-size:11.5px;color:#e7d6e4;">73.5&deg; vs 26.5&deg; &mdash; a 47&deg; swing, exactly twice the tilt. In June the sunlight lands nearly straight down and the day is ~15 h long; in December it comes in at a low slant and the day is ~9 h. That is the whole reason for the seasons.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const TILT = 23.44;
+let playing = false, rafId = null, lastTs = null;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MDAYS = [31,28,31,30,31,30,31,31,30,31,30,31];
+
+function dayN() { return +$('daySlider').value; }
+function lat() { return +$('latSlider').value; }
+
+function dateStr(n) {
+  let d = n; for (let m = 0; m < 12; m++) { if (d < MDAYS[m]) return MONTHS[m] + ' ' + (d + 1); d -= MDAYS[m]; }
+  return 'Dec 31';
+}
+function declination(n) {
+  // δ ≈ 23.44° · sin(360°·(n−80)/365.24)  (n = day of year, 0-based; ≈0 at Mar equinox)
+  return TILT * Math.sin(2 * Math.PI * (n - 80) / 365.24);
+}
+function noonAltitude(phi, dec) { return 90 - Math.abs(phi - dec); }
+function daylightHours(phi, dec) {
+  const p = phi * Math.PI / 180, d = dec * Math.PI / 180;
+  let x = -Math.tan(p) * Math.tan(d);
+  if (x <= -1) return 24;
+  if (x >= 1) return 0;
+  return 2 * Math.acos(x) * 180 / Math.PI / 15;
+}
+function seasonName(n, phi) {
+  // meteorological-ish quarters keyed to the solstices/equinoxes, flipped south
+  const north = phi >= 0;
+  let s;
+  if (n >= 79 && n < 172) s = 'spring';
+  else if (n >= 172 && n < 265) s = 'summer';
+  else if (n >= 265 && n < 355) s = 'autumn';
+  else s = 'winter';
+  if (!north) s = { spring: 'autumn', summer: 'winter', autumn: 'spring', winter: 'summer' }[s];
+  return s;
+}
+
+// ---------- space view (heliocentric, axis fixed in space) ----------
+const AX = 23.44 * Math.PI / 180;               // axis angle from vertical, CONSTANT
+const AXV = { x: -Math.sin(AX), y: -Math.cos(AX) }; // fixed screen direction of the N pole
+
+function drawSpace() {
+  const c = $('space'), ctx = c.getContext('2d');
+  const W = 520, H = 270;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  for (let i = 0; i < 70; i++) { const x = (i * 113.7) % W, y = (i * 67.3) % H; ctx.globalAlpha = 0.15 + (i % 4) * 0.12; ctx.fillRect(x, y, 1.3, 1.3); }
+  ctx.globalAlpha = 1;
+
+  const scx = W / 2, scy = H / 2 + 6, orbRx = 150, orbRy = 84;
+  // Sun at the centre
+  const sg = ctx.createRadialGradient(scx, scy, 3, scx, scy, 34);
+  sg.addColorStop(0, '#fff3c4'); sg.addColorStop(0.5, '#ffd353'); sg.addColorStop(1, 'rgba(255,211,83,0)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(scx, scy, 34, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffdf6b'; ctx.beginPath(); ctx.arc(scx, scy, 15, 0, 7); ctx.fill();
+  ctx.fillStyle = '#9fb0bf'; ctx.font = '11px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Sun', scx, scy + 30);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.ellipse(scx, scy, orbRx, orbRy, 0, 0, 7); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // orbital angle: 0 at Jun solstice → Earth to the RIGHT of the Sun, fixed axis
+  // (pointing up-left) then leans toward the Sun = N. summer.
+  const orbAng = n => 2 * Math.PI * (n - 172) / 365.24;
+  const pos = n => ({ x: scx + orbRx * Math.cos(orbAng(n)), y: scy + orbRy * Math.sin(orbAng(n)) });
+
+  [[79, 'Mar'], [172, 'Jun'], [265, 'Sep'], [355, 'Dec']].forEach(([mn, lab]) => {
+    const g = pos(mn);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.arc(g.x, g.y, 13, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(lab, g.x, g.y + (g.y < scy ? -17 : 24));
+  });
+
+  const p = pos(dayN());
+  drawEarth(ctx, p.x, p.y, 20, scx, scy);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('top view — the axis (orange) never changes direction', 10, 16);
+
+  const dec = declination(dayN());
+  ctx.textAlign = 'center'; ctx.fillStyle = '#dfe8f0'; ctx.font = '600 11px "Source Sans 3",sans-serif';
+  ctx.fillText(dec > 1.5 ? 'North pole leaning toward the Sun — N. hemisphere summer'
+    : dec < -1.5 ? 'North pole leaning away from the Sun — N. hemisphere winter'
+    : 'axis side-on to the Sun — equinox, equal day and night everywhere', W / 2, H - 12);
+}
+
+function drawEarth(ctx, x, y, r, sx, sy) {
+  const toSun = Math.atan2(sy - y, sx - x);
+  // lit hemisphere faces the Sun
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip();
+  ctx.fillStyle = '#16324e'; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  const lx = x + Math.cos(toSun) * r, ly = y + Math.sin(toSun) * r;
+  const g = ctx.createRadialGradient(lx, ly, r * 0.2, lx, ly, r * 2.2);
+  g.addColorStop(0, '#4f93d6'); g.addColorStop(0.55, '#3b74ad'); g.addColorStop(1, '#16324e');
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke();
+
+  // FIXED rotation axis (same screen direction all year)
+  ctx.strokeStyle = '#ff8f6b'; ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(x - AXV.x * (r + 13), y - AXV.y * (r + 13));
+  ctx.lineTo(x + AXV.x * (r + 13), y + AXV.y * (r + 13));
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = '#ff8f6b'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('N', x + AXV.x * (r + 21), y + AXV.y * (r + 21) + 3);
+
+  // equator (perpendicular to axis)
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(x - AXV.y * r, y + AXV.x * r); ctx.lineTo(x + AXV.y * r, y - AXV.x * r); ctx.stroke();
+  ctx.setLineDash([]);
+
+}
+
+// ---------- ground / light-spreading view ----------
+function drawGround() {
+  const c = $('ground'), ctx = c.getContext('2d');
+  const W = 520, H = 232;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+
+  const dec = declination(dayN());
+  const alt = noonAltitude(lat(), dec);
+  const horizonY = H - 52;
+
+  ctx.fillStyle = '#26331f'; ctx.fillRect(0, horizonY, W, H - horizonY);
+  ctx.strokeStyle = '#3c5230'; ctx.beginPath(); ctx.moveTo(0, horizonY); ctx.lineTo(W, horizonY); ctx.stroke();
+
+  if (alt <= 0) {
+    ctx.fillStyle = '#9fb0bf'; ctx.font = '13px "Source Serif 4",serif'; ctx.textAlign = 'center';
+    ctx.fillText('The noon Sun stays below the horizon — polar night', W / 2, H / 2);
+    return;
+  }
+
+  const a = alt * Math.PI / 180;
+  const beamW = 46;                       // fixed cross-section of the sunbeam
+  const anchorX = 150;                    // right edge of the lit patch stays put
+  const ratio = 1 / Math.sin(a);
+  const spreadReal = beamW * ratio;
+  const spread = Math.min(spreadReal, W - anchorX - 30);   // clamp the drawn width
+  // ray direction toward the ground (coming from upper-right)
+  const gx = -Math.cos(a), gy = Math.sin(a);
+  const px = -gy, py = gx;                          // perpendicular = beam-width axis
+  const footL = anchorX, footR = anchorX + spread, footCx = (footL + footR) / 2;
+  const L = 150;                                    // drawn length of the beam
+  const topCx = footCx - gx * L, topCy = horizonY - gy * L;
+
+  // angled beam (parallelogram of constant width beamW meeting the wider footprint)
+  ctx.fillStyle = 'rgba(255,224,130,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(topCx + px * beamW / 2, topCy + py * beamW / 2);
+  ctx.lineTo(topCx - px * beamW / 2, topCy - py * beamW / 2);
+  ctx.lineTo(footR, horizonY);
+  ctx.lineTo(footL, horizonY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,224,130,0.4)'; ctx.stroke();
+  ctx.fillStyle = '#ffdf6b'; ctx.beginPath(); ctx.arc(topCx, topCy, 7, 0, 7); ctx.fill();
+
+  // altitude angle at the landing point (arc between beam's lower edge and the ground)
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(footR, horizonY, 34, -a, 0); ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = '#ffe082'; ctx.font = '600 12px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(alt.toFixed(0) + '°', Math.min(footR + 8, W - 30), horizonY - 12);
+
+  // lit ground patch
+  ctx.fillStyle = 'rgba(255,224,130,0.55)';
+  ctx.fillRect(footL, horizonY - 3, spread, 5);
+
+  // two brackets below the horizon: "if overhead" vs "now"
+  bracket(ctx, anchorX, anchorX + beamW, horizonY + 13, 'rgba(200,210,220,0.7)', 'if overhead');
+  bracket(ctx, footL, footR, horizonY + 34, '#ffd66b', ratio.toFixed(1) + '× wider now');
+
+  ctx.fillStyle = 'rgba(255,255,255,0.62)'; ctx.font = '11px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('same energy over ' + ratio.toFixed(1) + '× the ground  →  '
+    + (100 * Math.sin(a)).toFixed(0) + '% of the overhead intensity', W / 2, 18);
+}
+
+function bracket(ctx, x0, x1, y, col, label) {
+  ctx.strokeStyle = col; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y - 4); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, y - 4);
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = col; ctx.font = '9.5px "Source Sans 3",sans-serif';
+  const cx = (x0 + x1) / 2;
+  if (x1 - x0 > 70) { ctx.textAlign = 'center'; ctx.fillText(label, cx, y + 13); }
+  else { ctx.textAlign = 'left'; ctx.fillText(label, x1 + 6, y + 2); }
+}
+
+function render() {
+  const n = dayN(), phi = lat();
+  const dec = declination(n);
+  const alt = noonAltitude(phi, dec);
+  const dh = daylightHours(phi, dec);
+  $('dateVal').textContent = dateStr(n);
+  $('latVal').innerHTML = Math.abs(phi) + '&deg;';
+  $('latLbl').innerHTML = phi === 0 ? 'Equator' : Math.abs(phi) + '&deg; ' + (phi > 0 ? 'N' : 'S');
+
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(n - (+b.dataset.n)) < 1));
+
+  const dhStr = dh <= 0 ? '0 h (polar night)' : dh >= 24 ? '24 h (midnight Sun)' :
+    Math.floor(dh) + ' h ' + Math.round((dh % 1) * 60) + ' m';
+
+  $('results').innerHTML =
+    row('season where you are', seasonName(n, phi), true) +
+    row('sub-solar latitude δ', dec.toFixed(1) + '°') +
+    row('noon Sun altitude', alt > 0 ? alt.toFixed(1) + '°' : 'below horizon') +
+    row('hours of daylight', dhStr, true) +
+    row('sunlight concentration', alt > 0 ? Math.sin(alt * Math.PI / 180).toFixed(2) + ' × overhead' : '—');
+
+  $('note').textContent =
+    Math.abs(dec) < 1.5
+      ? 'Equinox: the Sun is over the equator, every latitude gets a 12-hour day, and the axis points neither toward nor away from the Sun.'
+      : (dec > 0 ? 'The North pole is tilted sunward. ' : 'The South pole is tilted sunward. ') +
+        'In that hemisphere the noon Sun is high and the days are long — summer. In the other hemisphere, the opposite.';
+
+  drawSpace(); drawGround();
+}
+function row(k, v, big) { return '<div class="resrow' + (big ? ' big' : '') + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; lastTs = ts;
+  let n = dayN() + dt * 45; if (n > 364) n -= 365;
+  $('daySlider').value = Math.round(n);
+  render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play year';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+}
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('daySlider').value = 79; $('latSlider').value = 40; render(); });
+$('daySlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
+$('latSlider').addEventListener('input', render);
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { setPlaying(false); $('daySlider').value = b.dataset.n; render(); }));
+
+function katexAll() {
+  const specs = [
+    ['f1', "\\delta \\approx 23.5^\\circ\\,\\sin\\!\\left(\\dfrac{360^\\circ (N-80)}{365}\\right)"],
+    ['f2', "a = 90^\\circ - |\\varphi - \\delta|"],
+    ['f3', "t_{day} = \\dfrac{2}{15^\\circ}\\cos^{-1}(-\\tan\\varphi\\,\\tan\\delta)"],
+    ['ex1', "\\delta_{Jun} = +23.5^\\circ,\\quad \\delta_{Dec} = -23.5^\\circ"],
+    ['ex2', "a_{Jun} = 90^\\circ - |40^\\circ - 23.5^\\circ| = 73.5^\\circ"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-z]+/g, '').replace(/[{}^]/g, '').replace(/\\circ/g, '°');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>

@@ -1,162 +1,338 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactive H-R Diagram — Main Sequence</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>H-R Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #fff; color: #333; padding: 1rem; }
-  h2 { font-size: 16px; font-weight: 500; margin-bottom: 0.75rem; }
-  .readout { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 0.75rem 70px; }
-  .readout-card { background: #f3f3f3; border-radius: 8px; padding: 8px 16px; min-width: 110px; }
-  .readout-label { font-size: 11px; color: #777; margin-bottom: 2px; }
-  .readout-value { font-size: 20px; font-weight: 500; color: #111; }
-  .diagram-wrap { position: relative; width: 560px; }
-  .slider-wrap { position: absolute; bottom: -32px; left: 70px; width: 460px; display: flex; align-items: center; }
-  .slider-wrap .hot-label { font-size: 13px; color: #666; white-space: nowrap; position: absolute; right: 100%; padding-right: 8px; }
-  .slider-wrap .cool-label { font-size: 13px; color: #666; white-space: nowrap; position: absolute; left: 100%; padding-left: 8px; }
-  .slider-wrap input[type=range] { width: 100%; margin: 0; padding: 0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#4a78c4; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #hr { aspect-ratio:520/420; cursor:crosshair; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#3a5f9e; }
+  input[type=range] { width:100%; accent-color:#4a78c4; }
+  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button:hover { border-color:#4a78c4; }
+  .chips button.on { background:#e7edf7; border-color:#4a78c4; color:#345086; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#eaeff6; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#2c3e5c; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#345086; text-align:right; }
+  .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:12.5px; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#eaeff6; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
 </style>
 </head>
 <body>
-
-<h2>H-R Diagram — Main Sequence</h2>
-
-<div class="readout">
-  <div class="readout-card">
-    <div class="readout-label">Spectral type</div>
-    <div class="readout-value" id="out-type">G2</div>
-  </div>
-  <div class="readout-card">
-    <div class="readout-label">Absolute magnitude</div>
-    <div class="readout-value" id="out-mag">+4.8</div>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">H&ndash;R Diagram <span class="sub">— sorting the stars by temperature and light</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="hr" width="520" height="420"></canvas>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Place a star</div>
+        <div class="chips" id="chips">
+          <button data-t="5772" data-l="1" class="on">Sun</button>
+          <button data-t="9940" data-l="25">Sirius A</button>
+          <button data-t="25000" data-l="0.03">Sirius B</button>
+          <button data-t="3600" data-l="90000">Betelgeuse</button>
+          <button data-t="3040" data-l="0.0017">Proxima</button>
+          <button data-t="11000" data-l="120000">Rigel</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>temperature T</span><span class="val" id="tVal">5772 K</span></div>
+          <input type="range" id="tSlider" min="2400" max="42000" step="50" value="5772">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>luminosity L (log)</span><span class="val" id="lVal">1 L☉</span></div>
+          <input type="range" id="lSlider" min="-4" max="6" step="0.02" value="0">
+        </div>
+        <div class="section-label" style="margin-top:4px;">This star</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Schematic populations; click the diagram to drop your star anywhere.</div>
   </div>
 </div>
 
-<div class="diagram-wrap">
-  <svg id="hr" viewBox="0 0 560 560" width="560" height="560" style="display:block;"></svg>
-  <div class="slider-wrap">
-    <span class="hot-label">← Hot</span>
-    <input type="range" id="slider" min="0" max="70" value="42" step="0.5">
-    <span class="cool-label">Cool →</span>
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>H&ndash;R Diagram <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Plot stars by surface temperature (hot on the left, by tradition) and luminosity, and they don&rsquo;t scatter randomly &mdash; they fall into a few groups. About 90% sit on the <b>main sequence</b>, the diagonal strip where a star spends its long hydrogen-burning life. Cool but bright stars in the upper right must be huge: they are <b>giants</b> and <b>supergiants</b>. Hot but faint stars in the lower left are tiny, dense <b>white dwarfs</b> &mdash; dead stellar cores. Because L = 4&pi;R&sup2;&sigma;T&#8308;, position on this diagram tells you a star&rsquo;s radius.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Drop one of the named stars, drag the sliders, or click anywhere on the diagram. The dashed diagonals are lines of constant radius. Watch where your star lands: on the main sequence you also get a rough mass and lifetime; off it, the label tells you what kind of object has that temperature and luminosity.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">luminosity from radius and temperature &mdash; the constant-R diagonals.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">main-sequence mass&ndash;luminosity relation (rough).</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">main-sequence lifetime &mdash; massive stars burn out fast.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/18-4-the-h-r-diagram" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 18.4 The H&ndash;R Diagram</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/22-1-evolution-from-the-main-sequence-to-red-giants" target="_blank" rel="noopener" style="color:#8fc7ff;">22.1 Evolution to Red Giants</a></li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
-<div style="height:40px;"></div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; how big is Betelgeuse? <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Betelgeuse has a surface temperature of ~3600 K and a luminosity of about 90,000 L&#8857;. What is its radius?</p>
+    <div class="step"><div class="h">1 &middot; Rearrange L = 4&pi;R&sup2;&sigma;T&#8308;</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; Plug in (relative to the Sun)</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">About 750 solar radii &mdash; if it replaced the Sun, its surface would reach past the orbit of Mars. That is what puts it in the supergiant corner of the diagram.</div></div>
+  </div>
+</div>
 
 <script>
-var svg = document.getElementById('hr');
-var NS = 'http://www.w3.org/2000/svg';
-var L=70, R=30, T=20, B=60, W=560, H=560;
-var pw=W-L-R, ph=H-T-B;
-var maxT=70;
-var textCol='#333', gridCol='rgba(0,0,0,0.07)', axisCol='rgba(0,0,0,0.25)';
-var sunCol='#EF9F27', crossCol='#378ADD';
-var magMin=-12, magMax=18, magRange=30;
+const $ = id => document.getElementById(id);
+const TSUN = 5772;
+let Tk = 5772, Ls = 1;
 
-function magY(m) { return T+((m-magMin)/magRange)*ph; }
-function typeX(t) { return L+(t/maxT)*pw; }
-function typeLabel(t) {
-  var cls=Math.min(Math.floor(t/10),6), sub=Math.round(t%10);
-  return ['O','B','A','F','G','K','M'][cls]+sub;
-}
-
-var msPoints=[
-  [0,-10.0],[3,-8.0],[6,-6.0],[10,-4.2],
-  [14,-2.5],[18,-1.0],[20,0.2],[25,1.5],
-  [30,2.2],[35,2.9],[40,3.5],[45,4.0],
-  [48,4.5],[50,4.8],[55,5.5],[60,6.5],
-  [65,7.8],[70,9.5]
+// main-sequence anchor points (T in K, L in L_sun)
+const MS = [
+  [42000, 5e5], [30000, 2.0e4], [20000, 1.6e4 / 4], [15000, 800], [11000, 180],
+  [9800, 40], [8300, 12], [7200, 5.4], [6600, 2.1], [5900, 1.2],
+  [5772, 1.0], [5300, 0.44], [4600, 0.15], [3900, 0.05], [3400, 0.013],
+  [3000, 0.0035], [2600, 0.0009],
 ];
-
-function interpMag(t) {
-  if (t<=msPoints[0][0]) return msPoints[0][1];
-  if (t>=msPoints[msPoints.length-1][0]) return msPoints[msPoints.length-1][1];
-  for (var i=0;i<msPoints.length-1;i++) {
-    var t0=msPoints[i][0],m0=msPoints[i][1],t1=msPoints[i+1][0],m1=msPoints[i+1][1];
-    if (t>=t0&&t<=t1) return m0+(t-t0)/(t1-t0)*(m1-m0);
+function msL(T) {
+  // interpolate in log-log
+  const lt = Math.log10(T);
+  let a = MS[0], b = MS[MS.length - 1];
+  for (let i = 0; i < MS.length - 1; i++) {
+    if (T <= MS[i][0] && T >= MS[i + 1][0]) { a = MS[i]; b = MS[i + 1]; break; }
   }
-  return msPoints[msPoints.length-1][1];
+  const f = (Math.log10(a[0]) - lt) / (Math.log10(a[0]) - Math.log10(b[0]) + 1e-9);
+  return Math.pow(10, Math.log10(a[1]) + f * (Math.log10(b[1]) - Math.log10(a[1])));
 }
 
-function mk(tag,attrs) {
-  var el=document.createElementNS(NS,tag);
-  for (var k in attrs) el.setAttribute(k,attrs[k]);
-  return el;
+function radiusRsun(T, L) { return Math.sqrt(L) / Math.pow(T / TSUN, 2); }
+
+function classify(T, L) {
+  const R = radiusRsun(T, L);
+  const onMS = Math.abs(Math.log10(L) - Math.log10(msL(T))) < 0.55;
+  if (R < 0.1 && L < 0.1) return { k: 'white dwarf', on: false };
+  if (onMS) return { k: 'main sequence', on: true };
+  if (L > 3e4) return { k: 'supergiant', on: false };
+  if (R > 8 || (L > 20 && T < 6000)) return { k: 'giant', on: false };
+  if (L < msL(T) * 0.3 && L > 0.1) return { k: 'subdwarf', on: false };
+  return { k: 'main sequence (near)', on: true };
 }
-function txt(content,attrs) {
-  var el=mk('text',attrs); el.textContent=content; return el;
+function specClass(t) {
+  if (t >= 30000) return 'O'; if (t >= 10000) return 'B'; if (t >= 7500) return 'A';
+  if (t >= 6000) return 'F'; if (t >= 5200) return 'G'; if (t >= 3700) return 'K'; return 'M';
 }
 
-svg.appendChild(mk('rect',{x:0,y:0,width:W,height:H,fill:'none'}));
+// ---------- diagram ----------
+const TLO = 2400, THI = 44000, LLO = 1e-4, LHI = 1e6;
+let plotBox = { x0: 46, x1: 506, y0: 388, y1: 14 };
+function TX(T) { const b = plotBox; return b.x0 + (Math.log10(THI) - Math.log10(T)) / (Math.log10(THI) - Math.log10(TLO)) * (b.x1 - b.x0); }
+function LY(L) { const b = plotBox; return b.y1 + (Math.log10(LHI) - Math.log10(L)) / (Math.log10(LHI) - Math.log10(LLO)) * (b.y0 - b.y1); }
+function XT(x) { const b = plotBox; return Math.pow(10, Math.log10(THI) - (x - b.x0) / (b.x1 - b.x0) * (Math.log10(THI) - Math.log10(TLO))); }
+function YL(y) { const b = plotBox; return Math.pow(10, Math.log10(LHI) - (y - b.y1) / (b.y0 - b.y1) * (Math.log10(LHI) - Math.log10(LLO))); }
 
-for (var m=-10;m<=15;m+=5) {
-  var gy=magY(m);
-  svg.appendChild(mk('line',{x1:L,y1:gy,x2:L+pw,y2:gy,stroke:gridCol,'stroke-width':'0.5'}));
-  svg.appendChild(txt(m>0?'+'+m:String(m),{x:L-6,y:gy+4,'text-anchor':'end','font-size':'11',fill:textCol}));
+function draw() {
+  const c = $('hr'), ctx = c.getContext('2d');
+  const W = 520, H = 420;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  const b = plotBox;
+
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.strokeRect(b.x0, b.y1, b.x1 - b.x0, b.y0 - b.y1);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  for (const T of [40000, 20000, 10000, 6000, 4000, 3000]) ctx.fillText((T / 1000) + 'k', TX(T), b.y0 + 12);
+  ctx.fillText('temperature (K)  —  hot ← → cool', W / 2, H - 6);
+  ctx.textAlign = 'right';
+  const lLbl = { 1000000: '10⁶', 10000: '10⁴', 100: '100', 1: '1', 0.01: '0.01', 0.0001: '10⁻⁴' };
+  for (const L of [1e6, 1e4, 100, 1, 0.01, 1e-4]) ctx.fillText(lLbl[L], b.x0 - 4, LY(L) + 3);
+  ctx.save(); ctx.translate(11, (b.y0 + b.y1) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
+  ctx.fillText('luminosity (L / L☉)', 0, 0); ctx.restore();
+
+  // spectral-class colour band along the top
+  const classes = [['O', 40000, '#9bb4ff'], ['B', 20000, '#b7c8ff'], ['A', 9000, '#e7ecff'], ['F', 7000, '#fff8f0'], ['G', 5600, '#ffe9b0'], ['K', 4400, '#ffca7a'], ['M', 3200, '#ff9a6a']];
+  classes.forEach(([nm, T, col]) => { ctx.fillStyle = col; ctx.globalAlpha = 0.5; ctx.fillRect(TX(T) - 12, b.y1, 24, 5); ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '8px "Source Sans 3",sans-serif'; ctx.textAlign = 'center'; ctx.fillText(nm, TX(T), b.y1 - 2); });
+
+  // constant-radius diagonals
+  ctx.strokeStyle = 'rgba(150,180,220,0.22)'; ctx.font = '8px "Source Sans 3",sans-serif';
+  for (const R of [0.01, 0.1, 1, 10, 100, 1000]) {
+    ctx.beginPath(); let first = true;
+    for (let T = TLO; T <= THI; T *= 1.05) {
+      const L = R * R * Math.pow(T / TSUN, 4);
+      if (L < LLO || L > LHI) { first = true; continue; }
+      const x = TX(T), y = LY(L);
+      first ? (ctx.moveTo(x, y), first = false) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // label near the top edge
+    const Ltop = LHI * 0.7; const Ttop = TSUN * Math.pow(Ltop / (R * R), 0.25);
+    if (Ttop > TLO && Ttop < THI) { ctx.fillStyle = 'rgba(150,180,220,0.5)'; ctx.textAlign = 'left'; ctx.fillText(R + ' R☉', TX(Ttop) + 3, LY(Ltop)); }
+  }
+
+  // populations
+  // main sequence band
+  ctx.strokeStyle = 'rgba(120,190,255,0.9)'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i < MS.length; i++) { const x = TX(MS[i][0]), y = LY(MS[i][1]); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = 'rgba(120,190,255,0.75)'; ctx.font = 'italic 10px "Source Serif 4",serif'; ctx.textAlign = 'left';
+  ctx.fillText('main sequence', TX(7000) + 4, LY(6) - 4);
+
+  // giants blob
+  blob(ctx, TX(4200), LY(150), 70, 34, 'rgba(255,180,110,0.16)');
+  ctx.fillStyle = 'rgba(255,180,110,0.8)'; ctx.fillText('giants', TX(4200) - 16, LY(150) + 3);
+  // supergiants
+  ctx.fillStyle = 'rgba(255,150,150,0.12)'; ctx.fillRect(TX(THI), LY(1e6), TX(3200) - TX(THI), LY(2e4) - LY(1e6));
+  ctx.fillStyle = 'rgba(255,150,150,0.8)'; ctx.fillText('supergiants', TX(9000), LY(3e5));
+  // white dwarfs
+  blob(ctx, TX(14000), LY(0.003), 66, 26, 'rgba(200,220,255,0.14)');
+  ctx.fillStyle = 'rgba(200,220,255,0.85)'; ctx.fillText('white dwarfs', TX(14000) - 30, LY(0.003) + 3);
+
+  // the placed star
+  const x = TX(Tk), y = LY(Ls);
+  ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,214,107,0.4)'; ctx.setLineDash([2, 3]);
+  ctx.beginPath(); ctx.moveTo(b.x0, y); ctx.lineTo(x, y); ctx.moveTo(x, b.y0); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
 }
-svg.appendChild(txt('Absolute magnitude',{
-  x:14,y:T+ph/2,'text-anchor':'middle','font-size':'12',fill:textCol,
-  transform:'rotate(-90,14,'+(T+ph/2)+')'
+function blob(ctx, x, y, rx, ry, fill) {
+  ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, -0.5, 0, 7); ctx.fill();
+}
+
+function render() {
+  Tk = +$('tSlider').value;
+  Ls = Math.pow(10, +$('lSlider').value);
+  $('tVal').textContent = Tk.toLocaleString() + ' K';
+  $('lVal').textContent = Ls < 0.01 ? Ls.toExponential(1) + ' L☉' : Ls < 100 ? Ls.toFixed(2) + ' L☉' : Ls.toExponential(1) + ' L☉';
+  document.querySelectorAll('#chips button').forEach(bt =>
+    bt.classList.toggle('on', Math.abs(+bt.dataset.t - Tk) < 100 && Math.abs(Math.log10(+bt.dataset.l) - Math.log10(Ls)) < 0.06));
+
+  const R = radiusRsun(Tk, Ls);
+  const cls = classify(Tk, Ls);
+  const rows = [
+    rowB('spectral class', specClass(Tk) + '  ·  ' + (Tk >= 30000 ? 'blue' : Tk >= 10000 ? 'blue-white' : Tk >= 7500 ? 'white' : Tk >= 6000 ? 'yellow-white' : Tk >= 5200 ? 'yellow' : Tk >= 3700 ? 'orange' : 'red')),
+    rowB('region', cls.k),
+    row('radius', R < 0.1 ? R.toExponential(1) + ' R☉' : R < 100 ? R.toFixed(2) + ' R☉' : R.toFixed(0) + ' R☉'),
+  ];
+  if (cls.on) {
+    const M = Math.pow(Ls, 1 / 3.5);
+    const life = 10 * M / Ls;   // Gyr, ~ M/L × 10 Gyr
+    rows.push(row('est. mass', M.toFixed(2) + ' M☉'));
+    rows.push(row('main-seq. lifetime', life > 1000 ? '> 10¹² yr' : life > 1 ? life.toPrecision(2) + ' Gyr' : (life * 1000).toPrecision(2) + ' Myr'));
+  } else {
+    rows.push(row('L = 4πR²σT⁴', 'off the main sequence'));
+  }
+  $('results').innerHTML = rows.join('');
+
+  $('note').textContent = cls.k.startsWith('main')
+    ? 'On the main sequence: this star is fusing hydrogen in its core, and it will stay near this spot for most of its life. Hotter, brighter stars up the sequence are more massive and shorter-lived.'
+    : cls.k === 'white dwarf'
+    ? 'A white dwarf: the exposed, Earth-sized core left after a Sun-like star died. It is hot but tiny, so it plots faint despite its colour.'
+    : cls.k.includes('giant')
+    ? 'A ' + cls.k + ': cool at the surface but enormously luminous, which by L = 4πR²σT⁴ means it must be huge — an evolved star that has swelled up after leaving the main sequence.'
+    : 'This combination of temperature and luminosity puts the star off the main sequence.';
+
+  draw();
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function rowB(k, v) { return '<div class="resrow big"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+$('tSlider').addEventListener('input', render);
+$('lSlider').addEventListener('input', render);
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
+  $('tSlider').value = b.dataset.t; $('lSlider').value = Math.log10(+b.dataset.l); render();
 }));
-svg.appendChild(txt('Bright',{x:L-6,y:T-10,'text-anchor':'end','font-size':'10',fill:textCol}));
-svg.appendChild(txt('Dim',   {x:L-6,y:T+ph+18,'text-anchor':'end','font-size':'10',fill:textCol}));
-
-['O','B','A','F','G','K','M'].forEach(function(cls,ci) {
-  var xStart=typeX(ci*10), xEnd=typeX((ci+1)*10), xMid=(xStart+xEnd)/2;
-  svg.appendChild(mk('line',{x1:xStart,y1:T,x2:xStart,y2:T+ph,stroke:axisCol,'stroke-width':'1.5'}));
-  svg.appendChild(txt(cls,{x:xMid,y:T+ph+20,'text-anchor':'middle','font-size':'14','font-weight':'600',fill:textCol}));
-  for (var s=1;s<=9;s++) {
-    var xs=typeX(ci*10+s);
-    svg.appendChild(mk('line',{x1:xs,y1:T+ph,x2:xs,y2:T+ph+5,stroke:axisCol,'stroke-width':'0.5'}));
-  }
+$('hr').addEventListener('click', e => {
+  const r = e.target.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * 520, y = (e.clientY - r.top) / r.height * 420;
+  if (x < plotBox.x0 || x > plotBox.x1 || y < plotBox.y1 || y > plotBox.y0) return;
+  const T = Math.max(2400, Math.min(42000, XT(x)));
+  const L = Math.max(1e-4, Math.min(1e6, YL(y)));
+  $('tSlider').value = Math.round(T / 50) * 50;
+  $('lSlider').value = Math.log10(L).toFixed(2);
+  render();
 });
-svg.appendChild(txt('Spectral type',{x:L+pw/2,y:T+ph+42,'text-anchor':'middle','font-size':'13',fill:textCol}));
-svg.appendChild(mk('rect',{x:L,y:T,width:pw,height:ph,fill:'none',stroke:axisCol,'stroke-width':'0.75'}));
 
-var d=msPoints.map(function(p,i){
-  return (i===0?'M':'L')+typeX(p[0]).toFixed(1)+','+magY(p[1]).toFixed(1);
-}).join(' ');
-svg.appendChild(mk('path',{d:d,fill:'none',stroke:'#111','stroke-width':'2','stroke-linejoin':'round'}));
-
-var labelT=8;
-svg.appendChild(txt('Main sequence stars',{
-  x:typeX(labelT)+8,y:magY(interpMag(labelT))-10,
-  'font-size':'12',fill:textCol,'text-anchor':'start'
-}));
-
-var sunT=42, sunPts=[];
-for (var si=0;si<10;si++){
-  var sr=si%2===0?8:4,sa=(si*36-90)*Math.PI/180;
-  sunPts.push((sr*Math.cos(sa)).toFixed(1)+','+(sr*Math.sin(sa)).toFixed(1));
+function katexAll() {
+  const specs = [
+    ['f1', "L = 4\\pi R^{2}\\sigma T^{4}"],
+    ['f2', "L \\approx M^{3.5}\\quad(\\text{main sequence})"],
+    ['f3', "t_{\\text{MS}} \\approx 10\\ \\text{Gyr}\\times\\dfrac{M}{L}"],
+    ['ex1', "R = \\sqrt{L}\\,/\\,(T/T_\\odot)^{2}"],
+    ['ex2', "R = \\sqrt{90000}\\,/\\,(3600/5772)^{2} \\approx 760\\ R_\\odot"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
 }
-var sunX=typeX(sunT), sunY=magY(interpMag(sunT));
-svg.appendChild(mk('polygon',{points:sunPts.join(' '),fill:sunCol,transform:'translate('+sunX+','+sunY+')'}));
-svg.appendChild(txt('Sun',{x:sunX+12,y:sunY-10,'font-size':'11',fill:textCol}));
-
-var crossG=document.createElementNS(NS,'g');
-var vLine=mk('line',{x1:0,y1:T,x2:0,y2:T+ph,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
-var hLine=mk('line',{x1:L,y1:0,x2:L+pw,y2:0,stroke:crossCol,'stroke-width':'1.5','stroke-dasharray':'4 3'});
-var dot=mk('circle',{r:'5',fill:crossCol});
-crossG.appendChild(vLine); crossG.appendChild(hLine); crossG.appendChild(dot);
-svg.appendChild(crossG);
-
-var slider=document.getElementById('slider');
-var outType=document.getElementById('out-type');
-var outMag=document.getElementById('out-mag');
-
-function update(t) {
-  var mag=interpMag(t);
-  var x=typeX(t), y=Math.max(T,Math.min(T+ph,magY(mag)));
-  vLine.setAttribute('x1',x); vLine.setAttribute('x2',x);
-  hLine.setAttribute('y1',y); hLine.setAttribute('y2',y);
-  dot.setAttribute('cx',x); dot.setAttribute('cy',y);
-  outType.textContent=typeLabel(t);
-  outMag.textContent=(mag>=0?'+':'')+mag.toFixed(1);
-}
-
-slider.addEventListener('input',function(){ update(parseFloat(slider.value)); });
-update(parseFloat(slider.value));
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
 </script>
 </body>
 </html>

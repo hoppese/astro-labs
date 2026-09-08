@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moon Phases</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#c9a24b; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #sky { aspect-ratio:520/300; }
+  #disc { aspect-ratio:520/190; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #8a6d2a; background:#8a6d2a; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#8a6d2a; }
+  input[type=range] { width:100%; accent-color:#c9a24b; }
+  .toggleRow { display:flex; gap:0; border:1px solid #d3d8dd; border-radius:9px; overflow:hidden; }
+  .toggleRow button { flex:1; border:0; background:#fff; color:#525a63; font:600 11.5px 'Source Sans 3',sans-serif; padding:8px 6px; cursor:pointer; }
+  .toggleRow button.on { background:#8a6d2a; color:#fff; }
+  .phasechips { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+  .phasechips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 3px; font:600 10px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .phasechips button:hover { border-color:#c9a24b; }
+  .phasechips button.on { background:#f4ecd9; border-color:#c9a24b; color:#6b5320; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f5f1e6; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4b4030; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#7a5f24; text-align:right; }
+  .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:13px; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f5f1e6; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Moon Phases <span class="sub">— why the Moon changes shape</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="sky" width="520" height="300"></canvas>
+        <canvas id="disc" width="520" height="190"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Play month</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Where in its orbit</div>
+        <div class="slider-row">
+          <div class="lbl"><span>Age of the Moon</span><span class="val" id="dayVal">0.0 d</span></div>
+          <input type="range" id="daySlider" min="0" max="29.53" step="0.05" value="0">
+        </div>
+        <div class="phasechips" id="chips">
+          <button data-deg="0">New</button>
+          <button data-deg="90">First&nbsp;qtr</button>
+          <button data-deg="180">Full</button>
+          <button data-deg="270">Third&nbsp;qtr</button>
+        </div>
+        <div class="toggleRow">
+          <button id="hemN" class="on">N. hemisphere</button>
+          <button id="hemS">S. hemisphere</button>
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results &mdash; you read off</div>
+        <div class="results" id="results"></div>
+        <div class="note" id="eclipseNote" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Phase depends only on the Sun&ndash;Moon&ndash;Earth angle, not on Earth&rsquo;s shadow.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Moon Phases <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>The Sun always lights exactly one half of the Moon. As the Moon orbits Earth (about once every 29.5 days), we see that lit half from a changing angle &mdash; sometimes face-on (full), sometimes edge-on (quarter), sometimes from behind (new). The <b>phase is set entirely by the Sun&ndash;Moon&ndash;Earth angle</b>. Earth&rsquo;s shadow has nothing to do with it (that&rsquo;s a lunar eclipse, which is rare).</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Drag the age slider or hit <b>Play month</b> and watch the top view: the Moon&rsquo;s lit side always points at the Sun. The lower panel is the same Moon seen from Earth. Use the quarter buttons to jump to the named phases, and switch hemispheres to see why the lit edge flips.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">illuminated fraction from the elongation angle &theta; (Sun&ndash;Earth&ndash;Moon). &theta; = 0&deg; new, 180&deg; full.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">the Moon&rsquo;s age in days from &theta; &mdash; one synodic month is 29.53 d.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">rough moonrise: the Moon rises about 50 min later each day, ~6 AM at new, noon at first quarter, 6 PM at full.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Why not an eclipse every month?</div>
+        <p style="margin:0;">The Moon&rsquo;s orbit is tilted about 5&deg; to the Earth&ndash;Sun plane, so at most new and full moons the Moon passes above or below the exact line-up. Eclipses only happen on the few occasions each year when a new or full moon lands near that crossing point.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/4-5-phases-and-motions-of-the-moon" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 4.5 Phases and Motions of the Moon</a></li>
+          <li><a href="https://svs.gsfc.nasa.gov/Gallery/moonphase.html" target="_blank" rel="noopener" style="color:#8fc7ff;">NASA SVS &mdash; Moon phase visualizations</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; a 7-day-old Moon <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Tonight the Moon is 7 days past new. What phase is it, roughly how lit is it, and when is it up? Assume you are in the Northern hemisphere.</p>
+    <div class="step"><div class="h">1 &middot; Turn age into an angle</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">7 days is a bit under a quarter of the 29.53-day cycle, so &theta; &asymp; 85&deg; &mdash; just before first quarter.</div></div>
+    <div class="step"><div class="h">2 &middot; Illuminated fraction</div><span class="formula" id="ex2"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">About 46% lit and growing &rarr; <b>waxing crescent</b>, nearly first quarter. In the N. hemisphere the lit edge is on the <b>right</b>.</div></div>
+    <div class="step"><div class="h">3 &middot; When is it visible?</div><div style="font-size:11.5px;color:#e7d6e4;">First quarter rises around noon and sets around midnight, so a 7-day Moon is highest in the early evening and sets a little before midnight &mdash; the classic &ldquo;there&rsquo;s the Moon in the afternoon sky&rdquo; phase.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SYNODIC = 29.53;
+let hemisphere = 'N';   // 'N' | 'S'
+let playing = false;
+let rafId = null, lastTs = null;
+
+// theta = elongation angle, 0..360 deg. 0 = new, 180 = full. Moon orbits CCW as
+// seen from the north, so theta increases with time.
+function theta() { return (+$('daySlider').value) / SYNODIC * 360; }
+function setTheta(deg) { $('daySlider').value = ((deg % 360) + 360) % 360 / 360 * SYNODIC; }
+
+function illumFraction(th) { return (1 - Math.cos(th * Math.PI / 180)) / 2; }
+
+function phaseName(th) {
+  th = ((th % 360) + 360) % 360;
+  const NEAR = 6;
+  if (th < NEAR || th > 360 - NEAR) return 'New Moon';
+  if (Math.abs(th - 90) < NEAR) return 'First Quarter';
+  if (Math.abs(th - 180) < NEAR) return 'Full Moon';
+  if (Math.abs(th - 270) < NEAR) return 'Third Quarter';
+  if (th < 90) return 'Waxing Crescent';
+  if (th < 180) return 'Waxing Gibbous';
+  if (th < 270) return 'Waning Gibbous';
+  return 'Waning Crescent';
+}
+
+function riseSet(th) {
+  // new -> rise ~6:00, first qtr ~12:00, full ~18:00, third qtr ~0:00
+  const rise = (6 + th / 360 * 24) % 24;
+  const set = (rise + 12) % 24;
+  return { rise, set };
+}
+function fmtTime(h) {
+  let hh = Math.floor(h) % 24;
+  let mm = Math.round((h - Math.floor(h)) * 60);
+  if (mm === 60) { mm = 0; hh = (hh + 1) % 24; }
+  const ap = hh < 12 ? 'AM' : 'PM';
+  let h12 = hh % 12; if (h12 === 0) h12 = 12;
+  return h12 + ':' + String(mm).padStart(2, '0') + ' ' + ap;
+}
+
+// ---------- top-down space view ----------
+function drawSky() {
+  const c = $('sky'), ctx = c.getContext('2d');
+  const W = 520, H = 300;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  // starfield
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let i = 0; i < 90; i++) {
+    const x = (i * 97.13) % W, y = (i * 53.71 + i * i * 0.3) % H;
+    ctx.globalAlpha = 0.2 + (i % 5) * 0.13;
+    ctx.fillRect(x, y, 1.4, 1.4);
+  }
+  ctx.globalAlpha = 1;
+
+  const ex = W * 0.60, ey = H * 0.5;   // Earth position
+  const orbitR = 96;
+
+  // sunlight streaming from the left
+  const grad = ctx.createLinearGradient(0, 0, 220, 0);
+  grad.addColorStop(0, 'rgba(255,214,120,0.32)');
+  grad.addColorStop(1, 'rgba(255,214,120,0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 220, H);
+  for (let y = 40; y < H; y += 46) {
+    ctx.strokeStyle = 'rgba(255,220,140,0.45)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(6, y); ctx.lineTo(150, y);
+    ctx.lineTo(142, y - 4); ctx.moveTo(150, y); ctx.lineTo(142, y + 4);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#ffd66b'; ctx.font = '600 12px "Source Sans 3",sans-serif';
+  ctx.textAlign = 'left'; ctx.fillText('☀  sunlight', 8, 24);
+
+  // Moon orbit path
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(ex, ey, orbitR, 0, Math.PI * 2); ctx.stroke();
+
+  // Earth (lit on the left / sunward side)
+  drawBall(ctx, ex, ey, 17, Math.PI, '#3b6ea5', '#12233a');
+  ctx.fillStyle = '#9fb0bf'; ctx.font = '11px "Source Sans 3",sans-serif';
+  ctx.textAlign = 'center'; ctx.fillText('Earth', ex, ey + 33);
+
+  // Moon: theta from the sunward (new) point. Orbit runs new (W) → first
+  // quarter (S, screen-bottom) → full (E) → third quarter (N) → new, matching
+  // the standard textbook top-down diagram. Same for both hemispheres.
+  const th = theta() * Math.PI / 180;
+  const mx = ex - orbitR * Math.cos(th);
+  const my = ey + orbitR * Math.sin(th);
+  // lit hemisphere always faces the Sun (screen-left)
+  drawBall(ctx, mx, my, 9, Math.PI, '#e9e2d0', '#2a2b30');
+
+  // wedge: the face of the Moon turned toward Earth
+  ctx.strokeStyle = 'rgba(150,200,255,0.55)'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(mx, my); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#c9d3dd'; ctx.font = '11px "Source Sans 3",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Moon', mx, my - 16);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10.5px "Source Sans 3",sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('top view — looking down on the orbit', W - 8, H - 10);
+}
+
+// a sphere lit from direction `lightAng` (radians, 0 = from the right)
+function drawBall(ctx, x, y, r, lightAng, litCol, darkCol) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = darkCol; ctx.fill();
+  ctx.clip();
+  const lx = x + Math.cos(lightAng) * r * 1.1;
+  const ly = y - Math.sin(lightAng) * r * 1.1;
+  const g = ctx.createRadialGradient(lx, ly, r * 0.2, lx, ly, r * 2.1);
+  g.addColorStop(0, litCol); g.addColorStop(0.55, litCol); g.addColorStop(1, darkCol);
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+// ---------- the Moon as seen from Earth ----------
+function drawDisc() {
+  const c = $('disc'), ctx = c.getContext('2d');
+  const W = 520, H = 190;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  for (let i = 0; i < 60; i++) {
+    const x = (i * 131.7) % W, y = (i * 71.3) % H;
+    ctx.globalAlpha = 0.15 + (i % 4) * 0.12; ctx.fillRect(x, y, 1.3, 1.3);
+  }
+  ctx.globalAlpha = 1;
+
+  const cx = W / 2, cy = H / 2 + 4, R = 66;
+  const th = theta();
+  const k = illumFraction(th);           // illuminated fraction 0..1
+  const thm = ((th % 360) + 360) % 360;
+  let waxing = thm < 180;                 // lit limb on the right in N. hemisphere
+  if (hemisphere === 'S') waxing = !waxing;
+
+  // dark disc with faint earthshine
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = '#1c2531'; ctx.fill();
+
+  // lit region: right (or left) limb semicircle + terminator half-ellipse
+  const cosPhase = 1 - 2 * k;             // +1 at new, -1 at full
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+  ctx.beginPath();
+  const s = waxing ? 1 : -1;
+  // limb semicircle from top to bottom on the lit side
+  ctx.ellipse(cx, cy, R, R, 0, -Math.PI / 2 * s, Math.PI / 2 * s, s < 0);
+  // terminator: half-ellipse back from bottom to top
+  ctx.ellipse(cx, cy, R * Math.abs(cosPhase), R, 0, Math.PI / 2 * s, -Math.PI / 2 * s, cosPhase > 0 ? s > 0 : s < 0);
+  ctx.closePath();
+  const mg = ctx.createRadialGradient(cx - R * 0.3 * s, cy - R * 0.3, R * 0.1, cx, cy, R * 1.3);
+  mg.addColorStop(0, '#fdfaf1'); mg.addColorStop(0.7, '#e7ddc6'); mg.addColorStop(1, '#ccc0a2');
+  ctx.fillStyle = mg; ctx.fill();
+  // a couple of maria so the disc reads as the Moon
+  ctx.fillStyle = 'rgba(120,120,135,0.28)';
+  ctx.beginPath(); ctx.arc(cx - 18, cy - 14, 13, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 12, cy + 18, 9, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 22, cy - 20, 6, 0, 7); ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+
+  // labels
+  ctx.fillStyle = '#e7ddc6'; ctx.textAlign = 'center';
+  ctx.font = '600 14px "Source Serif 4",serif';
+  ctx.fillText(phaseName(th), cx, 22);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10.5px "Source Sans 3",sans-serif';
+  ctx.fillText('the same Moon, seen from Earth (' + hemisphere + '. hemisphere)', cx, H - 9);
+
+  // waxing / waning arrow
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '11px "Source Sans 3",sans-serif';
+  ctx.textAlign = waxing ? 'left' : 'right';
+  const tag = (thm > 4 && thm < 176) ? 'waxing → more each night'
+    : (thm > 184 && thm < 356) ? '← waning, less each night' : '';
+  if (tag) ctx.fillText(tag, waxing ? cx + R + 12 : cx - R - 12, cy + 3);
+}
+
+function render() {
+  const th = theta();
+  const age = (+$('daySlider').value);
+  $('dayVal').textContent = age.toFixed(1) + ' d';
+  const k = illumFraction(th);
+  const { rise, set } = riseSet(th);
+  const thm = ((th % 360) + 360) % 360;
+
+  // active quarter chip
+  document.querySelectorAll('#chips button').forEach(b => {
+    b.classList.toggle('on', Math.abs(((thm - (+b.dataset.deg)) % 360 + 360) % 360) < 4 ||
+      Math.abs(((thm - (+b.dataset.deg)) % 360 + 360) % 360) > 356);
+  });
+
+  $('results').innerHTML =
+    row('phase', phaseName(th), true) +
+    row('illuminated', (k * 100).toFixed(0) + '%') +
+    row('elongation θ', th.toFixed(0) + '°') +
+    row('age', age.toFixed(1) + ' d of 29.5') +
+    row('moonrise', fmtTime(rise), true) +
+    row('moonset', fmtTime(set), true) +
+    row('overhead near', fmtTime((rise + 6) % 24), true);
+
+  const near = (d) => Math.abs(((thm - d) % 360 + 360) % 360) < 3 || Math.abs(((thm - d) % 360 + 360) % 360) > 357;
+  const en = $('eclipseNote');
+  if (near(0)) { en.style.display = ''; en.innerHTML = '<b>New moon.</b> A solar eclipse is possible now &mdash; but only if the Moon is also near an orbital node. Most months it slips just above or below the Sun.'; }
+  else if (near(180)) { en.style.display = ''; en.innerHTML = '<b>Full moon.</b> A lunar eclipse is possible now &mdash; but only near a node. Most full moons miss Earth&rsquo;s shadow entirely.'; }
+  else en.style.display = 'none';
+
+  $('note').textContent =
+    thm < 6 || thm > 354
+      ? 'New Moon: the lit side faces entirely away from us. It is up in the daytime, near the Sun, so we cannot see it.'
+      : thm > 174 && thm < 186
+      ? 'Full Moon: we see the whole lit face. It rises at sunset and sets at sunrise, up all night.'
+      : (thm < 180 ? 'Waxing: the lit fraction grows each night. ' : 'Waning: the lit fraction shrinks each night. ') +
+        'The Sun lights the same half of the Moon the whole time — only our viewing angle changes.';
+
+  drawSky(); drawDisc();
+}
+
+function row(k, v, big) {
+  return '<div class="resrow' + (big ? ' big' : '') + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+}
+
+// ---------- animation ----------
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; lastTs = ts;
+  let age = (+$('daySlider').value) + dt * 3.2;   // ~9 s per month
+  if (age > SYNODIC) age -= SYNODIC;
+  $('daySlider').value = age;
+  render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play month';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); }
+  else if (rafId) cancelAnimationFrame(rafId);
+}
+
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('daySlider').value = 0; render(); });
+$('daySlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
+document.querySelectorAll('#chips button').forEach(b => {
+  b.addEventListener('click', () => { setPlaying(false); setTheta(+b.dataset.deg); render(); });
+});
+$('hemN').addEventListener('click', () => { hemisphere = 'N'; $('hemN').classList.add('on'); $('hemS').classList.remove('on'); render(); });
+$('hemS').addEventListener('click', () => { hemisphere = 'S'; $('hemS').classList.add('on'); $('hemN').classList.remove('on'); render(); });
+
+function katexAll() {
+  const specs = [
+    ['f1', "k = \\dfrac{1 - \\cos\\theta}{2}"],
+    ['f2', "\\text{age} = \\dfrac{\\theta}{360^\\circ}\\times 29.53\\ \\text{d}"],
+    ['f3', "t_{rise} \\approx 6\\,\\text{AM} + \\dfrac{\\theta}{360^\\circ}\\times 24\\,\\text{h}"],
+    ['ex1', "\\theta = \\dfrac{7}{29.53}\\times 360^\\circ \\approx 85^\\circ"],
+    ['ex2', "k = \\dfrac{1 - \\cos 85^\\circ}{2} \\approx 0.46"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\text\{([^}]*)\}/g, '$1').replace(/\\dfrac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)')
+      .replace(/\\times/g, '×').replace(/\\approx/g, '≈').replace(/\\cos/g, 'cos').replace(/\^\\circ/g, '°').replace(/[{}\\]/g, '');
+  }
+}
+
+['infoModal', 'exampleModal'].forEach(m => {
+  $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); });
+});
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>

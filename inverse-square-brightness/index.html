@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inverse-Square Brightness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#b8862b; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #scene { aspect-ratio:520/240; }
+  #graph { aspect-ratio:520/160; background:#0d1420; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#8f6821; }
+  input[type=range] { width:100%; accent-color:#b8862b; }
+  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button:hover { border-color:#b8862b; }
+  .chips button.on { background:#f4ecdc; border-color:#b8862b; color:#77571a; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f4eddd; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4a3c1e; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#77571a; text-align:right; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f4eddd; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Inverse-Square Brightness <span class="sub">— why distant stars look faint</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="scene" width="520" height="240"></canvas>
+        <canvas id="graph" width="520" height="160"></canvas>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">The star</div>
+        <div class="chips" id="chips">
+          <button data-l="1" data-d="10">Sun-like</button>
+          <button data-l="25" data-d="10">Sirius A</button>
+          <button data-l="120000" data-d="430">Rigel</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>luminosity L</span><span class="val" id="lVal">1 L☉</span></div>
+          <input type="range" id="lSlider" min="-1" max="6" step="0.02" value="0">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>distance d</span><span class="val" id="dVal">10 pc</span></div>
+          <input type="range" id="dSlider" min="0.3" max="1000" step="0.1" value="10">
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. No interstellar dimming by dust; magnitudes are bolometric.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Inverse-Square Brightness <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>A star pours out a fixed amount of light per second &mdash; its <b>luminosity</b>. By the time that light reaches you it has spread over a sphere, and a sphere twice as big has four times the area, so the light you actually catch &mdash; the <b>flux</b> &mdash; drops as 1/distance&sup2;. That is why a nearby dim star can outshine a distant brilliant one, and why you can&rsquo;t tell a star&rsquo;s true power from how bright it looks without also knowing how far away it is.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Set a luminosity and a distance. The scene shows the same light spreading thinner as it travels out; the swatch and the bar are how bright the star looks from here. The graph is flux vs distance &mdash; a steep 1/d&sup2; fall-off. <b>Apparent magnitude</b> is what you see; <b>absolute magnitude</b> is what it would look like from a standard 10 pc.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">flux = luminosity spread over a sphere of radius d.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">the magnitude scale: 5 magnitudes = a factor of 100 in flux.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">the distance modulus &mdash; the gap between how bright a star looks and how bright it really is.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/17-1-the-brightness-of-stars" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 17.1 The Brightness of Stars</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/19-3-variable-stars-one-key-to-cosmic-distances" target="_blank" rel="noopener" style="color:#8fc7ff;">19.3 Variable Stars &amp; Cosmic Distances</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; Sirius vs the Sun <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Sirius is 25 times as luminous as the Sun and lies 2.6 pc away. The Sun is only 1 AU away. How does the Sun&rsquo;s flux at Earth compare with the flux we get from Sirius?</p>
+    <div class="step"><div class="h">1 &middot; Put both distances in the same unit</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">1 AU = 4.85&times;10&#8315;&#8310; pc; Sirius is 2.6 pc, about 540,000&times; farther.</div></div>
+    <div class="step"><div class="h">2 &middot; Flux ratio</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">The Sun looks about 10 billion times brighter than Sirius, even though Sirius is intrinsically 25&times; more powerful. Distance wins, overwhelmingly.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const F_SUN_10PC = 1;   // reference flux: a 1 L_sun star at 10 pc → arbitrary unit 1
+const M_SUN_ABS = 4.83; // Sun's absolute (bolometric-ish) magnitude
+let Lsun = 1, dpc = 10;
+
+function fluxAt(L, d) { return L / (d * d) * 100; }   // in F_SUN_10PC units (×100 so a Sun at 10pc = 1)
+function appMag(L, d) { return M_SUN_ABS + 5 * Math.log10(d / 10) - 2.5 * Math.log10(L); }
+function absMag(L) { return M_SUN_ABS - 2.5 * Math.log10(L); }
+
+// ---------- scene ----------
+function drawScene() {
+  const c = $('scene'), ctx = c.getContext('2d');
+  const W = 520, H = 240;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const sx = 46, sy = H / 2;
+
+  // the star
+  const bright = Math.min(1, Math.sqrt(Lsun) / 40 + 0.3);
+  const sg = ctx.createRadialGradient(sx, sy, 2, sx, sy, 40);
+  sg.addColorStop(0, '#fff6d8'); sg.addColorStop(0.4, 'rgba(255,214,120,' + bright + ')'); sg.addColorStop(1, 'rgba(255,214,120,0)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 40, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffdf6b'; ctx.beginPath(); ctx.arc(sx, sy, 9, 0, 7); ctx.fill();
+  ctx.fillStyle = '#9fb0bf'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('star', sx, sy + 26);
+
+  // expanding shells with a fixed number of "photons" spreading over growing area
+  const rays = 26;
+  for (let s = 1; s <= 4; s++) {
+    const r = 60 + s * 100;
+    if (r > W - 20) break;
+    ctx.strokeStyle = 'rgba(255,224,140,' + (0.28 / s) + ')';
+    ctx.beginPath(); ctx.arc(sx, sy, r, -0.9, 0.9); ctx.stroke();
+    // photon dots, same count each shell → sparser (dimmer) farther out
+    ctx.fillStyle = 'rgba(255,236,170,' + (0.9 / (s * s)) + ')';
+    for (let k = 0; k < rays; k++) {
+      const a = -0.85 + k / (rays - 1) * 1.7;
+      ctx.beginPath(); ctx.arc(sx + r * Math.cos(a), sy + r * Math.sin(a), 1.6, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '8.5px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('×' + (s * s), sx + r * 0.72, sy - r * 0.62);
+  }
+
+  // observer eye at the chosen distance (mapped log-ish onto the canvas)
+  const obsX = Math.min(W - 26, 60 + Math.log10(dpc / 0.3) / Math.log10(1000 / 0.3) * (W - 100));
+  ctx.font = '20px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+  ctx.fillText('👁', obsX, sy + 6);
+  ctx.fillStyle = '#9fb0bf'; ctx.font = '9px "Source Sans 3",sans-serif';
+  ctx.fillText(dpc.toFixed(dpc < 10 ? 1 : 0) + ' pc', obsX, sy + 22);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('same light, 4× more area each time the distance doubles', 10, H - 10);
+}
+
+// ---------- flux vs distance ----------
+function drawGraph() {
+  const c = $('graph'), ctx = c.getContext('2d');
+  const W = 520, H = 160;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const x0 = 40, x1 = W - 12, y0 = H - 22, y1 = 14;
+  const dLo = 0.3, dHi = 1000;
+  const X = d => x0 + Math.log10(d / dLo) / Math.log10(dHi / dLo) * (x1 - x0);
+  const fRef = fluxAt(Lsun, dpc);
+  const fLo = fluxAt(Lsun, dHi), fHi = fluxAt(Lsun, dLo);
+  const Y = f => y0 - Math.log10(f / fLo) / Math.log10(fHi / fLo) * (y0 - y1);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  for (const d of [1, 10, 100, 1000]) ctx.fillText(d + ' pc', X(d), y0 + 12);
+  ctx.textAlign = 'right'; ctx.fillText('flux (log scale)', x1, y1 + 2);
+
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) { const d = dLo * Math.pow(dHi / dLo, i / 200); const px = X(d), py = Y(fluxAt(Lsun, d)); i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+  ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(X(dpc), y1); ctx.lineTo(X(dpc), y0); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(dpc), Y(fRef), 3.5, 0, 7); ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('how bright the star looks vs how far away it is', 8, 12);
+}
+
+function render() {
+  Lsun = Math.pow(10, +$('lSlider').value);
+  dpc = +$('dSlider').value;
+  $('lVal').textContent = Lsun < 10 ? Lsun.toFixed(2) + ' L☉' : Lsun < 1e4 ? Lsun.toFixed(0) + ' L☉' : Lsun.toExponential(1) + ' L☉';
+  $('dVal').textContent = dpc < 10 ? dpc.toFixed(1) + ' pc' : dpc.toFixed(0) + ' pc';
+  document.querySelectorAll('#chips button').forEach(b =>
+    b.classList.toggle('on', Math.abs(Math.log10(+b.dataset.l) - Math.log10(Lsun)) < 0.05 && Math.abs(+b.dataset.d - dpc) / dpc < 0.05));
+
+  const f = fluxAt(Lsun, dpc);
+  const m = appMag(Lsun, dpc), Mabs = absMag(Lsun);
+  const swatch = Math.max(0, Math.min(1, 0.5 + (2 - m) * 0.12));
+
+  $('results').innerHTML =
+    row('flux at your eye', (f < 0.001 ? f.toExponential(2) : f.toFixed(3)) + ' × (Sun@10 pc)') +
+    row('apparent magnitude m', m.toFixed(2) + (m < -1 ? '  (very bright)' : m > 6 ? '  (below naked eye)' : '')) +
+    row('absolute magnitude M', Mabs.toFixed(2)) +
+    row('distance modulus m − M', (m - Mabs).toFixed(2)) +
+    row('move 2× farther →', '0.25× the flux');
+
+  $('note').textContent = 'This star gives off ' + (Lsun >= 1 ? Lsun.toFixed(Lsun < 100 ? 1 : 0) : Lsun.toFixed(2)) + '× the Sun’s light, '
+    + 'but from ' + dpc.toFixed(dpc < 10 ? 1 : 0) + ' pc it delivers only ' + f.toPrecision(2) + ' units to your eye. '
+    + (m > 6 ? 'That is below the naked-eye limit — you would need a telescope.' : 'That is bright enough to see without a telescope.');
+
+  drawScene(); drawGraph();
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+['lSlider', 'dSlider'].forEach(id => $(id).addEventListener('input', render));
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
+  $('lSlider').value = Math.log10(+b.dataset.l); $('dSlider').value = b.dataset.d; render();
+}));
+
+function katexAll() {
+  const specs = [
+    ['f1', "F = \\dfrac{L}{4\\pi d^{2}}"],
+    ['f2', "m_1 - m_2 = -2.5\\log_{10}\\!\\dfrac{F_1}{F_2}"],
+    ['f3', "m - M = 5\\log_{10}\\!\\left(\\dfrac{d}{10\\ \\text{pc}}\\right)"],
+    ['ex1', "d_\\odot = 1\\ \\text{AU} = 4.85\\times10^{-6}\\ \\text{pc}"],
+    ['ex2', "\\dfrac{F_\\odot}{F_{\\text{Sirius}}} = \\dfrac{1}{25}\\left(\\dfrac{2.6}{4.85\\times10^{-6}}\\right)^{2} \\approx 10^{10}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>

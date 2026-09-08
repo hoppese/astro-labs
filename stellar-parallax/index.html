@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stellar Parallax</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#3a9aa8; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #geom { aspect-ratio:520/250; }
+  #sky { aspect-ratio:520/200; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #2f7f8b; background:#2f7f8b; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#2f7f8b; }
+  input[type=range] { width:100%; accent-color:#3a9aa8; }
+  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button:hover { border-color:#3a9aa8; }
+  .chips button.on { background:#e3f1f2; border-color:#3a9aa8; color:#245e67; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#e7f1f2; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#274c52; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#245e67; text-align:right; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#e7f1f2; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Stellar Parallax <span class="sub">— measuring a star&rsquo;s distance by looking twice</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="geom" width="520" height="250"></canvas>
+        <canvas id="sky" width="520" height="200"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Run a year</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Which star</div>
+        <div class="chips" id="chips">
+          <button data-d="1.30">Proxima</button>
+          <button data-d="3.65">Sirius</button>
+          <button data-d="7.68" class="on">Vega</button>
+          <button data-d="132">Polaris</button>
+          <button data-d="168">Betelgeuse</button>
+          <button data-d="800">Deneb</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>distance to the star</span><span class="val" id="dVal">7.7 pc</span></div>
+          <input type="range" id="dSlider" min="1" max="200" step="0.1" value="7.68">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>time of year</span><span class="val" id="mVal">January</span></div>
+          <input type="range" id="mSlider" min="0" max="12" step="0.1" value="0">
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. The parallax wobble is drawn hugely magnified; real parallaxes are all under 1 arcsecond.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Stellar Parallax <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Hold up a finger and blink between eyes &mdash; it jumps against the background. Do the same with a nearby star using the two ends of Earth&rsquo;s orbit (six months apart, 2 AU apart) as your two eyes, and the star traces a tiny ellipse against the far more distant background stars over a year. Half the side-to-side swing is the <b>parallax angle</b> <i>p</i>. The distance in parsecs is simply <b>1 / p</b> with <i>p</i> in arcseconds &mdash; that is what &ldquo;parsec&rdquo; means. This is the one direct rung on the whole cosmic distance ladder.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Pick a star or set a distance, then run the year. The top view shows Earth&rsquo;s orbit and the sight line to the star swinging back and forth; the lower panel is the star&rsquo;s apparent path on the sky. Move the star farther away and the wobble &mdash; and the measurable parallax &mdash; shrinks toward nothing.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">distance in parsecs = 1 over the parallax angle in arcseconds.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">the small-angle geometry it comes from: baseline 1 AU, angle <i>p</i>.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">1 parsec in everyday units &mdash; about 3.26 light-years.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/19-2-surveying-the-stars" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 19.2 Surveying the Stars</a></li>
+          <li><a href="https://www.esa.int/Science_Exploration/Space_Science/Gaia" target="_blank" rel="noopener" style="color:#8fc7ff;">ESA Gaia &mdash; parallaxes for ~2 billion stars</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; the distance to 61 Cygni <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">In 1838 Bessel measured a parallax of 0.314 arcseconds for 61 Cygni &mdash; the first stellar distance ever found. How far away is it?</p>
+    <div class="step"><div class="h">1 &middot; The parsec relation</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; In light-years</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">About 10.4 light-years &mdash; the modern value is 11.4 ly. An angle of 0.3&Prime; is the width of a coin seen from ~15 km, which is why no one managed it before precise telescopes.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+let playing = false, rafId = null, lastTs = null;
+
+function distPc() { return +$('dSlider').value; }
+function monthF() { return +$('mSlider').value; }
+function parallaxArcsec() { return 1 / distPc(); }
+
+// ---------- geometry (top view) ----------
+function drawGeom() {
+  const c = $('geom'), ctx = c.getContext('2d');
+  const W = 520, H = 250;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  for (let i = 0; i < 60; i++) { ctx.globalAlpha = 0.12 + (i % 4) * 0.1; ctx.fillRect((i * 97.3) % W, (i * 61.7) % (H - 40), 1.3, 1.3); }
+  ctx.globalAlpha = 1;
+
+  const sunX = 84, sunY = H / 2, orbR = 40;
+  // Sun + Earth orbit
+  const sg = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, 16);
+  sg.addColorStop(0, '#fff3c4'); sg.addColorStop(1, 'rgba(255,211,83,0)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sunX, sunY, 16, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffd353'; ctx.beginPath(); ctx.arc(sunX, sunY, 5, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,160,220,0.4)'; ctx.beginPath(); ctx.ellipse(sunX, sunY, orbR, orbR * 0.5, 0, 0, 7); ctx.stroke();
+
+  const th = monthF() / 12 * 2 * Math.PI;
+  const ex = sunX + orbR * Math.cos(th), ey = sunY + orbR * 0.5 * Math.sin(th);
+  ctx.fillStyle = '#4f93d6'; ctx.beginPath(); ctx.arc(ex, ey, 4.5, 0, 7); ctx.fill();
+  ctx.fillStyle = '#a9c8e6'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = ex > sunX ? 'left' : 'right';
+  ctx.fillText('Earth', ex + (ex > sunX ? 8 : -8), ey + 3);
+
+  // the star, off to the right; on-screen offset scaled to the parallax (capped)
+  const starBaseX = W - 40, starY = sunY;
+  const exag = Math.min(2.6, 24 / distPc());
+  const pOffset = orbR * Math.sin(th) * 0.5 * exag;
+  const starX = starBaseX;
+  const starDrawY = starY - pOffset;
+  ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(starX, starDrawY, 5, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffe08a'; ctx.fillText('star', starX, starDrawY - 9);
+
+  // sight line Earth → star, extended to a background plane
+  ctx.strokeStyle = 'rgba(150,220,230,0.6)'; ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(starX, starDrawY);
+  const dx = starX - ex, dy = starDrawY - ey;
+  ctx.lineTo(ex + dx * 1.12, ey + dy * 1.12);
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // 6-months-ago sight line (faint)
+  const th2 = th + Math.PI;
+  const ex2 = sunX + orbR * Math.cos(th2), ey2 = sunY + orbR * 0.5 * Math.sin(th2);
+  const p2 = orbR * Math.sin(th2) * 0.5 * exag;
+  ctx.strokeStyle = 'rgba(150,220,230,0.25)'; ctx.setLineDash([2, 3]);
+  ctx.beginPath(); ctx.moveTo(ex2, ey2); ctx.lineTo(starX, starY - p2); ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('top view — the sight line to the star swings over the year', 10, H - 10);
+}
+
+// ---------- sky panel ----------
+function drawSky() {
+  const c = $('sky'), ctx = c.getContext('2d');
+  const W = 520, H = 200;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2;
+  // background stars fixed
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let i = 0; i < 80; i++) { ctx.globalAlpha = 0.2 + (i % 5) * 0.1; ctx.fillRect((i * 131.3) % W, (i * 71.9) % H, 1.5, 1.5); }
+  ctx.globalAlpha = 1;
+
+  // the parallax ellipse (semi-major = p, semi-minor smaller for a mid-ecliptic star)
+  const p = parallaxArcsec();
+  const scale = 62 / Math.max(p, 0.006);   // px per arcsec, so the biggest ellipse fills the panel
+  const ax = Math.min(p * scale, 150), ay = ax * 0.42;
+  ctx.strokeStyle = 'rgba(150,220,230,0.4)'; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.ellipse(cx, cy, ax, ay, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+
+  const th = monthF() / 12 * 2 * Math.PI;
+  const sx = cx + ax * Math.cos(th), sy = cy + ay * Math.sin(th);
+  // trail
+  ctx.strokeStyle = 'rgba(255,224,138,0.5)';
+  ctx.beginPath();
+  for (let m = 0; m <= monthF(); m += 0.1) { const t = m / 12 * 2 * Math.PI; const x = cx + ax * Math.cos(t), y = cy + ay * Math.sin(t); m === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.stroke();
+  ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.stroke();
+
+  // parallax angle bracket
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath(); ctx.moveTo(cx - ax, cy + ay + 10); ctx.lineTo(cx + ax, cy + ay + 10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - ax, cy + ay + 6); ctx.lineTo(cx - ax, cy + ay + 14); ctx.moveTo(cx + ax, cy + ay + 6); ctx.lineTo(cx + ax, cy + ay + 14); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('total swing = 2p = ' + (2 * p).toFixed(4) + '″', cx, cy + ay + 26);
+
+  ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText('the star’s apparent path against the background over one year', 10, 14);
+}
+
+function render() {
+  const d = distPc();
+  $('dVal').textContent = d.toFixed(1) + ' pc';
+  $('mVal').textContent = MONTHS[Math.floor(monthF()) % 12];
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.d - d) / d < 0.03));
+
+  const p = parallaxArcsec();
+  $('results').innerHTML =
+    row('parallax angle p', p < 0.01 ? (p * 1000).toFixed(2) + ' mas' : p.toFixed(4) + '″') +
+    row('distance', d.toFixed(1) + ' pc') +
+    row('in light-years', (d * 3.262).toFixed(1) + ' ly') +
+    row('in trillions of km', (d * 30.857).toFixed(1)) +
+    row('measurable?', p > 0.05 ? 'easily (ground telescopes)' : p > 0.001 ? 'yes — with Gaia (~20 μas)' : 'beyond parallax; use other methods');
+
+  $('note').textContent = d < 10
+    ? 'A nearby star: the parallax is a large fraction of an arcsecond and was reachable even with 19th-century telescopes.'
+    : d < 100
+    ? 'At this distance the wobble is a few hundredths of an arcsecond — measurable from good observatories, routine for the Gaia spacecraft.'
+    : 'Hundreds of parsecs out, the parallax shrinks below a milliarcsecond. Beyond a few thousand parsecs, astronomers switch to standard candles instead.';
+
+  drawGeom(); drawSky();
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; lastTs = ts;
+  let m = monthF() + dt * 3; if (m > 12) m -= 12;
+  $('mSlider').value = m; render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Run a year';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+}
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('mSlider').value = 0; render(); });
+$('dSlider').addEventListener('input', render);
+$('mSlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('dSlider').value = b.dataset.d; render(); }));
+
+function katexAll() {
+  const specs = [
+    ['f1', "d\\,[\\text{pc}] = \\dfrac{1}{p\\,[\\text{arcsec}]}"],
+    ['f2', "\\tan p = \\dfrac{1\\ \\text{AU}}{d} \\approx p \\ \\text{(small angle)}"],
+    ['f3', "1\\ \\text{pc} = 3.086\\times10^{13}\\ \\text{km} = 3.26\\ \\text{ly}"],
+    ['ex1', "d = \\dfrac{1}{0.314} \\approx 3.18\\ \\text{pc}"],
+    ['ex2', "3.18\\ \\text{pc} \\times 3.26 \\approx 10.4\\ \\text{ly}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retrograde Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#b0533b; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #orbits { aspect-ratio:520/300; }
+  #sky { aspect-ratio:520/180; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #8a3f2b; background:#8a3f2b; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#a8492f; }
+  input[type=range] { width:100%; accent-color:#b0533b; }
+  .toggleRow { display:flex; gap:0; border:1px solid #d3d8dd; border-radius:9px; overflow:hidden; }
+  .toggleRow button { flex:1; border:0; background:#fff; color:#525a63; font:600 11.5px 'Source Sans 3',sans-serif; padding:8px 6px; cursor:pointer; }
+  .toggleRow button.on { background:#8a3f2b; color:#fff; }
+  .checkrow { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#4b535b; cursor:pointer; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f6ede9; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4a352d; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#8a3f2b; text-align:right; }
+  .resrow.retro { background:#f6dcd4; }
+  .resrow.retro .v { color:#a5281a; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f6ede9; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Retrograde Motion <span class="sub">— why Mars loops backward</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="orbits" width="520" height="300"></canvas>
+        <canvas id="sky" width="520" height="180"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Play</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Outer planet</div>
+        <div class="toggleRow">
+          <button data-p="mars" class="on">Mars</button>
+          <button data-p="jupiter">Jupiter</button>
+          <button data-p="saturn">Saturn</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>Time</span><span class="val" id="tVal">0.0 yr</span></div>
+          <input type="range" id="tSlider" min="0" max="6" step="0.01" value="0">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>Speed</span><span class="val" id="spdVal">1.0×</span></div>
+          <input type="range" id="spdSlider" min="0.25" max="4" step="0.25" value="1">
+        </div>
+        <label class="checkrow"><input type="checkbox" id="sightChk" checked> sight line Earth → planet → stars</label>
+        <label class="checkrow"><input type="checkbox" id="trailChk" checked> apparent track on the sky</label>
+        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Circular, nearly-coplanar orbits; the small loop comes from the planet&rsquo;s slight orbital tilt.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Retrograde Motion <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Most of the time an outer planet drifts slowly <b>eastward</b> against the background stars. But around <b>opposition</b> &mdash; when Earth, on its faster inside track, catches up and passes it &mdash; the planet appears to stop, back up <b>westward</b> for a few weeks, then resume. Nothing about the planet changes; it is entirely a line-of-sight effect of Earth overtaking it. Explaining this without epicycles was one of the first big wins for the Sun-centred model.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Hit Play. The top panel is the real layout of the orbits; the sight line runs from Earth through the planet out to the stars. The bottom panel plots where the planet <i>appears</i> to be on the sky over time &mdash; watch the track reverse each time Earth sweeps past. Switch planets to see how a slower, more distant planet makes a tighter, more frequent loop.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">each planet&rsquo;s angular position, from Kepler&rsquo;s third law P&sup2; &prop; a&sup3;.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">the planet&rsquo;s direction as seen from Earth &mdash; retrograde whenever this angle is decreasing.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">synodic period: the time between one opposition and the next, i.e. between retrograde loops.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/2-4-the-birth-of-modern-astronomy" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 2.4 The Birth of Modern Astronomy</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/3-1-the-laws-of-planetary-motion" target="_blank" rel="noopener" style="color:#8fc7ff;">3.1 The Laws of Planetary Motion</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; how often does Mars go retrograde? <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Mars orbits the Sun once every 1.88 years, Earth once per year. How long between one Mars retrograde loop and the next?</p>
+    <div class="step"><div class="h">1 &middot; Retrograde happens once per synodic period</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; Plug in the orbital periods</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">Earth laps Mars every <b>2.14 years</b>, so Mars goes retrograde a little less often than every two years, for about 10 weeks each time. Jupiter, much slower, gets lapped every 1.09 years &mdash; almost annually.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEG = Math.PI / 180;
+const PLANETS = {
+  mars:    { name: 'Mars',    a: 1.524, P: 1.881, inc: 1.85, node: 49.6,  col: '#e07a4a' },
+  jupiter: { name: 'Jupiter', a: 5.203, P: 11.86, inc: 1.30, node: 100.5, col: '#d8b27a' },
+  saturn:  { name: 'Saturn',  a: 9.537, P: 29.45, inc: 2.49, node: 113.7, col: '#e6d9a8' },
+};
+let planet = 'mars';
+let playing = false, rafId = null, lastTs = null;
+const EARTH = { a: 1.0, P: 1.0 };
+const START = { earth: 100, mars: 250 };   // starting longitudes (deg) tuned so t=0 is well before an opposition
+
+function pl() { return PLANETS[planet]; }
+function tYears() { return +$('tSlider').value; }
+
+// heliocentric ecliptic position (AU), planet slightly inclined
+function earthPos(t) { const th = (START.earth + 360 * t / EARTH.P) * DEG; return { x: Math.cos(th), y: Math.sin(th), z: 0 }; }
+function planetPos(t) {
+  const p = pl();
+  const th = (START.mars + 360 * t / p.P) * DEG;   // heliocentric longitude in the reference plane
+  const Om = p.node * DEG, i = p.inc * DEG;
+  const u = th - Om;                                // angle from the ascending node
+  const r = p.a;
+  return {
+    x: r * (Math.cos(Om) * Math.cos(u) - Math.sin(Om) * Math.sin(u) * Math.cos(i)),
+    y: r * (Math.sin(Om) * Math.cos(u) + Math.cos(Om) * Math.sin(u) * Math.cos(i)),
+    z: r * Math.sin(u) * Math.sin(i),
+  };
+}
+
+// geocentric apparent ecliptic longitude & latitude (deg)
+function apparent(t) {
+  const e = earthPos(t), m = planetPos(t);
+  const dx = m.x - e.x, dy = m.y - e.y, dz = m.z - e.z;
+  const lon = Math.atan2(dy, dx) / DEG;
+  const lat = Math.atan2(dz, Math.hypot(dx, dy)) / DEG;
+  return { lon, lat, dist: Math.hypot(dx, dy, dz) };
+}
+function unwrap(prev, lon) { while (lon - prev > 180) lon -= 360; while (lon - prev < -180) lon += 360; return lon; }
+
+function synodic() { const p = pl(); return 1 / Math.abs(1 / EARTH.P - 1 / p.P); }
+
+// ---------- orbit view ----------
+function drawOrbits() {
+  const c = $('orbits'), ctx = c.getContext('2d');
+  const W = 520, H = 300;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2, p = pl();
+  const scale = Math.min((W / 2 - 70) / p.a, (H / 2 - 30) / p.a);
+
+  // stars ring
+  const ringR = Math.min(W, H) / 2 - 8;
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let i = 0; i < 120; i++) {
+    const a = i * 0.34, r = ringR - (i % 3) * 3;
+    ctx.globalAlpha = 0.25 + (i % 4) * 0.12;
+    ctx.fillRect(cx + r * Math.cos(a) - 1, cy + r * Math.sin(a) - 1, 1.6, 1.6);
+  }
+  ctx.globalAlpha = 1;
+
+  // Sun
+  const sg = ctx.createRadialGradient(cx, cy, 2, cx, cy, 18);
+  sg.addColorStop(0, '#fff3c4'); sg.addColorStop(1, 'rgba(255,211,83,0)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffd353'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 7); ctx.fill();
+
+  // orbits
+  ctx.strokeStyle = 'rgba(120,160,220,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, EARTH.a * scale, 0, 7); ctx.stroke();
+  ctx.strokeStyle = 'rgba(224,122,74,0.4)'; ctx.beginPath(); ctx.arc(cx, cy, p.a * scale, 0, 7); ctx.stroke();
+
+  const t = tYears();
+  const e = earthPos(t), m = planetPos(t);
+  const eX = cx + e.x * scale, eY = cy + e.y * scale;
+  const mX = cx + m.x * scale, mY = cy + m.y * scale;
+
+  // sight line Earth → planet → star ring
+  if ($('sightChk').checked) {
+    const ang = Math.atan2(mY - eY, mX - eX);
+    const fx = cx + Math.cos(ang) * ringR, fy = cy + Math.sin(ang) * ringR;
+    // approximate: extend from Earth in the planet's direction to the ring
+    const dirx = mX - eX, diry = mY - eY, dl = Math.hypot(dirx, diry);
+    const ex2 = eX + dirx / dl * (ringR * 2), ey2 = eY + diry / dl * (ringR * 2);
+    ctx.strokeStyle = 'rgba(150,200,255,0.5)'; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(eX, eY); ctx.lineTo(ex2, ey2); ctx.stroke();
+    ctx.setLineDash([]);
+    // where it meets the ring
+    ctx.fillStyle = '#8fc7ff'; ctx.beginPath(); ctx.arc(clamp(ex2, 4, W - 4), clamp(ey2, 4, H - 4), 3, 0, 7); ctx.fill();
+  }
+
+  // Earth
+  ctx.fillStyle = '#4f93d6'; ctx.beginPath(); ctx.arc(eX, eY, 5, 0, 7); ctx.fill();
+  ctx.fillStyle = '#a9c8e6'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Earth', eX, eY - 9);
+  // planet
+  ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(mX, mY, 6, 0, 7); ctx.fill();
+  ctx.fillStyle = p.col; ctx.fillText(p.name, mX, mY - 10);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('real top-down view of the orbits', 10, 16);
+}
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+// ---------- apparent-track view ----------
+let track = [];   // {t, lon (unwrapped), lat, retro}
+function rebuildTrack() {
+  track = [];
+  const tEnd = +$('tSlider').max, step = 0.01;
+  let prev = null;
+  for (let t = 0; t <= tEnd + 1e-9; t += step) {
+    const ap = apparent(t);
+    let lon = ap.lon;
+    if (prev != null) lon = unwrap(prev, lon);
+    prev = lon;
+    track.push({ t, lon, lat: ap.lat });
+  }
+  for (let i = 1; i < track.length; i++) track[i].retro = (track[i].lon - track[i - 1].lon) < 0;
+  if (track[0]) track[0].retro = track[1] ? track[1].retro : false;
+}
+function drawSky() {
+  const c = $('sky'), ctx = c.getContext('2d');
+  const W = 520, H = 180;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+
+  const t = tYears();
+  const cur = track[Math.round(t / 0.01)] || apparentEntry(t);
+  const win = planet === 'mars' ? 46 : planet === 'jupiter' ? 26 : 20;   // half-width of sky shown, deg
+  // centre on the planet's MEAN motion so its retrograde wiggle shows against fixed stars
+  const rate = track.length > 1 ? (track[track.length - 1].lon - track[0].lon) / (+$('tSlider').max) : 0;
+  const lonC = track.length ? track[0].lon + rate * t : cur.lon;
+  const latPx = 22;   // px per degree of ecliptic latitude
+  const x = lon => W / 2 + (lon - lonC) / win * (W / 2);
+  const y = lat => H / 2 - lat * latPx;
+
+  // background stars at fixed ecliptic positions
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  for (let i = 0; i < 140; i++) {
+    const sl = Math.floor(lonC / 20) * 20 - 200 + i * 3.1;      // fixed grid of "stars"
+    const sb = (((i * 137) % 100) - 50) / 14;
+    const sx = x(sl + ((i * 53) % 7));
+    if (sx < -4 || sx > W + 4) continue;
+    ctx.globalAlpha = 0.22 + (i % 5) * 0.1;
+    ctx.fillRect(sx, y(sb), 1.5, 1.5);
+  }
+  ctx.globalAlpha = 1;
+
+  // ecliptic line
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(0, y(0)); ctx.lineTo(W, y(0)); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('ecliptic', 6, y(0) - 4);
+  ctx.textAlign = 'right'; ctx.fillText('← west     ecliptic longitude     east →', W - 6, 14);
+
+  if ($('trailChk').checked && track.length) {
+    // draw the whole apparent path, colour retrograde stretches red
+    for (let i = 1; i < track.length; i++) {
+      const A = track[i - 1], B = track[i];
+      if (B.t > t + 1e-9) break;
+      ctx.strokeStyle = B.retro ? 'rgba(230,90,60,0.95)' : 'rgba(150,190,240,0.7)';
+      ctx.lineWidth = B.retro ? 2.4 : 1.6;
+      ctx.beginPath(); ctx.moveTo(x(A.lon), y(A.lat)); ctx.lineTo(x(B.lon), y(B.lat)); ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+  }
+
+  // current planet position
+  ctx.fillStyle = pl().col; ctx.beginPath(); ctx.arc(x(cur.lon), y(cur.lat), 5, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('where ' + pl().name + ' appears among the stars  (red = moving backward)', 10, H - 9);
+}
+function apparentEntry(t) { const ap = apparent(t); return { t, lon: ap.lon, lat: ap.lat }; }
+
+function render() {
+  const t = tYears();
+  $('tVal').textContent = t.toFixed(2) + ' yr';
+  $('spdVal').textContent = (+$('spdSlider').value).toFixed(2) + '×';
+
+  const i = Math.round(t / 0.01);
+  const a = track[i], b = track[Math.min(track.length - 1, i + 1)];
+  const retro = a && b ? (b.lon - a.lon) < 0 : false;
+  const ap = apparent(t);
+  const opp = Math.abs(((ap.lon - sunLon(t) + 540) % 360) - 180);
+
+  $('results').innerHTML =
+    rowc('planet', pl().name, retro) +
+    rowc('apparent motion', retro ? 'RETROGRADE (west)' : 'prograde (east)', retro) +
+    row('Earth–planet distance', ap.dist.toFixed(2) + ' AU') +
+    row('angle from opposition', opp.toFixed(0) + '°') +
+    row('synodic period', synodic().toFixed(2) + ' yr') +
+    row('retrograde lasts ≈', retroSpan().toFixed(0) + ' days / loop');
+
+  $('note').textContent = retro
+    ? pl().name + ' is in retrograde: Earth is passing it on the inside track, so our shifting line of sight makes it appear to slide backward against the stars.'
+    : pl().name + ' is moving prograde — the normal slow eastward drift. It will reverse near the next opposition, when Earth catches up to it.';
+
+  drawOrbits(); drawSky();
+}
+function sunLon(t) { const e = earthPos(t); return Math.atan2(-e.y, -e.x) / DEG; }
+function retroSpan() {
+  let n = 0; for (const p of track) if (p.retro) n++;
+  const loops = Math.max(1, Math.round(+$('tSlider').max / synodic()));
+  return n * 0.01 * 365.25 / loops;
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function rowc(k, v, retro) { return '<div class="resrow' + (retro ? ' retro' : '') + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; lastTs = ts;
+  let t = tYears() + dt * 0.7 * (+$('spdSlider').value);
+  if (t > +$('tSlider').max) t = 0;
+  $('tSlider').value = t; render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+}
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('tSlider').value = 0; render(); });
+$('tSlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
+$('spdSlider').addEventListener('input', render);
+['sightChk', 'trailChk'].forEach(id => $(id).addEventListener('change', render));
+document.querySelectorAll('.toggleRow button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.toggleRow button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); planet = b.dataset.p;
+  $('tSlider').max = planet === 'mars' ? 6 : planet === 'jupiter' ? 3 : 2.5;
+  setPlaying(false); $('tSlider').value = 0; rebuildTrack(); render();
+}));
+
+function katexAll() {
+  const specs = [
+    ['f1', "\\theta_p(t) = \\theta_{p,0} + \\dfrac{360^\\circ\\,t}{P_p}"],
+    ['f2', "\\lambda = \\operatorname{atan2}(y_p - y_\\oplus,\\; x_p - x_\\oplus)"],
+    ['f3', "\\dfrac{1}{P_{syn}} = \\left|\\dfrac{1}{P_\\oplus} - \\dfrac{1}{P_p}\\right|"],
+    ['ex1', "\\dfrac{1}{P_{syn}} = \\dfrac{1}{1\\,\\text{yr}} - \\dfrac{1}{1.88\\,\\text{yr}}"],
+    ['ex2', "P_{syn} = \\dfrac{1}{\\,1 - 0.532\\,} \\approx 2.14\\ \\text{yr}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); rebuildTrack(); render(); });
+</script>
+</body>
+</html>

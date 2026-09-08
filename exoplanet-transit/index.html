@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exoplanet Transit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#c99a2b; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #scene { aspect-ratio:520/170; }
+  #lc { aspect-ratio:520/220; background:#0d1420; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #a37c1f; background:#a37c1f; color:#fff; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#a37c1f; }
+  input[type=range] { width:100%; accent-color:#c99a2b; }
+  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button:hover { border-color:#c99a2b; }
+  .chips button.on { background:#f5eed9; border-color:#c99a2b; color:#7a5c15; }
+  .results { display:flex; flex-direction:column; gap:7px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f4efe0; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#463913; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#7a5c15; text-align:right; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f4efe0; border-radius:8px; padding:9px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Exoplanet Transit <span class="sub">— finding planets by the dip in starlight</span></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="headbtn" id="infoBtn">&#9432; Info</button>
+        <button class="headbtn" id="exampleBtn">&#9998; Worked example</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="scene" width="520" height="170"></canvas>
+        <canvas id="lc" width="520" height="220"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Play</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        </div>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Planet</div>
+        <div class="chips" id="chips">
+          <button data-r="1" data-a="0.05">hot Earth</button>
+          <button data-r="3.9" data-a="0.05">hot Neptune</button>
+          <button data-r="11.2" data-a="0.05" class="on">hot Jupiter</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>planet radius</span><span class="val" id="rpVal">11.2 R⊕</span></div>
+          <input type="range" id="rpSlider" min="0.5" max="13" step="0.1" value="11.2">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>orbit distance a</span><span class="val" id="aVal">0.050 AU</span></div>
+          <input type="range" id="aSlider" min="0.02" max="1" step="0.005" value="0.05">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>star radius</span><span class="val" id="rsVal">1.00 R☉</span></div>
+          <input type="range" id="rsSlider" min="0.3" max="2" step="0.05" value="1">
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>impact parameter b</span><span class="val" id="bVal">0.20</span></div>
+          <input type="range" id="bSlider" min="0" max="1.3" step="0.02" value="0.2">
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Uniform-disc star (no limb darkening); star mass fixed at 1 M☉.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Exoplanet Transit <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>If a planet&rsquo;s orbit is lined up edge-on to us, once per orbit it crosses in front of its star and blocks a sliver of light. The star dims by the ratio of the two discs&rsquo; areas &mdash; typically a fraction of a percent &mdash; then recovers. Measure the <b>depth</b> and you get the planet&rsquo;s size; measure the <b>spacing</b> of the dips and you get its orbital period; the shape of the ingress and egress tells you how centrally it crossed. This is how most known exoplanets were found.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Set a planet size and orbit and hit Play. The upper strip is the planet crossing the star&rsquo;s disc; the lower panel builds the light curve. Grow the planet and the dip deepens as the <i>square</i> of its radius. Slide the impact parameter up toward 1 and the crossing gets shorter and more V-shaped, until past ~1 there is no transit at all.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">transit depth = the disc-area ratio.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">period from Kepler&rsquo;s third law (star mass in solar units).</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">transit duration &mdash; longer for a big star, a close orbit, and a central crossing.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/21-1-searching-for-planets-around-other-stars" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 21.1 Searching for Planets Around Other Stars</a></li>
+          <li><a href="https://exoplanets.nasa.gov/alien-worlds/ways-to-find-a-planet/" target="_blank" rel="noopener" style="color:#8fc7ff;">NASA Exoplanets &mdash; Ways to Find a Planet</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; how deep is a Jupiter transit? <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">A Jupiter-sized planet (R = 11.2 R⊕) transits a Sun-sized star. How much does the star dim, and what about an Earth-sized planet?</p>
+    <div class="step"><div class="h">1 &middot; Depth = (R_p / R_&#42;)&sup2;</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; As a percentage</div><div style="font-size:11.5px;color:#e7d6e4;">About <b>1%</b> &mdash; easily seen from the ground.</div></div>
+    <div class="step"><div class="h">3 &middot; An Earth</div><span class="formula" id="ex2"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">0.008% &mdash; 120&times; shallower, which is why Earth-sized planets need a space telescope.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const RE_IN_RS = 0.009158;   // Earth radius in solar radii
+const AU_IN_RS = 215.03;
+let playing = false, rafId = null, lastTs = null;
+let phase = 0.5;             // 0..1, transit centred at 0.5
+
+function rp() { return +$('rpSlider').value * RE_IN_RS; }   // in R_sun
+function rs() { return +$('rsSlider').value; }
+function aAU() { return +$('aSlider').value; }
+function bImp() { return +$('bSlider').value; }
+function kRatio() { return rp() / rs(); }
+function periodDays() { return 365.25 * Math.sqrt(Math.pow(aAU(), 3)); }   // M_star = 1
+function depth() { return kRatio() * kRatio(); }
+function aInStellarRadii() { return aAU() * AU_IN_RS / rs(); }
+
+// half-duration in orbital phase units (fraction of P), full crossing (1st→4th contact)
+function halfDurPhase() {
+  const arg = Math.sqrt(Math.max(0, (1 + kRatio()) ** 2 - bImp() ** 2)) / aInStellarRadii();
+  if (arg >= 1) return 0.5;
+  return Math.asin(arg) / (2 * Math.PI);
+}
+function transits() { return bImp() < 1 + kRatio(); }
+
+// projected centre-to-centre separation (in stellar radii) at a given phase
+function sep(ph) {
+  const x = (ph - 0.5) / Math.max(halfDurPhase(), 1e-6) * Math.sqrt(Math.max(1e-6, (1 + kRatio()) ** 2 - bImp() ** 2));
+  return Math.hypot(x, bImp());
+}
+// fraction of the planet's disc that overlaps the star (0..1)
+function overlapFrac(d) {
+  const R = 1, r = kRatio();
+  if (d >= R + r) return 0;
+  if (d <= R - r) return 1;
+  if (d <= r - R) return (R * R) / (r * r);   // star entirely inside planet (won't happen here)
+  const d2 = d * d;
+  const a1 = Math.acos((d2 + r * r - R * R) / (2 * d * r));
+  const a2 = Math.acos((d2 + R * R - r * r) / (2 * d * R));
+  const area = r * r * (a1 - Math.sin(2 * a1) / 2) + R * R * (a2 - Math.sin(2 * a2) / 2);
+  return area / (Math.PI * r * r);
+}
+function fluxAt(ph) {
+  if (!transits()) return 1;
+  return 1 - depth() * overlapFrac(sep(ph));
+}
+
+// ---------- scene ----------
+function drawScene() {
+  const c = $('scene'), ctx = c.getContext('2d');
+  const W = 520, H = 170;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2, SR = 56;
+  const g = ctx.createRadialGradient(cx - 12, cy - 12, SR * 0.2, cx, cy, SR * 1.25);
+  g.addColorStop(0, '#fff4d0'); g.addColorStop(0.7, '#ffd44f'); g.addColorStop(1, 'rgba(255,180,60,0.15)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, SR * 1.2, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffd44f'; ctx.beginPath(); ctx.arc(cx, cy, SR, 0, 7); ctx.fill();
+
+  const pr = kRatio() * SR;
+  const spanX = Math.sqrt(Math.max(0.0001, (1 + kRatio()) ** 2 - bImp() ** 2)) * SR;
+  const px = cx + ((phase - 0.5) / Math.max(halfDurPhase(), 1e-6)) * spanX;
+  const py = cy + bImp() * SR;
+  // planet path
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(20, py); ctx.lineTo(W - 20, py); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#10131a'; ctx.beginPath(); ctx.arc(px, py, Math.max(pr, 1.5), 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(px, py, Math.max(pr, 1.5), 0, 7); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(transits() ? 'the planet crossing the star (edge-on view)' : 'b > 1 + k — the planet misses the disc, no transit', 10, H - 9);
+}
+
+// ---------- light curve ----------
+function drawLC() {
+  const c = $('lc'), ctx = c.getContext('2d');
+  const W = 520, H = 220;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const x0 = 44, x1 = W - 12, y0 = H - 22, y1 = 16;
+  const dmax = Math.max(depth() * 1.35, 0.004);
+  // zoom the x-axis around mid-transit so the box shape is visible
+  const span = Math.max(4 * halfDurPhase(), 0.05);   // phase width shown, centred on 0.5
+  const ph0 = 0.5 - span / 2, ph1 = 0.5 + span / 2;
+  const X = ph => x0 + (ph - ph0) / (ph1 - ph0) * (x1 - x0);
+  const Y = f => y1 + (1 - f) / dmax * (y0 - y1);
+  const P = periodDays();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  for (let gf = 0; gf <= dmax + 1e-9; gf += dmax / 3) { ctx.beginPath(); ctx.moveTo(x0, Y(1 - gf)); ctx.lineTo(x1, Y(1 - gf)); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('1.000', x0 - 5, Y(1) + 3);
+  ctx.fillText((1 - dmax).toFixed(3), x0 - 5, Y(1 - dmax) + 3);
+  ctx.textAlign = 'center';
+  ctx.fillText('hours from mid-transit  (dip repeats every ' + (P < 90 ? P.toFixed(1) + ' d' : (P / 365.25).toFixed(2) + ' yr') + ')', W / 2, y0 + 14);
+  for (const hoff of [-6, -3, 0, 3, 6]) {
+    const ph = 0.5 + hoff / 24 / P;
+    if (ph > ph0 && ph < ph1) { ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText(hoff === 0 ? 'mid' : hoff + 'h', X(ph), y0 + 3); }
+  }
+
+  ctx.beginPath();
+  for (let ph = ph0; ph <= ph1 + 1e-9; ph += (ph1 - ph0) / 400) { const px = X(ph), py = Y(fluxAt(ph)); ph === ph0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+  ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+
+  const phClamped = Math.max(ph0, Math.min(ph1, phase));
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(X(phClamped), y1); ctx.lineTo(X(phClamped), y0); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(phClamped), Y(fluxAt(phClamped)), 3.5, 0, 7); ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('relative brightness of the star', 8, 12);
+}
+
+function render() {
+  $('rpVal').textContent = (+$('rpSlider').value).toFixed(1) + ' R⊕';
+  $('aVal').textContent = aAU().toFixed(3) + ' AU';
+  $('rsVal').textContent = rs().toFixed(2) + ' R☉';
+  $('bVal').textContent = bImp().toFixed(2);
+  document.querySelectorAll('#chips button').forEach(b =>
+    b.classList.toggle('on', Math.abs(+b.dataset.r - +$('rpSlider').value) < 0.05 && Math.abs(+b.dataset.a - aAU()) < 0.003));
+
+  const P = periodDays();
+  const T = transits() ? 2 * halfDurPhase() * P * 24 : 0;
+  const observed = transits() ? (1 - fluxAt(0.5)) * 100 : 0;
+  const grazing = transits() && bImp() > 1 - kRatio();
+  $('results').innerHTML =
+    row(grazing ? 'observed dip' : 'transit depth', observed.toFixed(3) + ' %' + (grazing ? '  (V)' : '')) +
+    row('R_p / R_&#42;', kRatio().toFixed(3)) +
+    row('orbital period', P < 90 ? P.toFixed(1) + ' d' : (P / 365.25).toFixed(2) + ' yr') +
+    row('transit duration', transits() ? T.toFixed(1) + ' h' : 'no transit') +
+    row('a / R_&#42;', aInStellarRadii().toFixed(0)) +
+    row('shape', !transits() ? '—' : bImp() < 1 - kRatio() ? 'flat-bottomed (full transit)' : 'V-shaped (grazing)');
+
+  $('note').textContent = !transits()
+    ? 'With this impact parameter the planet passes above or below the star from our line of sight — no dip at all. Most planets are in this situation; transit surveys only catch the well-aligned minority.'
+    : 'Depth ' + (depth() * 100).toFixed(3) + '%: the planet blocks that fraction of the star’s disc. Doubling the planet radius would quadruple the dip.';
+
+  drawScene(); drawLC();
+}
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; lastTs = ts;
+  const span = Math.max(4 * halfDurPhase(), 0.05) * 1.15;
+  phase += dt * span * 0.6;
+  if (phase > 0.5 + span / 2) phase = 0.5 - span / 2;
+  render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+}
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); phase = 0.5; render(); });
+['rpSlider', 'aSlider', 'rsSlider', 'bSlider'].forEach(id => $(id).addEventListener('input', render));
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
+  $('rpSlider').value = b.dataset.r; $('aSlider').value = b.dataset.a; render();
+}));
+
+function katexAll() {
+  const specs = [
+    ['f1', "\\delta = \\left(\\dfrac{R_p}{R_\\star}\\right)^{2}"],
+    ['f2', "P = 365.25\\,\\text{d}\\;\\sqrt{a^{3}/M_\\star}"],
+    ['f3', "T \\approx \\dfrac{P}{\\pi}\\,\\dfrac{R_\\star}{a}\\sqrt{(1+k)^{2}-b^{2}}"],
+    ['ex1', "\\delta = \\left(\\dfrac{11.2\\,R_\\oplus}{109\\,R_\\oplus}\\right)^{2} \\approx 0.0106"],
+    ['ex2', "\\delta_\\oplus = \\left(\\dfrac{1}{109}\\right)^{2} \\approx 8\\times10^{-5}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+['infoModal', 'exampleModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+$('infoBtn').addEventListener('click', () => $('infoModal').classList.add('show'));
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleBtn').addEventListener('click', () => $('exampleModal').classList.add('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); });
+window.addEventListener('load', () => { katexAll(); render(); });
+</script>
+</body>
+</html>
