@@ -25,7 +25,8 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #ladder { aspect-ratio:520/380; }
+  #ladder { aspect-ratio:520/350; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #3f8f7a; outline-offset:2px; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
@@ -92,13 +93,13 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="ladder" width="520" height="380"></canvas>
+        <canvas id="ladder" width="520" height="350"></canvas>
         <div class="chain" id="chain"></div>
       </div>
       <div class="ctlCol">
         <div class="section-label">Jump to an object</div>
         <div class="chips" id="chips">
-          <button data-d="1.28e-8">the Moon</button>
+          <button data-d="1.246e-8">the Moon</button>
           <button data-d="4.85e-6">the Sun</button>
           <button data-d="1.30">Proxima Cen</button>
           <button data-d="136" class="on">the Pleiades</button>
@@ -108,14 +109,14 @@
           <button data-d="3.0e9">a distant quasar</button>
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>distance (log)</span><span class="val" id="dVal">136 pc</span></div>
-          <input type="range" id="dSlider" min="-8" max="9.6" step="0.02" value="2.13">
+          <div class="lbl"><span>distance (log scale)</span><span class="val" id="dVal">136 pc</span></div>
+          <input type="range" id="dSlider" min="-8.5" max="10.1" step="0.001" value="2.134">
         </div>
         <div class="section-label" style="margin-top:4px;">This distance</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Method ranges are approximate; beyond z &asymp; 0.1 the simple v = H&#8320;d is only a rough guide.</div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Method ranges are approximate; beyond z &asymp; 0.1 the simple v = H&#8320;d is only a rough guide. Distances in parsecs: 1 pc = 3.26 ly = 206,265 AU.</div>
   </div>
 </div>
 
@@ -129,24 +130,24 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Drag the distance slider or pick an object. The ladder shows which methods can reach that far; the active one is highlighted, and the panel below traces the chain of calibration back to direct geometry. Notice how, far out, the chain is long &mdash; and every link adds uncertainty.</p>
+        <p>Drag the slider or the yellow line on the scale, or pick an object. Each bar is the range one method can reach (brighter = it reaches the current distance); the most direct one is outlined in white, and the panel below traces its chain of calibration back to radar. Far out, the chain is long, and every link adds uncertainty.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">The rungs</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 26px;font-size:11.5px;line-height:1.5;color:#cdd7e0;">
-          <div><b style="color:#fff;">Radar ranging</b> &mdash; bounce a radio pulse off a planet; distance = c&thinsp;&times;&thinsp;(round-trip time)/2. Solar-system only.</div>
-          <div><b style="color:#fff;">Parallax</b> &mdash; the star&rsquo;s yearly shift against the background; d[pc] = 1/p[&Prime;]. Gaia reaches several kpc.</div>
-          <div><b style="color:#fff;">Main-sequence fitting</b> &mdash; match a cluster&rsquo;s main sequence to a calibrated one; the vertical offset gives the distance.</div>
-          <div><b style="color:#fff;">Cepheid variables</b> &mdash; pulsation period fixes the true luminosity; compare with apparent brightness. Good to ~30 Mpc.</div>
-          <div><b style="color:#fff;">Type&nbsp;Ia supernovae</b> &mdash; explode with a near-standard peak luminosity; visible across billions of parsecs.</div>
-          <div><b style="color:#fff;">Hubble&rsquo;s law</b> &mdash; measure the redshift, divide by H&#8320;. The only tool for the most distant galaxies.</div>
+          <div><b style="color:#fff;">Radar ranging</b>: bounce a radio pulse off a planet; distance = c&thinsp;&times;&thinsp;(round-trip time)/2. Solar-system only.</div>
+          <div><b style="color:#fff;">Parallax</b>: the star&rsquo;s yearly shift against the background; d[pc] = 1/p[&Prime;]. Gaia reaches several kpc.</div>
+          <div><b style="color:#fff;">Main-sequence fitting</b>: match a cluster&rsquo;s main sequence to a calibrated one; the vertical offset gives the distance.</div>
+          <div><b style="color:#fff;">Cepheid variables</b>: pulsation period fixes the true luminosity; compare with apparent brightness. Good to about 40 Mpc with the Hubble and Webb telescopes.</div>
+          <div><b style="color:#fff;">Type&nbsp;Ia supernovae</b>: explode with a near-standard peak luminosity; visible across billions of parsecs.</div>
+          <div><b style="color:#fff;">Hubble&rsquo;s law</b>: measure the redshift, divide by H&#8320;. The only tool for the most distant galaxies.</div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Learn more</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
           <li><a href="https://openstax.org/books/astronomy-2e/pages/19-3-variable-stars-one-key-to-cosmic-distances" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 19.3 Variable Stars &amp; Cosmic Distances</a></li>
-          <li><a href="https://openstax.org/books/astronomy-2e/pages/25-3-the-cosmic-distance-ladder-a-review" target="_blank" rel="noopener" style="color:#8fc7ff;">25.3 The Cosmic Distance Scale</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/26-4-the-extragalactic-distance-scale" target="_blank" rel="noopener" style="color:#8fc7ff;">26.4 The Extragalactic Distance Scale</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/distances-crash-course-astronomy-25/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #25 — Distances</a></li><li><a href="https://thecrashcourse.com/courses/galaxies-part-1-crash-course-astronomy-38/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #38 — Galaxies, Part 1</a></li></ul>
@@ -161,7 +162,7 @@
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">A Cepheid in the Andromeda Galaxy has a pulsation period of 30 days and an apparent magnitude m = 19.5. The period&ndash;luminosity relation gives such a Cepheid an absolute magnitude M = &minus;5.0. How far away is Andromeda?</p>
     <div class="step"><div class="h">1 &middot; Distance modulus</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Solve for d</div><span class="formula" id="ex2"></span></div>
-    <div class="step"><div class="h">3 &middot; The chain behind it</div><div style="font-size:11.5px;color:#e7d6e4;">That M = &minus;5.0 came from the period&ndash;luminosity relation, calibrated on Milky Way Cepheids whose distances came from <b>parallax</b> &mdash; which itself rests on the <b>radar</b>-measured length of the AU. Three rungs to reach 800 kpc.</div></div>
+    <div class="step"><div class="h">3 &middot; The chain behind it</div><div style="font-size:11.5px;color:#e7d6e4;">That M = &minus;5.0 came from the period&ndash;luminosity relation, calibrated on Milky Way Cepheids whose distances came from <b>parallax</b>, which itself rests on the <b>radar</b>-measured length of the AU. Three rungs to reach 800 kpc (the modern value is about 765 kpc).</div></div>
   </div>
 </div>
 
@@ -180,78 +181,110 @@
 
 <script>
 const $ = id => document.getElementById(id);
-// distance in parsecs, log10
 function logD() { return +$('dSlider').value; }
 function dPc() { return Math.pow(10, logD()); }
+const AU_PC = 4.848e-6;
 
-// rungs: [name, log10 dmin, log10 dmax, colour, calibratedBy]
+// rungs: [name, log10 dmin (pc), log10 dmax (pc), colour, calibrated by (index of the rung below), what it is calibrated by]
 const RUNGS = [
-  ['Radar ranging', -9, -4.3, '#5ec2e0', null],
-  ['Parallax', -5.5, 3.7, '#7fd08a', 'radar (the length of the AU)'],
-  ['Main-sequence fitting', 1.5, 5.0, '#c9d06a', 'parallax of nearby stars'],
-  ['Cepheid variables', 3.7, 7.6, '#e0b25e', 'parallax + main-sequence fitting'],
-  ['Type Ia supernovae', 6.0, 9.3, '#e07f6a', 'Cepheids in host galaxies'],
-  ["Hubble's law", 7.0, 10.3, '#c58ad0', 'Type Ia supernovae → H₀'],
+  ['Radar ranging', -9, -4.3, '#5ec2e0', -1, ''],
+  ['Parallax', -0.5, 4.0, '#7fd08a', 0, 'radar (which fixes the length of the AU)'],
+  ['Main-sequence fitting', 1.5, 5.0, '#c9d06a', 1, 'parallaxes of nearby clusters'],
+  ['Cepheid variables', 3.0, 7.6, '#e0b25e', 1, 'Cepheids with parallaxes'],
+  ['Type Ia supernovae', 6.5, 9.5, '#e07f6a', 3, 'Cepheids in the same galaxies'],
+  ["Hubble's law", 7.3, 10.15, '#c58ad0', 4, 'Type Ia supernovae (they fix H₀)'],
+];
+const OBJ = [
+  ['Moon', 1.246e-8], ['Sun', AU_PC], ['Proxima Cen', 1.30], ['Pleiades', 136], ['Galactic centre', 8.2e3],
+  ['Andromeda', 7.65e5], ['Virgo Cluster', 1.65e7], ['distant quasar', 3.0e9],
 ];
 function activeRung() {
   const L = logD();
-  // pick the lowest-numbered rung that still covers this distance (most direct wins)
-  for (const r of RUNGS) if (L >= r[1] && L <= r[2]) return r;
-  return RUNGS[RUNGS.length - 1];
+  for (const r of RUNGS) if (L >= r[1] && L <= r[2]) return r;   // the most direct method that reaches this far wins
+  let best = RUNGS[0], bd = 1e9;                                  // in a gap (e.g. the Oort cloud): the nearest method
+  for (const r of RUNGS) { const dd = Math.min(Math.abs(L - r[1]), Math.abs(L - r[2])); if (dd < bd) { bd = dd; best = r; } }
+  return best;
 }
+function inRange(r) { const L = logD(); return L >= r[1] && L <= r[2]; }
 
 function fmtDist(pc) {
-  const ly = pc * 3.262, au = pc * 206265, km = pc * 3.086e13;
-  if (au < 0.02) return km < 1e6 ? (km).toFixed(0) + ' km' : (km / 1e6).toFixed(2) + ' million km';
-  if (pc < 3e-4) return au.toFixed(au < 1 ? 3 : au < 10 ? 2 : 0) + ' AU';
-  if (pc < 1e3) return pc.toFixed(pc < 10 ? 2 : pc < 100 ? 1 : 0) + ' pc  (' + ly.toFixed(0) + ' ly)';
-  if (pc < 1e6) return (pc / 1e3).toFixed(1) + ' kpc';
-  if (pc < 1e9) return (pc / 1e6).toFixed(pc < 1e7 ? 2 : 0) + ' Mpc';
+  const ly = pc * 3.262, au = pc / AU_PC, km = pc * 3.086e13;
+  if (au < 0.02) return km < 1e6 ? Math.round(km).toLocaleString('en-US') + ' km' : (km / 1e6).toFixed(2) + ' million km';
+  if (pc < 0.05) return (au < 10 ? au.toFixed(2) : Math.round(au).toLocaleString('en-US')) + ' AU';
+  if (pc < 1e3) return pc.toFixed(pc < 10 ? 2 : pc < 100 ? 1 : 0) + ' pc (' + (ly < 10 ? ly.toFixed(1) : Math.round(ly).toLocaleString('en-US')) + ' ly)';
+  if (pc < 1e6) return (pc / 1e3).toFixed(pc < 1e4 ? 2 : 1) + ' kpc';
+  if (pc < 1e9) return (pc / 1e6).toFixed(pc < 1e7 ? 2 : pc < 1e8 ? 1 : 0) + ' Mpc';
   return (pc / 1e9).toFixed(2) + ' Gpc';
+}
+function prep(c, W0, H0) {
+  const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const bw = Math.max(1, Math.round(r.width * dpr)), bh = Math.max(1, Math.round(r.height * dpr));
+  if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+  const ctx = c.getContext('2d'), k = Math.min(bw / W0, bh / H0);
+  ctx.setTransform(k, 0, 0, k, (bw - W0 * k) / 2, (bh - H0 * k) / 2);
+  return ctx;
+}
+function label(ctx, txt, x, y, col, font, align) {
+  ctx.font = font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,15,22,0.92)'; ctx.strokeText(txt, x, y);
+  ctx.fillStyle = col; ctx.fillText(txt, x, y);
 }
 
 // ---------- ladder diagram ----------
-const LMIN = -9, LMAX = 10.3;
+const LMIN = -9, LMAX = 10.3, CW = 520, CH = 350;
+const GX0 = 14, GX1 = CW - 14;
+const XL = L => GX0 + (L - LMIN) / (LMAX - LMIN) * (GX1 - GX0);
 function draw() {
-  const c = $('ladder'), ctx = c.getContext('2d');
-  const W = 520, H = 380;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
-  const x0 = 12, x1 = W - 12, yTop = 30, rowH = 44;
-  const X = L => x0 + (L - LMIN) / (LMAX - LMIN) * (x1 - x0);
+  const ctx = prep($('ladder'), CW, CH);
+  ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, CW, CH);
+  const yTop = 26, rowH = 36, barH = 24, axisY = yTop + RUNGS.length * rowH + 2;
 
-  // scale ticks
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  const ticks = [[-8, '1 AU'], [-4.3, '10⁴ AU'], [0, '1 pc'], [3, '1 kpc'], [6, '1 Mpc'], [9, '1 Gpc']];
+  // scale ticks (log10 of the distance in parsecs)
+  const ticks = [[Math.log10(AU_PC), '1 AU'], [Math.log10(1e3 * AU_PC), '1000 AU'], [0, '1 pc'], [3, '1 kpc'], [6, '1 Mpc'], [9, '1 Gpc']];
+  ctx.font = '10px "JetBrains Mono",monospace';
+  for (let L = -8; L <= 10; L++) { ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.moveTo(XL(L), yTop - 6); ctx.lineTo(XL(L), axisY); ctx.stroke(); }
   for (const [L, lab] of ticks) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(X(L), yTop - 6); ctx.lineTo(X(L), H - 14); ctx.stroke();
-    ctx.fillText(lab, X(L), H - 4);
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.beginPath(); ctx.moveTo(XL(L), yTop - 6); ctx.lineTo(XL(L), axisY + 4); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.textAlign = 'center'; ctx.fillText(lab, XL(L), axisY + 19);
   }
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(GX0, axisY); ctx.lineTo(GX1, axisY); ctx.stroke();
+  label(ctx, 'distance (logarithmic: each faint gridline is 10× farther)', CW / 2, CH - 26, 'rgba(255,255,255,0.5)', '10px "Source Sans 3",sans-serif');
 
   const act = activeRung();
   RUNGS.forEach((r, i) => {
     const y = yTop + i * rowH;
-    const xa = X(Math.max(r[1], LMIN)), xb = X(Math.min(r[2], LMAX));
-    const on = r === act;
-    ctx.fillStyle = on ? r[3] : r[3] + '55';
-    roundRect(ctx, xa, y, xb - xa, 22, 6); ctx.fill();
-    ctx.fillStyle = on ? '#0b0f16' : 'rgba(255,255,255,0.9)';
+    const xa = XL(Math.max(r[1], LMIN)), xb = XL(Math.min(r[2], LMAX));
+    const on = r === act, reach = inRange(r);
+    ctx.fillStyle = on ? r[3] : r[3] + (reach ? '88' : '40');
+    roundRect(ctx, xa, y, xb - xa, barH, 6); ctx.fill();
+    if (on) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; roundRect(ctx, xa, y, xb - xa, barH, 6); ctx.stroke(); ctx.lineWidth = 1; }
     ctx.font = (on ? '700 ' : '600 ') + '11px "Source Sans 3",sans-serif';
     const tw = ctx.measureText(r[0]).width;
-    if (xa + 8 + tw > xb - 4 && xb - xa < tw + 16) { ctx.textAlign = 'right'; ctx.fillStyle = on ? r[3] : 'rgba(255,255,255,0.85)'; ctx.fillText(r[0], xa - 6, y + 15); }
-    else { ctx.textAlign = 'left'; ctx.fillText(r[0], xa + 8, y + 15); }
-    if (on) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; roundRect(ctx, xa, y, xb - xa, 22, 6); ctx.stroke(); ctx.lineWidth = 1; }
+    if (xb - xa >= tw + 16) { ctx.fillStyle = on ? '#0b0f16' : 'rgba(255,255,255,0.92)'; ctx.textAlign = 'left'; ctx.fillText(r[0], xa + 8, y + 16); }
+    else if (xb + 6 + tw < GX1) label(ctx, r[0], xb + 6, y + 16, on ? r[3] : 'rgba(255,255,255,0.85)', (on ? '700 ' : '600 ') + '11px "Source Sans 3",sans-serif', 'left');
+    else label(ctx, r[0], xa - 6, y + 16, on ? r[3] : 'rgba(255,255,255,0.85)', (on ? '700 ' : '600 ') + '11px "Source Sans 3",sans-serif', 'right');
   });
 
-  // current distance line
-  const cx = X(logD());
-  ctx.strokeStyle = '#ffd66b'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(cx, yTop - 8); ctx.lineTo(cx, H - 14); ctx.stroke();
-  ctx.setLineDash([]); ctx.lineWidth = 1;
-  ctx.fillStyle = '#ffd66b'; ctx.textAlign = cx > W - 90 ? 'right' : 'left'; ctx.font = '700 10px "Source Sans 3",sans-serif';
-  ctx.fillText(fmtDist(dPc()), cx + (cx > W - 90 ? -4 : 4), yTop - 12);
+  // objects along the axis (clickable), names in staggered rows under the scale so they never overlap
+  const placed = [];
+  OBJ.forEach(([name, d]) => {
+    const x = XL(Math.log10(d));
+    ctx.font = '600 10px "Source Sans 3",sans-serif'; const w = ctx.measureText(name).width;
+    const lx = Math.max(GX0 + w / 2, Math.min(GX1 - w / 2, x));
+    let row = 0; while (placed.some(p => p.row === row && Math.abs(p.x - lx) < (p.w + w) / 2 + 8)) row++;
+    placed.push({ x: lx, w, row });
+    const ly = axisY + 40 + row * 13;
+    ctx.strokeStyle = 'rgba(255,214,107,0.25)'; ctx.beginPath(); ctx.moveTo(x, axisY + 25); ctx.lineTo(x, ly - 9); ctx.stroke();
+    ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.moveTo(x, axisY + 1); ctx.lineTo(x - 3.5, axisY + 7); ctx.lineTo(x + 3.5, axisY + 7); ctx.closePath(); ctx.fill();
+    label(ctx, name, lx, ly, 'rgba(255,230,150,0.85)', '600 10px "Source Sans 3",sans-serif');
+  });
 
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('bars span each method’s useful reach — highlighted = the best tool here', 10, 22);
+  // current distance line + read-out
+  const cx = XL(logD());
+  ctx.strokeStyle = '#ffd66b'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx, yTop - 4); ctx.lineTo(cx, axisY); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+  ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(cx, axisY, 4.5, 0, 7); ctx.fill();
+  label(ctx, 'drag along the scale, or click an object name', 10, CH - 8, 'rgba(255,255,255,0.45)', '10px "Source Sans 3",sans-serif', 'left');
 }
 function roundRect(ctx, x, y, w, h, r) {
   r = Math.min(r, w / 2, h / 2);
@@ -260,62 +293,69 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
 
-function chainText() {
-  const r = activeRung();
-  const idx = RUNGS.indexOf(r);
-  let parts = ['<b>' + r[0] + '</b>'];
-  let cur = r;
-  const seen = new Set();
-  while (cur && cur[4] && !seen.has(cur[0])) {
-    seen.add(cur[0]);
-    parts.push(cur[4]);
-    // find the rung named in the calibratedBy string, roughly
-    const next = RUNGS.find(x => cur[4].toLowerCase().includes(x[0].split(' ')[0].toLowerCase()) && x !== cur);
-    cur = next;
-  }
-  return parts.join(' &nbsp;←&nbsp; ');
+// chain of calibration from the active rung down to direct geometry
+function chain() {
+  const out = []; let r = activeRung();
+  while (r) { out.push(r); r = r[4] >= 0 ? RUNGS[r[4]] : null; }
+  return out;
 }
-
 function render() {
   const pc = dPc();
   $('dVal').textContent = fmtDist(pc).replace(/\s+\(.*/, '');
-  document.querySelectorAll('#chips button').forEach(b =>
-    b.classList.toggle('on', Math.abs(Math.log10(+b.dataset.d) - logD()) < 0.04));
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(Math.log10(+b.dataset.d) - logD()) < 0.03));
 
-  const r = activeRung();
-  const idxR = RUNGS.indexOf(r);
+  const r = activeRung(), idx = RUNGS.indexOf(r);
   const z = pc > 1e6 ? (70 * pc / 1e6) / 299792 : null;
   let extra;
-  if (idxR === 0) extra = row('radar round-trip', (pc * 3.086e13 / 299792 * 2).toFixed(1) + ' s');
-  else if (z != null) extra = row('redshift z (H₀=70)', z.toFixed(3));
-  else extra = row('parallax angle', (1 / pc < 1e-3 ? (1e6 / pc).toFixed(1) + ' μas' : (1 / pc).toFixed(4) + '″'));
+  if (idx === 0) extra = row('radar echo round trip', ltt(pc * 2));
+  else if (idx === 1) extra = row('parallax angle <i>p</i> = 1/<i>d</i>', 1 / pc < 1e-3 ? (1e6 / pc).toFixed(1) + ' μas' : 1 / pc < 0.1 ? (1e3 / pc).toFixed(2) + ' mas' : (1 / pc).toFixed(3) + '″');
+  else if (idx === 5 && z != null) extra = row('redshift <i>z</i> ≈ <i>H</i>₀<i>d</i>/<i>c</i>', z < 0.3 ? z.toFixed(3) : z.toFixed(2) + ' (rough)');
+  else if (idx >= 2) extra = row('distance modulus <i>m</i> − <i>M</i>', (5 * Math.log10(pc / 10)).toFixed(2));
+  else extra = '';
   $('results').innerHTML =
     row('distance', fmtDist(pc)) +
-    row('best method', r[0]) +
+    row('most direct method', r[0]) +
     row('light travel time', ltt(pc)) +
     extra;
 
-  const idx = RUNGS.indexOf(r);
-  $('chain').innerHTML = idx <= 1
-    ? '<b>' + r[0] + '</b> is <b>direct geometry</b> — it measures the distance itself, with nothing below it to calibrate.'
-    : 'How this distance is anchored: &nbsp;' + chainText() + '. &nbsp;<b>' + idx + ' rungs down to direct geometry.</b>';
-
+  const ch = chain();
+  if (!inRange(r)) $('chain').innerHTML = 'No standard method covers this gap. The nearest one is <b>' + r[0] + '</b>.';
+  else if (ch.length === 1) $('chain').innerHTML = '<b>' + r[0] + '</b> is <b>direct geometry</b>: it measures the distance itself, with nothing below it to calibrate.';
+  else if (r[0] === 'Parallax') $('chain').innerHTML = '<b>Parallax</b> is direct geometry, but its baseline, the AU, was measured by <b>radar</b>.';
+  else $('chain').innerHTML = 'How this distance is anchored: <b>' + ch.map(x => x[0]).join('</b> &larr; <b>') + '</b>. That is <b>' + (ch.length - 1) + ' calibration step' + (ch.length > 2 ? 's' : '') + '</b> down to radar, and each one adds uncertainty.';
   draw();
 }
 function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 function ltt(pc) {
   const yr = pc * 3.262;
-  if (yr < 1 / 525600) return (yr * 31557600).toFixed(1) + ' s';
-  if (yr < 1 / 365) return (yr * 525600).toFixed(0) + ' min';
-  if (yr < 1) return (yr * 365).toFixed(1) + ' days';
-  if (yr < 1e6) return yr.toFixed(0) + ' yr';
-  if (yr < 1e9) return (yr / 1e6).toFixed(1) + ' Myr';
-  if (yr > 1.2e10) return '≳ 10 Gyr (simple law breaks down)';
-  return (yr / 1e9).toFixed(2) + ' Gyr';
+  if (yr < 1 / 525600) return (yr * 31557600).toFixed(yr * 31557600 < 10 ? 2 : 0) + ' s';
+  if (yr < 1 / 8766) return (yr * 525600).toFixed(1) + ' min';
+  if (yr < 1 / 365.25) return (yr * 8766).toFixed(1) + ' hours';
+  if (yr < 1) return (yr * 365.25).toFixed(1) + ' days';
+  if (yr < 1e6) return Math.round(yr).toLocaleString('en-US') + ' yr';
+  if (yr < 1e9) return (yr / 1e6).toFixed(1) + ' million yr';
+  if (yr > 1.2e10) return 'over 10 billion yr (approximate)';
+  return (yr / 1e9).toFixed(2) + ' billion yr';
 }
 
 $('dSlider').addEventListener('input', render);
-document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('dSlider').value = Math.log10(+b.dataset.d).toFixed(2); render(); }));
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('dSlider').value = Math.log10(+b.dataset.d).toFixed(3); render(); }));
+// drag on the canvas to set the distance; clicking near an object name jumps to it
+(function () {
+  const c = $('ladder'); let drag = false;
+  const toL = e => { const r = c.getBoundingClientRect(), k = Math.min(r.width / CW, r.height / CH); const x = (e.clientX - r.left - (r.width - CW * k) / 2) / k; return LMIN + (x - GX0) / (GX1 - GX0) * (LMAX - LMIN); };
+  const set = L => { const sl = $('dSlider'); sl.value = Math.max(+sl.min, Math.min(+sl.max, L)); render(); };
+  c.addEventListener('pointerdown', e => {
+    drag = true; c.setPointerCapture(e.pointerId);
+    const L = toL(e); let best = null, bd = 0.35;
+    for (const [, d] of OBJ) { const dd = Math.abs(Math.log10(d) - L); if (dd < bd) { bd = dd; best = Math.log10(d); } }
+    set(best != null ? best : L);
+  });
+  c.addEventListener('pointermove', e => { if (drag) set(toL(e)); });
+  c.addEventListener('pointerup', () => { drag = false; });
+  c.style.cursor = 'ew-resize'; c.style.touchAction = 'none';
+})();
+window.addEventListener('resize', render);
 
 function katexAll() {
   const specs = [
@@ -377,6 +417,8 @@ if (RP_IDS.length) {
     if (typeof rpAfter === 'function') rpAfter();
   });
 }
+// give every slider an accessible name from its visible label
+document.querySelectorAll('.slider-row').forEach(r => { const i = r.querySelector('input[type=range]'), l = r.querySelector('.lbl span'); if (i && l && !i.hasAttribute('aria-label')) i.setAttribute('aria-label', l.textContent.trim()); });
 window.addEventListener('load', () => { katexAll(); render(); });
 </script>
 </body>

@@ -26,7 +26,9 @@
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
   #plot { aspect-ratio:520/330; }
-  .swatch { height:34px; border-radius:8px; border:1px solid #d9dde1; }
+  .swatch { height:34px; border-radius:8px; border:1px solid #d9dde1; display:flex; align-items:center; justify-content:center; }
+  .swatch span { font-size:11.5px; font-weight:600; opacity:0.8; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #d4763a; outline-offset:2px; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
@@ -94,7 +96,7 @@
     <div class="body">
       <div class="canvasCol">
         <canvas id="plot" width="520" height="330"></canvas>
-        <div class="swatch" id="swatch"></div>
+        <div class="swatch" id="swatch"><span id="swatchTxt">the star&rsquo;s colour as the eye sees it</span></div>
         <div class="note" id="note"></div>
       </div>
       <div class="ctlCol">
@@ -102,24 +104,25 @@
         <div class="chips" id="chips">
           <button data-t="3200">M · 3200 K</button>
           <button data-t="4400">K · 4400 K</button>
-          <button data-t="5772" class="on">G · Sun</button>
+          <button data-t="5772" class="on">G · Sun 5772</button>
           <button data-t="6600">F · 6600 K</button>
           <button data-t="9600">A · 9600 K</button>
-          <button data-t="15000">B · 15000 K</button>
-          <button data-t="38000">O · 38000 K</button>
-          <button data-t="2400">brown dwarf</button>
+          <button data-t="15000">B · 15,000 K</button>
+          <button data-t="38000">O · 38,000 K</button>
+          <button data-t="2000">L · 2000 K</button>
         </div>
         <div class="slider-row">
           <div class="lbl"><span>temperature T</span><span class="val" id="tVal">5772 K</span></div>
-          <input type="range" id="tSlider" min="1800" max="42000" step="50" value="5772">
+          <input type="range" id="tSlider" min="1800" max="42000" step="1" value="5772">
         </div>
         <label class="checkrow"><input type="checkbox" id="sunChk" checked> compare with the Sun</label>
-        <label class="checkrow"><input type="checkbox" id="normChk"> normalise the peak height</label>
+        <label class="checkrow"><input type="checkbox" id="normChk"> scale each curve to its own peak</label>
+        <label class="checkrow"><input type="checkbox" id="logChk"> logarithmic brightness axis</label>
         <div class="section-label" style="margin-top:4px;">Results</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Ideal blackbody; the on-screen colour is an sRGB approximation.</div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Ideal blackbody; real stars have absorption lines and only roughly follow it. On-screen colours are sRGB approximations.</div>
   </div>
 </div>
 
@@ -129,18 +132,18 @@
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
-        <p>Any dense, hot object glows with a smooth spectrum whose shape depends on only one thing: its temperature. Hotter means <b>brighter at every wavelength</b> and a peak that slides toward the <b>blue</b>. That is why a cool star looks red, the Sun looks yellow-white, and a hot star looks blue &mdash; and why an iron bar goes from dull red to orange to white as it heats. Split a star&rsquo;s light and the peak of its continuum tells you its surface temperature.</p>
+        <p>Any dense, hot object glows with a smooth spectrum whose shape depends on only one thing: its temperature. Hotter means <b>brighter at every wavelength</b> and a peak that slides toward the <b>blue</b>. That is why a cool star looks orange-red, the Sun looks yellow-white, and a hot star looks blue, and why an iron bar goes from dull red to orange to white as it heats. Split a star&rsquo;s light and the peak of its continuum tells you its surface temperature.</p>
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Drag the temperature and watch the curve. The shaded band is the visible range; the dashed line marks the peak (Wien&rsquo;s law). Keep the Sun&rsquo;s curve on for comparison &mdash; a small temperature change makes a huge difference in total output, because it goes as T&#8308;. Normalise the peak if you only care about the <i>shape</i> (the colour).</p>
+        <p>Drag the temperature and watch the curve. The coloured band is the visible range, and the part of the curve inside it is filled with the colours the star emits there; the dashed line marks the peak (Wien&rsquo;s law). Keep the Sun&rsquo;s dashed curve on for comparison: a modest temperature change makes a huge difference in output, because the area under the curve goes as <i>T</i>&#8308;. Scale each curve to its own peak to compare only <i>shapes</i>, or switch on the logarithmic axis to see a cool star and a hot star on one graph.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
-          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">the Planck function &mdash; brightness per wavelength at temperature T.</div></div>
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">the Planck function: brightness per wavelength at temperature <i>T</i>.</div></div>
           <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">Wien&rsquo;s law: the peak wavelength, in nanometres, from the temperature in kelvin.</div></div>
-          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">Stefan&ndash;Boltzmann: total energy radiated per area &mdash; fourth power of T.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">Stefan&ndash;Boltzmann: power radiated per square metre of surface, <i>&sigma;</i> = 5.67&times;10&#8315;&#8312; W&nbsp;m&#8315;&sup2;&nbsp;K&#8315;&#8308;.</div></div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
@@ -160,9 +163,9 @@
   <div class="modal">
     <h2>Worked example &mdash; the colour of Betelgeuse <span class="close" id="exampleClose">&times;</span></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Betelgeuse has a surface temperature of about 3500 K. Where does its spectrum peak, and how does its per-area output compare with the Sun&rsquo;s 5772 K?</p>
-    <div class="step"><div class="h">1 &middot; Wien&rsquo;s law</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">828 nm &mdash; in the near infrared, past the red end of what the eye sees, so it looks deep red-orange.</div></div>
-    <div class="step"><div class="h">2 &middot; Output per area, &prop; T&#8308;</div><span class="formula" id="ex2"></span></div>
-    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">Each square metre of Betelgeuse radiates only ~14% as much as the Sun. It is luminous overall only because it is enormous &mdash; hundreds of times the Sun&rsquo;s radius.</div></div>
+    <div class="step"><div class="h">1 &middot; Wien&rsquo;s law</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">828 nm is in the near infrared, past the red end of what the eye sees. Its visible light is weighted to the red, so it looks orange-red.</div></div>
+    <div class="step"><div class="h">2 &middot; Output per area, &prop; <i>T</i>&#8308;</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">Each square metre of Betelgeuse radiates only about 14% as much as the Sun&rsquo;s. It is luminous overall (roughly 100,000 times the Sun) only because it is enormous: hundreds of times the Sun&rsquo;s radius. Set the slider to 3,500 K to check both numbers.</div></div>
   </div>
 </div>
 
@@ -181,16 +184,18 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const h = 6.626e-34, cc = 2.998e8, kB = 1.381e-23;
+const h = 6.626e-34, cc = 2.998e8, kB = 1.381e-23, SIGMA = 5.670e-8, WIEN = 2.898e6, TSUN = 5772;
 let T = 5772;
 
 function planck(lamNm, temp) {
-  const l = lamNm * 1e-9;
-  return (2 * h * cc * cc) / (Math.pow(l, 5) * (Math.exp(h * cc / (l * kB * temp)) - 1));
+  const l = lamNm * 1e-9, x = h * cc / (l * kB * temp);
+  if (x > 700) return 0;
+  return (2 * h * cc * cc) / (Math.pow(l, 5) * (Math.exp(x) - 1));
 }
-function wienNm(temp) { return 2.897771955e6 / temp; }   // nm
+function wienNm(temp) { return WIEN / temp; }   // nm
+const SUNPEAK = planck(wienNm(TSUN), TSUN);
 
-// crude blackbody → sRGB
+// colour of a blackbody as the eye sees it (Tanner Helland's fit to the CIE blackbody locus)
 function bbColor(temp) {
   let t = temp / 100, r, g, b;
   if (t <= 66) { r = 255; g = 99.47 * Math.log(t) - 161.12; }
@@ -200,109 +205,194 @@ function bbColor(temp) {
   const cl = v => Math.max(0, Math.min(255, Math.round(v)));
   return 'rgb(' + cl(r) + ',' + cl(g) + ',' + cl(b) + ')';
 }
+// colour of a single wavelength (Bruton's piecewise approximation)
+function lamRGB(nm, a) {
+  let r = 0, g = 0, b = 0;
+  if (nm >= 380 && nm < 440) { r = (440 - nm) / 60; b = 1; }
+  else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+  else if (nm < 510) { g = 1; b = (510 - nm) / 20; }
+  else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+  else if (nm < 645) { r = 1; g = (645 - nm) / 65; }
+  else if (nm <= 750) { r = 1; }
+  let f = nm < 420 ? 0.3 + 0.7 * (nm - 380) / 40 : nm > 700 ? 0.3 + 0.7 * (750 - nm) / 50 : 1;
+  const c = v => Math.round(255 * Math.pow(Math.max(0, v * f), 0.8));
+  return 'rgba(' + c(r) + ',' + c(g) + ',' + c(b) + ',' + (a == null ? 1 : a) + ')';
+}
+function prep(c, W0, H0) {
+  const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const bw = Math.max(1, Math.round(r.width * dpr)), bh = Math.max(1, Math.round(r.height * dpr));
+  if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+  const ctx = c.getContext('2d'), k = Math.min(bw / W0, bh / H0);
+  ctx.setTransform(k, 0, 0, k, (bw - W0 * k) / 2, (bh - H0 * k) / 2);
+  return ctx;
+}
+function label(ctx, txt, x, y, col, font, align) {
+  ctx.font = font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,15,22,0.9)'; ctx.strokeText(txt, x, y);
+  ctx.fillStyle = col; ctx.fillText(txt, x, y);
+}
+function sup(n) { return String(n).replace(/-/g, '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]); }
 
 function drawPlot() {
-  const c = $('plot'), ctx = c.getContext('2d');
-  const W = 520, H = 330;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
-  const x0 = 44, x1 = W - 12, y0 = H - 26, y1 = 16;
-  const LMAX = 2200;   // nm shown
+  const W = 520, H = 330, ctx = prep($('plot'), W, H);
+  ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  const x0 = 52, x1 = W - 14, y0 = H - 50, y1 = 18;
+  const LMAX = 2500;
   const X = nm => x0 + nm / LMAX * (x1 - x0);
-  const norm = $('normChk').checked;
-  const showSun = $('sunChk').checked;
-
-  // reference peak for scaling
-  let peakVal = planck(wienNm(T), T);
-  if (showSun && !norm) peakVal = Math.max(peakVal, planck(wienNm(5772), 5772));
-  const Y = v => y0 - (norm ? v : v / peakVal) * (y0 - y1) * (norm ? 1 : 0.92);
-
-  // visible band
-  const vg = ctx.createLinearGradient(X(380), 0, X(750), 0);
-  vg.addColorStop(0, 'rgba(120,60,220,0.18)'); vg.addColorStop(0.3, 'rgba(60,140,255,0.16)');
-  vg.addColorStop(0.55, 'rgba(80,220,120,0.16)'); vg.addColorStop(0.75, 'rgba(240,220,60,0.16)');
-  vg.addColorStop(1, 'rgba(240,70,60,0.18)');
-  ctx.fillStyle = vg; ctx.fillRect(X(380), y1, X(750) - X(380), y0 - y1);
-
-  // axes
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  for (const nm of [0, 500, 1000, 1500, 2000]) ctx.fillText(nm, X(nm), y0 + 13);
-  ctx.fillText('wavelength (nm)  —  ← ultraviolet · visible · infrared →', W / 2, H - 6);
-  ctx.save(); ctx.translate(11, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2);
-  ctx.fillText('brightness per wavelength', 0, 0); ctx.restore();
-
-  function curve(temp, col, w) {
-    let pk = planck(wienNm(temp), temp);
-    ctx.beginPath();
-    for (let nm = 20; nm <= LMAX; nm += 4) {
-      const v = norm ? planck(nm, temp) / pk : planck(nm, temp);
-      const px = X(nm), py = Y(v);
-      nm === 20 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-    }
-    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke(); ctx.lineWidth = 1;
+  const norm = $('normChk').checked, showSun = $('sunChk').checked, logY = $('logChk').checked;
+  const myPeak = planck(wienNm(T), T);
+  // values are expressed relative to the Sun's peak (or to this star's own peak when normalised)
+  const rel = (nm, temp) => norm ? planck(nm, temp) / planck(wienNm(temp), temp) : planck(nm, temp) / SUNPEAK;
+  let top, bot;
+  if (logY) {
+    const hi = norm ? 1 : Math.max(myPeak / SUNPEAK, showSun ? 1 : 0);
+    top = hi * 2.2; bot = top / 2e5;
+  } else {
+    top = norm ? 1.08 : Math.max(myPeak / SUNPEAK, showSun ? 1 : 0) * 1.08;
   }
-  if (showSun && Math.abs(T - 5772) > 20) curve(5772, 'rgba(255,220,120,0.5)', 1.5);
-  curve(T, bbColor(T), 2.6);
+  const Y = v => logY ? y0 - (Math.log10(Math.max(v, bot)) - Math.log10(bot)) / (Math.log10(top) - Math.log10(bot)) * (y0 - y1)
+                      : y0 - v / top * (y0 - y1);
+
+  // visible band, drawn with real spectral colours
+  for (let nm = 380; nm < 750; nm += 2) { ctx.fillStyle = lamRGB(nm + 1, 0.13); ctx.fillRect(X(nm), y1, X(nm + 2) - X(nm) + 0.3, y0 - y1); }
+
+  // y gridlines + tick labels
+  ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.textAlign = 'right';
+  const yt = [];
+  if (logY) { for (let e = Math.ceil(Math.log10(bot)); e <= Math.floor(Math.log10(top)); e++) yt.push([Math.pow(10, e), '10' + sup(e)]); }
+  else {
+    const raw = top / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+    for (let v = 0; v <= top + 1e-9; v += step) yt.push([v, v >= 1000 ? (+(v / 1000).toFixed(1)) + 'k' : (+v.toFixed(3)).toString()]);
+  }
+  for (const [v, s] of yt) {
+    const y = Y(v); ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillText(s, x0 - 5, y + 3);
+  }
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.textAlign = 'center';
+  for (let nm = 0; nm <= LMAX; nm += 250) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(X(nm), y0); ctx.lineTo(X(nm), y0 + (nm % 500 ? 2 : 4)); ctx.stroke();
+    if (nm % 500 === 0) ctx.fillText(nm, X(nm), y0 + 14);
+  }
+  // spectrum strip + region names under the axis
+  const sy = y0 + 20;
+  for (let nm = 380; nm < 750; nm++) { ctx.fillStyle = lamRGB(nm + 0.5); ctx.fillRect(X(nm), sy, X(nm + 1) - X(nm) + 0.4, 6); }
+  ctx.fillStyle = 'rgba(160,120,255,0.35)'; ctx.fillRect(X(0), sy + 2, X(380) - X(0), 2);
+  ctx.fillStyle = 'rgba(255,90,60,0.35)'; ctx.fillRect(X(750), sy + 2, X(LMAX) - X(750), 2);
+  ctx.font = '9.5px "Source Sans 3",sans-serif';
+  ctx.fillStyle = 'rgba(190,170,255,0.8)'; ctx.fillText('UV', X(190), sy + 16);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillText('visible', X(565), sy + 16);
+  ctx.fillStyle = 'rgba(255,150,120,0.8)'; ctx.fillText('infrared', X(1600), sy + 16);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '10px "Source Sans 3",sans-serif';
+  ctx.textAlign = 'right'; ctx.fillText('wavelength λ (nm)', x1, sy + 16);
+  ctx.save(); ctx.translate(13, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
+  ctx.fillText(norm ? 'brightness per wavelength (own peak = 1)' : 'brightness per wavelength (Sun’s peak = 1)', 0, 0); ctx.restore();
+
+  function path(temp) {
+    ctx.beginPath();
+    for (let nm = 10; nm <= LMAX; nm += 3) { const px = X(nm), py = Y(rel(nm, temp)); nm === 10 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
+  }
+  // fill the visible part under this star's curve with the colours it emits there
+  for (let nm = 380; nm < 750; nm += 2) {
+    const yA = Y(rel(nm, T)), yB = Y(rel(nm + 2, T));
+    ctx.fillStyle = lamRGB(nm + 1, 0.55);
+    ctx.beginPath(); ctx.moveTo(X(nm), y0); ctx.lineTo(X(nm), yA); ctx.lineTo(X(nm + 2) + 0.3, yB); ctx.lineTo(X(nm + 2) + 0.3, y0); ctx.fill();
+  }
+  const sunOn = showSun && Math.abs(T - TSUN) > 20;
+  if (sunOn) { path(TSUN); ctx.strokeStyle = 'rgba(255,220,120,0.7)'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.6; ctx.stroke(); ctx.setLineDash([]); }
+  path(T); ctx.strokeStyle = bbColor(T); ctx.lineWidth = 2.6; ctx.stroke(); ctx.lineWidth = 1;
 
   // Wien peak marker
   const pnm = wienNm(T);
   if (pnm < LMAX) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(X(pnm), y1); ctx.lineTo(X(pnm), y0); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.font = '10px "Source Sans 3",sans-serif';
-    ctx.fillText('peak ' + pnm.toFixed(0) + ' nm', Math.min(X(pnm) + 5, x1 - 70), y1 + 10);
+    const yp = Y(rel(pnm, T));
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(X(pnm), yp); ctx.lineTo(X(pnm), y0); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(pnm), yp, 3, 0, 7); ctx.fill();
+    const right = X(pnm) < x1 - 120;
+    label(ctx, 'peak ' + pnm.toFixed(0) + ' nm', X(pnm) + (right ? 7 : -7), Math.max(y1 + 10, yp - 4), '#fff', '600 10.5px "Source Sans 3",sans-serif', right ? 'left' : 'right');
+  }
+  // legend (top-right; moves to the left when the peak is there)
+  // legend: the candidate spot where the curves (and the peak label) stay farthest below it
+  const ly = y1 + 30, lamOf = x => (x - x0) / (x1 - x0) * LMAX;
+  let lx = x1 - 150, bestY = -1;
+  for (const cx of [x1 - 150, x0 + 14, (x0 + x1) / 2 - 70]) {
+    let top = 1e9;
+    for (let x = cx - 6; x <= cx + 140; x += 4) {
+      const lam = Math.max(10, lamOf(x));
+      top = Math.min(top, Y(rel(lam, T)));
+      if (sunOn) top = Math.min(top, Y(rel(lam, TSUN)));
+    }
+    if (pnm < LMAX && X(pnm) > cx - 80 && X(pnm) < cx + 150) top = Math.min(top, Math.max(y1 + 10, Y(rel(pnm, T)) - 4) - 10);
+    if (top > bestY) { bestY = top; lx = cx; }
+  }
+  ctx.lineWidth = 2.6; ctx.strokeStyle = bbColor(T); ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 20, ly); ctx.stroke(); ctx.lineWidth = 1;
+  label(ctx, 'this star, ' + T.toLocaleString('en-US') + ' K', lx + 26, ly + 4, 'rgba(255,255,255,0.85)', '10.5px "Source Sans 3",sans-serif', 'left');
+  if (sunOn) {
+    ctx.strokeStyle = 'rgba(255,220,120,0.7)'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(lx, ly + 16); ctx.lineTo(lx + 20, ly + 16); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+    label(ctx, 'the Sun, 5,772 K', lx + 26, ly + 20, 'rgba(255,230,160,0.85)', '10.5px "Source Sans 3",sans-serif', 'left');
   }
 }
 
+function bandName(nm) {
+  if (nm < 10) return 'X-ray / far UV';
+  if (nm < 380) return 'ultraviolet';
+  if (nm < 450) return 'violet'; if (nm < 495) return 'blue'; if (nm < 570) return 'green';
+  if (nm < 590) return 'yellow'; if (nm < 620) return 'orange'; if (nm <= 750) return 'red';
+  return 'infrared';
+}
 function render() {
   T = +$('tSlider').value;
-  $('tVal').textContent = T + ' K';
+  $('tVal').textContent = T.toLocaleString('en-US') + ' K';
   document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.t - T) < 40));
   const col = bbColor(T);
   $('swatch').style.background = col;
+  $('swatchTxt').style.color = T > 4500 ? '#3a3020' : '#fff';
 
   const pnm = wienNm(T);
-  const band = pnm < 380 ? 'ultraviolet' : pnm > 750 ? 'infrared' : pnm < 495 ? 'blue-green' : pnm < 590 ? 'yellow-green' : 'red';
-  const t4 = Math.pow(T / 5772, 4);
-
+  const t4 = Math.pow(T / TSUN, 4), F = SIGMA * Math.pow(T, 4);
   $('results').innerHTML =
-    row('peak wavelength', pnm.toFixed(0) + ' nm  (' + band + ')') +
-    row('apparent colour', T < 3900 ? 'red' : T < 5300 ? 'orange' : T < 6000 ? 'yellow-white' : T < 7500 ? 'white' : T < 10000 ? 'blue-white' : 'blue') +
-    row('output per area vs Sun', t4 < 0.1 ? t4.toFixed(3) + '×' : t4 < 10 ? t4.toFixed(2) + '×' : t4.toFixed(0) + '×') +
+    row('peak wavelength', pnm.toFixed(0) + ' nm (' + bandName(pnm).replace('ultraviolet', 'UV').replace('infrared', 'IR') + ')') +
+    row('colour to the eye', T < 3900 ? 'orange-red' : T < 5300 ? 'orange' : T < 6000 ? 'yellow-white' : T < 7500 ? 'white' : T < 10000 ? 'blue-white' : 'blue') +
+    row('power per m² (σ<i>T</i>⁴)', (F / 1e6 < 10 ? (F / 1e6).toFixed(2) : Math.round(F / 1e6).toLocaleString('en-US')) + ' MW/m²') +
+    row('… compared with the Sun', (t4 < 0.1 ? t4.toFixed(3) : t4 < 10 ? t4.toFixed(2) : t4.toFixed(0)) + ' ×') +
     row('spectral class', specClass(T)) +
-    row('visible-light fraction', (100 * visFrac(T)).toFixed(0) + '%');
+    row('share emitted as visible light', (100 * visFrac(T)).toFixed(0) + '%');
 
   $('note').textContent = pnm < 380
-    ? 'The spectrum peaks in the ultraviolet: a very hot star pours out most of its energy where the eye cannot see, and still looks blue-white because the blue end of the visible curve is the brightest part we can detect.'
+    ? 'The spectrum peaks in the ultraviolet: a very hot star pours out most of its energy where the eye cannot see. It still looks blue-white, because within the visible band its curve slopes up toward the blue end.'
     : pnm > 750
-    ? 'The peak is in the infrared: a cool star radiates mostly as heat, and the little visible light it gives off is weighted to the red.'
-    : 'The peak falls within the visible band — this is roughly the temperature range where a star radiates its energy where our eyes are most sensitive.';
-
+    ? 'The peak is in the infrared: a cool star radiates mostly as heat, and the little visible light it gives off is weighted toward red.'
+    : 'The peak falls inside the visible band. Even so the star looks ' + (T > 5300 && T < 7500 ? 'white-ish, not ' + bandName(pnm) + ': the eye blends all the colours under the curve.' : 'tinted: the eye blends all the colours under the curve.');
   drawPlot();
 }
 function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 function specClass(t) {
   if (t >= 30000) return 'O'; if (t >= 10000) return 'B'; if (t >= 7500) return 'A';
   if (t >= 6000) return 'F'; if (t >= 5200) return 'G'; if (t >= 3700) return 'K';
-  if (t >= 2400) return 'M'; return 'L / T (brown dwarf)';
+  if (t >= 2400) return 'M'; return 'L (brown-dwarf range)';
 }
+// fraction of σT⁴ emitted between 380 and 750 nm (∫B_λ dλ over all λ = σT⁴/π)
 function visFrac(t) {
-  let tot = 0, vis = 0;
-  for (let nm = 20; nm <= 4000; nm += 20) { const v = planck(nm, t); tot += v; if (nm >= 380 && nm <= 750) vis += v; }
-  return vis / tot;
+  let vis = 0;
+  for (let nm = 380; nm < 750; nm += 1) vis += planck(nm + 0.5, t) * 1e-9;
+  return vis / (SIGMA * Math.pow(t, 4) / Math.PI);
 }
 
 ['tSlider'].forEach(id => $(id).addEventListener('input', render));
-['sunChk', 'normChk'].forEach(id => $(id).addEventListener('change', render));
+['sunChk', 'normChk', 'logChk'].forEach(id => $(id).addEventListener('change', render));
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('tSlider').value = b.dataset.t; render(); }));
+window.addEventListener('resize', render);
 
 function katexAll() {
   const specs = [
     ['f1', "B_\\lambda(T) = \\dfrac{2hc^{2}}{\\lambda^{5}}\\,\\dfrac{1}{e^{\\,hc/\\lambda k T} - 1}"],
-    ['f2', "\\lambda_{\\text{peak}} = \\dfrac{2.9\\times10^{6}\\ \\text{nm·K}}{T}"],
+    ['f2', "\\lambda_{\\text{peak}} = \\dfrac{2.898\\times10^{6}\\ \\text{nm·K}}{T}"],
     ['f3', "F = \\sigma T^{4}"],
-    ['ex1', "\\lambda_{\\text{peak}} = \\dfrac{2.9\\times10^{6}}{3500} \\approx 828\\ \\text{nm}"],
+    ['ex1', "\\lambda_{\\text{peak}} = \\dfrac{2.898\\times10^{6}\\ \\text{nm·K}}{3500\\ \\text{K}} \\approx 828\\ \\text{nm}"],
     ['ex2', "\\left(\\dfrac{3500}{5772}\\right)^{4} \\approx 0.14"],
   ];
   const has = typeof window.katex !== 'undefined';
@@ -360,6 +450,8 @@ if (RP_IDS.length) {
     if (typeof rpAfter === 'function') rpAfter();
   });
 }
+// give every slider an accessible name from its visible label
+document.querySelectorAll('.slider-row').forEach(r => { const i = r.querySelector('input[type=range]'), l = r.querySelector('.lbl span'); if (i && l && !i.hasAttribute('aria-label')) i.setAttribute('aria-label', l.textContent.trim()); });
 window.addEventListener('load', () => { katexAll(); render(); });
 </script>
 </body>

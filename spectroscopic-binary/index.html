@@ -25,9 +25,10 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:9px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #orbit { aspect-ratio:520/200; }
-  #spec { aspect-ratio:520/130; background:#0d1420; }
-  #rv { aspect-ratio:520/150; background:#0d1420; }
+  #orbit { aspect-ratio:520/172; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #4a8fb0; outline-offset:2px; }
+  #spec { aspect-ratio:520/122; background:#0d1420; }
+  #rv { aspect-ratio:520/138; background:#0d1420; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
   .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #3a7791; background:#3a7791; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
@@ -92,29 +93,30 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="orbit" width="520" height="200"></canvas>
-        <canvas id="spec" width="520" height="130"></canvas>
-        <canvas id="rv" width="520" height="150"></canvas>
+        <canvas id="orbit" width="520" height="172"></canvas>
+        <canvas id="spec" width="520" height="122"></canvas>
+        <canvas id="rv" width="520" height="138"></canvas>
         <div class="btnrow">
           <button class="playbtn" id="playBtn">&#10073;&#10073; Pause</button>
           <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
-        </div>
-        <div class="slider-row">
-          <div class="lbl"><span>orbital phase</span><span class="val" id="phaseVal">0.00</span></div>
-          <input type="range" id="phase" min="0" max="1000" step="1" value="0">
+          <div class="slider-row" style="flex:1;min-width:160px;">
+            <div class="lbl"><span>orbital phase</span><span class="val" id="phaseVal">0.00</span></div>
+            <input type="range" id="phase" min="0" max="1000" step="1" value="0" aria-label="orbital phase">
+          </div>
         </div>
         <div class="note" id="note"></div>
       </div>
       <div class="ctlCol">
         <div class="section-label">The system</div>
-        <div class="slider-row"><div class="lbl"><span>mass of star A</span><span class="val" id="m1v">2.0 M☉</span></div><input type="range" id="m1" min="5" max="100" step="1" value="20"></div>
-        <div class="slider-row"><div class="lbl"><span>mass of star B</span><span class="val" id="m2v">1.0 M☉</span></div><input type="range" id="m2" min="5" max="100" step="1" value="10"></div>
-        <div class="slider-row"><div class="lbl"><span>orbital period</span><span class="val" id="pv">10 d</span></div><input type="range" id="p" min="2" max="100" step="1" value="10"></div>
+        <div class="slider-row"><div class="lbl"><span>mass of star A, <i>M</i><sub>A</sub></span><span class="val" id="m1v">2.0 M☉</span></div><input type="range" id="m1" min="5" max="100" step="1" value="20"></div>
+        <div class="slider-row"><div class="lbl"><span>mass of star B, <i>M</i><sub>B</sub></span><span class="val" id="m2v">1.0 M☉</span></div><input type="range" id="m2" min="5" max="100" step="1" value="10"></div>
+        <div class="slider-row"><div class="lbl"><span>orbital period <i>P</i></span><span class="val" id="pv">10 days</span></div><input type="range" id="p" min="2" max="100" step="1" value="10"></div>
+        <div class="slider-row"><div class="lbl"><span>inclination <i>i</i> (90&deg; = edge-on)</span><span class="val" id="iv">90&deg;</span></div><input type="range" id="inc" min="10" max="90" step="1" value="90"></div>
         <div class="section-label" style="margin-top:4px;">Results</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; astro-labs. Circular orbit seen exactly edge-on (i = 90°); spectral shift shown magnified.</div>
+    <div class="footer-note">DRAFT &mdash; astro-labs. Circular orbits. Doppler shifts are drawn to scale; star sizes are not.</div>
   </div>
 </div>
 
@@ -124,18 +126,18 @@
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
-        <p>Most binaries are too tight to split apart in any telescope &mdash; they look like a single point. But split their light into a spectrum and you see <b>two sets of spectral lines</b> sliding back and forth past each other as the stars swing toward and away from us. The size of each star&rsquo;s line shift is its orbital speed; the <b>heavier star moves slower</b> and stays closer to the centre of mass, so the speed ratio hands you the mass ratio directly.</p>
+        <p>Many binaries are too tight to split apart in any telescope: they look like a single point. But split their light into a spectrum and you see <b>two sets of spectral lines</b> sliding back and forth past each other as the stars swing toward and away from us. The size of each star&rsquo;s line shift is its orbital speed; the <b>heavier star moves slower</b> and stays closer to the centre of mass, so the speed ratio hands you the mass ratio directly.</p>
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Watch the top view (velocity arrows), the spectrum (one absorption line splitting into two), and the radial-velocity curve. Change the masses: the lighter star&rsquo;s line swings wider. Change the period: a tighter orbit is faster, so both lines swing wider. When the stars move across our line of sight (phase 0.25, 0.75) the lines merge &mdash; no shift.</p>
+        <p>Watch the 3D orbit view (velocity arrows, dashed arrow toward Earth), the spectrum (one absorption line splitting into two) and the radial-velocity curve. Change the masses: the lighter star&rsquo;s line swings wider. Shorten the period: a tighter orbit is faster, so both lines swing wider. When the stars move across our line of sight (phase 0.25 and 0.75) the lines merge: no shift. Lower the inclination to tilt the orbit toward face-on; both swings shrink by sin&nbsp;<i>i</i>, but their <i>ratio</i> does not change.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
           <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">the mass ratio straight from the two velocity amplitudes.</div></div>
           <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">Doppler shift of the lines from the line-of-sight speed.</div></div>
-          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">Kepler&rsquo;s third law gives the total mass once the orbit size and period are known.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">Kepler&rsquo;s third law gives the total mass once the orbit size and period are known; from the spectrum alone you get <i>a</i>&thinsp;sin&thinsp;<i>i</i> = (<i>K</i><sub>A</sub>+<i>K</i><sub>B</sub>)<i>P</i>/2&pi;.</div></div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
@@ -156,8 +158,9 @@
     <h2>Worked example &mdash; mass ratio from line shifts <span class="close" id="exampleClose">&times;</span></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">In a double-lined spectroscopic binary, star A&rsquo;s lines swing by &plusmn;40 km/s and star B&rsquo;s by &plusmn;120 km/s over a 4-day period. What is the mass ratio?</p>
     <div class="step"><div class="h">1 &middot; Speed ratio → mass ratio</div><span class="formula" id="ex1"></span></div>
-    <div class="step"><div class="h">2 &middot; Which is heavier?</div><div style="font-size:11.5px;color:#e7d6e4;">Star A moves slower, so it is the heavier one: M_A = 3&thinsp;M_B. The heavy star barely budges while the light one whips around it.</div></div>
-    <div class="step"><div class="h">3 &middot; Total mass</div><div style="font-size:11.5px;color:#e7d6e4;">Combine the summed speed (160 km/s) and the 4-day period with Kepler&rsquo;s third law to get M_A + M_B, then split it 3:1. (An edge-on orbit is assumed; otherwise you only get a lower limit.)</div></div>
+    <div class="step"><div class="h">2 &middot; Which is heavier?</div><div style="font-size:11.5px;color:#e7d6e4;">Star A moves slower, so it is the heavier one: <span class="formula" id="ex2" style="display:inline;"></span>. The heavy star stays close to the centre of mass while the light one swings around it.</div></div>
+    <div class="step"><div class="h">3 &middot; Orbit size from the speeds</div><span class="formula" id="ex3"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">The two stars together cover a circle of radius <i>a</i> = <i>a</i><sub>A</sub> + <i>a</i><sub>B</sub> at a combined speed of 160 km/s.</div></div>
+    <div class="step"><div class="h">4 &middot; Total mass from Kepler&rsquo;s third law</div><span class="formula" id="ex4"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">Split 3 : 1, that is 1.27 M&#8857; for A and 0.42 M&#8857; for B. This assumes an edge-on orbit; if it is tilted, these are lower limits. Set A = 1.3, B = 0.4, P = 4 days to check.</div></div>
   </div>
 </div>
 
@@ -179,129 +182,221 @@ const $ = id => document.getElementById(id);
 const C_KMS = 299792.458, AU_KM = 1.496e8, DAY_S = 86400, REST = 656.28;
 let playing = true, rafId = null, last = null, phi = 0;
 const S = {};
+const COL_A = '#7FB4FF', COL_B = '#FFB347';
+
+function prep(c, W0, H0) {
+  const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const bw = Math.max(1, Math.round(r.width * dpr)), bh = Math.max(1, Math.round(r.height * dpr));
+  if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+  const ctx = c.getContext('2d'), k = Math.min(bw / W0, bh / H0);
+  ctx.setTransform(k, 0, 0, k, (bw - W0 * k) / 2, (bh - H0 * k) / 2);
+  return ctx;
+}
+function label(ctx, txt, x, y, col, font, align) {
+  ctx.font = font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,11,18,0.9)'; ctx.strokeText(txt, x, y);
+  ctx.fillStyle = col; ctx.fillText(txt, x, y);
+}
+function arrow(ctx, x0, y0, x1, y1, col, w) {
+  const a = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); if (L < 2) return;
+  const hl = Math.min(8, L * 0.45);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - Math.cos(a) * hl * 0.8, y1 - Math.sin(a) * hl * 0.8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - hl * Math.cos(a - 0.4), y1 - hl * Math.sin(a - 0.4)); ctx.lineTo(x1 - hl * Math.cos(a + 0.4), y1 - hl * Math.sin(a + 0.4)); ctx.closePath(); ctx.fill();
+  ctx.lineWidth = 1;
+}
 
 function readControls() {
-  S.M1 = +$('m1').value / 10; S.M2 = +$('m2').value / 10; S.P = +$('p').value;
-  const Pyr = S.P / 365.25;
+  S.M1 = +$('m1').value / 10; S.M2 = +$('m2').value / 10; S.P = +$('p').value; S.inc = +$('inc').value;
+  const Pyr = S.P / 365.25, si = Math.sin(S.inc * Math.PI / 180);
   S.aAU = Math.pow((S.M1 + S.M2) * Pyr * Pyr, 1 / 3);
   S.a1 = S.aAU * S.M2 / (S.M1 + S.M2); S.a2 = S.aAU * S.M1 / (S.M1 + S.M2);
-  S.K1 = 2 * Math.PI * S.a1 * AU_KM / (S.P * DAY_S);
-  S.K2 = 2 * Math.PI * S.a2 * AU_KM / (S.P * DAY_S);
+  S.V1 = 2 * Math.PI * S.a1 * AU_KM / (S.P * DAY_S); S.V2 = 2 * Math.PI * S.a2 * AU_KM / (S.P * DAY_S);   // true orbital speeds
+  S.K1 = S.V1 * si; S.K2 = S.V2 * si;                                                                     // what the spectrum shows
+  const LA = Math.pow(S.M1, 3.5), LB = Math.pow(S.M2, 3.5);
+  S.dA = 0.22 + 0.42 * LA / (LA + LB); S.dB = 0.22 + 0.42 * LB / (LA + LB);   // line depth follows each star's share of the light
   $('m1v').textContent = S.M1.toFixed(1) + ' M☉'; $('m2v').textContent = S.M2.toFixed(1) + ' M☉';
-  $('pv').textContent = S.P + ' d';
+  $('pv').textContent = S.P + ' days'; $('iv').textContent = S.inc + '°';
+  const minM = Math.pow((S.K1 + S.K2) * 1e3, 3) * S.P * DAY_S / (2 * Math.PI * 6.674e-11) / 1.989e30;
 
   $('results').innerHTML =
-    row('speed of A (K_A)', S.K1.toFixed(1) + ' km/s') +
-    row('speed of B (K_B)', S.K2.toFixed(1) + ' km/s') +
-    row('speed ratio K_A / K_B', (S.K1 / S.K2).toFixed(2)) +
-    row('= mass ratio M_B / M_A', (S.M2 / S.M1).toFixed(2)) +
-    row('orbit size a', S.aAU.toFixed(3) + ' AU') +
-    row('total mass', (S.M1 + S.M2).toFixed(1) + ' M☉') +
-    row('line shift now (Hα)', (REST * Math.max(Math.abs(vr(phi).v1), Math.abs(vr(phi).v2)) / C_KMS * 1000).toFixed(1) + ' pm');
+    row('measured speed of A, <i>K</i><sub>A</sub>', S.K1.toFixed(1) + ' km/s') +
+    row('measured speed of B, <i>K</i><sub>B</sub>', S.K2.toFixed(1) + ' km/s') +
+    row('<i>K</i><sub>A</sub> / <i>K</i><sub>B</sub> = <i>M</i><sub>B</sub> / <i>M</i><sub>A</sub>', (S.K1 / S.K2).toFixed(2)) +
+    row('orbit size <i>a</i> (A to B)', S.aAU < 0.1 ? (S.aAU * 215).toFixed(1) + ' R☉' : S.aAU.toFixed(3) + ' AU') +
+    row('mass from Kepler, (<i>M</i><sub>A</sub>+<i>M</i><sub>B</sub>) sin³<i>i</i>', minM.toFixed(2) + ' M☉') +
+    '<div class="resrow"><span class="k">Hα shift now, A / B</span><span class="v" id="shiftNow"></span></div>';
 
-  $('note').textContent = 'Star A is ' + (S.M1 > S.M2 ? 'heavier' : 'lighter') + ', so it moves '
-    + (S.M1 > S.M2 ? 'slower and its line swings less' : 'faster and its line swings more') + '. '
-    + 'The two velocity amplitudes are in the ratio ' + (S.K1 / S.K2).toFixed(2) + ' : 1 = M_B : M_A — that ratio is exact regardless of orbit tilt.';
+  const eq = Math.abs(S.M1 - S.M2) < 1e-9;
+  $('note').textContent = (eq ? 'Equal masses: both stars move at the same speed and their lines swing equally. '
+    : 'Star A is ' + (S.M1 > S.M2 ? 'heavier' : 'lighter') + ', so it moves ' + (S.M1 > S.M2 ? 'slower and its line swings less. ' : 'faster and its line swings more. '))
+    + (S.inc < 89.5 ? 'Tilted orbit (i = ' + S.inc + '°): we only see the part of the motion along our line of sight, so both K values shrink by sin i, but their ratio still gives the mass ratio exactly.'
+      : 'Edge-on orbit: the measured speeds are the full orbital speeds, so Kepler’s third law gives the true total mass.');
 }
 function vr(p) { const th = 2 * Math.PI * p; return { v1: S.K1 * Math.cos(th), v2: -S.K2 * Math.cos(th) }; }
 function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 
+// ---------- 3D view of the orbit ----------
+// orbit plane = xy, Earth lies along (0, −sin i, cos i): in the plane when edge-on (i = 90°)
+const CAM_EL = 0.62;
 function drawOrbit() {
-  const c = $('orbit'), ctx = c.getContext('2d'), W = 520, H = 200;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2 - 6, scale = (H / 2 - 38) / Math.max(S.a1, S.a2);
-  const th = 2 * Math.PI * phi;
-  [S.a1, S.a2].forEach(r => { ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.beginPath(); ctx.arc(cx, cy, r * scale, 0, 7); ctx.stroke(); });
-  ctx.strokeStyle = '#5E6B8C'; ctx.beginPath();
-  ctx.moveTo(cx - 5, cy - 5); ctx.lineTo(cx + 5, cy + 5); ctx.moveTo(cx - 5, cy + 5); ctx.lineTo(cx + 5, cy - 5); ctx.stroke();
+  const W = 520, H = 172, ctx = prep($('orbit'), W, H);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  const rmax = Math.max(S.a1, S.a2), sc = Math.min(170 / rmax, 64 / (rmax * Math.sin(CAM_EL)));
+  const cx = W / 2 + 40, cy = H / 2 - 3;
+  const P = p => ({ x: cx + p.x * sc, y: cy - (p.z * Math.cos(CAM_EL) + p.y * Math.sin(CAM_EL)) * sc, d: p.y * Math.cos(CAM_EL) - p.z * Math.sin(CAM_EL) });
+  const th = 2 * Math.PI * phi, inc = S.inc * Math.PI / 180;
+
+  // orbits: back halves dim, front halves bright
+  const orbit = (r, near) => {
+    ctx.strokeStyle = near ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.12)'; ctx.beginPath(); let pen = false;
+    for (let k = 0; k <= 120; k++) { const a = k / 120 * 2 * Math.PI, q = P({ x: r * Math.cos(a), y: r * Math.sin(a), z: 0 }); if ((q.d < 0) === near) { pen ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); pen = true; } else pen = false; }
+    ctx.stroke();
+  };
+  orbit(S.a1, false); orbit(S.a2, false);
+  // centre of mass
+  const cm = P({ x: 0, y: 0, z: 0 });
+  ctx.strokeStyle = '#8E99B3'; ctx.beginPath(); ctx.moveTo(cm.x - 4, cm.y - 4); ctx.lineTo(cm.x + 4, cm.y + 4); ctx.moveTo(cm.x - 4, cm.y + 4); ctx.lineTo(cm.x + 4, cm.y - 4); ctx.stroke();
+
   const stars = [
-    { x: S.a1 * Math.cos(th), y: S.a1 * Math.sin(th), vx: -Math.sin(th), vy: Math.cos(th), col: '#7FB4FF', R: 5 + 2.6 * Math.sqrt(S.M1), lab: 'A' },
-    { x: -S.a2 * Math.cos(th), y: -S.a2 * Math.sin(th), vx: Math.sin(th), vy: -Math.cos(th), col: '#FFB347', R: 5 + 2.6 * Math.sqrt(S.M2), lab: 'B' },
+    { p: { x: S.a1 * Math.cos(th), y: S.a1 * Math.sin(th), z: 0 }, v: { x: -Math.sin(th), y: Math.cos(th), z: 0 }, sp: S.V1, col: COL_A, R: 4 + 3.2 * Math.pow(S.M1, 0.55), lab: 'A', vr: vr(phi).v1 },
+    { p: { x: -S.a2 * Math.cos(th), y: -S.a2 * Math.sin(th), z: 0 }, v: { x: Math.sin(th), y: -Math.cos(th), z: 0 }, sp: S.V2, col: COL_B, R: 4 + 3.2 * Math.pow(S.M2, 0.55), lab: 'B', vr: vr(phi).v2 },
   ];
-  stars.forEach(s => {
-    const sx = cx + s.x * scale, sy = cy - s.y * scale, L = 22;
-    ctx.strokeStyle = s.col; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + s.vx * L, sy - s.vy * L); ctx.stroke(); ctx.lineWidth = 1;
-    ctx.shadowColor = s.col; ctx.shadowBlur = 9; ctx.fillStyle = s.col;
-    ctx.beginPath(); ctx.arc(sx, sy, s.R, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
-    ctx.fillStyle = '#0b0f16'; ctx.font = '700 10px "Source Sans 3",sans-serif'; ctx.textAlign = 'center'; ctx.fillText(s.lab, sx, sy + 3.5);
+  const vmax = Math.max(S.V1, S.V2);
+  stars.forEach(s => { s.q = P(s.p); });
+  stars.sort((a, b) => b.q.d - a.q.d);           // far star first
+  stars.forEach((s, idx) => {
+    if (idx === 1) { orbit(S.a1, true); orbit(S.a2, true); }
+    const L = 48 * s.sp / vmax, tip = P({ x: s.p.x + s.v.x * L / sc, y: s.p.y + s.v.y * L / sc, z: 0 });
+    const g = ctx.createRadialGradient(s.q.x - s.R * 0.35, s.q.y - s.R * 0.4, s.R * 0.1, s.q.x, s.q.y, s.R);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, s.col); g.addColorStop(1, 'rgba(10,14,22,1)');
+    ctx.shadowColor = s.col; ctx.shadowBlur = 10; ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(s.q.x, s.q.y, s.R, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+    arrow(ctx, s.q.x, s.q.y, tip.x, tip.y, s.col, 2);
+    const rec = s.vr > 0.02 * vmax, app = s.vr < -0.02 * vmax;
+    label(ctx, s.lab + (rec ? ' · receding' : app ? ' · approaching' : ''), s.q.x, s.q.y - s.R - 6, rec ? '#ff9a8a' : app ? '#9cc4ff' : '#dfe6ee', '600 10.5px "Source Sans 3",sans-serif');
   });
-  ctx.fillStyle = '#8E99B3'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('▼ to Earth', cx, H - 6);
-  ctx.textAlign = 'left'; ctx.fillText('orbital plane, seen from above', 10, 15);
+  // line of sight to Earth
+  const e = { x: 0, y: -Math.sin(inc), z: Math.cos(inc) }, Le = rmax * 1.18;
+  const eP = P({ x: e.x * Le, y: e.y * Le, z: e.z * Le });
+  ctx.setLineDash([4, 3]); arrow(ctx, cm.x, cm.y, eP.x, eP.y, 'rgba(180,200,230,0.7)', 1.3); ctx.setLineDash([]);
+  label(ctx, 'to Earth', eP.x + 6, eP.y + 4, 'rgba(200,215,235,0.9)', '10px "Source Sans 3",sans-serif', 'left');
+  // centre-of-mass label: the candidate spot farthest from both stars
+  const cands = [[cm.x - 8, cm.y + 4, 'right'], [cm.x + 8, cm.y + 4, 'left'], [cm.x, cm.y + 16, 'center'], [cm.x, cm.y - 9, 'center'], [cm.x - 30, cm.y + 22, 'right'], [cm.x + 30, cm.y + 22, 'left']];
+  let bc = cands[0], bd = -1;
+  for (const c of cands) {
+    const bx0 = c[2] === 'right' ? c[0] - 64 : c[2] === 'left' ? c[0] : c[0] - 32, bx1 = bx0 + 64, by0 = c[1] - 9, by1 = c[1] + 2;
+    const dd = Math.min(...stars.map(st => Math.hypot(Math.max(bx0 - st.q.x, 0, st.q.x - bx1), Math.max(by0 - st.q.y, 0, st.q.y - by1)) - st.R));
+    if (dd > bd) { bd = dd; bc = c; }
+  }
+  if (bd > 3 && (bc === cands[4] || bc === cands[5])) { ctx.strokeStyle = 'rgba(160,170,195,0.5)'; ctx.beginPath(); ctx.moveTo(bc[0], bc[1] - 4); ctx.lineTo(cm.x, cm.y); ctx.stroke(); }
+  if (bd > 3) label(ctx, 'centre of mass', bc[0], bc[1], 'rgba(160,170,195,0.85)', '9.5px "Source Sans 3",sans-serif', bc[2]);
+  label(ctx, 'the orbit in 3D (not to scale with the stars)', 10, 15, 'rgba(255,255,255,0.5)', '10px "Source Sans 3",sans-serif', 'left');
+  label(ctx, 'arrows: orbital velocity', 10, H - 9, 'rgba(255,255,255,0.45)', '10px "Source Sans 3",sans-serif', 'left');
+}
+
+// ---------- spectrum ----------
+const LLO = 654.6, LHI = 657.9, SIG = 0.045;
+function fluxAt(lam, v) {
+  const lamA = REST * (1 + v.v1 / C_KMS), lamB = REST * (1 + v.v2 / C_KMS);
+  return 1 - S.dA * Math.exp(-0.5 * ((lam - lamA) / SIG) ** 2) - S.dB * Math.exp(-0.5 * ((lam - lamB) / SIG) ** 2);
 }
 function drawSpec() {
-  const c = $('spec'), ctx = c.getContext('2d'), W = 520, H = 130;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const mL = 40, mR = 12, mT = 20, mB = 22;
-  const lamLo = 654.6, lamHi = 657.9, sig = 0.05;
+  const W = 520, H = 122, ctx = prep($('spec'), W, H);
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const mL = 44, mR = 14, sT = 22, sH = 16, gT = sT + sH + 6, gB = H - 28;
   const v = vr(phi);
-  const xx = lam => mL + (lam - lamLo) / (lamHi - lamLo) * (W - mL - mR);
-  const yy = f => mT + (1.06 - f) / 1.06 * (H - mT - mB);
-  ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(150,180,220,0.4)';
-  ctx.beginPath(); ctx.moveTo(xx(REST), mT); ctx.lineTo(xx(REST), H - mB); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('Hα rest', xx(REST), mT - 6);
-  ctx.strokeStyle = '#e6ecf5'; ctx.lineWidth = 1.6; ctx.beginPath();
+  const xx = lam => mL + (lam - LLO) / (LHI - LLO) * (W - mL - mR);
+  const yy = f => gT + (1.04 - f) / 1.04 * (gB - gT);
+  // the spectrum as it would look: red Hα region with dark absorption lines
   for (let px = mL; px <= W - mR; px++) {
-    const lam = lamLo + (px - mL) / (W - mL - mR) * (lamHi - lamLo);
-    const lamA = REST * (1 + v.v1 / C_KMS), lamB = REST * (1 + v.v2 / C_KMS);
-    let f = 1 - 0.45 * Math.exp(-0.5 * ((lam - lamA) / sig) ** 2) - 0.45 * Math.exp(-0.5 * ((lam - lamB) / sig) ** 2);
-    const y = yy(Math.max(0.03, f));
-    px === mL ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+    const lam = LLO + (px - mL) / (W - mL - mR) * (LHI - LLO), f = Math.max(0, fluxAt(lam, v));
+    ctx.fillStyle = 'rgb(' + Math.round(235 * f) + ',' + Math.round(40 * f) + ',' + Math.round(30 * f) + ')'; ctx.fillRect(px, sT, 1.2, sH);
   }
-  ctx.stroke(); ctx.lineWidth = 1;
-  [[v.v1, '#7FB4FF'], [v.v2, '#FFB347']].forEach(t => {
-    const x = xx(REST * (1 + t[0] / C_KMS));
-    ctx.fillStyle = t[1]; ctx.beginPath(); ctx.moveTo(x, H - mB + 2); ctx.lineTo(x - 4, H - mB + 9); ctx.lineTo(x + 4, H - mB + 9); ctx.closePath(); ctx.fill();
+  // rest-wavelength marker
+  ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(150,180,220,0.5)';
+  ctx.beginPath(); ctx.moveTo(xx(REST), sT - 2); ctx.lineTo(xx(REST), gB); ctx.stroke(); ctx.setLineDash([]);
+  label(ctx, 'Hα at rest, 656.28 nm', xx(REST), sT - 6, 'rgba(190,210,235,0.85)', '9.5px "Source Sans 3",sans-serif');
+  // axes + ticks
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(mL, gT); ctx.lineTo(mL, gB); ctx.lineTo(W - mR, gB); ctx.stroke();
+  ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.textAlign = 'center';
+  for (let l = 655; l <= 657.6; l += 0.5) { ctx.beginPath(); ctx.moveTo(xx(l), gB); ctx.lineTo(xx(l), gB + 3); ctx.stroke(); ctx.fillText(l.toFixed(1), xx(l), gB + 13); }
+  ctx.textAlign = 'right'; ctx.fillText('1', mL - 4, yy(1) + 3); ctx.fillText('0.5', mL - 4, yy(0.5) + 3);
+  ctx.font = '10px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.textAlign = 'right'; ctx.fillText('wavelength (nm)', W - mR, H - 4);
+  ctx.save(); ctx.translate(11, (gT + gB) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('flux', 0, 0); ctx.restore();
+  // each star's line (dashed, its colour) and the combined profile (white)
+  [[v.v1, S.dA, COL_A], [v.v2, S.dB, COL_B]].forEach(([vv, dep, col]) => {
+    const lc = REST * (1 + vv / C_KMS);
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.6; ctx.setLineDash([3, 2]); ctx.beginPath();
+    for (let px = mL; px <= W - mR; px++) { const lam = LLO + (px - mL) / (W - mL - mR) * (LHI - LLO); const y = yy(1 - dep * Math.exp(-0.5 * ((lam - lc) / SIG) ** 2)); px === mL ? ctx.moveTo(px, y) : ctx.lineTo(px, y); }
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
   });
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('observed spectrum — one line, split by the Doppler shift', mL, 12);
+  ctx.strokeStyle = '#e6ecf5'; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (let px = mL; px <= W - mR; px++) { const lam = LLO + (px - mL) / (W - mL - mR) * (LHI - LLO); const y = yy(fluxAt(lam, v)); px === mL ? ctx.moveTo(px, y) : ctx.lineTo(px, y); }
+  ctx.stroke(); ctx.lineWidth = 1;
+  // A / B tags under their line centres, pushed apart if they would overlap
+  let xa = xx(REST * (1 + v.v1 / C_KMS)), xb = xx(REST * (1 + v.v2 / C_KMS));
+  if (Math.abs(xa - xb) < 14) { const m = (xa + xb) / 2, sgn = xa <= xb ? -1 : 1; xa = m + sgn * 7; xb = m - sgn * 7; }
+  label(ctx, 'A', xa, gB - 4, COL_A, '700 10px "Source Sans 3",sans-serif'); label(ctx, 'B', xb, gB - 4, COL_B, '700 10px "Source Sans 3",sans-serif');
+  label(ctx, '← blueshift (approaching)', mL + 4, gB - 5, 'rgba(156,196,255,0.8)', '9.5px "Source Sans 3",sans-serif', 'left');
+  label(ctx, 'redshift (receding) →', W - mR - 4, gB - 5, 'rgba(255,154,138,0.85)', '9.5px "Source Sans 3",sans-serif', 'right');
+  const sA = REST * v.v1 / C_KMS * 1000, sB = REST * v.v2 / C_KMS * 1000;
+  const el = $('shiftNow'); if (el) el.textContent = (sA >= 0 ? '+' : '') + sA.toFixed(0) + ' / ' + (sB >= 0 ? '+' : '') + sB.toFixed(0) + ' pm';
 }
+
+// ---------- radial-velocity curve ----------
+function niceStep(x) { const m = Math.pow(10, Math.floor(Math.log10(x))); return [1, 2, 5, 10].map(k => k * m).find(s => s >= x); }
 function drawRV() {
-  const c = $('rv'), ctx = c.getContext('2d'), W = 520, H = 150;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const mL = 44, mR = 12, mT = 16, mB = 24;
-  const vmax = Math.max(S.K1, S.K2) * 1.2;
+  const W = 520, H = 138, ctx = prep($('rv'), W, H);
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const mL = 62, mR = 14, mT = 12, mB = 28;
+  const kmax = Math.max(S.K1, S.K2, 1), vmax = kmax * 1.18;
   const xx = p => mL + p * (W - mL - mR);
   const yy = v => mT + (vmax - v) / (2 * vmax) * (H - mT - mB);
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.moveTo(mL, yy(0)); ctx.lineTo(W - mR, yy(0)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText('0', mL - 5, yy(0) + 3);
-  ctx.fillText('+' + Math.round(Math.max(S.K1, S.K2)), mL - 5, yy(Math.max(S.K1, S.K2)) + 3);
-  ctx.fillText('−' + Math.round(Math.max(S.K1, S.K2)), mL - 5, yy(-Math.max(S.K1, S.K2)) + 3);
-  ctx.textAlign = 'left';
-  ctx.fillText('receding ↑', mL + 4, mT + 9); ctx.fillText('approaching ↓', mL + 4, H - mB - 4);
-  [['v1', '#7FB4FF'], ['v2', '#FFB347']].forEach(([k, col]) => {
+  const st = niceStep(kmax / 2);
+  ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.textAlign = 'right';
+  for (let v = -Math.floor(vmax / st) * st; v <= vmax; v += st) {
+    ctx.strokeStyle = v === 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(mL, yy(v)); ctx.lineTo(W - mR, yy(v)); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillText((v > 0 ? '+' : '') + Math.round(v), mL - 5, yy(v) + 3);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(mL, mT); ctx.lineTo(mL, H - mB); ctx.stroke();
+  ctx.textAlign = 'center';
+  [0, 0.25, 0.5, 0.75, 1].forEach(p => { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillText(p.toFixed(2), xx(p), H - mB + 13); });
+  ctx.font = '10px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('orbital phase (fraction of a period, P = ' + S.P + ' days)', (mL + W - mR) / 2, H - 4);
+  ctx.save(); ctx.translate(11, (mT + H - mB) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('radial velocity (km/s)', 0, 0); ctx.font = '9px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillText('+ receding, − approaching', 0, 10); ctx.restore();
+  [['v1', COL_A], ['v2', COL_B]].forEach(([k, col]) => {
     ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
-    for (let i = 0; i <= 400; i++) { const p = i / 400, val = vr(p)[k]; const x = xx(p), y = yy(val); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
-    ctx.stroke();
+    for (let i = 0; i <= 300; i++) { const p = i / 300, y = yy(vr(p)[k]); i === 0 ? ctx.moveTo(xx(p), y) : ctx.lineTo(xx(p), y); }
+    ctx.stroke(); ctx.lineWidth = 1;
   });
-  ctx.lineWidth = 1;
   const x = xx(phi);
   ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([3, 2]);
   ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, H - mB); ctx.stroke(); ctx.setLineDash([]);
   const v = vr(phi);
-  [[v.v1, '#7FB4FF'], [v.v2, '#FFB347']].forEach(t => { ctx.fillStyle = t[1]; ctx.beginPath(); ctx.arc(x, yy(t[0]), 4, 0, 7); ctx.fill(); });
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.textAlign = 'center';
-  [0, 0.25, 0.5, 0.75, 1].forEach(p => ctx.fillText(p.toFixed(2), xx(p), H - 9));
-  ctx.textAlign = 'right'; ctx.fillText('radial velocity vs phase', W - mR, 11);
+  [[v.v1, COL_A], [v.v2, COL_B]].forEach(t => { ctx.fillStyle = t[1]; ctx.beginPath(); ctx.arc(x, yy(t[0]), 4, 0, 7); ctx.fill(); });
+  // K amplitude labels at the first peak of each curve
+  label(ctx, 'K', xx(0) + 9, yy(S.K1) + 4, COL_A, 'italic 600 10.5px "Source Serif 4",serif', 'left');
+  label(ctx, 'A', xx(0) + 16, yy(S.K1) + 7, COL_A, '600 8px "Source Sans 3",sans-serif', 'left');
+  label(ctx, 'K', xx(0.5) + 9, yy(S.K2) + 4, COL_B, 'italic 600 10.5px "Source Serif 4",serif', 'left');
+  label(ctx, 'B', xx(0.5) + 16, yy(S.K2) + 7, COL_B, '600 8px "Source Sans 3",sans-serif', 'left');
 }
 
+function drawAll() { drawOrbit(); drawSpec(); drawRV(); }
 function frame(ts) {
   if (last === null) last = ts;
-  const dt = (ts - last) / 1000; last = ts;
+  const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
   if (playing) { phi = (phi + dt / 8) % 1; $('phase').value = Math.round(phi * 1000); }
   $('phaseVal').textContent = phi.toFixed(2);
-  drawOrbit(); drawSpec(); drawRV();
+  drawAll();
   rafId = requestAnimationFrame(frame);
 }
 function setPlaying(p) { playing = p; $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play'; }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { $('m1').value = 20; $('m2').value = 10; $('p').value = 10; phi = 0; $('phase').value = 0; setPlaying(true); readControls(); });
-$('phase').addEventListener('input', () => { setPlaying(false); phi = +$('phase').value / 1000; readControls(); drawOrbit(); drawSpec(); drawRV(); });
-['m1', 'm2', 'p'].forEach(id => $(id).addEventListener('input', () => { readControls(); }));
+$('resetBtn').addEventListener('click', () => { $('m1').value = 20; $('m2').value = 10; $('p').value = 10; $('inc').value = 90; phi = 0; $('phase').value = 0; setPlaying(true); readControls(); });
+$('phase').addEventListener('input', () => { setPlaying(false); phi = +$('phase').value / 1000; drawAll(); $('phaseVal').textContent = phi.toFixed(2); });
+['m1', 'm2', 'p', 'inc'].forEach(id => $(id).addEventListener('input', () => { readControls(); if (!playing) drawAll(); }));
 
 function katexAll() {
   const specs = [
@@ -309,6 +404,9 @@ function katexAll() {
     ['f2', "\\dfrac{\\Delta\\lambda}{\\lambda} = \\dfrac{v_r}{c}"],
     ['f3', "M_A + M_B = \\dfrac{a^{3}}{P^{2}}\\ \\ (M_\\odot,\\,\\text{AU},\\,\\text{yr})"],
     ['ex1', "\\dfrac{K_A}{K_B} = \\dfrac{40}{120} = \\dfrac{1}{3} = \\dfrac{M_B}{M_A}"],
+    ['ex2', "M_A = 3\\,M_B"],
+    ['ex3', "a = \\dfrac{(K_A + K_B)\\,P}{2\\pi} = \\dfrac{(160\\ \\text{km/s})(4 \\times 86400\\ \\text{s})}{2\\pi} = 8.80\\times10^{6}\\ \\text{km} = 0.0588\\ \\text{AU}"],
+    ['ex4', "M_A + M_B = \\dfrac{a^{3}}{P^{2}} = \\dfrac{(0.0588)^{3}}{(4/365.25)^{2}} \\approx 1.70\\ M_\\odot"],
   ];
   const has = typeof window.katex !== 'undefined';
   for (const [id, tex] of specs) {
@@ -365,6 +463,8 @@ if (RP_IDS.length) {
     if (typeof rpAfter === 'function') rpAfter();
   });
 }
+// give every slider an accessible name from its visible label
+document.querySelectorAll('.slider-row').forEach(r => { const i = r.querySelector('input[type=range]'), l = r.querySelector('.lbl span'); if (i && l && !i.hasAttribute('aria-label')) i.setAttribute('aria-label', l.textContent.trim()); });
 window.addEventListener('load', () => { katexAll(); readControls(); rafId = requestAnimationFrame(frame); });
 </script>
 </body>
