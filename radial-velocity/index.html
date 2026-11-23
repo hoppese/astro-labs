@@ -29,7 +29,7 @@
   #spectrum { aspect-ratio:520/60; }
   #rv { aspect-ratio:520/170; background:#0d1420; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
-  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #883c67; background:#883c67; color:#fff; }
+  .playbtn { min-width:92px; justify-content:center; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #883c67; background:#883c67; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
@@ -108,31 +108,31 @@
       <div class="ctlCol">
         <div class="section-label">Planet</div>
         <div class="chips" id="chips">
-          <button data-m="1" data-a="5.2">Jupiter @ 5.2 AU</button>
-          <button data-m="0.00314" data-a="1">Earth @ 1 AU</button>
-          <button data-m="1" data-a="0.05" class="on">hot Jupiter</button>
+          <button data-m="1" data-a="0.05" class="on">hot Jupiter<br>0.05 AU</button>
+          <button data-m="1" data-a="5.2">Jupiter<br>5.2 AU</button>
+          <button data-m="0.003146" data-a="1">Earth<br>1 AU</button>
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>planet mass</span><span class="val" id="mpVal">1.0 M♃</span></div>
-          <input type="range" id="mpSlider" min="0.003" max="13" step="0.001" value="1">
+          <div class="lbl"><span>planet mass</span><span class="val" id="mpVal">1.000 M<sub>J</sub></span></div>
+          <input type="range" id="mpSlider" min="-2.523" max="1.114" step="0.001" value="0" aria-label="planet mass (logarithmic)">
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>orbit distance a</span><span class="val" id="aVal">0.050 AU</span></div>
-          <input type="range" id="aSlider" min="0.02" max="6" step="0.01" value="0.05">
+          <div class="lbl"><span>orbit distance <i>a</i></span><span class="val" id="aVal">0.050 AU</span></div>
+          <input type="range" id="aSlider" min="-1.699" max="0.778" step="0.001" value="-1.30103" aria-label="orbit distance (logarithmic)">
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>inclination i</span><span class="val" id="incVal">90&deg; (edge-on)</span></div>
+          <div class="lbl"><span>inclination <i>i</i></span><span class="val" id="incVal">90&deg; (edge-on)</span></div>
           <input type="range" id="incSlider" min="0" max="90" step="1" value="90">
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>star mass</span><span class="val" id="msVal">1.00 M☉</span></div>
+          <div class="lbl"><span>star mass</span><span class="val" id="msVal">1.00 M<sub>☉</sub></span></div>
           <input type="range" id="msSlider" min="0.3" max="2" step="0.05" value="1">
         </div>
         <div class="section-label" style="margin-top:4px;">Results</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Circular orbit; spectral shift exaggerated ~10&#8309;&times; to be visible.</div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Circular orbit; the star&rsquo;s orbit and the spectral-line shift are drawn hugely enlarged (factors shown on the canvas).</div>
   </div>
 </div>
 
@@ -146,21 +146,21 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Hit Play. The top view shows the star and planet circling the barycentre (marked &times;); the arrow is the star&rsquo;s velocity, and the strip below is one spectral line sliding blue/red. The lower graph is the radial-velocity curve. Make the planet heavier or closer and the wobble grows; tilt the orbit toward face-on and it shrinks toward zero.</p>
+        <p>Hit Play. The top view is the system in 3D: star and planet circling the barycentre (&times;), the blue arrow pointing to Earth, and the angle <i>i</i> between the orbit&rsquo;s axis and our line of sight. The white arrow is the star&rsquo;s velocity; the red/blue arrow is the part of it along our line of sight, the only part the Doppler effect can see. The strip shows one spectral line sliding blue/red, and the graph is the radial-velocity curve. Make the planet heavier or closer and the wobble grows; tilt the orbit toward face-on (<i>i</i> &rarr; 0&deg;) and the red/blue arrow shrinks toward zero.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
           <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">the star and planet balance about the barycentre.</div></div>
           <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">radial-velocity semi-amplitude &mdash; the size of the wobble we measure.</div></div>
-          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">the Doppler shift of the lines: a few m/s in a line at ~500 nm.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">the Doppler shift: <i>v<sub>r</sub></i> is the star&rsquo;s speed along our line of sight. A 10&nbsp;m/s wobble shifts a 550&nbsp;nm line by only about 0.02&nbsp;pm.</div></div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Learn more</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
-          <li><a href="https://openstax.org/books/astronomy-2e/pages/21-1-searching-for-planets-around-other-stars" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 21.1 Searching for Planets Around Other Stars</a></li>
-          <li><a href="https://openstax.org/books/astronomy-2e/pages/5-3-spectroscopy-in-astronomy" target="_blank" rel="noopener" style="color:#8fc7ff;">5.3 Spectroscopy &amp; the Doppler Effect</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/21-4-planets-beyond-the-solar-system-search-and-discovery" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 21.4 Planets beyond the Solar System: Search and Discovery</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/5-6-the-doppler-effect" target="_blank" rel="noopener" style="color:#8fc7ff;">5.6 The Doppler Effect</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/exoplanets-crash-course-astronomy-27/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #27 — Exoplanets</a></li></ul>
@@ -200,148 +200,276 @@ const AU = 1.495978707e11, YR = 3.15576e7, C = 2.998e8;
 let playing = false, rafId = null, lastTs = null;
 let phase = 0;
 
-function mpMsun() { return +$('mpSlider').value * MJUP_IN_MSUN; }
-function aAU() { return +$('aSlider').value; }
+// ---- crisp canvases on high-DPI screens; all drawing is in the 520-wide design units ----
+function prep(id, W, H) {
+  const c = $(id), dpr = Math.min(3, window.devicePixelRatio || 1);
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx;
+}
+// text with a dark halo so it stays readable over orbits and arrows
+function label(ctx, t, x, y, col, font, align) {
+  ctx.save(); ctx.font = font || '10px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,11,18,0.9)'; ctx.strokeText(t, x, y);
+  ctx.fillStyle = col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+}
+// a sphere lit by a light in direction L = {x, y, z} (screen x right, y down, z toward the viewer):
+// dark disc, then the lit part bounded by the projected terminator ellipse
+function litSphere(ctx, x, y, r, rgb, L) {
+  const n = Math.hypot(L.x, L.y, L.z) || 1, lx = L.x / n, ly = L.y / n, lz = L.z / n;
+  const [R, G, B] = rgb, sh = (k, a) => 'rgba(' + Math.round(R * k) + ',' + Math.round(G * k) + ',' + Math.round(B * k) + ',' + (a == null ? 1 : a) + ')';
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = sh(0.16); ctx.fill(); ctx.clip();
+  const ang = Math.atan2(ly, lx), sxy = Math.hypot(lx, ly);
+  ctx.translate(x, y); ctx.rotate(ang);
+  ctx.beginPath();
+  if (sxy < 0.02) { if (lz > 0) ctx.arc(0, 0, r, 0, 2 * Math.PI); }
+  else {
+    ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false);                 // lit half (toward the light)
+    ctx.ellipse(0, 0, r * Math.abs(lz), r, 0, Math.PI / 2, -Math.PI / 2, lz < 0); // terminator
+  }
+  const g = ctx.createRadialGradient(r * 0.45 * sxy, 0, r * 0.05, 0, 0, r * 1.05);
+  g.addColorStop(0, sh(1)); g.addColorStop(0.55, sh(0.82)); g.addColorStop(1, sh(0.45));
+  ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
+}
+// a glowing star disc with a little limb darkening
+function starDisc(ctx, x, y, r, core, limb, glow) {
+  ctx.save();
+  if (glow) { ctx.shadowColor = limb; ctx.shadowBlur = glow; }
+  const g = ctx.createRadialGradient(x - r * 0.15, y - r * 0.15, r * 0.05, x, y, r);
+  g.addColorStop(0, core); g.addColorStop(0.7, limb); g.addColorStop(1, 'rgba(230,140,40,0.95)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+  ctx.restore();
+}
+function arrow(ctx, x0, y0, x1, y1, col, lw, head) {
+  const L = Math.hypot(x1 - x0, y1 - y0); if (L < 0.5) return;
+  const ux = (x1 - x0) / L, uy = (y1 - y0) / L, h = Math.min(head || 8, L * 0.6);
+  ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * h * 0.8, y1 - uy * h * 0.8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * h - uy * h * 0.45, y1 - uy * h + ux * h * 0.45);
+  ctx.lineTo(x1 - ux * h + uy * h * 0.45, y1 - uy * h - ux * h * 0.45); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function tex(s) { try { return katex.renderToString(s, { throwOnError: false }); } catch (e) { return s; } }
+
+// sliders are logarithmic for planet mass and orbit size (Earth-mass to 13 Jupiters, 0.02 to 6 AU)
+function mpMJ() { return Math.pow(10, +$('mpSlider').value); }
+function mpMsun() { return mpMJ() * MJUP_IN_MSUN; }
+function aAU() { return Math.pow(10, +$('aSlider').value); }
 function inc() { return +$('incSlider').value; }
 function msMsun() { return +$('msSlider').value; }
 function periodYr() { return Math.sqrt(Math.pow(aAU(), 3) / (msMsun() + mpMsun())); }
 function aStarAU() { return aAU() * mpMsun() / (msMsun() + mpMsun()); }
-function vStar() {                     // orbital speed of the star, m/s
-  return 2 * Math.PI * aStarAU() * AU / (periodYr() * YR);
-}
-function K() { return vStar() * Math.sin(inc() * D); }   // RV semi-amplitude
-// phase 0 = star closest to us, moving across (RV = 0); phase 0.25 = receding fastest
+function vStar() { return 2 * Math.PI * aStarAU() * AU / (periodYr() * YR); }   // star's orbital speed, m/s
+function K() { return vStar() * Math.sin(inc() * D); }                          // RV semi-amplitude
+// phase 0: star at its nearest point to us, moving across the sky (v_r = 0); phase 0.25: receding fastest
 function rvAt(ph) { return K() * Math.sin(2 * Math.PI * ph); }
 
-// ---------- orbit view ----------
-function drawOrbit() {
-  const c = $('orbit'), ctx = c.getContext('2d');
-  const W = 520, H = 210;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2 - 2;
-  const mp = mpMsun(), ms = msMsun();
-  const fore = Math.max(0.06, Math.sin(inc() * D));   // vertical foreshortening (= sin i)
-
-  // fixed-size planet orbit; the star's orbit is exaggerated so its wobble shows
-  const rp = 132;
-  const wobbleExag = 260;
-  const rs = Math.min(60, rp * (mp / (ms + mp)) * wobbleExag);
-  const ang = 2 * Math.PI * phase;
-  // phase 0: star nearest us (screen-bottom); phase 0.25: star on the left, receding
-  const sx = cx - rs * Math.sin(ang), sy = cy + rs * Math.cos(ang) * fore;
-  const px = cx + rp * Math.sin(ang), py = cy - rp * Math.cos(ang) * fore;
-  const dvx = -Math.cos(ang), dvy = -Math.sin(ang) * fore;   // star velocity direction
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.ellipse(cx, cy, rp, rp * fore, 0, 0, 7); ctx.stroke();
-  if (rs > 3) { ctx.beginPath(); ctx.ellipse(cx, cy, rs, rs * fore, 0, 0, 7); ctx.stroke(); }
-  ctx.setLineDash([]);
-
-  ctx.strokeStyle = '#9fb0bf'; ctx.beginPath();
-  ctx.moveTo(cx - 4, cy - 4); ctx.lineTo(cx + 4, cy + 4); ctx.moveTo(cx + 4, cy - 4); ctx.lineTo(cx - 4, cy + 4); ctx.stroke();
-  ctx.fillStyle = '#9fb0bf'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('barycentre  (× ' + (rs > 3 ? (wobbleExag / 1) + '× wobble' : 'tiny') + ')', cx + 8, cy - 7);
-
-  ctx.fillStyle = '#7fa8d8'; ctx.beginPath(); ctx.arc(px, py, 6, 0, 7); ctx.fill();
-  ctx.fillStyle = '#a9c8e6'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('planet', px, py - 10);
-
-  const g = ctx.createRadialGradient(sx - 5, sy - 5, 3, sx, sy, 18);
-  g.addColorStop(0, '#fff2c8'); g.addColorStop(1, '#ffcf5a');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, 13, 0, 7); ctx.fill();
-
-  // star velocity arrow — mostly the radial (vertical) part matters
-  const dm = Math.hypot(dvx, dvy) || 1;
-  ctx.strokeStyle = '#ff7ba8'; ctx.lineWidth = 2.4;
-  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dvx / dm * 26, sy + dvy / dm * 26); ctx.stroke(); ctx.lineWidth = 1;
-
-  // observer direction: toward the bottom of the frame
-  ctx.strokeStyle = 'rgba(150,200,255,0.4)'; ctx.setLineDash([2, 3]);
-  ctx.beginPath(); ctx.moveTo(cx, H - 6); ctx.lineTo(cx, cy + rp * fore + 8); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(150,200,255,0.6)'; ctx.textAlign = 'center'; ctx.font = '9px "Source Sans 3",sans-serif';
-  ctx.fillText('▼ to us', cx, H - 8);
-
-  const rv = rvAt(phase);
-  ctx.fillStyle = rv < -0.01 ? '#7fb0ff' : rv > 0.01 ? '#ff8f8f' : 'rgba(255,255,255,0.6)';
-  ctx.textAlign = 'left'; ctx.font = '10px "Source Sans 3",sans-serif';
-  ctx.fillText(rv < -0.01 ? 'star approaching → blueshift' : rv > 0.01 ? 'star receding → redshift' : 'star moving across → no shift', 10, 16);
+// ---------- 3D orbit view ----------
+// orbit frame: X, Y in the orbital plane, N = orbit axis. Earth lies along d = (0, sin i, cos i).
+// The camera is fixed relative to the orbit, so tilting i swings the "to Earth" arrow, not the orbit.
+const OW = 520, OH = 210, CAM = { yaw: -36 * D, el: 24 * D, dist: 900 };
+function proj(w, cx, cy) {
+  const cyw = Math.cos(CAM.yaw), syw = Math.sin(CAM.yaw);
+  const x1 = w.X * cyw - w.Y * syw, y1 = w.X * syw + w.Y * cyw;       // y1: toward the viewer (horizontal)
+  const up = w.N * Math.cos(CAM.el) - y1 * Math.sin(CAM.el);
+  const depth = y1 * Math.cos(CAM.el) + w.N * Math.sin(CAM.el);       // larger = nearer the viewer
+  const s = CAM.dist / (CAM.dist - depth);
+  return { x: cx + x1 * s, y: cy - up * s, d: depth, s };
 }
+function drawOrbit() {
+  const ctx = prep('orbit', OW, OH), W = OW, H = OH;
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let k = 0; k < 46; k++) { ctx.globalAlpha = 0.08 + (k % 5) * 0.06; ctx.fillRect((k * 131.7) % W, (k * 71.3) % H, 1.2, 1.2); }
+  ctx.globalAlpha = 1;
+  const cx = 228, cy = 118, P = w => proj(w, cx, cy);
+  const mp = mpMsun(), ms = msMsun(), ii = inc() * D;
+  const rp = 150;                                   // planet orbit, drawn size
+  const realRatio = mp / (ms + mp);                 // a_star / a_planet
+  const rs = Math.max(16, Math.min(34, rp * realRatio * 2000));   // star's orbit, enlarged so it shows
+  const exag = rs / (rp * realRatio);
+  const ph = 2 * Math.PI * phase;
+  const S = { X: -rs * Math.sin(ph), Y: rs * Math.cos(ph), N: 0 };          // star
+  const Pl = { X: rp * Math.sin(ph), Y: -rp * Math.cos(ph), N: 0 };          // planet (opposite side)
+  const dE = { X: 0, Y: Math.sin(ii), N: Math.cos(ii) };                      // toward Earth
+
+  // orbital plane: translucent disc + the planet's orbit, back half dim and dashed, front half bright
+  const ring = (r, k0, k1) => { const pts = []; for (let k = k0; k <= k1; k++) { const t = k / 120 * 2 * Math.PI; pts.push(P({ X: r * Math.cos(t), Y: r * Math.sin(t), N: 0 })); } return pts; };
+  const disc = ring(rp, 0, 120);
+  ctx.beginPath(); disc.forEach((p, k) => k ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+  ctx.fillStyle = 'rgba(168,71,126,0.07)'; ctx.fill();
+  const strokeRing = (r, col) => {
+    const pts = ring(r, 0, 120);
+    for (let k = 0; k < 120; k++) {
+      const a = pts[k], b = pts[k + 1], front = (a.d + b.d) > 0;
+      ctx.strokeStyle = front ? col : col.replace(/[\d.]+\)$/, m => (parseFloat(m) * 0.45).toFixed(2) + ')');
+      ctx.lineWidth = front ? 1.4 : 1; ctx.setLineDash(front ? [] : [3, 3]);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  };
+  strokeRing(rp, 'rgba(190,170,230,0.75)');
+  strokeRing(rs, 'rgba(255,214,107,0.7)');
+
+  // orbit axis (dashed, up) and the line of sight to Earth, with the angle i between them
+  const O = P({ X: 0, Y: 0, N: 0 }), Ltip = 82;
+  const Ax = P({ X: 0, Y: 0, N: Ltip });
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.setLineDash([2, 3]);
+  ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(Ax.x, Ax.y); ctx.stroke(); ctx.setLineDash([]);
+  label(ctx, 'orbit axis', Ax.x - 6, Ax.y, 'rgba(255,255,255,0.6)', '9.5px "Source Sans 3",sans-serif', 'right');
+  let eLen = 150, Et = P({ X: 0, Y: dE.Y * eLen, N: dE.N * eLen });
+  while ((Et.y < 30 || Et.x > W - 70 || Et.y > H - 14) && eLen > 40) { eLen -= 4; Et = P({ X: 0, Y: dE.Y * eLen, N: dE.N * eLen }); }
+  arrow(ctx, O.x, O.y, Et.x, Et.y, 'rgba(120,190,255,0.85)', 1.8, 9);
+  // angle arc from the axis to the line of sight
+  if (ii > 2 * D) {
+    ctx.strokeStyle = 'rgba(255,214,107,0.9)'; ctx.lineWidth = 1.3; ctx.beginPath();
+    const rA = 30;
+    for (let k = 0; k <= 30; k++) { const t = ii * k / 30, q = P({ X: 0, Y: Math.sin(t) * rA, N: Math.cos(t) * rA }); k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+    ctx.stroke(); ctx.lineWidth = 1;
+    const tm = P({ X: 0, Y: Math.sin(ii / 2) * (rA + 11), N: Math.cos(ii / 2) * (rA + 11) });
+    label(ctx, 'i', tm.x, tm.y, '#ffd66b', 'italic 600 12px "Source Serif 4",serif');
+  }
+  label(ctx, 'to Earth', Et.x + (Et.x > W - 60 ? -4 : 8), Et.y + (dE.N > 0.7 ? 0 : 9), '#9fd0ff', '600 10px "Source Sans 3",sans-serif', Et.x > W - 60 ? 'right' : 'left');
+
+  // bodies, painter-sorted by depth
+  const sp = P(S), pp = P(Pl);
+  const lightDir = (from, to) => ({ x: to.x - from.x, y: to.y - from.y, z: (to.d - from.d) });
+  const drawStar = () => {
+    starDisc(ctx, sp.x, sp.y, 13 * sp.s, '#fff6d6', '#ffc94a', 16);
+    // star velocity (in the orbital plane) and its component along the line of sight
+    const vdir = { X: -Math.cos(ph), Y: -Math.sin(ph), N: 0 }, vl = 40;
+    const vt = P({ X: S.X + vdir.X * vl, Y: S.Y + vdir.Y * vl, N: 0 });
+    arrow(ctx, sp.x, sp.y, vt.x, vt.y, 'rgba(255,255,255,0.9)', 2, 8);
+    const vr = rvAt(phase) / Math.max(vStar(), 1e-9);          // −1..1, + = away from Earth
+    if (Math.abs(vr) > 0.04) {
+      const comp = -vr * vl;                                      // along d (toward Earth when +)
+      const ct = P({ X: S.X + dE.X * comp, Y: S.Y + dE.Y * comp, N: S.N + dE.N * comp });
+      arrow(ctx, sp.x, sp.y, ct.x, ct.y, vr > 0 ? '#ff7a7a' : '#7fb0ff', 2.6, 8);
+    }
+  };
+  const drawPlanet = () => {
+    const r = Math.max(4, 7 * pp.s);
+    litSphere(ctx, pp.x, pp.y, r, [127, 168, 216], lightDir(pp, sp));
+    label(ctx, 'planet', pp.x, pp.y - r - 8, '#b9d3ee', '9.5px "Source Sans 3",sans-serif');
+  };
+  if (pp.d < sp.d) { drawPlanet(); drawStar(); } else { drawStar(); drawPlanet(); }
+
+  // barycentre mark
+  ctx.strokeStyle = '#cfd8e2'; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.moveTo(O.x - 3.5, O.y - 3.5); ctx.lineTo(O.x + 3.5, O.y + 3.5); ctx.moveTo(O.x + 3.5, O.y - 3.5); ctx.lineTo(O.x - 3.5, O.y + 3.5); ctx.stroke(); ctx.lineWidth = 1;
+
+  // legend (top-left) + scale note (bottom-left)
+  const rv = rvAt(phase);
+  label(ctx, rv < -0.02 * K() ? 'star approaching us: blueshift' : rv > 0.02 * K() ? 'star receding from us: redshift' : 'star moving across our line of sight: no shift',
+    10, 13, rv < -0.02 * K() ? '#9cc2ff' : rv > 0.02 * K() ? '#ff9b9b' : 'rgba(255,255,255,0.7)', '600 10.5px "Source Sans 3",sans-serif', 'left');
+  ctx.save(); ctx.font = '9.5px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
+  const lx = W - 142;
+  [['rgba(255,255,255,0.9)', 'star’s velocity'], ['#ff7a7a', 'part along line of sight'], ['rgba(190,170,230,0.9)', 'planet’s orbit'], ['rgba(255,214,107,0.9)', 'star’s orbit (× ' + fmtExag(exag) + ')']].forEach(([c, t], k) => {
+    ctx.fillStyle = c; ctx.fillRect(lx, 30 + k * 12.5 - 1, 12, 2.4); ctx.fillStyle = 'rgba(220,228,236,0.75)'; ctx.fillText(t, lx + 17, 33 + k * 12.5);
+  });
+  ctx.restore();
+}
+function fmtExag(x) { const p = Math.pow(10, Math.max(0, Math.floor(Math.log10(x)) - 1)); return (Math.round(x / p) * p).toLocaleString('en-US'); }
 
 // ---------- spectral line ----------
 function drawSpectrum() {
-  const c = $('spectrum'), ctx = c.getContext('2d');
-  const W = 520, H = 60;
+  const W = 520, H = 60, ctx = prep('spectrum', W, H);
   const grad = ctx.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, '#3a4bd8'); grad.addColorStop(0.25, '#37c0e0'); grad.addColorStop(0.5, '#4fd07a');
   grad.addColorStop(0.72, '#f2d64a'); grad.addColorStop(0.88, '#f0913a'); grad.addColorStop(1, '#e0403a');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-
   const rv = rvAt(phase);
-  const shiftPx = -rv / Math.max(K(), 1e-6) * 60;   // exaggerated, ± up to 60 px
-  const x = W / 2 + shiftPx;
-  ctx.fillStyle = 'rgba(10,10,15,0.9)'; ctx.fillRect(x - 2.5, 0, 5, H);
-  // rest-wavelength marker
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.setLineDash([3, 3]);
+  const x = W / 2 + (K() > 1e-9 ? rv / K() : 0) * 70;          // scaled up: the full wobble spans ±70 px
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('rest λ', W / 2, H - 4);
-  ctx.textAlign = 'left'; ctx.fillText('blueshift', 6, 12);
-  ctx.textAlign = 'right'; ctx.fillText('redshift', W - 6, 12);
+  ctx.fillStyle = 'rgba(10,10,15,0.92)'; ctx.fillRect(x - 2.5, 0, 5, H);
+  const dl = rv / C * 550e3;                                      // pm, for a 550 nm line
+  label(ctx, 'rest λ', W / 2, H - 9, '#fff', '600 9.5px "Source Sans 3",sans-serif');
+  label(ctx, '← bluer (toward us)', 8, 11, '#fff', '600 9.5px "Source Sans 3",sans-serif', 'left');
+  label(ctx, 'redder (away) →', W - 8, 11, '#fff', '600 9.5px "Source Sans 3",sans-serif', 'right');
+  label(ctx, 'Δλ = ' + (dl >= 0 ? '+' : '−') + fmtPm(Math.abs(dl)) + (K() > 1e-4 ? '  (shift drawn ~' + fmtBig(70 / (K() / C * 550e3 * (W / 300e3))) + '× larger)' : '  (no shift at all)'), W - 8, H - 9, '#fff', '9.5px "Source Sans 3",sans-serif', 'right');
 }
+// strip spans ~300 nm (400–700 nm) across 520 px
+function fmtPm(pm) { return pm >= 1 ? pm.toFixed(2) + ' pm' : (pm * 1000).toFixed(pm * 1000 >= 10 ? 0 : 1) + ' fm'; }
+function fmtBig(x) { if (!isFinite(x)) return '∞'; const e = Math.floor(Math.log10(x)); return e >= 3 ? '10' + String(e).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : Math.round(x) + ''; }
 
 // ---------- RV curve ----------
+function niceStep(span, n) { const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
 function drawRV() {
-  const c = $('rv'), ctx = c.getContext('2d');
-  const W = 520, H = 170;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const x0 = 46, x1 = W - 12, y0 = H - 22, y1 = 16, mid = (y0 + y1) / 2;
-  const Kv = Math.max(K(), 1e-6);
+  const W = 520, H = 170, ctx = prep('rv', W, H);
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const x0 = 66, x1 = W - 12, y0 = H - 30, y1 = 22, mid = (y0 + y1) / 2;
+  const Kv = K(), Kedge = vStar();
+  const top = Math.max(Kedge, 1e-9) * 1.1;
   const X = ph => x0 + ph * (x1 - x0);
-  const Y = v => mid - v / Kv * (mid - y1) * 0.9;
+  const Y = v => mid - v / top * (mid - y1);
+  const P = periodYr(), useDays = P < 1.5, Pu = useDays ? P * 365.25 : P, unit = useDays ? 'd' : 'yr';
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x1, mid); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText('+' + fmtV(K()), x0 - 5, Y(K()) + 3);
-  ctx.fillText('0', x0 - 5, mid + 3);
-  ctx.fillText('−' + fmtV(K()), x0 - 5, Y(-K()) + 3);
-  ctx.textAlign = 'center';
-  for (const p of [0, 0.25, 0.5, 0.75, 1]) ctx.fillText(p.toFixed(2), X(p), y0 + 12);
-  ctx.textAlign = 'right'; ctx.fillText('orbital phase', x1, y1 - 4);
+  // grid: zero line, ±K
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x1, mid); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.setLineDash([2, 3]);
+  if (Kv > 0.02 * Kedge) { ctx.beginPath(); ctx.moveTo(x0, Y(Kv)); ctx.lineTo(x1, Y(Kv)); ctx.moveTo(x0, Y(-Kv)); ctx.lineTo(x1, Y(-Kv)); ctx.stroke(); }
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('0', x0 - 5, mid);
+  if (Kv > 0.12 * Kedge) { ctx.fillText('+' + fmtV(Kv), x0 - 5, Y(Kv)); ctx.fillText('−' + fmtV(Kv), x0 - 5, Y(-Kv)); }
+  else if (Kv > 0) { ctx.fillText('±' + fmtV(Kv), x0 - 5, mid - 11); }
+  // x axis: time in days or years
+  const st = niceStep(Pu, 5);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let t = 0; t <= Pu * 1.0001; t += st) {
+    const xx = X(t / Pu); if (xx > x1 - 14 && t > 0 && Math.abs(t - Pu) > st * 0.01) continue;
+    ctx.fillText(+t.toFixed(4) + '', xx, y0 + 12);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + 3); ctx.stroke();
+  }
+  ctx.font = '9.5px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText('time (' + (useDays ? 'days' : 'years') + ');  one orbit = ' + (useDays ? Pu.toFixed(2) + ' d' : Pu.toFixed(2) + ' yr'), (x0 + x1) / 2, H - 5);
 
+  // edge-on comparison (dashed) when tilted
+  if (inc() < 89.5) {
+    ctx.beginPath();
+    for (let ph = 0; ph <= 1.0001; ph += 0.004) { const v = Kedge * Math.sin(2 * Math.PI * ph); ph === 0 ? ctx.moveTo(X(ph), Y(v)) : ctx.lineTo(X(ph), Y(v)); }
+    ctx.strokeStyle = 'rgba(231,127,176,0.35)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+  }
   ctx.beginPath();
   for (let ph = 0; ph <= 1.0001; ph += 0.004) { const px = X(ph), py = Y(rvAt(ph)); ph === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
-  ctx.strokeStyle = '#e77fb0'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+  ctx.strokeStyle = '#e77fb0'; ctx.lineWidth = 2.2; ctx.stroke(); ctx.lineWidth = 1;
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([3, 2]);
-  ctx.beginPath(); ctx.moveTo(X(phase % 1), y1); ctx.lineTo(X(phase % 1), y0); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(phase % 1), Y(rvAt(phase)), 3.5, 0, 7); ctx.fill();
+  const f = phase % 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(X(f), y1); ctx.lineTo(X(f), y0); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(f), Y(rvAt(phase)), 3.5, 0, 7); ctx.fill();
 
-  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('radial velocity of the star', 8, 12);
+  label(ctx, 'radial velocity of the star', 8, 10, 'rgba(255,255,255,0.75)', '600 10px "Source Sans 3",sans-serif', 'left');
+  label(ctx, '+ away (red)   − toward (blue)', x1, 10, 'rgba(255,255,255,0.55)', '9.5px "Source Sans 3",sans-serif', 'right');
+  if (inc() < 89.5) label(ctx, '- - - if seen edge-on', x1, y0 - 8, 'rgba(231,127,176,0.7)', '9.5px "Source Sans 3",sans-serif', 'right');
 }
-function fmtV(v) { return v >= 1 ? v.toFixed(1) + ' m/s' : (v * 100).toFixed(1) + ' cm/s'; }
+function fmtV(v) { return v >= 100 ? v.toFixed(0) + ' m/s' : v >= 1 ? v.toFixed(1) + ' m/s' : (v * 100).toFixed(v * 100 >= 10 ? 0 : 1) + ' cm/s'; }
+function fmtMass(m) { return m < 0.1 ? (m * 317.8).toFixed(m * 317.8 < 10 ? 2 : 1) + ' M<sub>⊕</sub>' : m.toFixed(m < 1 ? 3 : 2) + ' M<sub>J</sub>'; }
 
 function render() {
-  $('mpVal').textContent = (+$('mpSlider').value < 0.1 ? (+$('mpSlider').value).toFixed(3) : (+$('mpSlider').value).toFixed(2)) + ' M♃';
-  $('aVal').textContent = aAU().toFixed(3) + ' AU';
-  $('incVal').innerHTML = inc() + '&deg;' + (inc() >= 89 ? ' (edge-on)' : inc() <= 1 ? ' (face-on)' : '');
-  $('msVal').textContent = msMsun().toFixed(2) + ' M☉';
+  $('mpVal').innerHTML = fmtMass(mpMJ());
+  $('aVal').textContent = (aAU() < 0.1 ? aAU().toFixed(3) : aAU().toFixed(2)) + ' AU';
+  $('incVal').innerHTML = inc() + '&deg;' + (inc() >= 90 ? ' (edge-on)' : inc() <= 0 ? ' (face-on)' : '');
+  $('msVal').innerHTML = msMsun().toFixed(2) + ' M<sub>☉</sub>';
   document.querySelectorAll('#chips button').forEach(b =>
-    b.classList.toggle('on', Math.abs(+b.dataset.m - +$('mpSlider').value) < 0.005 && Math.abs(+b.dataset.a - aAU()) < 0.05));
+    b.classList.toggle('on', Math.abs(Math.log10(+b.dataset.m) - +$('mpSlider').value) < 0.006 && Math.abs(Math.log10(+b.dataset.a) - +$('aSlider').value) < 0.006));
 
   const P = periodYr();
-  const dlam = K() / C * 550;   // shift of a 550 nm line, in nm
+  const dlam = K() / C * 550e3;   // pm, 550 nm line
+  const msini = mpMJ() * Math.sin(inc() * D);
+  const det = K() >= 1 ? 'yes' : K() >= 0.1 ? 'only with the best spectrographs' : 'not yet (< 0.1 m/s)';
   $('results').innerHTML =
-    row('RV semi-amplitude K', fmtV(K())) +
-    row('orbital period', P < 0.3 ? (P * 365.25).toFixed(1) + ' d' : P.toFixed(2) + ' yr') +
-    row('star&rsquo;s orbit radius', (aStarAU() * AU / 1000).toExponential(2) + ' km') +
-    row('line shift @ 550 nm', (dlam * 1e6).toFixed(2) + ' pm') +
-    row('planet mass × sin i', (+$('mpSlider').value * Math.sin(inc() * D)).toFixed(2) + ' M♃') +
-    row('detectable?', K() > 0.5 ? 'yes — within instrument reach' : K() > 0.09 ? 'borderline (state of the art)' : 'no — below current limits');
+    row('wobble amplitude ' + tex('K'), fmtV(K())) +
+    row('star’s orbital speed', fmtV(vStar())) +
+    row('orbital period ' + tex('P'), P < 1.5 ? (P * 365.25).toFixed(P * 365.25 < 10 ? 2 : 1) + ' d' : P.toFixed(2) + ' yr') +
+    row('line shift at 550 nm', '±' + fmtPm(dlam)) +
+    row('measured ' + tex('m\\sin i'), inc() === 0 ? '0 (no signal)' : fmtMass(msini)) +
+    row('detectable?', det);
 
-  $('note').textContent = inc() < 5
-    ? 'Nearly face-on: the star&rsquo;s wobble is almost entirely side-to-side, with little motion along our line of sight, so the radial-velocity signal nearly vanishes. Radial velocity only gives m·sin i, a lower limit on the mass.'
-    : 'The star wobbles around the barycentre at ' + fmtV(vStar()) + '; the part along our line of sight, ' + fmtV(K()) + ', is what shifts the spectral lines.';
+  $('note').innerHTML = inc() < 5
+    ? 'Nearly face-on: the star’s wobble is almost all across the sky, with almost no motion toward or away from us, so the spectral lines barely shift. Radial velocity only measures ' + tex('m\\sin i') + ', a lower limit on the planet’s mass.'
+    : 'The star circles the barycentre at ' + fmtV(vStar()) + '. Only the part along our line of sight (' + fmtV(K()) + ' at most, since ' + tex('K = v\\sin i') + ') shifts its spectral lines' + (inc() < 89.5 ? ', so we infer ' + tex('m\\sin i') + ' = ' + fmtMass(msini) + ' instead of the true ' + fmtMass(mpMJ()) + '.' : '.');
 
   drawOrbit(); drawSpectrum(); drawRV();
 }
@@ -350,21 +478,26 @@ function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span
 function tick(ts) {
   if (!playing) return;
   if (lastTs == null) lastTs = ts;
-  const dt = (ts - lastTs) / 1000; lastTs = ts;
-  phase = (phase + dt * 0.3) % 1;
+  const dt = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+  phase = (phase + dt * 0.16) % 1;
   render();
   rafId = requestAnimationFrame(tick);
 }
 function setPlaying(p) {
   playing = p;
   $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play';
-  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+  if (rafId) cancelAnimationFrame(rafId);
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); }
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { setPlaying(false); phase = 0; render(); });
+$('resetBtn').addEventListener('click', () => {
+  setPlaying(false); phase = 0;
+  $('mpSlider').value = 0; $('aSlider').value = Math.log10(0.05); $('incSlider').value = 90; $('msSlider').value = 1;
+  render();
+});
 ['mpSlider', 'aSlider', 'incSlider', 'msSlider'].forEach(id => $(id).addEventListener('input', render));
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
-  $('mpSlider').value = b.dataset.m; $('aSlider').value = b.dataset.a; render();
+  $('mpSlider').value = Math.log10(+b.dataset.m); $('aSlider').value = Math.log10(+b.dataset.a); render();
 }));
 
 function katexAll() {

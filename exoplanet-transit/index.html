@@ -25,7 +25,7 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #scene { aspect-ratio:520/170; }
+  #scene { aspect-ratio:520/200; }
   #lc { aspect-ratio:520/220; background:#0d1420; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
   .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #a37c1f; background:#a37c1f; color:#fff; }
@@ -35,13 +35,14 @@
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12px; font-weight:600; }
   .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#a37c1f; }
   input[type=range] { width:100%; accent-color:#c99a2b; }
-  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
   .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
   .chips button:hover { border-color:#c99a2b; }
   .chips button.on { background:#f5eed9; border-color:#c99a2b; color:#7a5c15; }
   .results { display:flex; flex-direction:column; gap:7px; }
   .resrow { display:flex; align-items:center; justify-content:space-between; background:#f4efe0; border-radius:8px; padding:7px 11px; gap:8px; }
   .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#463913; }
+  .checkrow { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#4b535b; cursor:pointer; }
   .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#7a5c15; text-align:right; }
   .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f4efe0; border-radius:8px; padding:9px 11px; }
   .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
@@ -95,7 +96,7 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="scene" width="520" height="170"></canvas>
+        <canvas id="scene" width="520" height="200"></canvas>
         <canvas id="lc" width="520" height="220"></canvas>
         <div class="btnrow">
           <button class="playbtn" id="playBtn">&#9654; Play</button>
@@ -106,16 +107,17 @@
       <div class="ctlCol">
         <div class="section-label">Planet</div>
         <div class="chips" id="chips">
-          <button data-r="1" data-a="0.05">hot Earth</button>
-          <button data-r="3.9" data-a="0.05">hot Neptune</button>
-          <button data-r="11.2" data-a="0.05" class="on">hot Jupiter</button>
+          <button data-r="11.2" data-a="0.05" class="on">hot Jupiter<br>0.05 AU</button>
+          <button data-r="3.9" data-a="0.05">hot Neptune<br>0.05 AU</button>
+          <button data-r="1" data-a="0.05">hot Earth<br>0.05 AU</button>
+          <button data-r="1" data-a="1">Earth<br>1 AU</button>
         </div>
         <div class="slider-row">
           <div class="lbl"><span>planet radius</span><span class="val" id="rpVal">11.2 R⊕</span></div>
           <input type="range" id="rpSlider" min="0.5" max="13" step="0.1" value="11.2">
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>orbit distance a</span><span class="val" id="aVal">0.050 AU</span></div>
+          <div class="lbl"><span>orbit distance <i>a</i></span><span class="val" id="aVal">0.050 AU</span></div>
           <input type="range" id="aSlider" min="0.02" max="1" step="0.005" value="0.05">
         </div>
         <div class="slider-row">
@@ -123,14 +125,15 @@
           <input type="range" id="rsSlider" min="0.3" max="2" step="0.05" value="1">
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>impact parameter b</span><span class="val" id="bVal">0.20</span></div>
+          <div class="lbl"><span>impact parameter <i>b</i></span><span class="val" id="bVal">0.20</span></div>
           <input type="range" id="bSlider" min="0" max="1.3" step="0.02" value="0.2">
         </div>
+        <label class="checkrow"><input type="checkbox" id="ldChk"> limb darkening (star dimmer at its edge)</label>
         <div class="section-label" style="margin-top:4px;">Results</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Uniform-disc star (no limb darkening); star mass fixed at 1 M☉.</div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Circular orbit; star mass fixed at 1 M☉; the side view exaggerates the tilt so it can be seen.</div>
   </div>
 </div>
 
@@ -144,20 +147,21 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Set a planet size and orbit and hit Play. The upper strip is the planet crossing the star&rsquo;s disc; the lower panel builds the light curve. Grow the planet and the dip deepens as the <i>square</i> of its radius. Slide the impact parameter up toward 1 and the crossing gets shorter and more V-shaped, until past ~1 there is no transit at all.</p>
+        <p>Set a planet size and orbit and hit Play. On the left, a side view shows how far the orbit is tilted from edge-on; the planet transits only if it passes through the gold band in front of the star. On the right is what a telescope would see if it could resolve the star, and the lower panel builds the light curve. Grow the planet and the dip deepens as the <i>square</i> of its radius. Slide the impact parameter <i>b</i> toward 1 and the crossing gets shorter and more V-shaped; past 1 + <i>R<sub>p</sub></i>/<i>R</i><sub>&#9733;</sub> there is no transit at all. Turn on limb darkening to see why real transits have rounded bottoms.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
-          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">transit depth = the disc-area ratio.</div></div>
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">transit depth = the disc-area ratio (uniform star).</div></div>
           <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">period from Kepler&rsquo;s third law (star mass in solar units).</div></div>
-          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">transit duration &mdash; longer for a big star, a close orbit, and a central crossing.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">transit duration (<i>k</i> = <i>R<sub>p</sub></i>/<i>R</i><sub>&#9733;</sub>): longer for a big star, a close orbit, and a central crossing.</div></div>
+          <div><span class="formula" id="f4"></span><div style="font-size:11.5px;color:#b7c2cd;">impact parameter: how far from the star&rsquo;s centre the planet crosses, in stellar radii, set by the inclination <i>i</i>.</div></div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Learn more</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
-          <li><a href="https://openstax.org/books/astronomy-2e/pages/21-1-searching-for-planets-around-other-stars" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 21.1 Searching for Planets Around Other Stars</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/21-4-planets-beyond-the-solar-system-search-and-discovery" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 21.4 Planets beyond the Solar System: Search and Discovery</a></li>
           <li><a href="https://exoplanets.nasa.gov/alien-worlds/ways-to-find-a-planet/" target="_blank" rel="noopener" style="color:#8fc7ff;">NASA Exoplanets &mdash; Ways to Find a Planet</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
@@ -173,7 +177,7 @@
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">A Jupiter-sized planet (R = 11.2 R⊕) transits a Sun-sized star. How much does the star dim, and what about an Earth-sized planet?</p>
     <div class="step"><div class="h">1 &middot; Depth = (R_p / R_&#42;)&sup2;</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; As a percentage</div><div style="font-size:11.5px;color:#e7d6e4;">About <b>1%</b> &mdash; easily seen from the ground.</div></div>
-    <div class="step"><div class="h">3 &middot; An Earth</div><span class="formula" id="ex2"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">0.008% &mdash; 120&times; shallower, which is why Earth-sized planets need a space telescope.</div></div>
+    <div class="step"><div class="h">3 &middot; An Earth</div><span class="formula" id="ex2"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">0.008% (84 ppm), about 125&times; shallower, which is why Earth-sized planets need a space telescope.</div></div>
   </div>
 </div>
 
@@ -194,17 +198,33 @@
 const $ = id => document.getElementById(id);
 const RE_IN_RS = 0.009158;   // Earth radius in solar radii
 const AU_IN_RS = 215.03;
+const U1 = 0.44, U2 = 0.23;  // quadratic limb-darkening coefficients, roughly a Sun-like star in visible light
 let playing = false, rafId = null, lastTs = null;
 let phase = 0.5;             // 0..1, transit centred at 0.5
+
+function prep(id, W, H) {
+  const c = $(id), dpr = Math.min(3, window.devicePixelRatio || 1);
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx;
+}
+function label(ctx, t, x, y, col, font, align) {
+  ctx.save(); ctx.font = font || '10px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,11,18,0.9)'; ctx.strokeText(t, x, y);
+  ctx.fillStyle = col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+}
+function tex(s) { try { return katex.renderToString(s, { throwOnError: false }); } catch (e) { return s; } }
+function niceStep(span, n) { const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
 
 function rp() { return +$('rpSlider').value * RE_IN_RS; }   // in R_sun
 function rs() { return +$('rsSlider').value; }
 function aAU() { return +$('aSlider').value; }
 function bImp() { return +$('bSlider').value; }
+function limb() { return $('ldChk').checked; }
 function kRatio() { return rp() / rs(); }
 function periodDays() { return 365.25 * Math.sqrt(Math.pow(aAU(), 3)); }   // M_star = 1
 function depth() { return kRatio() * kRatio(); }
 function aInStellarRadii() { return aAU() * AU_IN_RS / rs(); }
+function incDeg() { return Math.acos(Math.min(1, bImp() / aInStellarRadii())) * 180 / Math.PI; }
 
 // half-duration in orbital phase units (fraction of P), full crossing (1st→4th contact)
 function halfDurPhase() {
@@ -213,92 +233,187 @@ function halfDurPhase() {
   return Math.asin(arg) / (2 * Math.PI);
 }
 function transits() { return bImp() < 1 + kRatio(); }
+// phase window shown in the light curve (centred on 0.5); also the span the animation loops over
+function spanPhase() { return transits() ? Math.min(0.9, 4 * halfDurPhase()) : 0.02; }
 
-// projected centre-to-centre separation (in stellar radii) at a given phase
-function sep(ph) {
-  const x = (ph - 0.5) / Math.max(halfDurPhase(), 1e-6) * Math.sqrt(Math.max(1e-6, (1 + kRatio()) ** 2 - bImp() ** 2));
-  return Math.hypot(x, bImp());
-}
-// fraction of the planet's disc that overlaps the star (0..1)
+// sky-plane position of the planet centre (stellar radii) at a given phase: x along the chord, y = b
+function skyX(ph) { return aInStellarRadii() * Math.sin(2 * Math.PI * (ph - 0.5)); }
+function sep(ph) { return Math.hypot(skyX(ph), bImp()); }
+// fraction of the planet's disc that overlaps the star (0..1), uniform discs
 function overlapFrac(d) {
   const R = 1, r = kRatio();
   if (d >= R + r) return 0;
   if (d <= R - r) return 1;
-  if (d <= r - R) return (R * R) / (r * r);   // star entirely inside planet (won't happen here)
   const d2 = d * d;
-  const a1 = Math.acos((d2 + r * r - R * R) / (2 * d * r));
-  const a2 = Math.acos((d2 + R * R - r * r) / (2 * d * R));
+  const a1 = Math.acos(Math.max(-1, Math.min(1, (d2 + r * r - R * R) / (2 * d * r))));
+  const a2 = Math.acos(Math.max(-1, Math.min(1, (d2 + R * R - r * r) / (2 * d * R))));
   const area = r * r * (a1 - Math.sin(2 * a1) / 2) + R * R * (a2 - Math.sin(2 * a2) / 2);
   return area / (Math.PI * r * r);
 }
+// limb darkening: intensity at distance rho (0..1) from the disc centre, and the disc's total
+function Ild(rho) { const mu = Math.sqrt(Math.max(0, 1 - rho * rho)), x = 1 - mu; return 1 - U1 * x - U2 * x * x; }
+const F_LD = Math.PI * (1 - U1 / 3 - U2 / 6);
+// equal-area sample points over a unit disc (for summing the blocked intensity under the planet)
+const DISC = (() => { const pts = [], N = 1500, ga = Math.PI * (3 - Math.sqrt(5)); for (let k = 0; k < N; k++) { const r = Math.sqrt((k + 0.5) / N), t = k * ga; pts.push([r * Math.cos(t), r * Math.sin(t)]); } return pts; })();
 function fluxAt(ph) {
   if (!transits()) return 1;
-  return 1 - depth() * overlapFrac(sep(ph));
+  const k = kRatio(), x = skyX(ph), y = bImp(), d = Math.hypot(x, y);
+  if (d >= 1 + k || Math.cos(2 * Math.PI * (ph - 0.5)) < 0) return 1;     // behind the star: no transit
+  if (!limb()) return 1 - depth() * overlapFrac(d);
+  let sum = 0;
+  for (const [u, v] of DISC) { const px = x + u * k, py = y + v * k, rho = Math.hypot(px, py); if (rho < 1) sum += Ild(rho); }
+  return 1 - (sum / DISC.length) * Math.PI * k * k / F_LD;
+}
+// cache the curve: it only depends on the sliders
+let curveKey = '', curve = [];
+function getCurve() {
+  const key = [rp(), rs(), aAU(), bImp(), limb()].join('|');
+  if (key !== curveKey) {
+    curveKey = key; curve = [];
+    const sp = spanPhase(), N = 360;
+    for (let j = 0; j <= N; j++) { const ph = 0.5 - sp / 2 + sp * j / N; curve.push([ph, fluxAt(ph)]); }
+  }
+  return curve;
 }
 
-// ---------- scene ----------
+// ---------- scene: side view (left) + the view from Earth (right) ----------
 function drawScene() {
-  const c = $('scene'), ctx = c.getContext('2d');
-  const W = 520, H = 170;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2, SR = 56;
-  const g = ctx.createRadialGradient(cx - 12, cy - 12, SR * 0.2, cx, cy, SR * 1.25);
-  g.addColorStop(0, '#fff4d0'); g.addColorStop(0.7, '#ffd44f'); g.addColorStop(1, 'rgba(255,180,60,0.15)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, SR * 1.2, 0, 7); ctx.fill();
-  ctx.fillStyle = '#ffd44f'; ctx.beginPath(); ctx.arc(cx, cy, SR, 0, 7); ctx.fill();
+  const W = 520, H = 200, ctx = prep('scene', W, H);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let k = 0; k < 40; k++) { ctx.globalAlpha = 0.07 + (k % 5) * 0.05; ctx.fillRect((k * 131.7) % W, (k * 71.3) % H, 1.2, 1.2); }
+  ctx.globalAlpha = 1;
+  const split = 178;
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(split, 10); ctx.lineTo(split, H - 10); ctx.stroke();
 
-  const pr = kRatio() * SR;
-  const spanX = Math.sqrt(Math.max(0.0001, (1 + kRatio()) ** 2 - bImp() ** 2)) * SR;
-  const px = cx + ((phase - 0.5) / Math.max(halfDurPhase(), 1e-6)) * spanX;
-  const py = cy + bImp() * SR;
-  // planet path
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.setLineDash([4, 4]);
-  ctx.beginPath(); ctx.moveTo(20, py); ctx.lineTo(W - 20, py); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = '#10131a'; ctx.beginPath(); ctx.arc(px, py, Math.max(pr, 1.5), 0, 7); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(px, py, Math.max(pr, 1.5), 0, 7); ctx.stroke();
+  // ----- side view: Earth far off to the right; the orbit seen edge-on as a tilted line (tilt exaggerated) -----
+  {
+    const cx = 62, cy = 106, R = 18, L = 92;           // star radius and orbit half-length on screen
+    label(ctx, 'side view (not to scale)', 10, 14, 'rgba(255,255,255,0.7)', '600 10px "Source Sans 3",sans-serif', 'left');
+    // the band of orbits that transit: |height at the near point| < R* (+ planet)
+    const Rb = R * (1 + kRatio());
+    ctx.fillStyle = 'rgba(255,214,107,0.07)'; ctx.fillRect(cx, cy - Rb, split - cx - 6, 2 * Rb);
+    ctx.strokeStyle = 'rgba(255,214,107,0.28)'; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, cy - Rb); ctx.lineTo(split - 6, cy - Rb); ctx.moveTo(cx, cy + Rb); ctx.lineTo(split - 6, cy + Rb); ctx.stroke(); ctx.setLineDash([]);
+    label(ctx, 'Earth →', split - 8, cy - Rb - 10, '#9fd0ff', '600 9.5px "Source Sans 3",sans-serif', 'right');
+    // the orbit: passes the near side at height b·R*, far side at −b·R*
+    const h = bImp() * R, tilt = Math.atan2(h, L);
+    const nx = cx + L * Math.cos(tilt), ny = cy + L * Math.sin(tilt), fx = cx - L * Math.cos(tilt), fy = cy - L * Math.sin(tilt);
+    ctx.strokeStyle = 'rgba(190,170,230,0.35)'; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(cx, cy); ctx.stroke(); ctx.setLineDash([]);
+    // star
+    const g = ctx.createRadialGradient(cx - 5, cy - 5, 2, cx, cy, R);
+    g.addColorStop(0, '#fff6d6'); g.addColorStop(0.75, '#ffd25a'); g.addColorStop(1, '#f0a83a');
+    ctx.save(); ctx.shadowColor = 'rgba(255,200,80,0.8)'; ctx.shadowBlur = 14; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = 'rgba(190,170,230,0.85)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny); ctx.stroke(); ctx.lineWidth = 1;
+    // planet at the near point (lit from the star, i.e. from the left)
+    const pr = Math.max(2.5, Math.min(8, kRatio() * R * 1.6));
+    ctx.fillStyle = '#1b2230'; ctx.beginPath(); ctx.arc(nx, ny, pr, 0, 7); ctx.fill();
+    ctx.fillStyle = '#7fa8d8'; ctx.beginPath(); ctx.arc(nx, ny, pr, Math.PI / 2, 3 * Math.PI / 2); ctx.fill();
+    // inclination: angle from Earth's line of sight to the orbit plane is 90° − i
+    if (h > 1.5) {
+      ctx.strokeStyle = 'rgba(255,214,107,0.85)'; ctx.beginPath(); ctx.arc(cx, cy, 44, 0, tilt, false); ctx.stroke();
+      label(ctx, '90° − i', cx + 47, cy + 48 * Math.sin(tilt) + 12, '#ffd66b', '9.5px "Source Sans 3",sans-serif', 'left');
+    }
+    label(ctx, 'i = ' + incDeg().toFixed(2) + '°', 10, H - 14, '#ffd66b', '600 10.5px "Source Sans 3",sans-serif', 'left');
+    label(ctx, transits() ? 'passes in front' : 'misses the star', split - 8, H - 14, transits() ? '#9be3b0' : '#ff9b9b', '600 9.5px "Source Sans 3",sans-serif', 'right');
+  }
 
-  ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText(transits() ? 'the planet crossing the star (edge-on view)' : 'b > 1 + k — the planet misses the disc, no transit', 10, H - 9);
+  // ----- view from Earth -----
+  {
+    const cx = split + (W - split) / 2, cy = 104, SR = 64;
+    label(ctx, 'view from Earth', split + 10, 14, 'rgba(255,255,255,0.7)', '600 10px "Source Sans 3",sans-serif', 'left');
+    // star: limb darkened when that option is on, otherwise a uniform disc (what the model assumes)
+    ctx.save(); ctx.shadowColor = 'rgba(255,190,70,0.55)'; ctx.shadowBlur = 22;
+    if (limb()) {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, SR);
+      for (let j = 0; j <= 10; j++) { const rho = j / 10, I = Ild(Math.min(rho, 0.999)); g.addColorStop(rho, 'rgb(' + Math.round(255 * Math.min(1, 0.55 + 0.47 * I)) + ',' + Math.round(255 * (0.35 + 0.6 * I)) + ',' + Math.round(255 * (0.05 + 0.65 * I * I)) + ')'); }
+      ctx.fillStyle = g;
+    } else ctx.fillStyle = '#ffd44f';
+    ctx.beginPath(); ctx.arc(cx, cy, SR, 0, 7); ctx.fill(); ctx.restore();
+
+    const pr = kRatio() * SR, py = cy + bImp() * SR;
+    const px = cx + skyX(phase) * SR;
+    // planet path (chord) and the impact parameter b
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(split + 8, py); ctx.lineTo(W - 8, py); ctx.stroke(); ctx.setLineDash([]);
+    // impact parameter: dimension line just outside the star's left limb
+    const bx = cx - SR - 14;
+    ctx.fillStyle = 'rgba(159,208,255,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, 1.8, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(159,208,255,0.35)'; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx - 4, cy); ctx.stroke(); ctx.setLineDash([]);
+    if (bImp() > 0.04) {
+      ctx.strokeStyle = 'rgba(159,208,255,0.85)'; ctx.beginPath(); ctx.moveTo(bx, cy); ctx.lineTo(bx, py);
+      ctx.moveTo(bx - 4, py); ctx.lineTo(bx + 4, py); ctx.moveTo(bx - 4, cy); ctx.lineTo(bx + 4, cy); ctx.stroke();
+    }
+    label(ctx, 'b = ' + bImp().toFixed(2), bx - 7, bImp() > 0.4 ? (cy + py) / 2 : cy - 10, '#9fd0ff', 'italic 10px "Source Serif 4",serif', 'right');
+    const onDisc = Math.cos(2 * Math.PI * (phase - 0.5)) > 0;
+    if (onDisc && px > split + 4 - pr && px < W + pr) {
+      ctx.save(); ctx.beginPath(); ctx.rect(split + 1, 0, W - split, H); ctx.clip();
+      ctx.fillStyle = '#0b0e15'; ctx.beginPath(); ctx.arc(px, py, Math.max(pr, 1.6), 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.beginPath(); ctx.arc(px, py, Math.max(pr, 1.6), 0, 7); ctx.stroke();
+      ctx.restore();
+      if (pr < 4) label(ctx, 'planet', px, py + Math.max(pr, 2) + 9, 'rgba(255,255,255,0.75)', '9.5px "Source Sans 3",sans-serif');
+    }
+    label(ctx, transits() ? '' : 'path misses the disc: no transit', cx, H - 14, '#ff9b9b', '600 10px "Source Sans 3",sans-serif');
+  }
 }
 
 // ---------- light curve ----------
 function drawLC() {
-  const c = $('lc'), ctx = c.getContext('2d');
-  const W = 520, H = 220;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const x0 = 44, x1 = W - 12, y0 = H - 22, y1 = 16;
-  const dmax = Math.max(depth() * 1.35, 0.004);
-  // zoom the x-axis around mid-transit so the box shape is visible
-  const span = Math.max(4 * halfDurPhase(), 0.05);   // phase width shown, centred on 0.5
-  const ph0 = 0.5 - span / 2, ph1 = 0.5 + span / 2;
+  const W = 520, H = 220, ctx = prep('lc', W, H);
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const x0 = 62, x1 = W - 14, y0 = H - 34, y1 = 26;
+  const P = periodDays(), dep = transits() ? 1 - Math.min(...getCurve().map(p => p[1])) : 0;
+  // fixed y ranges (in % of the star's light) so a deeper dip looks deeper until the next range kicks in
+  const ranges = [40, 20, 10, 5, 3, 1.5, 0.5, 0.2, 0.05, 0.02, 0.01];
+  let range = ranges[0]; for (const r of ranges) if (dep * 100 * 1.2 <= r) range = r;
+  const sp = spanPhase(), ph0 = 0.5 - sp / 2, ph1 = 0.5 + sp / 2;
+  const hrs = ph => (ph - 0.5) * P * 24;
   const X = ph => x0 + (ph - ph0) / (ph1 - ph0) * (x1 - x0);
-  const Y = f => y1 + (1 - f) / dmax * (y0 - y1);
-  const P = periodDays();
+  const Y = f => y1 + (1 - f) * 100 / range * (y0 - y1);
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  for (let gf = 0; gf <= dmax + 1e-9; gf += dmax / 3) { ctx.beginPath(); ctx.moveTo(x0, Y(1 - gf)); ctx.lineTo(x1, Y(1 - gf)); ctx.stroke(); }
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText('1.000', x0 - 5, Y(1) + 3);
-  ctx.fillText((1 - dmax).toFixed(3), x0 - 5, Y(1 - dmax) + 3);
-  ctx.textAlign = 'center';
-  ctx.fillText('hours from mid-transit  (dip repeats every ' + (P < 90 ? P.toFixed(1) + ' d' : (P / 365.25).toFixed(2) + ' yr') + ')', W / 2, y0 + 14);
-  for (const hoff of [-6, -3, 0, 3, 6]) {
-    const ph = 0.5 + hoff / 24 / P;
-    if (ph > ph0 && ph < ph1) { ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText(hoff === 0 ? 'mid' : hoff + 'h', X(ph), y0 + 3); }
+  // y grid + labels (brightness drop in %)
+  const ys = niceStep(range, 3);
+  ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let v = 0; v <= range + 1e-9; v += ys) {
+    const yy = Y(1 - v / 100);
+    ctx.strokeStyle = v === 0 ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x1, yy); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText(v === 0 ? '100%' : (100 - v).toFixed(ys < 0.01 ? 3 : ys < 0.1 ? 2 : 1) + '%', x0 - 5, yy);
   }
+  // x ticks: hours from mid-transit
+  const spanH = sp * P * 24, xs = niceStep(spanH, 6);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  for (let t = Math.ceil(-spanH / 2 / xs) * xs; t <= spanH / 2 + 1e-9; t += xs) {
+    const xx = X(0.5 + t / 24 / P);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + 3); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText((t < 0 ? '−' : t > 0 ? '+' : '') + fmtNum(Math.abs(t)), xx, y0 + 13);
+  }
+  ctx.font = '9.5px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('hours from mid-transit;  the dip repeats every ' + (P < 90 ? P.toFixed(P < 10 ? 2 : 1) + ' days' : (P / 365.25).toFixed(2) + ' years'), (x0 + x1) / 2, H - 6);
 
-  ctx.beginPath();
-  for (let ph = ph0; ph <= ph1 + 1e-9; ph += (ph1 - ph0) / 400) { const px = X(ph), py = Y(fluxAt(ph)); ph === ph0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
-  ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+  if (transits()) {
+    const cv = getCurve();
+    ctx.beginPath(); cv.forEach(([ph, f], j) => { const px = X(ph), py = Y(f); j ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+    // depth marker
+    const xm = X(0.5) + 1, ym = Y(1 - dep);
+    if (Y(1 - dep) - Y(1) > 16) {
+      ctx.strokeStyle = 'rgba(159,208,255,0.75)'; ctx.beginPath(); ctx.moveTo(x1 - 26, Y(1)); ctx.lineTo(x1 - 26, ym); ctx.moveTo(x1 - 30, ym); ctx.lineTo(x1 - 22, ym); ctx.stroke();
+      label(ctx, 'depth ' + fmtDepth(dep), x1 - 32, (Y(1) + ym) / 2, '#9fd0ff', '600 10px "Source Sans 3",sans-serif', 'right');
+    }
+  } else {
+    ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, Y(1)); ctx.lineTo(x1, Y(1)); ctx.stroke(); ctx.lineWidth = 1;
+    label(ctx, 'no dip: the planet never crosses the star', (x0 + x1) / 2, (y0 + y1) / 2, '#ff9b9b', '600 11px "Source Sans 3",sans-serif');
+  }
+  const phC = Math.max(ph0, Math.min(ph1, phase));
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(X(phC), y1); ctx.lineTo(X(phC), y0); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(phC), Y(fluxAt(phC)), 3.5, 0, 7); ctx.fill();
 
-  const phClamped = Math.max(ph0, Math.min(ph1, phase));
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([3, 2]);
-  ctx.beginPath(); ctx.moveTo(X(phClamped), y1); ctx.lineTo(X(phClamped), y0); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(X(phClamped), Y(fluxAt(phClamped)), 3.5, 0, 7); ctx.fill();
-
-  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('relative brightness of the star', 8, 12);
+  label(ctx, 'brightness of the star (% of normal)', 8, 12, 'rgba(255,255,255,0.75)', '600 10px "Source Sans 3",sans-serif', 'left');
+  label(ctx, 'y-axis spans ' + range + '%', x1, 12, 'rgba(255,255,255,0.5)', '9.5px "Source Sans 3",sans-serif', 'right');
 }
+function fmtNum(v) { return +v.toFixed(v < 1 ? 2 : v < 10 ? 1 : 0) + ''; }
+function fmtDepth(d) { return d >= 0.001 ? (d * 100).toFixed(2) + '%' : Math.round(d * 1e6) + ' ppm'; }
 
 function render() {
   $('rpVal').textContent = (+$('rpSlider').value).toFixed(1) + ' R⊕';
@@ -306,23 +421,23 @@ function render() {
   $('rsVal').textContent = rs().toFixed(2) + ' R☉';
   $('bVal').textContent = bImp().toFixed(2);
   document.querySelectorAll('#chips button').forEach(b =>
-    b.classList.toggle('on', Math.abs(+b.dataset.r - +$('rpSlider').value) < 0.05 && Math.abs(+b.dataset.a - aAU()) < 0.003));
+    b.classList.toggle('on', Math.abs(+b.dataset.r - +$('rpSlider').value) < 0.05 && Math.abs(+b.dataset.a - aAU()) < 0.003 && Math.abs(rs() - 1) < 0.01));
 
   const P = periodDays();
   const T = transits() ? 2 * halfDurPhase() * P * 24 : 0;
-  const observed = transits() ? (1 - fluxAt(0.5)) * 100 : 0;
+  const observed = transits() ? 1 - fluxAt(0.5) : 0;
   const grazing = transits() && bImp() > 1 - kRatio();
   $('results').innerHTML =
-    row(grazing ? 'observed dip' : 'transit depth', observed.toFixed(3) + ' %' + (grazing ? '  (V)' : '')) +
-    row('R_p / R_&#42;', kRatio().toFixed(3)) +
-    row('orbital period', P < 90 ? P.toFixed(1) + ' d' : (P / 365.25).toFixed(2) + ' yr') +
-    row('transit duration', transits() ? T.toFixed(1) + ' h' : 'no transit') +
-    row('a / R_&#42;', aInStellarRadii().toFixed(0)) +
-    row('shape', !transits() ? '—' : bImp() < 1 - kRatio() ? 'flat-bottomed (full transit)' : 'V-shaped (grazing)');
+    row(grazing ? 'dip (grazing, V-shaped)' : 'transit depth', transits() ? fmtDepth(observed) : 'no transit') +
+    row(tex('R_p/R_\\star'), kRatio().toFixed(3)) +
+    row('orbital period', P < 90 ? P.toFixed(2) + ' d' : (P / 365.25).toFixed(2) + ' yr') +
+    row('transit duration', transits() ? (T < 1 ? (T * 60).toFixed(0) + ' min' : T.toFixed(1) + ' h') : '—') +
+    row('inclination ' + tex('i'), incDeg().toFixed(2) + '°') +
+    row('chance a random orbit transits', (100 / aInStellarRadii()).toFixed(aInStellarRadii() > 100 ? 2 : 1) + '%');
 
-  $('note').textContent = !transits()
-    ? 'With this impact parameter the planet passes above or below the star from our line of sight — no dip at all. Most planets are in this situation; transit surveys only catch the well-aligned minority.'
-    : 'Depth ' + (depth() * 100).toFixed(3) + '%: the planet blocks that fraction of the star’s disc. Doubling the planet radius would quadruple the dip.';
+  $('note').innerHTML = !transits()
+    ? 'At this impact parameter the planet passes above or below the star as seen from Earth: no dip at all. Only orbits within about ' + (Math.asin(Math.min(1, 1 / aInStellarRadii())) * 180 / Math.PI).toFixed(2) + '° of edge-on transit, which is why surveys watch many thousands of stars.'
+    : (grazing ? 'Grazing transit: only part of the planet ever covers the star, so the dip (' + fmtDepth(observed) + ') is smaller than the full ' + tex('(R_p/R_\\star)^2') + ' = ' + fmtDepth(depth()) + ', and the light curve is V-shaped.' : 'Depth ≈ ' + tex('(R_p/R_\\star)^2') + ' = ' + fmtDepth(depth()) + ': the planet blocks that fraction of the star’s disc. Doubling the planet’s radius would quadruple the dip.') + (limb() ? ' With limb darkening the centre of the star is brighter than its edge, so the bottom is rounded and the centre is a little deeper.' : '');
 
   drawScene(); drawLC();
 }
@@ -331,29 +446,36 @@ function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span
 function tick(ts) {
   if (!playing) return;
   if (lastTs == null) lastTs = ts;
-  const dt = (ts - lastTs) / 1000; lastTs = ts;
-  const span = Math.max(4 * halfDurPhase(), 0.05) * 1.15;
-  phase += dt * span * 0.6;
-  if (phase > 0.5 + span / 2) phase = 0.5 - span / 2;
+  const dt = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+  const sp = spanPhase();
+  phase += dt * sp / 6;                          // one sweep of the window in about 6 s
+  if (phase > 0.5 + sp / 2) phase = 0.5 - sp / 2;
   render();
   rafId = requestAnimationFrame(tick);
 }
 function setPlaying(p) {
   playing = p;
   $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play';
-  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+  if (rafId) cancelAnimationFrame(rafId);
+  if (p) { lastTs = null; if (Math.abs(phase - 0.5) < 1e-9) phase = 0.5 - spanPhase() / 2; rafId = requestAnimationFrame(tick); }
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { setPlaying(false); phase = 0.5; render(); });
-['rpSlider', 'aSlider', 'rsSlider', 'bSlider'].forEach(id => $(id).addEventListener('input', render));
+$('resetBtn').addEventListener('click', () => {
+  setPlaying(false); phase = 0.5;
+  $('rpSlider').value = 11.2; $('aSlider').value = 0.05; $('rsSlider').value = 1; $('bSlider').value = 0.2; $('ldChk').checked = false;
+  render();
+});
+['rpSlider', 'aSlider', 'rsSlider', 'bSlider'].forEach(id => $(id).addEventListener('input', () => { const sp = spanPhase(); if (Math.abs(phase - 0.5) > sp / 2) phase = 0.5; render(); }));
+$('ldChk').addEventListener('change', render);
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
-  $('rpSlider').value = b.dataset.r; $('aSlider').value = b.dataset.a; render();
+  $('rpSlider').value = b.dataset.r; $('aSlider').value = b.dataset.a; $('rsSlider').value = 1; phase = 0.5; render();
 }));
 
 function katexAll() {
   const specs = [
     ['f1', "\\delta = \\left(\\dfrac{R_p}{R_\\star}\\right)^{2}"],
     ['f2', "P = 365.25\\,\\text{d}\\;\\sqrt{a^{3}/M_\\star}"],
+    ['f4', "b = \\dfrac{a\\cos i}{R_\\star}"],
     ['f3', "T \\approx \\dfrac{P}{\\pi}\\,\\dfrac{R_\\star}{a}\\sqrt{(1+k)^{2}-b^{2}}"],
     ['ex1', "\\delta = \\left(\\dfrac{11.2\\,R_\\oplus}{109\\,R_\\oplus}\\right)^{2} \\approx 0.0106"],
     ['ex2', "\\delta_\\oplus = \\left(\\dfrac{1}{109}\\right)^{2} \\approx 8\\times10^{-5}"],

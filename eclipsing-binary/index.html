@@ -26,7 +26,7 @@
   .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
   #orbit { aspect-ratio:520/210; }
-  #lc { aspect-ratio:520/190; background:#0d1420; }
+  #lc { aspect-ratio:520/180; background:#0d1420; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
   .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #a2456180; background:#a24561; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
@@ -95,7 +95,7 @@
     <div class="body">
       <div class="canvasCol">
         <canvas id="orbit" width="520" height="210"></canvas>
-        <canvas id="lc" width="520" height="190"></canvas>
+        <canvas id="lc" width="520" height="180"></canvas>
         <div class="btnrow">
           <button class="playbtn" id="playBtn">&#10073;&#10073; Pause</button>
           <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
@@ -109,21 +109,21 @@
       <div class="ctlCol">
         <div class="section-label">The two stars</div>
         <div class="starcols">
-          <div class="hd">Star A (bluer)</div><div class="hd">Star B</div>
-          <div class="slider-row"><div class="lbl"><span>radius</span><span class="val" id="r1v">1.6</span></div><input type="range" id="r1" min="3" max="40" step="1" value="16"></div>
-          <div class="slider-row"><div class="lbl"><span>radius</span><span class="val" id="r2v">0.9</span></div><input type="range" id="r2" min="3" max="40" step="1" value="9"></div>
-          <div class="slider-row"><div class="lbl"><span>temp</span><span class="val" id="t1v">6500</span></div><input type="range" id="t1" min="3000" max="12000" step="100" value="6500"></div>
-          <div class="slider-row"><div class="lbl"><span>temp</span><span class="val" id="t2v">4000</span></div><input type="range" id="t2" min="3000" max="12000" step="100" value="4000"></div>
+          <div class="hd">Star A</div><div class="hd">Star B</div>
+          <div class="slider-row"><div class="lbl"><span>radius</span><span class="val" id="r1v">1.6 R☉</span></div><input type="range" id="r1" min="3" max="40" step="1" value="16"></div>
+          <div class="slider-row"><div class="lbl"><span>radius</span><span class="val" id="r2v">0.9 R☉</span></div><input type="range" id="r2" min="3" max="40" step="1" value="9"></div>
+          <div class="slider-row"><div class="lbl"><span>temperature</span><span class="val" id="t1v">6500 K</span></div><input type="range" id="t1" min="3000" max="12000" step="100" value="6500"></div>
+          <div class="slider-row"><div class="lbl"><span>temperature</span><span class="val" id="t2v">4000 K</span></div><input type="range" id="t2" min="3000" max="12000" step="100" value="4000"></div>
         </div>
         <div class="section-label" style="margin-top:4px;">The orbit</div>
-        <div class="slider-row"><div class="lbl"><span>separation a</span><span class="val" id="av">12 R☉</span></div><input type="range" id="a" min="6" max="40" step="0.5" value="12"></div>
-        <div class="slider-row"><div class="lbl"><span>inclination i</span><span class="val" id="iv">88°</span></div><input type="range" id="inc" min="60" max="90" step="0.2" value="88"></div>
-        <div class="slider-row"><div class="lbl"><span>mass ratio M_B / M_A</span><span class="val" id="qv">0.70</span></div><input type="range" id="q" min="20" max="100" step="5" value="70"></div>
+        <div class="slider-row"><div class="lbl"><span>separation <i>a</i></span><span class="val" id="av">12 R☉</span></div><input type="range" id="a" min="6" max="40" step="0.5" value="12"></div>
+        <div class="slider-row"><div class="lbl"><span>inclination <i>i</i></span><span class="val" id="iv">88°</span></div><input type="range" id="inc" min="60" max="90" step="0.2" value="88"></div>
+        <div class="slider-row"><div class="lbl"><span>mass ratio <i>M</i><sub>B</sub>/<i>M</i><sub>A</sub></span><span class="val" id="qv">0.70</span></div><input type="range" id="q" min="20" max="100" step="5" value="70"></div>
         <div class="section-label" style="margin-top:4px;">Results</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; astro-labs. Circular orbit, uniform-brightness discs (no limb darkening).</div>
+    <div class="footer-note">DRAFT &mdash; astro-labs. Circular orbit, uniform-brightness discs in the model (no limb darkening); inclination 60&ndash;90&deg;.</div>
   </div>
 </div>
 
@@ -188,14 +188,40 @@ const $ = id => document.getElementById(id);
 let playing = true, rafId = null, last = null;
 let phi = 0;
 const S = {};
+const DEF = { r1: 16, r2: 9, t1: 6500, t2: 4000, a: 12, inc: 88, q: 70 };
 
-function bbRGB(T) {
+function prep(id, W, H) {
+  const c = $(id), dpr = Math.min(3, window.devicePixelRatio || 1);
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx;
+}
+function label(ctx, t, x, y, col, font, align) {
+  ctx.save(); ctx.font = font || '10px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,11,18,0.9)'; ctx.strokeText(t, x, y);
+  ctx.fillStyle = col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+}
+function tex(s) { try { return katex.renderToString(s, { throwOnError: false }); } catch (e) { return s; } }
+function niceStep(span, n) { const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
+
+function bbRGBarr(T) {
   let t = T / 100, r, g, b;
   if (t <= 66) r = 255; else r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
   if (t <= 66) g = 99.4708025861 * Math.log(t) - 161.1195681661; else g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
   if (t >= 66) b = 255; else if (t <= 19) b = 0; else b = 138.5177312231 * Math.log(t - 10) - 305.0447927307;
   const c = x => Math.max(0, Math.min(255, Math.round(x)));
-  return 'rgb(' + c(r) + ',' + c(g) + ',' + c(b) + ')';
+  return [c(r), c(g), c(b)];
+}
+const rgb = (a, k, al) => 'rgba(' + Math.round(a[0] * k) + ',' + Math.round(a[1] * k) + ',' + Math.round(a[2] * k) + ',' + (al == null ? 1 : al) + ')';
+// a star disc in its blackbody colour, slightly limb-darkened in the drawing
+function starDisc(ctx, x, y, r, T, glow) {
+  const c = bbRGBarr(T);
+  ctx.save();
+  if (glow) { ctx.shadowColor = rgb(c, 1, 0.55); ctx.shadowBlur = glow; }
+  const g = ctx.createRadialGradient(x - r * 0.12, y - r * 0.12, 0, x, y, r);
+  g.addColorStop(0, rgb([Math.min(255, c[0] + 40), Math.min(255, c[1] + 40), Math.min(255, c[2] + 40)], 1));
+  g.addColorStop(0.65, rgb(c, 0.95)); g.addColorStop(1, rgb(c, 0.62));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+  ctx.restore();
 }
 function overlapArea(d, r1, r2) {
   if (d >= r1 + r2) return 0;
@@ -209,15 +235,20 @@ function overlapArea(d, r1, r2) {
 function readControls() {
   S.R1 = +$('r1').value / 10; S.R2 = +$('r2').value / 10;
   S.T1 = +$('t1').value; S.T2 = +$('t2').value;
+  // the stars can't overlap: keep the separation at least R_A + R_B (+ a little)
+  const minA = Math.ceil((S.R1 + S.R2 + 0.5) * 2) / 2;
+  if (+$('a').value < minA) $('a').value = minA;
   S.a = +$('a').value; S.i = +$('inc').value * Math.PI / 180; S.q = +$('q').value / 100;
-  S.a1 = S.a * S.q / (1 + S.q); S.a2 = S.a / (1 + S.q);
+  S.a1 = S.a * S.q / (1 + S.q); S.a2 = S.a / (1 + S.q);          // distances from the barycentre (M_B/M_A = q)
   S.F1 = S.R1 * S.R1 * Math.pow(S.T1 / 6000, 4);
   S.F2 = S.R2 * S.R2 * Math.pow(S.T2 / 6000, 4);
-  $('r1v').textContent = S.R1.toFixed(1); $('r2v').textContent = S.R2.toFixed(1);
-  $('t1v').textContent = S.T1; $('t2v').textContent = S.T2;
+  $('r1v').textContent = S.R1.toFixed(1) + ' R☉'; $('r2v').textContent = S.R2.toFixed(1) + ' R☉';
+  $('t1v').textContent = S.T1 + ' K'; $('t2v').textContent = S.T2 + ' K';
   $('av').textContent = S.a.toFixed(1) + ' R☉'; $('iv').textContent = (+$('inc').value).toFixed(1) + '°';
   $('qv').textContent = S.q.toFixed(2);
 }
+// orbit geometry: θ = 2π·phase. Sky x = r cos θ, sky y = r sin θ cos i, toward Earth z = r sin θ sin i.
+// Star A sits at +r, star B at −r, so at phase 0.25 A is in front (B eclipsed), at 0.75 B is in front (A eclipsed).
 function flux(p) {
   const th = 2 * Math.PI * p;
   const d = S.a * Math.sqrt(Math.cos(th) ** 2 + Math.sin(th) ** 2 * Math.cos(S.i) ** 2);
@@ -228,84 +259,140 @@ function flux(p) {
   const lost = behindIs1 ? S.F1 * A / (Math.PI * S.R1 * S.R1) : S.F2 * A / (Math.PI * S.R2 * S.R2);
   return (Ftot - lost) / Ftot;
 }
-let curve = [];
+let curve = [], dips = {};
 function recompute() {
   readControls();
   curve = [];
   const N = 1440;
   for (let k = 0; k <= N; k++) curve.push(flux(k / N));
   const dipIn = (lo, hi) => { let m = 1; for (let k = 0; k <= N; k++) { const p = k / N; if (p >= lo && p <= hi) m = Math.min(m, curve[k]); } return 1 - m; };
-  const dA = dipIn(0.1, 0.4), dB = dipIn(0.6, 0.9);
-  const eclipsing = S.a * Math.cos(S.i) < S.R1 + S.R2;
-  const deep = Math.max(dA, dB), shallow = Math.min(dA, dB);
+  dips.B = dipIn(0.1, 0.4);    // phase 0.25: A in front, B (partly) hidden
+  dips.A = dipIn(0.6, 0.9);    // phase 0.75: B in front, A (partly) hidden
+  const b = S.a * Math.cos(S.i);
+  const eclipsing = b < S.R1 + S.R2;
+  const full = b <= Math.abs(S.R1 - S.R2);
+  const deep = Math.max(dips.A, dips.B), shallow = Math.min(dips.A, dips.B);
+  const iMin = Math.acos(Math.min(1, (S.R1 + S.R2) / S.a)) * 180 / Math.PI;
+  const sb = Math.pow(Math.max(S.T1, S.T2) / Math.min(S.T1, S.T2), 4);
 
   $('results').innerHTML =
-    rowB('eclipses seen?', eclipsing ? 'yes' : 'no — tilt too large') +
-    row('deep eclipse', eclipsing ? (100 * deep).toFixed(1) + '%' : '—') +
-    row('shallow eclipse', eclipsing ? (100 * shallow).toFixed(1) + '%' : '—') +
-    row('bigger star', S.R1 > S.R2 ? 'A' : S.R2 > S.R1 ? 'B' : 'equal') +
-    row('hotter star', S.T1 > S.T2 ? 'A' : 'B') +
-    row('surface-brightness ratio', (Math.max(S.T1, S.T2) / Math.min(S.T1, S.T2)) ** 4 >= 1 ? ((Math.max(S.T1, S.T2) / Math.min(S.T1, S.T2)) ** 4).toFixed(1) + '×' : '—');
+    rowB('eclipses seen?', eclipsing ? 'yes' : 'no: orbit tilted too far') +
+    row('deeper eclipse', eclipsing ? (100 * deep).toFixed(1) + '% of the light' : '—') +
+    row('shallower eclipse', eclipsing ? (100 * shallow).toFixed(1) + '% of the light' : '—') +
+    row('eclipse type', !eclipsing ? '—' : full ? 'total + annular' : 'partial') +
+    row('hot/cool surface brightness', sb.toFixed(1) + '×') +
+    row('eclipses need ' + tex('i') + ' >', iMin.toFixed(1) + '°');
 
-  $('note').textContent = !eclipsing
-    ? 'The orbit is tilted too far from edge-on: from our line of sight neither star ever crosses the other, so the total light stays flat — this binary would only be detectable spectroscopically.'
-    : 'The deeper dip is the ' + (S.T1 > S.T2 ? 'transit of the cooler star B across the hotter star A' : 'transit of the cooler star A across the hotter star B')
-      + ' — more surface brightness is hidden. The shallower dip is when it passes behind.';
+  const hot = S.T1 >= S.T2 ? 'A' : 'B', cool = hot === 'A' ? 'B' : 'A';
+  $('note').innerHTML = !eclipsing
+    ? 'The orbit is tilted too far from edge-on (' + tex('a\\cos i > R_A + R_B') + '): from Earth neither star ever covers the other, so the total light stays flat. This binary could only be found from its spectrum (Doppler shifts).'
+    : S.T1 === S.T2
+    ? 'Equal temperatures: both stars have the same surface brightness, so the two eclipses are equally deep, since the same area is hidden each time.'
+    : 'Deeper dip: cooler star ' + cool + ' in front of hotter star ' + hot + ', hiding brighter surface. Shallower dip: ' + cool + ' behind ' + hot + '. Both hide the same area, so the depth ratio equals the surface-brightness ratio.';
   drawLC();
 }
 function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 function rowB(k, v) { return '<div class="resrow big"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 
-function drawOrbit() {
-  const c = $('orbit'), ctx = c.getContext('2d');
-  const W = 520, H = 210;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2;
-  const scale = (W / 2 - 30) / (Math.max(S.a1, S.a2) + Math.max(S.R1, S.R2));
-  const th = 2 * Math.PI * phi, ci = Math.cos(S.i);
-  [S.a1, S.a2].forEach(r => {
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath();
-    ctx.ellipse(cx, cy, r * scale, Math.max(0.5, r * scale * ci), 0, 0, 7); ctx.stroke();
-  });
-  ctx.strokeStyle = '#5E6B8C';
-  ctx.beginPath(); ctx.moveTo(cx - 5, cy - 5); ctx.lineTo(cx + 5, cy + 5); ctx.moveTo(cx - 5, cy + 5); ctx.lineTo(cx + 5, cy - 5); ctx.stroke();
-  const s1 = { x: S.a1 * Math.cos(th), y: S.a1 * Math.sin(th) * ci, z: S.a1 * Math.sin(th), R: S.R1, T: S.T1 };
-  const s2 = { x: -S.a2 * Math.cos(th), y: -S.a2 * Math.sin(th) * ci, z: -S.a2 * Math.sin(th), R: S.R2, T: S.T2 };
-  (s1.z < s2.z ? [s1, s2] : [s2, s1]).forEach(s => {
-    const col = bbRGB(s.T);
-    ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.fillStyle = col;
-    ctx.beginPath(); ctx.arc(cx + s.x * scale, cy - s.y * scale, Math.max(2, s.R * scale), 0, 7); ctx.fill();
-    ctx.shadowBlur = 0;
-  });
-  ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('view from Earth', 12, 18);
+function starPos(th) {
+  const ci = Math.cos(S.i), si = Math.sin(S.i);
+  return [
+    { n: 'A', x: S.a1 * Math.cos(th), y: S.a1 * Math.sin(th) * ci, z: S.a1 * Math.sin(th) * si, R: S.R1, T: S.T1 },
+    { n: 'B', x: -S.a2 * Math.cos(th), y: -S.a2 * Math.sin(th) * ci, z: -S.a2 * Math.sin(th) * si, R: S.R2, T: S.T2 }];
 }
+function drawOrbit() {
+  const W = 520, H = 210, ctx = prep('orbit', W, H);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let k = 0; k < 44; k++) { ctx.globalAlpha = 0.07 + (k % 5) * 0.05; ctx.fillRect((k * 131.7) % W, (k * 71.3) % H, 1.2, 1.2); }
+  ctx.globalAlpha = 1;
+  // ----- main panel: the view from Earth (near side of each orbit drawn lower and solid, far side dashed) -----
+  const cx = 200, cy = H / 2 + 4;
+  const ext = Math.max(S.a1, S.a2) + Math.max(S.R1, S.R2);
+  const scale = Math.min(170 / ext, (H / 2 - 18) / (Math.max(S.a1, S.a2) * Math.cos(S.i) + Math.max(S.R1, S.R2)));
+  const th = 2 * Math.PI * phi, ci = Math.cos(S.i);
+  [[S.a1, 'rgba(255,255,255,0.32)'], [S.a2, 'rgba(255,255,255,0.32)']].forEach(([r, col]) => {
+    for (const near of [false, true]) {
+      ctx.strokeStyle = near ? col : 'rgba(255,255,255,0.14)'; ctx.setLineDash(near ? [] : [3, 3]); ctx.lineWidth = near ? 1.2 : 1;
+      ctx.beginPath(); ctx.ellipse(cx, cy, r * scale, Math.max(0.3, r * scale * ci), 0, near ? 0 : Math.PI, near ? Math.PI : 2 * Math.PI); ctx.stroke();
+    }
+  });
+  ctx.setLineDash([]); ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(160,175,200,0.7)';
+  ctx.beginPath(); ctx.moveTo(cx - 4, cy - 4); ctx.lineTo(cx + 4, cy + 4); ctx.moveTo(cx - 4, cy + 4); ctx.lineTo(cx + 4, cy - 4); ctx.stroke();
+  const st = starPos(th);
+  st.slice().sort((p, q) => p.z - q.z).forEach(s => starDisc(ctx, cx + s.x * scale, cy + s.y * scale, Math.max(2, s.R * scale), s.T, 10));
+  // star letters, placed beside each disc (never on top of the other star)
+  st.forEach(s => {
+    const x = cx + s.x * scale, y = cy + s.y * scale, r = Math.max(2, s.R * scale);
+    const other = st.find(o => o !== s), side = (x >= cx + other.x * scale) ? 1 : -1;
+    label(ctx, s.n, x + side * (r + 9), y - r * 0.6 - 4, '#eef2f6', '700 11px "Source Sans 3",sans-serif');
+  });
+  label(ctx, 'view from Earth', 10, 14, 'rgba(255,255,255,0.7)', '600 10px "Source Sans 3",sans-serif', 'left');
+  label(ctx, 'solid = near half of each orbit', 10, H - 12, 'rgba(255,255,255,0.45)', '9.5px "Source Sans 3",sans-serif', 'left');
+
+  // ----- inset: side view, to scale, Earth off to the right -----
+  const bx = 392, by = 8, bw = 120, bh = H - 16;
+  ctx.fillStyle = 'rgba(255,255,255,0.035)'; ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 8) : ctx.rect(bx, by, bw, bh); ctx.fill(); ctx.stroke();
+  label(ctx, 'side view (to scale)', bx + bw / 2, by + 12, 'rgba(255,255,255,0.7)', '600 9.5px "Source Sans 3",sans-serif');
+  const icx = bx + bw / 2 - 4, icy = by + bh / 2 + 6, isc = (bw / 2 - 12) / ext;
+  // eclipse band: lines of sight that pass within R_A + R_B of the barycentre's line
+  const band = (S.R1 + S.R2) * isc;
+  ctx.fillStyle = 'rgba(255,214,107,0.06)'; ctx.fillRect(bx + 4, icy - band, bw - 8, 2 * band);
+  // orbit plane (edge-on line), tilted by 90° − i from the line of sight
+  const tilt = Math.PI / 2 - S.i, L = ext * isc;
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath();
+  ctx.moveTo(icx - L * Math.cos(tilt), icy - L * Math.sin(tilt)); ctx.lineTo(icx + L * Math.cos(tilt), icy + L * Math.sin(tilt)); ctx.stroke();
+  // in the side view: horizontal = z (toward Earth, right), vertical = sky y (screen down = +y, same as main view)
+  st.slice().sort((p, q) => p.x - q.x).forEach(s => {
+    starDisc(ctx, icx + s.z * isc, icy + s.y * isc, Math.max(1.5, s.R * isc), s.T, 0);
+  });
+  label(ctx, 'Earth →', bx + bw - 6, by + bh - 26, '#9fd0ff', '600 9.5px "Source Sans 3",sans-serif', 'right');
+  label(ctx, 'i = ' + (S.i * 180 / Math.PI).toFixed(1) + '°', bx + 8, by + bh - 12, '#ffd66b', '600 10px "Source Sans 3",sans-serif', 'left');
+}
+
 function drawLC() {
-  const c = $('lc'), ctx = c.getContext('2d');
-  const W = 520, H = 190, mL = 46, mR = 12, mT = 16, mB = 26;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const W = 520, H = 180, ctx = prep('lc', W, H);
+  const mL = 52, mR = 14, mT = 24, mB = 32;
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
   const fmin = Math.min(...curve);
-  const ylo = Math.min(0.995, fmin) - 0.02, yhi = 1.01;
+  const drop = 1 - fmin;
+  const st = niceStep(Math.max(drop, 0.01) * 1.15, 3);
+  const ylo = 1 - Math.max(st * Math.ceil(drop * 1.12 / st), st), yhi = 1 + st * 0.18;
   const xx = p => mL + p * (W - mL - mR);
   const yy = f => mT + (yhi - f) / (yhi - ylo) * (H - mT - mB);
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(mL, yy(1)); ctx.lineTo(W - mR, yy(1)); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText('1.00', mL - 5, yy(1) + 3);
-  if (fmin < 0.999) { ctx.fillText(fmin.toFixed(2), mL - 5, yy(fmin) + 3); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(mL, yy(fmin)); ctx.lineTo(W - mR, yy(fmin)); ctx.stroke(); }
-  ctx.textAlign = 'center';
-  [0, 0.25, 0.5, 0.75, 1].forEach(p => ctx.fillText(p.toFixed(2), xx(p), H - 9));
-  ctx.textAlign = 'left'; ctx.fillText('brightness vs orbital phase', mL, 11);
+  ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let v = 1; v >= ylo - 1e-9; v -= st) {
+    ctx.strokeStyle = Math.abs(v - 1) < 1e-9 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)';
+    ctx.beginPath(); ctx.moveTo(mL, yy(v)); ctx.lineTo(W - mR, yy(v)); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText(v.toFixed(st < 0.01 ? 3 : 2), mL - 5, yy(v));
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  [0, 0.25, 0.5, 0.75, 1].forEach(p => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(xx(p), H - mB); ctx.lineTo(xx(p), H - mB + 3); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText(p.toFixed(2), xx(p), H - mB + 13);
+  });
+  ctx.font = '9.5px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('orbital phase (fraction of one orbit)', (mL + W - mR) / 2, H - 5);
+  label(ctx, 'total brightness (1 = both stars fully visible)', 8, 11, 'rgba(255,255,255,0.75)', '600 10px "Source Sans 3",sans-serif', 'left');
   ctx.strokeStyle = '#e0748f'; ctx.lineWidth = 2; ctx.beginPath();
   curve.forEach((f, k) => { const x = xx(k / (curve.length - 1)), y = yy(f); k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
   ctx.stroke(); ctx.lineWidth = 1;
+  // say which star is in front at each dip
+  [[0.25, dips.B, 'A in front of B'], [0.75, dips.A, 'B in front of A']].forEach(([p, d, t]) => {
+    if (d > 0.002) label(ctx, t, xx(p), Math.min(yy(1 - d) + 12, H - mB - 8), 'rgba(255,200,215,0.85)', '9.5px "Source Sans 3",sans-serif');
+  });
+  if (drop < 1e-6) label(ctx, 'flat: from this angle neither star ever covers the other', (mL + W - mR) / 2, (mT + H - mB) / 2 + 10, '#ff9bb0', '600 11px "Source Sans 3",sans-serif');
   const x = xx(phi);
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([4, 3]);
   ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, H - mB); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, yy(flux(phi)), 3.5, 0, 7); ctx.fill();
 }
 
 function frame(ts) {
   if (last === null) last = ts;
-  const dt = (ts - last) / 1000; last = ts;
+  const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
   if (playing) { phi = (phi + dt / 8) % 1; $('phase').value = Math.round(phi * 1000); }
   $('phaseVal').textContent = phi.toFixed(2);
   drawOrbit(); drawLC();
@@ -314,11 +401,11 @@ function frame(ts) {
 function setPlaying(p) { playing = p; $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play'; }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
 $('resetBtn').addEventListener('click', () => {
-  ['r1', 'r2', 't1', 't2', 'a', 'inc', 'q'].forEach((id, k) => { $(id).value = [16, 9, 6500, 4000, 12, 88, 70][k]; });
+  Object.keys(DEF).forEach(id => { $(id).value = DEF[id]; });
   phi = 0; $('phase').value = 0; setPlaying(true); recompute();
 });
-$('phase').addEventListener('input', () => { setPlaying(false); phi = +$('phase').value / 1000; drawOrbit(); drawLC(); });
-['r1', 'r2', 't1', 't2', 'a', 'inc', 'q'].forEach(id => $(id).addEventListener('input', recompute));
+$('phase').addEventListener('input', () => { setPlaying(false); phi = +$('phase').value / 1000; $('phaseVal').textContent = phi.toFixed(2); drawOrbit(); drawLC(); });
+Object.keys(DEF).forEach(id => $(id).addEventListener('input', recompute));
 
 function katexAll() {
   const specs = [
@@ -333,6 +420,13 @@ function katexAll() {
     if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
     el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
   }
+}
+// random problems: most of the time, tilt the orbit into the range where eclipses happen
+function rpAfter() {
+  if (Math.random() < 0.2) return;
+  const iMin = Math.acos(Math.min(1, (S.R1 + S.R2) / S.a)) * 180 / Math.PI;
+  const v = Math.max(60, iMin + 0.4) + Math.random() * (90 - Math.max(60, iMin + 0.4));
+  $('inc').value = Math.min(90, Math.round(v * 5) / 5); recompute();
 }
 const SIM_ID = 'eclipsing-binary';
 const RP_IDS = ['r1', 'r2', 't1', 't2', 'a', 'inc', 'q'];
