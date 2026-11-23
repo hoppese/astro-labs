@@ -1,0 +1,20 @@
+<!doctype html>
+<!-- Development aid: shows the planetarium in iframes at phone, small-laptop and embed sizes,
+     so layouts can be checked without resizing the browser window. Not linked from the app. -->
+<meta charset="utf-8">
+<title>Planetarium frame test</title>
+<style>
+  body { margin: 0; padding: 16px; background: #222; color: #ccc; font: 13px system-ui; display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; } figcaption { margin-bottom: 6px; }
+  iframe { border: 1px solid #555; display: block; background: #000; }
+</style>
+<body>
+<script>
+  const q = new URLSearchParams(location.search);
+  const sizes = (q.get('sizes') || '390x760,1440x800,640x420').split(',').map((s) => s.split('x').map(Number));
+  for (const [w, h] of sizes) {
+    const f = document.createElement('figure');
+    f.innerHTML = `<figcaption>${w} × ${h}</figcaption><iframe width="${w}" height="${h}" src="../?frame=${w}x${h}&v=${Date.now()}" allow="geolocation"></iframe>`;
+    document.body.appendChild(f);
+  }
+</script>
