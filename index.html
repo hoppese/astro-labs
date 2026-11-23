@@ -10,15 +10,19 @@
 <style>
   * { box-sizing: border-box; }
   body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
-  .wrap { max-width:940px; margin:0 auto; padding:26px 20px 60px; }
+  .wrap { max-width:1320px; margin:0 auto; padding:26px 28px 60px; }
+  @media (max-width:680px) { .wrap { padding:20px 16px 48px; } }
+  button, input, select { font:inherit; }
   header { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
   h1 { font-family:'Source Serif 4',serif; font-weight:600; font-size:23px; margin:0; }
   .tag { font-size:12.5px; color:#7a838c; }
-  .lead { font-size:13.5px; line-height:1.6; color:#4b535b; max-width:620px; margin:10px 0 26px; }
+  .lead { font-size:13.5px; line-height:1.6; color:#4b535b; max-width:720px; margin:10px 0 26px; }
   h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:15px; margin:26px 0 10px; color:#33414d; letter-spacing:0.01em; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
-  a.simcard { display:block; text-decoration:none; color:inherit; background:#fff; border:1px solid #e0e5e9; border-radius:11px; padding:14px 15px; transition:border-color .12s, transform .12s; }
-  a.simcard:hover { border-color:#7b93c9; transform:translateY(-1px); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+  @media (max-width:520px) { .grid { grid-template-columns:1fr; } }
+  a.simcard { display:block; text-decoration:none; color:inherit; background:#fff; border:1px solid #e0e5e9; border-left:4px solid var(--ac,#7b93c9); border-radius:11px; padding:14px 15px 14px 14px; transition:border-color .12s, transform .12s, box-shadow .12s; }
+  a.simcard:hover { border-color:var(--ac,#7b93c9); transform:translateY(-1px); box-shadow:0 2px 8px rgba(20,30,40,.07); }
+  a.simcard:focus-visible { outline:2px solid var(--ac,#7b93c9); outline-offset:2px; }
   .simcard .nm { font-weight:700; font-size:14px; }
   .simcard .ds { font-size:11.5px; color:#69727b; line-height:1.45; margin-top:4px; }
   .simcard .pill { display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:2px 6px; border-radius:5px; margin-top:8px; }
@@ -33,7 +37,7 @@
 <div class="wrap">
   <header>
     <h1>Intro Astronomy Sims</h1>
-    <span class="tag">draft collection &mdash; companion to the intro-physics sims</span>
+    <span class="tag">24 draft sims, a companion to the intro-physics sims</span>
   </header>
   <p class="lead">Single-file interactive simulations for an introductory (non-majors) astronomy course.
   Same house style as the physics sims: an <b>Info</b> panel, a <b>Worked example</b>, an inputs &rarr; results
@@ -41,80 +45,95 @@
 
   <h2>Earth, Moon &amp; sky</h2>
   <div class="grid">
-    <a class="simcard" href="moon-phases/index.html">
+    <a class="simcard" href="moon-phases/index.html" style="--ac:#c9a24b">
       <div class="nm">Moon Phases</div>
-      <div class="ds">Sun&ndash;Moon&ndash;Earth geometry driving the phase; the same Moon shown from space and from the ground, with rise/set times.</div>
+      <div class="ds">Sun, Moon and Earth in a tilted 3D orbit view (drag the Moon); the same phase seen from the ground, with rise and set times.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="seasons/index.html">
+    <a class="simcard" href="seasons/index.html" style="--ac:#5aa06b">
       <div class="nm">Seasons</div>
-      <div class="ds">Axial tilt, not distance: sub-solar latitude, noon Sun altitude, day length, and the sunbeam-spreading argument.</div>
+      <div class="ds">Axial tilt, not distance: a 3D orbit, a day-and-night globe, noon Sun altitude, day length and the real Earth&ndash;Sun distance.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="eclipses/index.html">
+    <a class="simcard" href="eclipses/index.html" style="--ac:#c0512e">
       <div class="nm">Eclipses</div>
-      <div class="ds">Solar vs lunar geometry, umbra / penumbra, and why they don&rsquo;t happen every month (the 5&deg; tilt &amp; nodes).</div>
+      <div class="ds">Solar vs lunar in a draggable 3D view plus a to-scale side view of the shadows; the 5&deg; tilt and the nodes explain why not every month.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="celestial-sphere/index.html">
+    <a class="simcard" href="celestial-sphere/index.html" style="--ac:#5b6bb0">
       <div class="nm">The Celestial Sphere</div>
-      <div class="ds">Daily motion, altitude/azimuth, circumpolar stars, and how the sky changes with your latitude.</div>
+      <div class="ds">A draggable 3D sky sphere with your horizon (or a flat map): daily motion, altitude and azimuth, circumpolar stars, changing latitude.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="retrograde-motion/index.html">
+    <a class="simcard" href="retrograde-motion/index.html" style="--ac:#b0533b">
       <div class="nm">Retrograde Motion</div>
-      <div class="ds">Mars looping against the background stars, and the heliocentric &ldquo;inside lane passes outside lane&rdquo; explanation.</div>
+      <div class="ds">Mars looping against stars in the southern sky, with numbered snapshots linking each loop point to the inside lane passing the outside lane.</div>
+      <span class="pill draft">Draft</span>
+    </a>
+    <a class="simcard" href="planetary-configurations/index.html" style="--ac:#7f9a2a">
+      <div class="nm">Phases of Venus</div>
+      <div class="ds">Elongation, phase and apparent size changing together; configurations and synodic period; why Ptolemy&rsquo;s epicycle can&rsquo;t make a gibbous Venus.</div>
       <span class="pill draft">Draft</span>
     </a>
   </div>
 
   <h2>Orbits &amp; gravity</h2>
   <div class="grid">
-    <a class="simcard" href="keplers-laws/index.html">
-      <div class="nm">Kepler&rsquo;s Laws</div>
+    <a class="simcard" href="keplers-laws/index.html" style="--ac:#7d5ba6">
+      <div class="nm">Kepler's Laws</div>
       <div class="ds">Ellipse shape, the equal-areas sweep, and P&sup2; = a&sup3; checked against the real planets.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="tides/index.html">
+    <a class="simcard" href="tides/index.html" style="--ac:#2b7a9e">
       <div class="nm">Tides</div>
-      <div class="ds">Two bulges from the difference in the Moon&rsquo;s pull across Earth; spring vs neap when the Sun lines up.</div>
+      <div class="ds">The Sun and Moon&rsquo;s real tidal-force vectors raising two bulges; spring vs neap, with tide heights in metres.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="exoplanet-transit/index.html">
+    <a class="simcard" href="exoplanet-transit/index.html" style="--ac:#c99a2b">
       <div class="nm">Exoplanet Transit</div>
-      <div class="ds">Build a light curve; depth = (R<sub>p</sub>/R<sub>&#42;</sub>)&sup2;, duration, period, and the effect of impact parameter.</div>
+      <div class="ds">Build a light curve with limb darkening; a side view shows inclination; depth = (R<sub>p</sub>/R<sub>&#42;</sub>)&sup2;, duration, period.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="radial-velocity/index.html">
+    <a class="simcard" href="radial-velocity/index.html" style="--ac:#a8477e">
       <div class="nm">Radial Velocity</div>
-      <div class="ds">A star wobbling around the barycentre, its spectral lines shifting red and blue in step.</div>
+      <div class="ds">A star wobbling around the barycentre in a 3D orbit, with the line of sight and inclination i; its spectral lines shift red and blue in step.</div>
       <span class="pill draft">Draft</span>
     </a>
   </div>
 
   <h2>Light &amp; stars</h2>
   <div class="grid">
-    <a class="simcard" href="blackbody-spectrum/index.html">
+    <a class="simcard" href="blackbody-spectrum/index.html" style="--ac:#d4763a">
       <div class="nm">Blackbody Spectrum</div>
       <div class="ds">Planck curve vs temperature, Wien&rsquo;s law for the peak, and the colour a star ends up looking.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="stellar-parallax/index.html">
+    <a class="simcard" href="atomic-spectra/index.html" style="--ac:#c23b55">
+      <div class="nm">Atomic Spectra</div>
+      <div class="ds">Bohr energy levels and the photons they emit or absorb; Kirchhoff&rsquo;s three spectrum types; identify a gas by its lines.</div>
+      <span class="pill draft">Draft</span>
+    </a>
+    <a class="simcard" href="telescopes/index.html" style="--ac:#9c6b30">
+      <div class="nm">Telescopes</div>
+      <div class="ds">What aperture buys: light-gathering &prop; D&sup2;, resolution 1.22&lambda;/D on a double star, and why magnification alone doesn&rsquo;t help.</div>
+      <span class="pill draft">Draft</span>
+    </a>
+    <a class="simcard" href="stellar-parallax/index.html" style="--ac:#3a9aa8">
       <div class="nm">Stellar Parallax</div>
-      <div class="ds">The tiny annual shift of a nearby star; distance in parsecs = 1 / parallax in arcseconds.</div>
+      <div class="ds">A nearby star&rsquo;s yearly shift in 3D and on a true-scale sky, at any ecliptic latitude; distance in pc = 1 / parallax in arcsec.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="inverse-square-brightness/index.html">
+    <a class="simcard" href="inverse-square-brightness/index.html" style="--ac:#b8862b">
       <div class="nm">Inverse-Square Brightness</div>
-      <div class="ds">Flux falling as 1/d&sup2;; apparent vs absolute magnitude and the distance modulus.</div>
+      <div class="ds">Flux falling as 1/d&sup2; on the 1-4-9 squares; apparent vs absolute magnitude, the distance modulus and the naked-eye limit.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="hr-diagram/index.html">
-      <div class="nm">H&ndash;R Diagram</div>
-      <div class="ds">L = 4&pi;R&sup2;&sigma;T&#8308;: place a star by temperature and luminosity, see where the main sequence, giants and dwarfs fall.</div>
+    <a class="simcard" href="hr-diagram/index.html" style="--ac:#4a78c4">
+      <div class="nm">H-R Diagram</div>
+      <div class="ds">L = 4&pi;R&sup2;&sigma;T&#8308;: place a star by temperature and luminosity, with spectral subtypes and white-dwarf types.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="hr-diagram-full/index.html">
+    <a class="simcard" href="hr-diagram-full/index.html" style="--ac:#5a7fb8">
       <div class="nm">Spectral Classification</div>
       <div class="ds">The OBAFGKM types and the I&ndash;V luminosity classes as bands on the H&ndash;R diagram; read off a star&rsquo;s absolute magnitude.</div>
       <span class="pill draft">Draft</span>
@@ -123,36 +142,41 @@
 
   <h2>Stellar lives &amp; pairs</h2>
   <div class="grid">
-    <a class="simcard" href="hr-diagram-evolution/index.html">
+    <a class="simcard" href="hr-diagram-evolution/index.html" style="--ac:#8a5fb0">
       <div class="nm">Stellar Evolution</div>
-      <div class="ds">One star&rsquo;s whole life traced across the H&ndash;R diagram &mdash; protostar to white dwarf, brown dwarf, or supernova &mdash; set by its mass.</div>
+      <div class="ds">One star&rsquo;s whole life traced across the H&ndash;R diagram, from protostar to white dwarf, brown dwarf or supernova, set by its mass.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="hr-diagram-cluster/index.html">
+    <a class="simcard" href="hr-diagram-cluster/index.html" style="--ac:#3f8f7a">
       <div class="nm">Cluster Ages</div>
       <div class="ds">A cluster is one age, many masses; the main-sequence turnoff point is its clock. Pleiades &rarr; M13.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="eclipsing-binary/index.html">
+    <a class="simcard" href="eclipsing-binary/index.html" style="--ac:#c85b7c">
       <div class="nm">Eclipsing Binary</div>
-      <div class="ds">Two stars taking turns hiding each other; the deep and shallow dips give their sizes and temperatures.</div>
+      <div class="ds">Two stars taking turns hiding each other, with a side-view inset; the dips give their sizes, temperatures and the eclipse type.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="spectroscopic-binary/index.html">
+    <a class="simcard" href="spectroscopic-binary/index.html" style="--ac:#4a8fb0">
       <div class="nm">Spectroscopic Binary</div>
-      <div class="ds">One spectral line splitting in two as the stars swing toward and away; the speed ratio is the mass ratio.</div>
+      <div class="ds">One spectral line splitting in two as the stars swing toward and away at inclination i; the speed ratio is the mass ratio.</div>
       <span class="pill draft">Draft</span>
     </a>
   </div>
 
-  <h2>Cosmology</h2>
+  <h2>Galaxies &amp; cosmology</h2>
   <div class="grid">
-    <a class="simcard" href="hubble-law/index.html">
-      <div class="nm">Hubble&rsquo;s Law</div>
-      <div class="ds">v = H&#8320;d from a field of galaxies; re-centre on any galaxy, and the implied age of the universe.</div>
+    <a class="simcard" href="galaxy-rotation/index.html" style="--ac:#5b3fc4">
+      <div class="nm">Galaxy Rotation &amp; Dark Matter</div>
+      <div class="ds">Why galaxies need dark matter: stars orbiting a tilted spiral, the flat observed rotation curve vs the visible-only fall-off, and M(&lt;r) = v&sup2;r/G.</div>
       <span class="pill draft">Draft</span>
     </a>
-    <a class="simcard" href="cosmic-distance-ladder/index.html">
+    <a class="simcard" href="hubble-law/index.html" style="--ac:#8a5fb0">
+      <div class="nm">Hubble's Law</div>
+      <div class="ds">v = H&#8320;d from realistic noisy galaxy data and a fit; re-centre on any galaxy, and the implied age of the universe.</div>
+      <span class="pill draft">Draft</span>
+    </a>
+    <a class="simcard" href="cosmic-distance-ladder/index.html" style="--ac:#3f8f7a">
       <div class="nm">Cosmic Distance Ladder</div>
       <div class="ds">Parallax &rarr; main-sequence fitting &rarr; Cepheids &rarr; Type Ia &rarr; Hubble, each rung calibrating the next.</div>
       <span class="pill draft">Draft</span>
