@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atomic Spectra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#c23b55; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; align-self:flex-start; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
+  canvas { display:block; width:100%; border-radius:10px; background:#080b12; }
+  #scene { cursor:default; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:-4px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#a52f47; }
+  input[type=range] { width:100%; accent-color:#c23b55; }
+  .chips { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+  .chips.c3 { grid-template-columns:repeat(3,1fr); }
+  .chips.c7 { grid-template-columns:repeat(7,1fr); }
+  .chips.c5 { grid-template-columns:repeat(5,1fr); }
+  .chips button, .btn { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 11px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; }
+  .chips button:hover, .btn:hover { border-color:#c23b55; }
+  .chips button.on { background:#f9e6ea; border-color:#c23b55; color:#8c2238; }
+  .chips button:disabled { opacity:0.4; cursor:default; border-color:#dfe3e7; }
+  .btn { padding:7px 10px; font-size:12px; }
+  .btn.primary { background:#c23b55; border-color:#c23b55; color:#fff; }
+  .btn.primary:hover { background:#a52f47; }
+  .btnrow { display:flex; gap:6px; }
+  .btnrow .btn { flex:1; }
+  button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline:2px solid #c23b55; outline-offset:2px; }
+  select { width:100%; font:600 12.5px 'Source Sans 3',sans-serif; color:#20262b; border:1px solid #dfe3e7; border-radius:7px; padding:6px 8px; background:#fff; cursor:pointer; }
+  .checkrow { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#4b535b; cursor:pointer; }
+  .results { display:flex; flex-direction:column; gap:6px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f8ecee; border-radius:8px; padding:6px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4d2a32; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:#8c2238; text-align:right; }
+  .note { font-size:12px; line-height:1.5; color:#5d666e; background:#f8ecee; border-radius:8px; padding:9px 11px; }
+  .note .btn { margin-left:6px; padding:3px 10px; font-size:11.5px; }
+  .hint { font-size:11.5px; color:#7a838b; line-height:1.4; margin-top:-4px; }
+  .fb { font-size:12px; line-height:1.45; border-radius:8px; padding:8px 10px; background:#f4f6f8; color:#4b535b; min-height:34px; }
+  .fb.good { background:#e6f4ea; color:#1f6b35; }
+  .fb.bad { background:#fdecea; color:#9a2b1f; }
+  .pane[hidden] { display:none; }
+  .pane { display:flex; flex-direction:column; gap:12px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } .grid2 { grid-template-columns:1fr; } .grid2 > div { padding:0 !important; border-left:0 !important; } .wrap { padding:8px; } .modal-backdrop { padding:10px; } }
+  .hdr-actions { display:flex; align-items:center; gap:8px; }
+  .menuwrap { position:relative; }
+  .menu-toggle { font-size:15px; line-height:1; padding:7px 11px; }
+  .menu { position:absolute; top:calc(100% + 6px); right:0; z-index:60; background:#1b2836; border:1px solid rgba(255,255,255,0.14); border-radius:11px; padding:6px; min-width:196px; box-shadow:0 14px 34px rgba(0,0,0,0.45); display:flex; flex-direction:column; gap:2px; }
+  .menu a, .menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font:600 12.5px 'Source Sans 3',sans-serif; color:#dfe8f0; background:none; border:0; border-radius:7px; padding:8px 10px; cursor:pointer; text-decoration:none; }
+  .menu a:hover, .menu button:hover { background:rgba(255,255,255,0.08); }
+  .menu[hidden] { display:none; }
+  .menu .ico { width:18px; text-align:center; flex:none; }
+  .bugmodal .field { width:100%; box-sizing:border-box; font:400 13px 'Source Sans 3',sans-serif; color:#eef2f6; background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:9px 11px; outline:none; margin-bottom:9px; }
+  .bugmodal textarea.field { resize:vertical; line-height:1.5; }
+  .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #c23b55; background:#c23b55; color:#fff; cursor:pointer; }
+  .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
+  .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Atomic Spectra <span class="sub">— every element signs its light with its own lines</span></span>
+      </div>
+      <div class="hdr-actions">
+        <button class="headbtn" id="randomBtn">&#127922; Random problem</button>
+        <div class="menuwrap">
+          <button class="headbtn menu-toggle" id="menuBtn" title="Menu" aria-haspopup="true">&#9776;</button>
+          <div class="menu" id="menu" hidden>
+            <a href="../" target="_blank" rel="noopener"><span class="ico">&#8592;</span>All sims</a>
+            <button id="mInfo"><span class="ico">&#9432;</span>Info</button>
+            <button id="mExample"><span class="ico">&#9998;</span>Worked example</button>
+            <button id="mBug"><span class="ico">&#128030;</span>Submit bug</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="scene" aria-label="Simulation view"></canvas>
+        <canvas id="strip" aria-label="Spectrum"></canvas>
+        <div class="note" id="note"></div>
+      </div>
+      <div class="ctlCol">
+        <div class="chips c3" id="modeChips" role="tablist">
+          <button data-mode="bohr" class="on">Hydrogen atom</button>
+          <button data-mode="kirch">Kirchhoff&rsquo;s laws</button>
+          <button data-mode="mystery">Identify a gas</button>
+        </div>
+
+        <!-- Bohr atom -->
+        <div class="pane" id="paneBohr">
+          <div class="section-label">Move the electron to level n</div>
+          <div class="chips c7" id="levelChips">
+            <button data-n="1">1</button><button data-n="2" class="on">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button><button data-n="6">6</button><button data-n="0" title="ionize (n = ∞)">&infin;</button>
+          </div>
+          <div class="hint">Or click a level on the diagram. Down = emit a photon; up = absorb one.</div>
+          <div class="section-label">Shine one photon at the atom</div>
+          <div class="slider-row">
+            <div class="lbl"><span>photon wavelength &lambda;</span><span class="val" id="pVal">500.0 nm</span></div>
+            <input type="range" id="pSlider" min="0" max="4000" step="1" value="0" aria-label="photon wavelength">
+          </div>
+          <div class="btnrow"><button class="btn" id="pDown" title="shorter wavelength">&#9664; 0.1 nm</button><button class="btn primary" id="fireBtn">Fire photon</button><button class="btn" id="pUp" title="longer wavelength">0.1 nm &#9654;</button></div>
+          <div class="section-label">Record a whole series</div>
+          <div class="chips">
+            <button data-series="1">Lyman</button><button data-series="2">Balmer</button><button data-series="3">Paschen</button><button id="clearBtn">Clear</button>
+          </div>
+        </div>
+
+        <!-- Kirchhoff -->
+        <div class="pane" id="paneKirch" hidden>
+          <div class="section-label">Gas in the cloud</div>
+          <select id="gasSel" aria-label="gas element">
+            <option value="H">Hydrogen (H)</option><option value="He">Helium (He)</option><option value="Na">Sodium (Na)</option><option value="Hg">Mercury (Hg)</option><option value="Ne">Neon (Ne)</option>
+          </select>
+          <div class="slider-row">
+            <div class="lbl"><span>source temperature</span><span class="val" id="tsVal">9000 K</span></div>
+            <input type="range" id="tsSlider" min="3000" max="20000" step="100" value="9000">
+          </div>
+          <div class="slider-row">
+            <div class="lbl"><span>gas temperature</span><span class="val" id="tgVal">5000 K</span></div>
+            <input type="range" id="tgSlider" min="3000" max="20000" step="100" value="5000">
+          </div>
+          <label class="checkrow"><input type="checkbox" id="srcChk" checked> hot source switched on</label>
+        </div>
+
+        <!-- Mystery -->
+        <div class="pane" id="paneMystery" hidden>
+          <div class="section-label">Which gases made the mystery spectrum?</div>
+          <div class="chips c5" id="guessChips">
+            <button data-el="H">H</button><button data-el="He">He</button><button data-el="Na">Na</button><button data-el="Hg">Hg</button><button data-el="Ne">Ne</button>
+          </div>
+          <div class="hint">Pick one or two. Each pick lays that element&rsquo;s lines over the mystery as tick marks.</div>
+          <div class="btnrow"><button class="btn primary" id="checkBtn">Check</button><button class="btn" id="newMysBtn">New mystery</button></div>
+          <div class="fb" id="mysFb">Match every line in the mystery. A gas you pick must account for lines that are there, and no lines that are missing.</div>
+        </div>
+
+        <div class="section-label" style="margin-top:2px;">Results</div>
+        <div class="results" id="results"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Bohr model of hydrogen (levels up to n = 6). Wavelengths above 200 nm are in air, as usually tabulated. Line strengths are illustrative.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Atomic Spectra <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>An electron in an atom can only have certain energies, its <b>energy levels</b>. When it drops to a lower level the atom emits one photon carrying exactly the energy difference; to jump up it must absorb a photon with exactly that energy. So each element emits and absorbs only its own set of wavelengths: a fingerprint. Hydrogen&rsquo;s drops to n = 2 (the <b>Balmer series</b>) give the visible red, blue-green, blue and violet lines; drops to n = 1 (Lyman) are ultraviolet; drops to n = 3 (Paschen) are infrared.</p>
+        <p><b>Kirchhoff&rsquo;s laws.</b> (1) A hot, dense object glows with a <b>continuous</b> spectrum. (2) A hot, thin gas seen against a dark background gives bright <b>emission lines</b>. (3) A cooler, thin gas in front of a hotter continuous source gives dark <b>absorption lines</b> at the same wavelengths. Star spectra are type 3.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p><b>Hydrogen atom:</b> click a level (or a number chip) to move the electron; the photon it gives off or needs appears with its wavelength, and the line is recorded on the strip (top row emitted, bottom row absorbed). Fire single photons with the slider: only the right wavelengths are absorbed, and a photon with more than enough energy ionizes the atom.</p>
+        <p><b>Kirchhoff&rsquo;s laws:</b> three spectroscopes look at the same set-up; change the gas and the two temperatures. Make the gas hotter than the source to flip view 2 to bright lines. <b>Identify a gas:</b> match the mystery spectrum to the reference fingerprints.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">hydrogen&rsquo;s energy levels (Bohr model), n = 1, 2, 3, &hellip;</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">photon energy and wavelength: shorter wavelength, more energy.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">the Rydberg formula for a jump between levels; R<sub>H</sub> = 1.097 &times; 10<sup>7</sup> m<sup>&minus;1</sup>.</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/5-5-formation-of-spectral-lines" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em>: 5.5 Formation of Spectral Lines</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/5-3-spectroscopy-in-astronomy" target="_blank" rel="noopener" style="color:#8fc7ff;">5.3 Spectroscopy in Astronomy</a> (Kirchhoff&rsquo;s laws)</li>
+        </ul>
+        <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/light-crash-course-astronomy-24/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #24: Light</a></li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example: the blue-green line of hydrogen <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:12px;line-height:1.5;color:#d6dde4;margin-bottom:12px;">An electron in a hydrogen atom drops from n = 4 to n = 2. What is the energy and the wavelength of the photon, and can you see it? Where would a cool hydrogen cloud in front of a hot star show this line?</p>
+    <div class="step"><div class="h">1 &middot; The two energy levels</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; The photon carries the difference</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Convert energy to wavelength</div><span class="formula" id="ex3"></span><div style="font-size:11.5px;color:#d6dde4;margin-top:4px;">486 nm is blue-green visible light: the H&beta; line of the Balmer series. (With more digits, 486.1 nm in air.)</div></div>
+    <div class="step"><div class="h">4 &middot; Absorption</div><div style="font-size:11.5px;color:#d6dde4;">An electron sitting in n = 2 can jump to n = 4 only by absorbing a photon of exactly 2.55 eV, so cool hydrogen in front of a hot star removes light at the <i>same</i> 486 nm: a dark line where the emission spectrum has a bright one. Try it: put the electron on n = 2, set the photon to 486.1 nm, and fire.</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop bugmodal" id="bugModal">
+  <div class="modal" style="max-width:460px;">
+    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
+    <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
+    <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="sendbtn" id="bugSend">Send report</button>
+      <span class="result" id="bugResult"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const HC = 1239.84198;       // eV·nm
+const RY = 13.598434;        // eV, hydrogen ionization energy (reduced-mass corrected)
+const N_AIR = 1.000277;      // refractive index of air (visible / near IR)
+const LMIN = 80, LMAX = 8000; // Bohr strip range, nm (log)
+const SANS = '"Source Sans 3",system-ui,sans-serif', MONO = '"JetBrains Mono",monospace', SERIF = '"Source Serif 4",serif';
+
+// ---------- physics helpers ----------
+const En = n => n === 0 ? 0 : -RY / (n * n);           // n = 0 stands for n = ∞ (ionized)
+const lamVac = (a, b) => HC / Math.abs(En(a) - En(b));
+const toAir = l => l > 200 ? l / N_AIR : l;
+const toVac = l => l > 200 ? l * N_AIR : l;
+const lamObs = (a, b) => toAir(lamVac(a, b));
+const nStr = n => n === 0 ? '∞' : String(n);
+const SERIES = ['', 'Lyman', 'Balmer', 'Paschen', 'Brackett', 'Pfund'];
+const GREEK = ['α', 'β', 'γ', 'δ', 'ε'];
+const PREFIX = ['', 'Ly', 'H', 'Pa', 'Br', 'Pf'];
+function lineName(hi, lo) {
+  if (hi === 0) return SERIES[lo] + ' limit';
+  return PREFIX[lo] + GREEK[hi - lo - 1];
+}
+function band(l) {
+  if (l < 380) return 'ultraviolet';
+  if (l > 750) return 'infrared';
+  return l < 440 ? 'violet' : l < 475 ? 'blue' : l < 500 ? 'blue-green' : l < 565 ? 'green' : l < 590 ? 'yellow' : l < 625 ? 'orange' : 'red';
+}
+const fmtL = l => l >= 1000 ? l.toFixed(0) + ' nm' : l.toFixed(1) + ' nm';
+
+// wavelength (nm, air) → [r,g,b] 0..1, or null outside 380–750
+function wlRGB(l) {
+  if (l < 380 || l > 750) return null;
+  let r, g, b;
+  if (l < 440) { r = (440 - l) / 60; g = 0; b = 1; }
+  else if (l < 490) { r = 0; g = (l - 440) / 50; b = 1; }
+  else if (l < 510) { r = 0; g = 1; b = (510 - l) / 20; }
+  else if (l < 580) { r = (l - 510) / 70; g = 1; b = 0; }
+  else if (l < 645) { r = 1; g = (645 - l) / 65; b = 0; }
+  else { r = 1; g = 0; b = 0; }
+  let f = 1;
+  if (l < 420) f = 0.3 + 0.7 * (l - 380) / 40; else if (l > 700) f = 0.3 + 0.7 * (750 - l) / 50;
+  return [r * f, g * f, b * f];
+}
+function photonCSS(l, a) {
+  const c = wlRGB(l);
+  if (!c) return l < 380 ? 'rgba(200,180,255,' + a + ')' : 'rgba(225,150,135,' + a + ')';
+  const m = Math.max(c[0], c[1], c[2]) || 1;               // full brightness for a single photon
+  return 'rgba(' + Math.round(255 * Math.min(1, c[0] / m * 0.92 + 0.08)) + ',' + Math.round(255 * Math.min(1, c[1] / m * 0.92 + 0.08)) + ',' + Math.round(255 * Math.min(1, c[2] / m * 0.92 + 0.08)) + ',' + a + ')';
+}
+function planck(l, T) { const x = 1.4388e7 / (l * T); return 1 / (Math.pow(l, 5) * (Math.exp(Math.min(x, 700)) - 1)); }
+function bbColor(temp) {
+  let t = temp / 100, r, g, b;
+  if (t <= 66) { r = 255; g = 99.47 * Math.log(t) - 161.12; } else { r = 329.7 * Math.pow(t - 60, -0.1332); g = 288.12 * Math.pow(t - 60, -0.0755); }
+  if (t <= 66) b = (t <= 19) ? 0 : 138.52 * Math.log(t - 10) - 305.04; else b = 255;
+  const cl = v => Math.max(0, Math.min(255, Math.round(v)));
+  return [cl(r), cl(g), cl(b)];
+}
+
+// Visible lines (air, nm) with illustrative relative strengths
+const ELEMENTS = {
+  H:  { name: 'Hydrogen', tint: [255, 110, 140], lines: [[656.28, 1], [486.13, 0.45], [434.05, 0.25], [410.17, 0.15], [397.01, 0.09]] },
+  He: { name: 'Helium', tint: [255, 214, 130], lines: [[388.86, 0.35], [447.15, 0.4], [471.31, 0.12], [492.19, 0.18], [501.57, 0.45], [587.56, 1], [667.82, 0.4], [706.52, 0.35]] },
+  Na: { name: 'Sodium', tint: [255, 180, 80], lines: [[588.995, 1], [589.592, 0.7], [568.82, 0.06], [568.27, 0.04], [615.42, 0.05], [616.07, 0.06], [498.28, 0.03]] },
+  Hg: { name: 'Mercury', tint: [160, 185, 255], lines: [[404.66, 0.45], [407.78, 0.12], [435.83, 0.9], [491.60, 0.05], [546.07, 1], [576.96, 0.45], [579.07, 0.45]] },
+  Ne: { name: 'Neon', tint: [255, 125, 80], lines: [[540.06, 0.25], [585.25, 0.9], [588.19, 0.35], [594.48, 0.5], [597.55, 0.2], [603.00, 0.3], [607.43, 0.4], [609.62, 0.5], [614.31, 0.6], [616.36, 0.3], [621.73, 0.3], [626.65, 0.45], [630.48, 0.3], [633.44, 0.55], [638.30, 0.6], [640.22, 1], [650.65, 0.6], [659.90, 0.35], [692.95, 0.4], [703.24, 0.6]] },
+};
+const EL_KEYS = ['H', 'He', 'Na', 'Hg', 'Ne'];
+function tau(l, keys, wNm) {
+  let t = 0;
+  for (const k of keys) for (const [l0, s] of ELEMENTS[k].lines) { const d = (l - l0) / wNm; if (d * d < 30) t += s * Math.exp(-0.5 * d * d); }
+  return 2.6 * t;
+}
+
+// ---------- canvas setup (draw in CSS px, crisp on retina) ----------
+function prep(c, h) {
+  const dpr = window.devicePixelRatio || 1, W = c.clientWidth || 520, H = Math.round(h(W));
+  if (c._w !== W || c._h !== H || c._d !== dpr) { c.style.height = H + 'px'; c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c._w = W; c._h = H; c._d = dpr; }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  return { ctx, W, H };
+}
+function bg(ctx, W, H) {
+  const g = ctx.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, Math.max(W, H) * 0.75);
+  g.addColorStop(0, '#141f2c'); g.addColorStop(1, '#0a1119'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function haloText(ctx, s, x, y, col, font, align, base) {
+  ctx.font = font; ctx.textAlign = align || 'left'; ctx.textBaseline = base || 'alphabetic';
+  ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(8,12,18,0.9)'; ctx.lineJoin = 'round'; ctx.strokeText(s, x, y);
+  ctx.fillStyle = col; ctx.fillText(s, x, y);
+}
+function plate(ctx, x, y, w, h) { ctx.fillStyle = 'rgba(10,17,25,0.86)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); }
+function arrowHead(ctx, x, y, ang, s) {
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * Math.cos(ang - 0.45), y - s * Math.sin(ang - 0.45));
+  ctx.lineTo(x - s * Math.cos(ang + 0.45), y - s * Math.sin(ang + 0.45)); ctx.closePath(); ctx.fill();
+}
+
+// ---------- state ----------
+const S = {
+  mode: 'bohr',
+  n: 2,                  // current level (0 = ionized)
+  rec: [],               // recorded lines {hi, lo, l, type:'em'|'abs'}
+  last: null,            // last event {kind, hi, lo, l, ke}
+  anim: null,
+  hidden: null,          // random-problem {hi, lo} with answer hidden
+  mystery: null, guess: new Set(), checked: null,
+};
+let geo = null;          // Bohr diagram geometry for hit testing
+
+// ---------- Bohr mode actions ----------
+function record(hi, lo, type) {
+  const l = hi === 0 ? toAir(HC / RY * lo * lo) : lamObs(hi, lo);
+  if (!S.rec.some(r => r.hi === hi && r.lo === lo && r.type === type)) S.rec.push({ hi, lo, l, type });
+  return l;
+}
+function jumpTo(m) {
+  endAnim();
+  if (m === S.n) return;
+  S.hidden = null;
+  const from = S.n;
+  const down = (m !== 0) && (from === 0 || m < from);
+  const hi = down ? from : m, lo = down ? m : from;
+  const l = record(hi, lo, down ? 'em' : 'abs');
+  S.last = { kind: down ? 'em' : 'abs', hi, lo, l, from, to: m };
+  startAnim(S.last);
+  S.n = m;
+  render();
+}
+function photonSliderNm() { const u = +$('pSlider').value / 4000; return LMIN * Math.pow(1000 / LMIN, u) * 1; }
+let photonL = 500;
+function setPhoton(l) {
+  photonL = Math.max(90, Math.min(2000, l));
+  $('pSlider').value = Math.round(4000 * Math.log(photonL / 90) / Math.log(2000 / 90));
+  $('pVal').textContent = photonL.toFixed(1) + ' nm';
+}
+function fire() {
+  endAnim();
+  S.hidden = null;
+  const l = photonL, E = HC / toVac(l);
+  const from = S.n;
+  let ev = { kind: 'pass', l, from, to: from, E };
+  if (from !== 0) {
+    for (let m = from + 1; m <= 6; m++) {
+      const lm = lamObs(m, from);
+      if (Math.abs(lm - l) / lm < 0.0006) { ev = { kind: 'abs', hi: m, lo: from, l: lm, from, to: m, E }; break; }
+    }
+    if (ev.kind === 'pass' && E >= -En(from)) ev = { kind: 'ion', hi: 0, lo: from, l, from, to: 0, E, ke: E + En(from) };
+  }
+  if (ev.kind === 'abs') { record(ev.hi, ev.lo, 'abs'); S.n = ev.to; }
+  if (ev.kind === 'ion') { S.n = 0; }
+  S.last = ev;
+  startAnim(ev);
+  render();
+}
+function recordSeries(lo) {
+  endAnim();
+  S.hidden = null;
+  for (let hi = lo + 1; hi <= 6; hi++) record(hi, lo, 'em');
+  S.last = { kind: 'series', lo };
+  render();
+}
+function startAnim(ev) {
+  const A = S.anim = { ev, t0: performance.now(), dur: ev.kind === 'pass' ? 1500 : 1300 };
+  requestAnimationFrame(tick);
+  setTimeout(() => { if (S.anim === A) { S.anim = null; drawScene(); } }, A.dur + 60);   // in case rAF is throttled
+}
+function endAnim() { if (S.anim) { S.anim = null; } }
+function tick() {
+  if (!S.anim) return;
+  const p = (performance.now() - S.anim.t0) / S.anim.dur;
+  if (p >= 1) { S.anim = null; drawScene(); return; }
+  drawScene();
+  requestAnimationFrame(tick);
+}
+
+// ---------- Bohr drawing ----------
+function drawBohr(ctx, W, H) {
+  bg(ctx, W, H);
+  const narrow = W < 480;
+  const xa = narrow ? 40 : 58, xb = narrow ? Math.round(W * 0.34) : Math.round(W * 0.39);
+  const yTop = 46, yBot = H - 26;
+  const Y = n => n === 0 ? yTop : yTop + (yBot - yTop) / n;   // y ∝ 1/n (√|E|): compresses the crowded top
+  const levels = [1, 2, 3, 4, 5, 6, 0];
+  const hidden = S.hidden;
+  // label slots (push apart from the bottom up)
+  const lab = levels.map(n => ({ n, y: Y(n) })).sort((a, b) => b.y - a.y);
+  for (let i = 1; i < lab.length; i++) if (lab[i].y > lab[i - 1].y - 14) lab[i].y = lab[i - 1].y - 14;
+  const lx = xb + 22;
+  ctx.font = '600 12px ' + MONO;
+  const labW = ctx.measureText('n = ∞   0.00 eV').width;
+  const labelsEnd = lx + labW;
+  geo = { xa, xb, labelsEnd, Y, levels };
+
+  // energy axis
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(xa - 18, yBot + 4); ctx.lineTo(xa - 18, yTop - 14); ctx.stroke();
+  arrowHead(ctx, xa - 18, yTop - 18, -Math.PI / 2, 7);
+  ctx.save(); ctx.translate(xa - 26, (yTop + yBot) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.font = '12px ' + SANS; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textAlign = 'center'; ctx.fillText('energy (not to scale)', 0, 0); ctx.restore();
+
+  // levels
+  for (const n of levels) {
+    const y = Y(n), cur = n === S.n;
+    ctx.strokeStyle = cur ? '#ff8aa0' : (n === 0 ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.6)');
+    ctx.lineWidth = cur ? 2.4 : 1.4;
+    if (n === 0) ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(xa, y); ctx.lineTo(xb, y); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const L of lab) {
+    const y0 = Y(L.n), cur = L.n === S.n;
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xb + 3, y0); ctx.lineTo(lx - 4, L.y); ctx.stroke();
+    const e = En(L.n);
+    const txt = 'n = ' + nStr(L.n) + '  ' + (e === 0 ? ' 0.00' : '−' + (-e).toFixed(2)) + ' eV';
+    ctx.font = (cur ? '700 ' : '600 ') + '12px ' + MONO; ctx.fillStyle = cur ? '#ff9db0' : 'rgba(235,240,245,0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(txt, lx, L.y);
+  }
+  ctx.textBaseline = 'alphabetic';
+  haloText(ctx, narrow ? 'ionized' : 'ionized: electron free', xa + 4, yTop - 6, 'rgba(255,255,255,0.65)', '12px ' + SANS);
+
+  // recorded transition arrows (series grouped left → right)
+  const keys = [];
+  for (const r of S.rec) { const k = r.lo * 10 + (r.hi === 0 ? 9 : r.hi); if (!keys.includes(k)) keys.push(k); }
+  keys.sort((a, b) => a - b);
+  const span = xb - xa - 46, step = keys.length > 1 ? Math.min(16, span / (keys.length - 1)) : 0;
+  const ax = k => xa + 18 + keys.indexOf(k) * step;
+  const lastKey = S.last && S.last.hi !== undefined && S.last.kind !== 'pass' ? S.last.lo * 10 + (S.last.hi === 0 ? 9 : S.last.hi) : -1;
+  for (const k of keys) {
+    const lo = Math.floor(k / 10), hi0 = k % 10, hi = hi0 === 9 ? 0 : hi0;
+    const isLast = k === lastKey;
+    const rs = S.rec.filter(r => r.lo === lo && r.hi === hi);
+    const l = rs[0].l;
+    const em = rs.some(r => r.type === 'em'), ab = rs.some(r => r.type === 'abs');
+    const showCol = !(hidden && isLast);
+    const col = showCol ? photonCSS(l, isLast ? 1 : 0.55) : 'rgba(200,200,200,0.8)';
+    const x = ax(k), y1 = Y(hi), y2 = Y(lo);
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = isLast ? 2.6 : 1.4;
+    const dir = (isLast && S.last.kind === 'abs') || (!em && ab) ? -1 : 1;   // down for emission, up for absorption
+    const ys = dir > 0 ? y1 : y2, ye = dir > 0 ? y2 : y1;
+    ctx.beginPath(); ctx.moveTo(x, ys); ctx.lineTo(x, ye - dir * 6); ctx.stroke();
+    arrowHead(ctx, x, ye, dir > 0 ? Math.PI / 2 : -Math.PI / 2, isLast ? 8 : 6);
+  }
+
+  // electron on its level
+  const ex = xb - 12, ey = Y(S.n);
+  if (!S.anim || S.anim.ev.kind === 'pass') drawElectron(ctx, ex, S.n === 0 ? yTop - 22 : ey, 5);
+
+  // head read-out
+  const head = S.n === 0 ? 'ionized: the electron has left the atom' : 'electron in n = ' + S.n + ',  E = −' + (-En(S.n)).toFixed(2) + ' eV';
+  haloText(ctx, head, 12, 20, 'rgba(255,255,255,0.95)', '700 13px ' + SANS);
+
+  // ---- the atom picture ----
+  let left = labelsEnd + 10, cx = (left + W) / 2, cy = H / 2 + 6;
+  let rMax = Math.min((W - left) / 2 - 8, H / 2 - 30);
+  if (narrow) {   // phone: the atom goes in the empty space between n = 2 and n = 1, right of the level lines
+    left = xb + 14; const top = Y(2) + 14, bot = Y(1) - 22;
+    rMax = Math.min((W - left) / 2 - 6, (bot - top) / 2);
+    cx = W - 8 - rMax; cy = (top + bot) / 2;
+  }
+  const r1 = Math.max(8, rMax * 0.15), dr = (rMax - r1) / 5;
+  const R = n => r1 + (n - 1) * dr;
+  geo.atom = { cx, cy, R };
+  for (let n = 1; n <= 6; n++) {
+    ctx.strokeStyle = n === S.n ? 'rgba(255,138,160,0.85)' : 'rgba(255,255,255,0.2)'; ctx.lineWidth = n === S.n ? 1.8 : 1;
+    ctx.beginPath(); ctx.arc(cx, cy, R(n), 0, 2 * Math.PI); ctx.stroke();
+  }
+  // orbit numbers sit on their own orbit, down and to the left (clear of the electron at upper right)
+  for (let n = 1; n <= 6; n++) {
+    if (dr < 13 && n !== S.n) continue;
+    const a = 2.45;
+    haloText(ctx, String(n), cx + Math.cos(a) * R(n), cy + Math.sin(a) * R(n) + 4, n === S.n ? '#ff9db0' : 'rgba(255,255,255,0.7)', '600 11px ' + MONO, 'center');
+  }
+  // nucleus
+  const ng = ctx.createRadialGradient(cx - 2, cy - 2, 0.5, cx, cy, 6);
+  ng.addColorStop(0, '#ffd0c0'); ng.addColorStop(0.5, '#e0604a'); ng.addColorStop(1, '#7a2418');
+  ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 2 * Math.PI); ctx.fill();
+  haloText(ctx, narrow ? 'not to scale' : 'proton + orbits, not to scale (really r ∝ n²)', narrow ? cx : cx, narrow ? cy + rMax + 14 : H - 9, 'rgba(255,255,255,0.65)', '11px ' + SANS, 'center');
+
+  // electron + photon on the atom picture
+  const ang = -0.75;
+  const ePos = (n, extra) => n === 0 ? [cx + Math.cos(ang) * (rMax + 14 + (extra || 0)), cy + Math.sin(ang) * (rMax + 14 + (extra || 0))] : [cx + Math.cos(ang) * R(n), cy + Math.sin(ang) * R(n)];
+  const A = S.anim;
+  if (!A) {
+    const p = ePos(S.n); drawElectron(ctx, p[0], p[1], 4.5);
+    if (S.n === 0) haloText(ctx, 'free e⁻', p[0] - 6, p[1] - 9, 'rgba(255,255,255,0.75)', '11px ' + SANS, 'right');
+  } else {
+    const ev = A.ev, p = Math.min(1, (performance.now() - A.t0) / A.dur);
+    const hideCol = !!hidden;
+    // electron movement
+    let epos;
+    if (ev.kind === 'em') { const t = Math.min(1, p / 0.25); const a0 = ePos(ev.from), a1 = ePos(ev.to); epos = [a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t]; }
+    else if (ev.kind === 'abs' || ev.kind === 'ion') { const t = Math.max(0, (p - 0.7) / 0.3); const a0 = ePos(ev.from), a1 = ePos(ev.to, ev.kind === 'ion' ? 40 * t : 0); epos = [a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t]; }
+    else epos = ePos(ev.from);
+    drawElectron(ctx, epos[0], epos[1], 4.5);
+    // also move the diagram electron
+    const yd0 = ev.from === 0 ? yTop - 22 : Y(ev.from), yd1 = ev.to === 0 ? yTop - 22 : Y(ev.to);
+    const td = ev.kind === 'em' ? Math.min(1, p / 0.25) : ev.kind === 'pass' ? 0 : Math.max(0, (p - 0.7) / 0.3);
+    if (ev.kind !== 'pass') drawElectron(ctx, ex, yd0 + (yd1 - yd0) * td, 5);
+    // photon path
+    const dirx = Math.cos(ang), diry = Math.sin(ang);
+    const start = ePos(ev.from);
+    let P0, P1;
+    if (ev.kind === 'em') { P0 = start; P1 = [start[0] + dirx * 260, start[1] + diry * 260]; }
+    else if (ev.kind === 'pass') { P0 = [W + 30, cy - 10]; P1 = [left - 30, cy - 10]; }
+    else { P0 = [start[0] + dirx * 220, start[1] + diry * 220]; P1 = start; }
+    const pp = ev.kind === 'em' ? Math.max(0, (p - 0.1) / 0.9) : ev.kind === 'pass' ? p : Math.min(1, p / 0.7);
+    if (!((ev.kind === 'abs' || ev.kind === 'ion') && p > 0.72)) {
+      const hx = P0[0] + (P1[0] - P0[0]) * pp, hy = P0[1] + (P1[1] - P0[1]) * pp;
+      drawPhoton(ctx, hx, hy, Math.atan2(P1[1] - P0[1], P1[0] - P0[0]), ev.l, hideCol, left);
+    }
+  }
+}
+function drawElectron(ctx, x, y, r) {
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, 0.5, x, y, r);
+  g.addColorStop(0, '#e8f6ff'); g.addColorStop(0.55, '#5bb4ff'); g.addColorStop(1, '#1a4f8a');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+}
+function drawPhoton(ctx, hx, hy, ang, l, hide, clipLeft) {
+  const wl = 5 + 16 * Math.log(l / 80) / Math.log(100);      // drawn wavelength grows with λ
+  const len = 4.2 * wl, amp = 5;
+  const col = hide ? 'rgba(220,220,220,0.95)' : photonCSS(l, 1);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(clipLeft, 0, 4000, 4000); ctx.clip();
+  ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.shadowColor = col; ctx.shadowBlur = 8;
+  ctx.beginPath();
+  for (let s = 0; s <= len; s += 1) {
+    const env = Math.sin(Math.PI * s / len);
+    const off = amp * env * Math.sin(2 * Math.PI * s / wl);
+    const x = hx - Math.cos(ang) * s - Math.sin(ang) * off, y = hy - Math.sin(ang) * s + Math.cos(ang) * off;
+    s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke(); ctx.restore();
+  const tag = hide ? '? nm' : fmtL(l) + (l < 380 ? ' (UV, invisible)' : l > 750 ? ' (IR, invisible)' : '');
+  ctx.font = '600 12px ' + MONO;
+  const tw = ctx.measureText(tag).width;
+  let tx = hx - Math.cos(ang) * len / 2 + 10, ty = hy - Math.sin(ang) * len / 2 - 14;
+  const Wc = $('scene')._w;
+  tx = Math.max(clipLeft + 4, Math.min(Wc - tw - 6, tx)); ty = Math.max(30, ty);
+  haloText(ctx, tag, tx, ty, hide ? '#ddd' : photonCSS(l, 1), '600 12px ' + MONO);
+}
+
+// ---------- Bohr spectrum strip ----------
+function drawBohrStrip() {
+  const { ctx, W, H } = prep($('strip'), () => 104);
+  ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  const x0 = W < 480 ? 64 : 72, x1 = W - 10;
+  const X = l => x0 + (x1 - x0) * Math.log(l / LMIN) / Math.log(LMAX / LMIN);
+  const r1 = 20, rh = 22, r2 = r1 + rh + 4;
+  // emission row: black; absorption row: continuum
+  ctx.fillStyle = '#020305'; ctx.fillRect(x0, r1, x1 - x0, rh);
+  for (let x = Math.floor(x0); x < x1; x++) {
+    const l = LMIN * Math.pow(LMAX / LMIN, (x - x0) / (x1 - x0));
+    const c = wlRGB(l);
+    ctx.fillStyle = c ? 'rgb(' + Math.round(255 * c[0]) + ',' + Math.round(255 * c[1]) + ',' + Math.round(255 * c[2]) + ')' : (l < 380 ? '#2c2840' : '#3a2a2a');
+    ctx.fillRect(x, r2, 1.2, rh);
+  }
+  ctx.font = '600 12px ' + SANS; ctx.fillStyle = 'rgba(235,240,245,0.85)'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('emitted', x0 - 7, r1 + rh / 2); ctx.fillText('absorbed', x0 - 7, r2 + rh / 2);
+  // lines
+  const lastK = S.last && S.last.hi !== undefined && S.last.kind !== 'pass' ? S.last : null;
+  for (const r of S.rec) {
+    const isHidden = S.hidden && S.hidden.hi === r.hi && S.hidden.lo === r.lo;
+    if (isHidden) continue;
+    const x = X(r.l);
+    if (r.type === 'em') {
+      const c = wlRGB(r.l);
+      ctx.fillStyle = c ? photonCSS(r.l, 1) : 'rgba(230,230,235,0.75)';
+      ctx.fillRect(x - 1, r1, 2, rh);
+    } else { ctx.fillStyle = '#000'; ctx.fillRect(x - 1, r2, 2, rh); }
+  }
+  // tag of the most recent line
+  ctx.textBaseline = 'alphabetic';
+  if (lastK && !(S.hidden)) {
+    const tag = lineName(lastK.hi, lastK.lo) + '   ' + fmtL(lastK.l);
+    ctx.font = '600 12px ' + SANS; const tw = ctx.measureText(tag).width;
+    const x = X(lastK.l), tx = Math.max(x0, Math.min(x1 - tw, x - tw / 2));
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, 15); ctx.lineTo(x, r1); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(tag, tx, 12);
+  } else if (S.last && S.last.kind === 'series') {
+    ctx.font = '600 12px ' + SANS; ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+    ctx.fillText(SERIES[S.last.lo] + ' series recorded (n ≤ 6 → n = ' + S.last.lo + ')', x0, 13);
+  } else if (!S.rec.length) {
+    ctx.font = '12px ' + SANS; ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.textAlign = 'left';
+    ctx.fillText('lines appear here as the atom emits or absorbs', x0, 13);
+  }
+  // axis
+  const ya = r2 + rh + 4;
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.stroke();
+  ctx.font = '11px ' + SANS; ctx.fillStyle = 'rgba(255,255,255,0.68)'; ctx.textAlign = 'center';
+  const ticks = W < 480 ? [100, 380, 750, 2000, 5000] : [100, 200, 380, 750, 1000, 2000, 5000];
+  for (const t of ticks) { const x = X(t); ctx.beginPath(); ctx.moveTo(x, ya); ctx.lineTo(x, ya + 4); ctx.stroke(); ctx.fillText(t === 5000 && W < 480 ? '5000 nm' : String(t), t === 5000 && W < 480 ? x - 12 : x, ya + 15); }
+  ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(200,185,255,0.8)';
+  ctx.fillText('← ultraviolet', x0, H - 4);
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillText('visible', (X(380) + X(750)) / 2, H - 4);
+  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(240,170,150,0.85)'; ctx.fillText('infrared →', x1, H - 4);
+  if (W >= 480) { ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillText('wavelength (nm, log scale)', (X(750) + x1) / 2 + 10, H - 4); }
+}
+
+// ---------- Kirchhoff ----------
+function kirchSpectra(Wn) {
+  const el = $('gasSel').value, Ts = +$('tsSlider').value, Tg = +$('tgSlider').value, on = $('srcChk').checked;
+  const N = Wn, w = Math.max(0.45, 0.9 * 370 / N);
+  const v1 = [], v2 = [], v3 = [];
+  for (let i = 0; i < N; i++) {
+    const l = 380 + 370 * (i + 0.5) / N;
+    const Ic = on ? planck(l, Ts) : 0, Bg = planck(l, Tg), t = tau(l, [el], w), e = Math.exp(-t);
+    v1.push(Ic); v2.push(Ic * e + Bg * (1 - e)); v3.push(Bg * (1 - e));
+  }
+  const nz = a => { const m = Math.max(...a); return m > 0 ? a.map(v => v / m) : a; };
+  return { v1: nz(v1), v2: nz(v2), v3: nz(v3), el, Ts, Tg, on };
+}
+function kirchTypes() {
+  const Ts = +$('tsSlider').value, Tg = +$('tgSlider').value, on = $('srcChk').checked;
+  const t1 = on ? 'continuous' : 'nothing (source off)';
+  let t2;
+  if (!on) t2 = 'emission lines';
+  else if (Math.abs(Tg - Ts) < 0.015 * Ts) t2 = 'continuous (lines vanish)';
+  else t2 = Tg < Ts ? 'absorption lines' : 'emission on a continuum';
+  return [t1, t2, 'emission lines'];
+}
+function drawSpecRow(ctx, x0, x1, y, h, vals, rgbFor) {
+  const n = vals.length, w = (x1 - x0) / n;
+  for (let i = 0; i < n; i++) {
+    const l = 380 + 370 * (i + 0.5) / n, c = wlRGB(l), v = Math.pow(Math.max(0, vals[i]), 0.6);
+    ctx.fillStyle = 'rgb(' + Math.round(255 * c[0] * v) + ',' + Math.round(255 * c[1] * v) + ',' + Math.round(255 * c[2] * v) + ')';
+    ctx.fillRect(x0 + i * w, y, w + 0.6, h);
+  }
+}
+function drawSpectroscope(ctx, x, y, ang, num, col) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  // tube pointing along -x (toward what it looks at)
+  const g = ctx.createLinearGradient(0, -6, 0, 6); g.addColorStop(0, '#9aa7b4'); g.addColorStop(0.45, '#e5ecf2'); g.addColorStop(1, '#55616d');
+  ctx.fillStyle = g; ctx.fillRect(-26, -5, 22, 10);
+  ctx.fillStyle = 'rgba(200,228,255,0.9)'; ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(6, 6); ctx.lineTo(1, -6); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function numBadge(ctx, x, y, num, col) {
+  ctx.fillStyle = 'rgba(10,17,25,0.9)'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x, y, 9, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = '700 12px ' + SANS; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(num, x, y + 0.5); ctx.textBaseline = 'alphabetic';
+}
+function drawKirch(ctx, W, H) {
+  bg(ctx, W, H);
+  const el = $('gasSel').value, E = ELEMENTS[el], Ts = +$('tsSlider').value, Tg = +$('tgSlider').value, on = $('srcChk').checked;
+  const types = kirchTypes();
+  const sx = W * 0.15, sy = H * 0.5, sr = Math.min(W * 0.075, H * 0.12);
+  const gx = W * 0.5, gy = H * 0.5, gr = Math.min(W * 0.11, H * 0.17);
+  const v1 = [W * 0.86, H * 0.13], v2 = [W * 0.88, H * 0.5], v3 = [W * 0.5, H * 0.85];
+  // sight lines (light travelling toward each spectroscope)
+  const sight = (a, b, col) => {
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.setLineDash([]);
+    const ang = Math.atan2(b[1] - a[1], b[0] - a[0]); ctx.fillStyle = col;
+    arrowHead(ctx, b[0] - Math.cos(ang) * 30, b[1] - Math.sin(ang) * 30, ang, 7);
+  };
+  const srcC = bbColor(Ts);
+  const srcCol = on ? 'rgba(' + srcC.join(',') + ',0.75)' : 'rgba(255,255,255,0.25)';
+  const gasCol = 'rgba(' + E.tint.join(',') + ',0.8)';
+  sight([sx + sr * 0.9, sy - sr * 0.4], v1, srcCol);
+  sight([sx + sr, sy], v2, srcCol);
+  sight([gx, H * 0.02], v3, 'rgba(255,255,255,0.0)');
+  // view 3 looks up through the cloud at dark sky: dashed line through the cloud to the top edge
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.setLineDash([3, 5]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(gx, gy - gr); ctx.lineTo(gx, 6); ctx.stroke(); ctx.setLineDash([]);
+  sight([gx, gy + gr * 0.6], v3, gasCol);
+  // hot source: shaded sphere
+  if (on) {
+    const glow = ctx.createRadialGradient(sx, sy, sr * 0.6, sx, sy, sr * 2.2);
+    glow.addColorStop(0, 'rgba(' + srcC.join(',') + ',0.35)'); glow.addColorStop(1, 'rgba(' + srcC.join(',') + ',0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, 2 * Math.PI); ctx.fill();
+  }
+  const sg = ctx.createRadialGradient(sx - sr * 0.3, sy - sr * 0.3, sr * 0.1, sx, sy, sr);
+  if (on) { sg.addColorStop(0, '#ffffff'); sg.addColorStop(0.45, 'rgb(' + srcC.join(',') + ')'); sg.addColorStop(1, 'rgb(' + srcC.map(v => Math.round(v * 0.55)).join(',') + ')'); }
+  else { sg.addColorStop(0, '#5a5f66'); sg.addColorStop(1, '#22262b'); }
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, 2 * Math.PI); ctx.fill();
+  // gas cloud: soft translucent blob
+  const puffs = [[0, 0, 1], [-0.45, -0.2, 0.7], [0.45, -0.15, 0.72], [0.2, 0.35, 0.7], [-0.3, 0.35, 0.65]];
+  for (const [dx, dy, s] of puffs) {
+    const px = gx + dx * gr, py = gy + dy * gr, pr = gr * s;
+    const cg = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    cg.addColorStop(0, 'rgba(' + E.tint.join(',') + ',0.30)'); cg.addColorStop(1, 'rgba(' + E.tint.join(',') + ',0)');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(px, py, pr, 0, 2 * Math.PI); ctx.fill();
+  }
+  haloText(ctx, el, gx, gy + 6, 'rgba(255,255,255,0.9)', 'italic 600 17px ' + SERIF, 'center');
+  // spectroscopes
+  const ang1 = Math.atan2(v1[1] - sy, v1[0] - sx), ang2 = 0, ang3 = Math.PI / 2;
+  drawSpectroscope(ctx, v1[0] + 22 * Math.cos(ang1), v1[1] + 22 * Math.sin(ang1), ang1, '1', srcCol);
+  drawSpectroscope(ctx, v2[0] + 22, v2[1], ang2, '2', srcCol);
+  drawSpectroscope(ctx, v3[0], v3[1] + 16, ang3, '3', gasCol);
+  // labels
+  const LF = '600 12px ' + SANS, CF = '12px ' + SANS;
+  haloText(ctx, on ? 'hot, dense source' : 'source off', sx, sy + sr + 18, 'rgba(255,255,255,0.92)', LF, 'center');
+  if (on) haloText(ctx, Ts + ' K', sx, sy + sr + 33, 'rgba(255,255,255,0.75)', '600 12px ' + MONO, 'center');
+  haloText(ctx, 'thin gas: ' + E.name.toLowerCase(), gx + 12, gy + gr + 8, 'rgba(255,255,255,0.92)', LF, 'left');
+  haloText(ctx, Tg + ' K', gx + 12, gy + gr + 23, 'rgba(255,255,255,0.75)', '600 12px ' + MONO, 'left');
+  haloText(ctx, 'dark sky', gx + 7, 18, 'rgba(255,255,255,0.65)', '12px ' + SANS, 'left');
+  const lab = (pos, num, txt, dx, dy, align) => {
+    numBadge(ctx, pos[0] + dx, pos[1] + dy, num, 'rgba(255,255,255,0.6)');
+    haloText(ctx, txt, pos[0] + dx + (align === 'right' ? -14 : 14), pos[1] + dy + 4, '#fff', LF, align);
+  };
+  lab(v1, '1', types[0], -10, 22, 'right');
+  lab(v2, '2', types[1], -6, -30, 'right');
+  lab(v3, '3', types[2], 22, -2, 'left');
+  haloText(ctx, 'spectroscopes → strips below', W - 10, H - 9, 'rgba(255,255,255,0.65)', CF, 'right');
+}
+function drawKirchStrip() {
+  const { ctx, W, H } = prep($('strip'), () => 112);
+  ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  const x0 = 34, x1 = W - 10, N = Math.max(100, Math.round(x1 - x0));
+  const sp = kirchSpectra(N), types = kirchTypes();
+  const rows = [sp.v1, sp.v2, sp.v3], rh = 22;
+  for (let i = 0; i < 3; i++) {
+    const y = 6 + i * (rh + 5);
+    ctx.fillStyle = '#000'; ctx.fillRect(x0, y, x1 - x0, rh);
+    drawSpecRow(ctx, x0, x1, y, rh, rows[i]);
+    numBadge(ctx, 16, y + rh / 2, String(i + 1), 'rgba(255,255,255,0.6)');
+    if (i === 0 && !sp.on) haloText(ctx, 'no light', (x0 + x1) / 2, y + rh / 2 + 4, 'rgba(255,255,255,0.65)', '12px ' + SANS, 'center');
+  }
+  const ya = 6 + 3 * (rh + 5) - 2;
+  const X = l => x0 + (x1 - x0) * (l - 380) / 370;
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.stroke();
+  ctx.font = '11px ' + SANS; ctx.fillStyle = 'rgba(255,255,255,0.68)'; ctx.textAlign = 'center';
+  const ticks = W < 480 ? [400, 500, 600, 700] : [400, 450, 500, 550, 600, 650, 700];
+  for (const t of ticks) { const x = X(t); ctx.beginPath(); ctx.moveTo(x, ya); ctx.lineTo(x, ya + 4); ctx.stroke(); ctx.fillText(String(t), x, ya + 15); }
+  ctx.textAlign = 'right'; ctx.fillText('nm', x1, ya + 15);
+}
+
+// ---------- Mystery ----------
+function newMystery() {
+  const k = EL_KEYS.slice().sort(() => Math.random() - 0.5);
+  const n = Math.random() < 0.55 ? 1 : 2;
+  S.mystery = { els: k.slice(0, n).sort(), type: Math.random() < 0.5 ? 'em' : 'abs' };
+  S.guess.clear(); S.checked = null;
+  document.querySelectorAll('#guessChips button').forEach(b => b.classList.remove('on'));
+  $('mysFb').className = 'fb';
+  $('mysFb').textContent = 'Match every line in the mystery. A gas you pick must account for lines that are there, and no lines that are missing.';
+}
+function drawMystery(ctx, W, H) {
+  bg(ctx, W, H);
+  const x0 = W < 480 ? 74 : 92, x1 = W - 12, N = Math.max(100, Math.round(x1 - x0));
+  const X = l => x0 + (x1 - x0) * (l - 380) / 370;
+  const w = Math.max(0.45, 0.9 * 370 / N);
+  const M = S.mystery;
+  // mystery row
+  const my = 40, mh = 40;
+  const vals = [];
+  for (let i = 0; i < N; i++) {
+    const l = 380 + 370 * (i + 0.5) / N, t = tau(l, M.els, w), e = Math.exp(-t);
+    vals.push(M.type === 'em' ? (1 - e) : planck(l, 7000) * e);
+  }
+  const mx = Math.max(...vals); for (let i = 0; i < N; i++) vals[i] /= mx;
+  ctx.fillStyle = '#000'; ctx.fillRect(x0, my, x1 - x0, mh);
+  drawSpecRow(ctx, x0, x1, my, mh, vals);
+  haloText(ctx, 'Mystery', x0 - 8, my + mh / 2 + 4, '#fff', '700 13px ' + SANS, 'right');
+  haloText(ctx, M.type === 'em' ? 'a glowing gas cloud: emission lines' : 'light from a hot star, through a cool gas: absorption lines', x0, 18, 'rgba(255,255,255,0.85)', '600 12px ' + SANS, 'left');
+  // overlay ticks for guessed elements
+  for (const k of S.guess) {
+    const c = 'rgb(' + ELEMENTS[k].tint.join(',') + ')';
+    ctx.fillStyle = c;
+    for (const [l, s] of ELEMENTS[k].lines) { if (s < 0.1) continue; const x = X(l); ctx.fillRect(x - 1, my + mh + 2, 2, 8); ctx.fillRect(x - 1, my - 10, 2, 8); }
+  }
+  // reference rows
+  const top = my + mh + 22, gap = 6;
+  const rh = 36;
+  haloText(ctx, 'Reference emission spectra (lab)', x0, top - 6, 'rgba(255,255,255,0.7)', '12px ' + SANS, 'left');
+  EL_KEYS.forEach((k, i) => {
+    const y = top + 4 + i * (rh + gap);
+    const v = [];
+    for (let j = 0; j < N; j++) { const l = 380 + 370 * (j + 0.5) / N; v.push(1 - Math.exp(-tau(l, [k], w))); }
+    const m = Math.max(...v); for (let j = 0; j < N; j++) v[j] /= m;
+    ctx.fillStyle = '#000'; ctx.fillRect(x0, y, x1 - x0, rh);
+    drawSpecRow(ctx, x0, x1, y, rh, v);
+    const sel = S.guess.has(k);
+    if (sel) { ctx.strokeStyle = 'rgb(' + ELEMENTS[k].tint.join(',') + ')'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 - 1, y - 1, x1 - x0 + 2, rh + 2); }
+    haloText(ctx, (W < 480 ? k : ELEMENTS[k].name + ' ' + k), x0 - 8, y + rh / 2 + 4, sel ? '#fff' : 'rgba(235,240,245,0.8)', (sel ? '700 ' : '600 ') + '12px ' + SANS, 'right');
+  });
+  const ya = top + 4 + 5 * (rh + gap) - 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.stroke();
+  ctx.font = '11px ' + SANS; ctx.fillStyle = 'rgba(255,255,255,0.68)'; ctx.textAlign = 'center';
+  const ticks = W < 480 ? [400, 500, 600, 700] : [400, 450, 500, 550, 600, 650, 700];
+  for (const t of ticks) { const x = X(t); ctx.beginPath(); ctx.moveTo(x, ya); ctx.lineTo(x, ya + 4); ctx.stroke(); ctx.fillText(String(t), x, ya + 15); }
+  ctx.textAlign = 'right'; ctx.fillText('wavelength (nm)', x0 - 8, ya + 15);
+}
+function checkGuess() {
+  const g = [...S.guess].sort(), a = S.mystery.els;
+  const fb = $('mysFb');
+  if (!g.length) { fb.className = 'fb bad'; fb.textContent = 'Pick at least one element first.'; return; }
+  const right = g.filter(k => a.includes(k)), wrong = g.filter(k => !a.includes(k)), missed = a.filter(k => !g.includes(k));
+  if (!wrong.length && !missed.length) {
+    fb.className = 'fb good';
+    fb.textContent = 'Correct: ' + a.map(k => ELEMENTS[k].name).join(' + ') + '. Every line in the mystery is accounted for, with none left over.';
+    S.checked = true;
+  } else {
+    fb.className = 'fb bad';
+    let t = '';
+    if (right.length) t += 'Yes to ' + right.join(', ') + '. ';
+    if (wrong.length) t += wrong.join(', ') + ' would add lines the mystery does not have. ';
+    if (missed.length) t += 'Some mystery lines are still unmatched' + (missed.length > 1 ? ' (two gases are missing).' : '.');
+    fb.textContent = t.trim();
+    S.checked = false;
+  }
+  render();
+}
+
+// ---------- results + note ----------
+function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function renderResults() {
+  let h = '', note = '';
+  if (S.mode === 'bohr') {
+    const ev = S.last, hid = S.hidden;
+    if (hid) {
+      h = row('transition', 'n = ' + hid.hi + ' → ' + hid.lo) + row('photon energy', '? eV') + row('wavelength', '? nm') + row('series', '?') + row('visible?', '?');
+      note = 'Problem: an electron in hydrogen drops from n = ' + hid.hi + ' to n = ' + hid.lo + '. Find the photon&rsquo;s energy (eV) and wavelength (nm). Can the eye see it? <button class="btn" id="revealBtn">Reveal</button>';
+    } else if (!ev) {
+      h = row('transition', 'none yet') + row('photon energy', '—') + row('wavelength', '—') + row('series', '—') + row('band', '—');
+      note = 'The electron sits in n = 2. Click n = 3 to lift it (it must absorb a red photon), then click n = 2 again to drop it back and emit the same red H&alpha; line.';
+    } else if (ev.kind === 'series') {
+      const ls = []; for (let hi = ev.lo + 1; hi <= 6; hi++) ls.push(lamObs(hi, ev.lo));
+      h = row('series', SERIES[ev.lo] + ' (→ n = ' + ev.lo + ')') + row('lines recorded', ls.length) + row('longest λ', fmtL(ls[0])) + row('shortest λ (n = 6)', fmtL(ls[ls.length - 1])) + row('series limit (n = ∞)', fmtL(toAir(HC / RY * ev.lo * ev.lo)));
+      note = ev.lo === 1 ? 'Every Lyman line is ultraviolet: the jump down to n = 1 is so big that no Lyman photon is visible. Astronomers observe them from space.'
+        : ev.lo === 2 ? 'The Balmer lines are hydrogen&rsquo;s visible fingerprint: red H&alpha;, blue-green H&beta;, then blue and violet lines crowding toward the 365 nm series limit.'
+        : 'Paschen lines are all infrared: the levels above n = 3 are close together, so the photons carry little energy.';
+    } else if (ev.kind === 'pass') {
+      let near = '';
+      if (S.n !== 0) { let best = null; for (let m = S.n + 1; m <= 6; m++) { const lm = lamObs(m, S.n); if (!best || Math.abs(lm - ev.l) < Math.abs(best[1] - ev.l)) best = [m, lm]; } if (best) near = best; }
+      h = row('photon', fmtL(ev.l) + ' (' + band(ev.l) + ')') + row('photon energy', ev.E.toFixed(2) + ' eV') + row('result', 'passed through') +
+        (near ? row('nearest jump from n = ' + S.n, fmtL(near[1]) + ' (→ ' + near[0] + ')') : '') + row('to ionize from n = ' + nStr(S.n), S.n ? (-En(S.n)).toFixed(2) + ' eV' : '—');
+      note = S.n === 0 ? 'There is no bound electron to absorb the photon. Click a level to let the atom recapture it.'
+        : 'Not absorbed. The photon&rsquo;s ' + ev.E.toFixed(2) + ' eV does not match any jump up from n = ' + S.n + ', and it is too little to ionize the atom, so the atom ignores it.';
+    } else if (ev.kind === 'ion') {
+      h = row('photon', fmtL(ev.l) + ' (' + band(ev.l) + ')') + row('photon energy', ev.E.toFixed(2) + ' eV') + row('result', 'ionized from n = ' + ev.lo) + row('needed', (-En(ev.lo)).toFixed(2) + ' eV') + row('electron leaves with', ev.ke.toFixed(2) + ' eV');
+      note = 'Ionized. Any photon with at least ' + (-En(ev.lo)).toFixed(2) + ' eV frees an electron from n = ' + ev.lo + '; the extra energy becomes the electron&rsquo;s kinetic energy, so ionization absorbs a continuous range, not one line.';
+    } else {
+      const em = ev.kind === 'em', dE = Math.abs(En(ev.hi) - En(ev.lo));
+      h = row('transition', 'n = ' + nStr(ev.from) + ' → ' + nStr(ev.to)) + row(em ? 'photon emitted' : 'photon absorbed', dE.toFixed(2) + ' eV') +
+        row('wavelength', fmtL(ev.l) + '  ' + lineName(ev.hi, ev.lo)) + row('series', SERIES[ev.lo] || '—') + row('band', band(ev.l) + (ev.l < 380 || ev.l > 750 ? ' (invisible)' : ''));
+      if (ev.hi === 0) note = em ? 'Recombination: a free electron is captured into n = ' + ev.lo + '. A free electron at rest gives the series-limit wavelength; a moving one gives a shorter one.' : 'Ionization needs at least ' + dE.toFixed(2) + ' eV from n = ' + ev.lo + ': this is the shortest wavelength of the ' + SERIES[ev.lo] + ' series.';
+      else note = (em ? 'Emission: the electron dropped and the atom gave off one photon of exactly ' : 'Absorption: the atom took in one photon of exactly ') + dE.toFixed(2) + ' eV (the gap between the levels). ' +
+        (ev.l < 380 ? 'That is ultraviolet: invisible, and blocked by our atmosphere.' : ev.l > 750 ? 'That is infrared: invisible to the eye.' : 'That is visible ' + band(ev.l) + ' light.') +
+        (em ? ' Absorbing a photon of this same wavelength would lift it back up (click n = ' + nStr(ev.from) + ').' : ' Click n = ' + ev.lo + ' to drop back: the emitted line lands at the same wavelength.');
+    }
+  } else if (S.mode === 'kirch') {
+    const t = kirchTypes(), Ts = +$('tsSlider').value, Tg = +$('tgSlider').value, on = $('srcChk').checked, el = $('gasSel').value;
+    h = row('1 &middot; looking at the source', t[0]) + row('2 &middot; source through gas', t[1]) + row('3 &middot; gas on dark sky', t[2]) +
+      row('gas vs source', on ? (Tg < Ts ? 'cooler by ' + (Ts - Tg) + ' K' : Tg > Ts ? 'hotter by ' + (Tg - Ts) + ' K' : 'same T') : 'source off') +
+      row('strongest ' + el + ' line', fmtL(ELEMENTS[el].lines.reduce((a, b) => b[1] > a[1] ? b : a)[0]));
+    note = !on ? 'With the source off there is no continuum: view 2 now sees the same bright lines as view 3.'
+      : Tg < Ts ? 'Kirchhoff&rsquo;s laws: (1) a hot, dense source gives a continuous spectrum; (2) cool gas in front of it removes light at its own wavelengths (dark lines); (3) the same gas against dark sky glows at exactly those wavelengths.'
+      : Tg > Ts ? 'The gas is hotter than the source behind it, so in view 2 its lines are brighter than the continuum: emission on top of the continuum, not absorption.'
+      : 'Gas and source at the same temperature: the gas absorbs and re-emits equally, and the lines in view 2 disappear.';
+  } else {
+    const M = S.mystery;
+    h = row('mystery type', M.type === 'em' ? 'emission' : 'absorption') + row('your picks', S.guess.size ? [...S.guess].join(' + ') : 'none') +
+      row('answer', S.checked === true ? M.els.join(' + ') : '?') + row('lines to match', 'all of them');
+    note = 'Each element has its own pattern of lines, the same in emission and absorption. Line up the mystery with the lab spectra; Na shows one yellow line at 589 nm, Ne a crowd of red-orange lines, Hg a bright green 546 nm line.';
+  }
+  $('results').innerHTML = h;
+  $('note').innerHTML = note;
+  const rb = $('revealBtn'); if (rb) rb.addEventListener('click', reveal);
+}
+function reveal() {
+  const hd = S.hidden; if (!hd) return;
+  S.hidden = null;
+  S.last = { kind: 'em', hi: hd.hi, lo: hd.lo, l: lamObs(hd.hi, hd.lo), from: hd.hi, to: hd.lo };
+  render();
+}
+
+// ---------- render ----------
+function drawScene() {
+  const c = $('scene');
+  const { ctx, W, H } = prep(c, w => S.mode === 'mystery' ? 358 : Math.max(300, w * (w < 480 ? 1.0 : 0.6)));
+  if (S.mode === 'bohr') drawBohr(ctx, W, H); else if (S.mode === 'kirch') drawKirch(ctx, W, H); else drawMystery(ctx, W, H);
+  if (S.mode === 'bohr') drawBohrStrip();
+}
+function render() {
+  document.querySelectorAll('#levelChips button').forEach(b => b.classList.toggle('on', +b.dataset.n === S.n));
+  document.querySelectorAll('#modeChips button').forEach(b => { b.classList.toggle('on', b.dataset.mode === S.mode); b.setAttribute('aria-selected', b.dataset.mode === S.mode); });
+  $('paneBohr').hidden = S.mode !== 'bohr'; $('paneKirch').hidden = S.mode !== 'kirch'; $('paneMystery').hidden = S.mode !== 'mystery';
+  $('strip').style.display = S.mode === 'mystery' ? 'none' : 'block';
+  $('tsVal').textContent = $('tsSlider').value + ' K'; $('tgVal').textContent = $('tgSlider').value + ' K';
+  drawScene();
+  if (S.mode === 'kirch') drawKirchStrip();
+  renderResults();
+}
+
+// ---------- events ----------
+document.querySelectorAll('#modeChips button').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; S.hidden = null; if (S.mode === 'mystery' && !S.mystery) newMystery(); render(); }));
+document.querySelectorAll('#levelChips button').forEach(b => b.addEventListener('click', () => jumpTo(+b.dataset.n)));
+document.querySelectorAll('[data-series]').forEach(b => b.addEventListener('click', () => recordSeries(+b.dataset.series)));
+$('clearBtn').addEventListener('click', () => { S.rec = []; S.last = null; S.hidden = null; render(); });
+$('pSlider').addEventListener('input', () => { const u = +$('pSlider').value / 4000; photonL = 90 * Math.pow(2000 / 90, u); $('pVal').textContent = photonL.toFixed(1) + ' nm'; });
+$('pDown').addEventListener('click', () => { const v = Math.round(photonL * 10 - 1) / 10; photonL = Math.max(90, v); $('pVal').textContent = photonL.toFixed(1) + ' nm'; $('pSlider').value = Math.round(4000 * Math.log(photonL / 90) / Math.log(2000 / 90)); });
+$('pUp').addEventListener('click', () => { const v = Math.round(photonL * 10 + 1) / 10; photonL = Math.min(2000, v); $('pVal').textContent = photonL.toFixed(1) + ' nm'; $('pSlider').value = Math.round(4000 * Math.log(photonL / 90) / Math.log(2000 / 90)); });
+$('fireBtn').addEventListener('click', fire);
+['gasSel', 'srcChk'].forEach(id => $(id).addEventListener('change', render));
+['tsSlider', 'tgSlider'].forEach(id => $(id).addEventListener('input', render));
+document.querySelectorAll('#guessChips button').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.el;
+  if (S.guess.has(k)) S.guess.delete(k); else S.guess.add(k);
+  b.classList.toggle('on', S.guess.has(k));
+  S.checked = null; $('mysFb').className = 'fb'; $('mysFb').textContent = 'Picked: ' + ([...S.guess].join(' + ') || 'none') + '. Press Check when every mystery line is matched.';
+  render();
+}));
+$('checkBtn').addEventListener('click', checkGuess);
+$('newMysBtn').addEventListener('click', () => { newMystery(); render(); });
+
+// canvas clicks (Bohr levels and orbits)
+function levelAt(e) {
+  if (S.mode !== 'bohr' || !geo) return null;
+  const r = $('scene').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (x >= geo.xa - 6 && x <= geo.xb + 8) {
+    let best = null, bd = 8;
+    for (const n of geo.levels) { const d = Math.abs(y - geo.Y(n)); if (d < bd) { bd = d; best = n; } }
+    return best;
+  }
+  if (geo.atom) {
+    const d = Math.hypot(x - geo.atom.cx, y - geo.atom.cy);
+    for (let n = 1; n <= 6; n++) if (Math.abs(d - geo.atom.R(n)) < 4) return n;
+  }
+  return null;
+}
+$('scene').addEventListener('mousemove', e => { $('scene').style.cursor = levelAt(e) !== null ? 'pointer' : 'default'; });
+$('scene').addEventListener('click', e => { const n = levelAt(e); if (n !== null) jumpTo(n); });
+window.addEventListener('resize', render);
+
+function katexAll() {
+  const specs = [
+    ['f1', "E_n = -\\dfrac{13.6\\ \\text{eV}}{n^{2}}"],
+    ['f2', "E_{\\text{photon}} = \\dfrac{hc}{\\lambda} = \\dfrac{1240\\ \\text{eV}\\cdot\\text{nm}}{\\lambda}"],
+    ['f3', "\\dfrac{1}{\\lambda} = R_{\\text{H}}\\left(\\dfrac{1}{n_{\\text{low}}^{2}} - \\dfrac{1}{n_{\\text{high}}^{2}}\\right)"],
+    ['ex1', "E_4 = -\\dfrac{13.6}{16} = -0.85\\ \\text{eV},\\qquad E_2 = -\\dfrac{13.6}{4} = -3.40\\ \\text{eV}"],
+    ['ex2', "\\Delta E = E_4 - E_2 = -0.85 - (-3.40) = 2.55\\ \\text{eV}"],
+    ['ex3', "\\lambda = \\dfrac{1240\\ \\text{eV}\\cdot\\text{nm}}{2.55\\ \\text{eV}} \\approx 486\\ \\text{nm}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+const SIM_ID = 'atomic-spectra';
+
+// ---- header menu ----
+const _menu = $('menu'), _menuBtn = $('menuBtn');
+function closeMenu() { _menu.hidden = true; }
+_menuBtn.addEventListener('click', e => { e.stopPropagation(); _menu.hidden = !_menu.hidden; });
+document.addEventListener('click', e => { if (!_menu.hidden && !_menu.contains(e.target) && e.target !== _menuBtn) closeMenu(); });
+$('mInfo').addEventListener('click', () => { closeMenu(); $('infoModal').classList.add('show'); });
+$('mExample').addEventListener('click', () => { closeMenu(); $('exampleModal').classList.add('show'); });
+$('mBug').addEventListener('click', () => { closeMenu(); $('bugModal').classList.add('show'); $('bugText').focus(); });
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+$('bugClose').addEventListener('click', () => $('bugModal').classList.remove('show'));
+['infoModal', 'exampleModal', 'bugModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); } });
+
+// ---- bug report ----
+$('bugSend').addEventListener('click', () => {
+  const text = ($('bugText').value || '').trim(), rEl = $('bugResult');
+  if (text.length < 3) { rEl.textContent = 'Please describe the problem first.'; rEl.style.color = '#f0a58c'; return; }
+  const btn = $('bugSend'); btn.disabled = true; rEl.textContent = 'Sending…'; rEl.style.color = '#9fb0bf';
+  fetch('https://sims-api.sethhopper.com/report', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sim: SIM_ID, text: text.slice(0, 4000), email: ($('bugEmail').value || '').trim().slice(0, 200), pageUrl: location.href, userAgent: navigator.userAgent, website: '' })
+  }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j })))
+    .then(res => {
+      btn.disabled = false;
+      if (res.ok && res.j && res.j.ok) { rEl.textContent = 'Thanks — your report was filed.'; rEl.style.color = '#7fd08a'; $('bugText').value = ''; }
+      else { rEl.textContent = 'Could not send' + (res.j && res.j.error ? ' (' + res.j.error + ')' : '') + '. Try again later.'; rEl.style.color = '#f0a58c'; }
+    }).catch(() => { btn.disabled = false; rEl.textContent = 'Network error. Try again later.'; rEl.style.color = '#f0a58c'; });
+});
+
+// ---- random problem (per mode) ----
+$('randomBtn').addEventListener('click', () => {
+  endAnim();
+  if (S.mode === 'bohr') {
+    const lo = 1 + Math.floor(Math.random() * 3), hi = lo + 1 + Math.floor(Math.random() * (6 - lo));
+    S.n = lo; S.hidden = { hi, lo };
+    record(hi, lo, 'em');
+    S.last = { kind: 'em', hi, lo, l: lamObs(hi, lo), from: hi, to: lo };
+    startAnim(S.last);
+    render();
+  } else if (S.mode === 'kirch') {
+    $('gasSel').value = EL_KEYS[Math.floor(Math.random() * 5)];
+    $('tsSlider').value = 3000 + 100 * Math.floor(Math.random() * 171);
+    $('tgSlider').value = 3000 + 100 * Math.floor(Math.random() * 171);
+    $('srcChk').checked = Math.random() > 0.15;
+    render();
+  } else { newMystery(); render(); }
+});
+
+// ---- URL presets: ?mode=bohr|kirch|mystery&gas=H|He|Na|Hg|Ne ----
+(function () {
+  const q = new URLSearchParams(location.search);
+  const m = q.get('mode'); if (['bohr', 'kirch', 'mystery'].includes(m)) S.mode = m;
+  const g = q.get('gas'); if (EL_KEYS.includes(g)) $('gasSel').value = g;
+  if (S.mode === 'mystery') newMystery();
+})();
+setPhoton(656.3);
+window.addEventListener('load', () => { katexAll(); render(); });
+if (document.fonts) document.fonts.ready.then(() => render());
+render();
+</script>
+</body>
+</html>
