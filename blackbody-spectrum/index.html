@@ -70,7 +70,58 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #d4763a; background:#d4763a; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #d4763a; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -128,7 +179,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Blackbody Spectrum <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Blackbody Spectrum <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -161,7 +212,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; the colour of Betelgeuse <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; the colour of Betelgeuse <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Betelgeuse has a surface temperature of about 3500 K. Where does its spectrum peak, and how does its per-area output compare with the Sun&rsquo;s 5772 K?</p>
     <div class="step"><div class="h">1 &middot; Wien&rsquo;s law</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">828 nm is in the near infrared, past the red end of what the eye sees. Its visible light is weighted to the red, so it looks orange-red.</div></div>
     <div class="step"><div class="h">2 &middot; Output per area, &prop; <i>T</i>&#8308;</div><span class="formula" id="ex2"></span></div>
@@ -171,7 +222,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -283,11 +334,11 @@ function drawPlot() {
   ctx.fillStyle = 'rgba(160,120,255,0.35)'; ctx.fillRect(X(0), sy + 2, X(380) - X(0), 2);
   ctx.fillStyle = 'rgba(255,90,60,0.35)'; ctx.fillRect(X(750), sy + 2, X(LMAX) - X(750), 2);
   ctx.font = '9.5px "Source Sans 3",sans-serif';
-  ctx.fillStyle = 'rgba(190,170,255,0.8)'; ctx.fillText('UV', X(190), sy + 16);
-  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillText('visible', X(565), sy + 16);
-  ctx.fillStyle = 'rgba(255,150,120,0.8)'; ctx.fillText('infrared', X(1600), sy + 16);
+  ctx.fillStyle = 'rgba(190,170,255,0.8)'; ctx.fillText('UV', X(190), sy + 18);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillText('visible', X(565), sy + 18);
+  ctx.fillStyle = 'rgba(255,150,120,0.8)'; ctx.fillText('infrared', X(1600), sy + 18);
   ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '10px "Source Sans 3",sans-serif';
-  ctx.textAlign = 'right'; ctx.fillText('wavelength λ (nm)', x1, sy + 16);
+  ctx.textAlign = 'right'; ctx.fillText('wavelength λ (nm)', x1, sy + 18);
   ctx.save(); ctx.translate(13, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
   ctx.fillText(norm ? 'brightness per wavelength (own peak = 1)' : 'brightness per wavelength (Sun’s peak = 1)', 0, 0); ctx.restore();
 

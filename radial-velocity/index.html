@@ -71,7 +71,58 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #a8477e; background:#a8477e; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #a8477e; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -138,7 +189,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Radial Velocity <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Radial Velocity <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -171,7 +222,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; the wobble from Jupiter <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; the wobble from Jupiter <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Jupiter (mass 1/1047 of the Sun) orbits at 5.2 AU with a period of 11.9 years. How fast does the Sun wobble, seen edge-on?</p>
     <div class="step"><div class="h">1 &middot; The Sun&rsquo;s orbit around the barycentre</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Its speed</div><span class="formula" id="ex2"></span></div>
@@ -181,7 +232,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -363,9 +414,10 @@ function drawOrbit() {
   label(ctx, rv < -0.02 * K() ? 'star approaching us: blueshift' : rv > 0.02 * K() ? 'star receding from us: redshift' : 'star moving across our line of sight: no shift',
     10, 13, rv < -0.02 * K() ? '#9cc2ff' : rv > 0.02 * K() ? '#ff9b9b' : 'rgba(255,255,255,0.7)', '600 10.5px "Source Sans 3",sans-serif', 'left');
   ctx.save(); ctx.font = '9.5px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  const lx = W - 142;
-  [['rgba(255,255,255,0.9)', 'star’s velocity'], ['#ff7a7a', 'part along line of sight'], ['rgba(190,170,230,0.9)', 'planet’s orbit'], ['rgba(255,214,107,0.9)', 'star’s orbit (× ' + fmtExag(exag) + ')']].forEach(([c, t], k) => {
-    ctx.fillStyle = c; ctx.fillRect(lx, 30 + k * 12.5 - 1, 12, 2.4); ctx.fillStyle = 'rgba(220,228,236,0.75)'; ctx.fillText(t, lx + 17, 33 + k * 12.5);
+  const lg = [['rgba(255,255,255,0.9)', 'star’s velocity'], ['#ff7a7a', 'part along line of sight'], ['rgba(190,170,230,0.9)', 'planet’s orbit'], ['rgba(255,214,107,0.9)', 'star’s orbit (× ' + fmtExag(exag) + ')']];
+  const gl = ctx.fontGrow(9.5), lh = 12.5 * gl, lx = Math.min(W - 142, W - 10 - 17 - Math.max(...lg.map(([, t]) => ctx.measureText(t).width)));   // phones: enlarged text, so wider and taller
+  lg.forEach(([c, t], k) => {
+    ctx.fillStyle = c; ctx.fillRect(lx, 30 + k * lh - 1, 12, 2.4); ctx.fillStyle = 'rgba(220,228,236,0.75)'; ctx.fillText(t, lx + 17, 33 + k * lh);
   });
   ctx.restore();
 }
@@ -398,7 +450,8 @@ function niceStep(span, n) { const raw = span / n, p = Math.pow(10, Math.floor(M
 function drawRV() {
   const W = 520, H = 170, ctx = prep('rv', W, H);
   ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const x0 = 66, x1 = W - 12, y0 = H - 30, y1 = 22, mid = (y0 + y1) / 2;
+  const g = ctx.fontGrow(9.5) - 1;   // > 0 on phones, where labels are enlarged: wider margins
+  const x0 = 66 + 18 * g, x1 = W - 12, y0 = H - 30 - 14 * g, y1 = 22 + 8 * g, mid = (y0 + y1) / 2;
   const Kv = K(), Kedge = vStar();
   const top = Math.max(Kedge, 1e-9) * 1.1;
   const X = ph => x0 + ph * (x1 - x0);
@@ -419,7 +472,7 @@ function drawRV() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
   for (let t = 0; t <= Pu * 1.0001; t += st) {
     const xx = X(t / Pu); if (xx > x1 - 14 && t > 0 && Math.abs(t - Pu) > st * 0.01) continue;
-    ctx.fillText(+t.toFixed(4) + '', xx, y0 + 12);
+    ctx.fillText(+t.toFixed(4) + '', xx, y0 + 12 + 8 * g);
     ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + 3); ctx.stroke();
   }
   ctx.font = '9.5px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.55)';

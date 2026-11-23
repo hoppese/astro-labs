@@ -30,7 +30,7 @@
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:-3px; }
   .slider-row { display:flex; flex-direction:column; gap:4px; min-width:0; }
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; gap:6px; white-space:nowrap; }
-  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#66801e; font-size:12px; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#7f5624; font-size:12px; }
   .two { display:grid; grid-template-columns:1fr 1fr; gap:4px 14px; }
   input[type=range] { width:100%; accent-color:#9c6b30; margin:2px 0; }
   .chips { display:grid; grid-template-columns:repeat(2,1fr); gap:4px; }
@@ -41,7 +41,7 @@
   select { width:100%; font:600 12.5px 'Source Sans 3',sans-serif; color:#20262b; border:1px solid #dfe3e7; border-radius:7px; padding:6px 8px; background:#fff; cursor:pointer; }
   .results { display:flex; flex-direction:column; gap:5px; }
   .resrow { display:flex; align-items:center; justify-content:space-between; background:#f6efe4; border-radius:8px; padding:5px 11px; gap:8px; }
-  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#3a4420; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4a3a26; }
   .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:#6e4a1e; text-align:right; }
   .resrow.verdict .v { font-family:'Source Sans 3',sans-serif; font-size:12.5px; }
   .note { font-size:12px; line-height:1.5; color:#5d666e; background:#f6efe4; border-radius:8px; padding:9px 11px; }
@@ -73,7 +73,58 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #9c6b30; background:#9c6b30; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #9c6b30; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -163,7 +214,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Telescopes <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Telescopes <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -198,7 +249,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example: a backyard telescope vs your eye <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example: a backyard telescope vs your eye <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#d6dde4;margin-bottom:12px;">A 200 mm (8-inch) reflector has f<sub>obj</sub> = 2000 mm and comes with a 25 mm eyepiece. Compare its light-gathering with your 7 mm pupil, find its resolution in green light (550 nm), and its magnification. Can it split a double star 1.0&Prime; apart?</p>
     <div class="step"><div class="h">1 &middot; Light-gathering power</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#d6dde4;margin-top:4px;">It collects about 800 times as much light as your eye, so it shows stars about 7 magnitudes fainter (to roughly magnitude 13).</div></div>
     <div class="step"><div class="h">2 &middot; Resolution</div><span class="formula" id="ex2"></span><div style="font-size:11.5px;color:#d6dde4;margin-top:4px;">A 1.0&Prime; pair is wider than 0.69&Prime;, so the telescope resolves it, at least above the atmosphere. On a typical night seeing blurs each star to about 1&Prime;, which smears this pair into one (set seeing to 1.0&Prime; and see).</div></div>
@@ -208,7 +259,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -375,7 +426,8 @@ function drawRay() {
     ctx.beginPath(); ctx.moveTo(xF, y0 + 4); ctx.lineTo(xF, by + 4); ctx.stroke();
     haloText(ctx, 'f_{obj} = ' + fmtF(p.fo), (xL + xF) / 2, by - 5, '#fff', '600 12px ' + MONO, 'center');
     haloText(ctx, 'focus', xF - 4, y0 + 15, 'rgba(255,255,255,0.8)', CF, 'right');
-    haloText(ctx, 'eyepiece', xE, Math.max(14, y0 - Math.min(eh, H * 0.3) - 8 + ad * Fd / 2), '#fff', LF, xE > W - 60 ? 'right' : 'center');
+    // narrow (phone) canvases: label sits left of the lens so it clears the Mα angle label
+    haloText(ctx, 'eyepiece', W < 470 ? xE - 8 : xE, Math.max(14, y0 - Math.min(eh, H * 0.3) - 8 + ad * Fd / 2), '#fff', LF, W < 470 || xE > W - 60 ? 'right' : 'center');
     haloText(ctx, 'f_{eye} = ' + p.fe + ' mm', Math.min(W - 6, xF + 10 + 110) , by + 4, 'rgba(255,255,255,0.85)', '600 12px ' + MONO, 'right');
     if (W > 470) haloText(ctx, 'starlight from 2 stars', 10, 18, 'rgba(255,255,255,0.75)', CF, 'left');
     haloText(ctx, '\u03B1', 22, y0 - a * 0.8 - ad * (xL - 6) * 0.5 - 6, '#e8c48e', 'italic 600 14px ' + SERIF, 'center');
@@ -555,9 +607,11 @@ function drawImage() {
   ctx.imageSmoothingEnabled = true; ctx.drawImage(off, ix0, iy0, side, side);
   ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1; ctx.strokeRect(ix0 + 0.5, iy0 + 0.5, side - 1, side - 1);
   const eye = S.view === 'eye';
-  plateText(ctx, eye ? 'Through the eyepiece' : 'Camera image', 8, 17, '#fff', '700 12px ' + SANS, 'left');
-  if (p.lam > 750 || p.lam < 380) plateText(ctx, (p.lam > 750 ? 'infrared' : 'ultraviolet') + ': false colour', ix0 + 6, iy0 + 18, 'rgba(255,255,255,0.8)', '11px ' + SANS, 'left');
   const v = verdict(p);
+  ctx.font = '700 12px ' + SANS;   // short title when the full one would run into the verdict (phones)
+  const tFull = eye ? 'Through the eyepiece' : 'Camera image', tFits = 8 + ctx.measureText(tFull).width + 22 + ctx.measureText(v.txt).width < W - 8;
+  plateText(ctx, tFits ? tFull : (eye ? 'Eyepiece' : 'Camera'), 8, 17, '#fff', '700 12px ' + SANS, 'left');
+  if (p.lam > 750 || p.lam < 380) plateText(ctx, (p.lam > 750 ? 'infrared' : 'ultraviolet') + ': false colour', ix0 + 6, iy0 + 18, 'rgba(255,255,255,0.8)', '11px ' + SANS, 'left');
   plateText(ctx, v.txt, W - 8, 17, v.ok ? '#a8e07a' : '#ff9a8a', '700 12px ' + SANS, 'right');
   // scale bar (in sky arcsec, or apparent arcmin for the eyepiece)
   const pxPerAs = side / im.fovSky;

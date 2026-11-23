@@ -81,7 +81,58 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #7f9a2a; background:#7f9a2a; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #a3c43c; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -143,7 +194,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Phases of Venus &amp; Planetary Configurations <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Phases of Venus &amp; Planetary Configurations <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -180,7 +231,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; sizing up Venus <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; sizing up Venus <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#dfe6c8;margin-bottom:12px;">At greatest elongation Venus is 46.3&deg; from the Sun. (a) How far is Venus from the Sun? (b) How big does Venus look (radius 6052 km) at inferior and at superior conjunction? (c) Venus takes 224.7 days to orbit the Sun. How often does it return to the same phase as seen from Earth?</p>
     <div class="step"><div class="h">1 &middot; (a) At greatest elongation the Earth&ndash;Venus line is tangent to Venus&rsquo;s orbit</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; (b) Distances at the two conjunctions</div><span class="formula" id="ex2"></span></div>
@@ -191,7 +242,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -262,7 +313,12 @@ function extremes(d) {
 }
 
 // ---------- drawing helpers ----------
-function ctx2(id, W, H) { const c = $(id), ctx = c.getContext('2d'); ctx.setTransform(c.width / W, 0, 0, c.height / H, 0, 0); return ctx; }
+// crisp canvas: buffer = on-screen width × devicePixelRatio (keeps the W:H design aspect), drawing in design units
+function ctx2(id, W, H) {
+  const c = $(id), dpr = Math.min(3, window.devicePixelRatio || 1), bw = Math.max(2, Math.round((c.clientWidth || W) * dpr)), bh = Math.round(bw * H / W);
+  if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+  const ctx = c.getContext('2d'); ctx.setTransform(c.width / W, 0, 0, c.height / H, 0, 0); return ctx;
+}
 function label(ctx, t, x, y, o) {
   o = o || {}; ctx.save(); ctx.font = o.font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
   ctx.lineWidth = 3; ctx.strokeStyle = o.halo || 'rgba(8,11,18,0.85)'; ctx.lineJoin = 'round'; ctx.strokeText(t, x, y);
@@ -446,7 +502,7 @@ function drawView(S, X) {
 
   // sky strip: Sun at centre, elongation east to the left
   const x0 = 186, x1 = 512, cx = (x0 + x1) / 2, yL = 50, pxDeg = (x1 - x0 - 20) / 120;
-  label(ctx, 'in the sky, along the ecliptic', x0, 10, { align: 'left', col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  label(ctx, ctx.fontGrow(10) > 1 ? 'sky' : 'in the sky, along the ecliptic', x0, 10, { align: 'left', col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
   ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.moveTo(x0, yL); ctx.lineTo(x1, yL); ctx.stroke();
   ctx.fillStyle = 'rgba(220,228,236,0.55)'; ctx.font = '9px "JetBrains Mono",monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   for (let a = -60; a <= 60; a += 15) { const x = cx - a * pxDeg; ctx.fillRect(x - 0.5, yL - 3, 1, 6); if (a !== 0) ctx.fillText(Math.abs(a) + '°', x, yL + 6); }
@@ -466,8 +522,8 @@ function drawView(S, X) {
   // phases over one synodic cycle (to scale), SC → E → IC → W → SC
   const yT = 84, yI = 122, n = 9, sx0 = 204, sx1 = 494;
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.beginPath(); ctx.moveTo(x0, yT - 8); ctx.lineTo(x1, yT - 8); ctx.stroke();
-  label(ctx, 'one full cycle, to scale', x0, yT, { align: 'left', col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
-  const verdict = MODEL === 'cop' ? 'full set of phases; size changes ' + (seqRatio()).toFixed(1) + '×' : 'only crescents: never gibbous or full';
+  label(ctx, ctx.fontGrow(10) > 1 ? 'one cycle' : 'one full cycle, to scale', x0, yT, { align: 'left', col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  const verdict = MODEL === 'cop' ? (ctx.fontGrow(10) > 1 ? 'all phases; size ×' : 'full set of phases; size changes ') + (seqRatio()).toFixed(1) + (ctx.fontGrow(10) > 1 ? '' : '×') : 'only crescents: never gibbous or full';   // shorter on phones
   label(ctx, verdict, x1, yT, { align: 'right', col: MODEL === 'cop' ? '#e3efb5' : '#f0a58c', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
   const seq = sequence(n), smax = Math.max(...seq.map(q => q.size));
   seq.forEach((q, i) => {
@@ -475,7 +531,8 @@ function drawView(S, X) {
     litSphere(ctx, x, yI, r, { x: (q.east ? 1 : -1) * Math.sin(q.alpha), y: 0, z: Math.cos(q.alpha) }, pl.col, '#141820', { rim: 'rgba(255,255,255,0.22)' });
   });
   const lab = (t, x) => label(ctx, t, x, VH - 9, { col: 'rgba(220,228,236,0.7)', font: '9.5px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
-  lab('superior conj.', sx0 + 4); lab('evening', sx0 + (sx1 - sx0) * 0.25); lab('inferior conj.', (sx0 + sx1) / 2); lab('morning', sx0 + (sx1 - sx0) * 0.75); lab('superior conj.', sx1 - 4);
+  const nar = ctx.fontGrow(9.5) > 1, sc = nar ? 'sup. conj.' : 'superior conj.';   // phones: shorter names so the enlarged text fits
+  lab(sc, sx0 + 4); lab('evening', sx0 + (sx1 - sx0) * 0.25); lab(nar ? 'inf. conj.' : 'inferior conj.', (sx0 + sx1) / 2); lab('morning', sx0 + (sx1 - sx0) * 0.75); lab(sc, sx1 - 4);
   // where we are now in the cycle
   const phi = cyclePhase(S);
   const mx = sx0 + phi / 360 * (sx1 - sx0);
@@ -566,6 +623,7 @@ function setPlanet(k) {
   const m = maxD(k), sl = $('pSlider'); sl.max = m; if (+sl.value > m) sl.value = m;
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
+window.addEventListener('resize', () => render());
 $('resetBtn').addEventListener('click', () => { setPlaying(false); frac = 0; rpText = null; $('dSlider').value = 325; render(); });
 ['dSlider', 'pSlider'].forEach(id => $(id).addEventListener('input', () => { frac = 0; rpText = null; render(); }));
 $('cfgChk').addEventListener('change', render);

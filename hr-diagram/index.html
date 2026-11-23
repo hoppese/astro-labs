@@ -69,7 +69,58 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #4a78c4; background:#4a78c4; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #4a78c4; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -125,7 +176,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>H&ndash;R Diagram <span class="close" id="infoClose">&times;</span></h2>
+    <h2>H&ndash;R Diagram <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -158,7 +209,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; how big is Betelgeuse? <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; how big is Betelgeuse? <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Betelgeuse has a surface temperature of ~3600 K and a luminosity of about 90,000 L&#8857;. What is its radius?</p>
     <div class="step"><div class="h">1 &middot; Rearrange L = 4&pi;R&sup2;&sigma;T&#8308;</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Plug in (relative to the Sun)</div><span class="formula" id="ex2"></span></div>
@@ -168,7 +219,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -270,9 +321,11 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(b.x0, y); ctx.lineTo(b.x1, y); ctx.stroke();
     if (e % 2 === 0) label(ctx, pow10Label(e), b.x0 - 5, y + 3.5, 'rgba(225,232,240,0.7)', '10px "Source Sans 3",sans-serif', 'right');
   }
+  let tickR = -1e9;   // right edge of the last tick label: skip one that would collide (phones enlarge the text)
   for (const T of [40000, 30000, 20000, 10000, 7000, 5000, 4000, 3000]) {
     const x = TX(T);
     ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.moveTo(x, b.y1); ctx.lineTo(x, b.y0); ctx.stroke();
+    ctx.font = '10px "Source Sans 3",sans-serif'; const tw = ctx.measureText(T.toLocaleString()).width; if (x - tw / 2 < tickR + 4) continue; tickR = x + tw / 2;
     label(ctx, T.toLocaleString(), x, b.y0 + 13, 'rgba(225,232,240,0.7)', '10px "Source Sans 3",sans-serif');
   }
   ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.strokeRect(b.x0, b.y1, b.x1 - b.x0, b.y0 - b.y1);

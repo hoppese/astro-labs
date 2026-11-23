@@ -68,7 +68,58 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #4a8fb0; background:#4a8fb0; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #4a8fb0; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -122,7 +173,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Spectroscopic Binary <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Spectroscopic Binary <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -155,7 +206,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; mass ratio from line shifts <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; mass ratio from line shifts <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">In a double-lined spectroscopic binary, star A&rsquo;s lines swing by &plusmn;40 km/s and star B&rsquo;s by &plusmn;120 km/s over a 4-day period. What is the mass ratio?</p>
     <div class="step"><div class="h">1 &middot; Speed ratio → mass ratio</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Which is heavier?</div><div style="font-size:11.5px;color:#e7d6e4;">Star A moves slower, so it is the heavier one: <span class="formula" id="ex2" style="display:inline;"></span>. The heavy star stays close to the centre of mass while the light one swings around it.</div></div>
@@ -166,7 +217,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -304,7 +355,8 @@ function fluxAt(lam, v) {
 function drawSpec() {
   const W = 520, H = 122, ctx = prep($('spec'), W, H);
   ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const mL = 44, mR = 14, sT = 22, sH = 16, gT = sT + sH + 6, gB = H - 28;
+  const g = ctx.fontGrow(9.5) - 1;   // > 0 on phones, where labels are enlarged: wider margins, shorter labels
+  const mL = 44 + 12 * g, mR = 14, sT = 22, sH = 16, gT = sT + sH + 6, gB = H - 28 - 10 * g;
   const v = vr(phi);
   const xx = lam => mL + (lam - LLO) / (LHI - LLO) * (W - mL - mR);
   const yy = f => gT + (1.04 - f) / 1.04 * (gB - gT);
@@ -320,10 +372,10 @@ function drawSpec() {
   // axes + ticks
   ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(mL, gT); ctx.lineTo(mL, gB); ctx.lineTo(W - mR, gB); ctx.stroke();
   ctx.font = '9.5px "JetBrains Mono",monospace'; ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.textAlign = 'center';
-  for (let l = 655; l <= 657.6; l += 0.5) { ctx.beginPath(); ctx.moveTo(xx(l), gB); ctx.lineTo(xx(l), gB + 3); ctx.stroke(); ctx.fillText(l.toFixed(1), xx(l), gB + 13); }
+  for (let l = 655; l <= 657.6; l += 0.5) { ctx.beginPath(); ctx.moveTo(xx(l), gB); ctx.lineTo(xx(l), gB + 3); ctx.stroke(); ctx.fillText(l.toFixed(1), xx(l), gB + 13 + 6 * g); }
   ctx.textAlign = 'right'; ctx.fillText('1', mL - 4, yy(1) + 3); ctx.fillText('0.5', mL - 4, yy(0.5) + 3);
   ctx.font = '10px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.textAlign = 'right'; ctx.fillText('wavelength (nm)', W - mR, H - 4);
+  ctx.textAlign = 'right'; if (g > 0) ctx.fillText('λ (nm)', W - mR, sT - 6); else ctx.fillText('wavelength (nm)', W - mR, H - 4);
   ctx.save(); ctx.translate(11, (gT + gB) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('flux', 0, 0); ctx.restore();
   // each star's line (dashed, its colour) and the combined profile (white)
   [[v.v1, S.dA, COL_A], [v.v2, S.dB, COL_B]].forEach(([vv, dep, col]) => {
@@ -339,8 +391,8 @@ function drawSpec() {
   let xa = xx(REST * (1 + v.v1 / C_KMS)), xb = xx(REST * (1 + v.v2 / C_KMS));
   if (Math.abs(xa - xb) < 14) { const m = (xa + xb) / 2, sgn = xa <= xb ? -1 : 1; xa = m + sgn * 7; xb = m - sgn * 7; }
   label(ctx, 'A', xa, gB - 4, COL_A, '700 10px "Source Sans 3",sans-serif'); label(ctx, 'B', xb, gB - 4, COL_B, '700 10px "Source Sans 3",sans-serif');
-  label(ctx, '← blueshift (approaching)', mL + 4, gB - 5, 'rgba(156,196,255,0.8)', '9.5px "Source Sans 3",sans-serif', 'left');
-  label(ctx, 'redshift (receding) →', W - mR - 4, gB - 5, 'rgba(255,154,138,0.85)', '9.5px "Source Sans 3",sans-serif', 'right');
+  label(ctx, g > 0 ? '← blueshift' : '← blueshift (approaching)', mL + 4, gB - 5, 'rgba(156,196,255,0.8)', '9.5px "Source Sans 3",sans-serif', 'left');
+  label(ctx, g > 0 ? 'redshift →' : 'redshift (receding) →', W - mR - 4, gB - 5, 'rgba(255,154,138,0.85)', '9.5px "Source Sans 3",sans-serif', 'right');
   const sA = REST * v.v1 / C_KMS * 1000, sB = REST * v.v2 / C_KMS * 1000;
   const el = $('shiftNow'); if (el) el.textContent = (sA >= 0 ? '+' : '') + sA.toFixed(0) + ' / ' + (sB >= 0 ? '+' : '') + sB.toFixed(0) + ' pm';
 }
@@ -350,7 +402,8 @@ function niceStep(x) { const m = Math.pow(10, Math.floor(Math.log10(x))); return
 function drawRV() {
   const W = 520, H = 138, ctx = prep($('rv'), W, H);
   ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const mL = 62, mR = 14, mT = 12, mB = 28;
+  const g = ctx.fontGrow(9.5) - 1;   // > 0 on phones, where labels are enlarged: wider margins, shorter labels
+  const mL = 62, mR = 14, mT = 12 + 6 * g, mB = 28 + 14 * g;
   const kmax = Math.max(S.K1, S.K2, 1), vmax = kmax * 1.18;
   const xx = p => mL + p * (W - mL - mR);
   const yy = v => mT + (vmax - v) / (2 * vmax) * (H - mT - mB);
@@ -362,10 +415,10 @@ function drawRV() {
   }
   ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(mL, mT); ctx.lineTo(mL, H - mB); ctx.stroke();
   ctx.textAlign = 'center';
-  [0, 0.25, 0.5, 0.75, 1].forEach(p => { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillText(p.toFixed(2), xx(p), H - mB + 13); });
+  [0, 0.25, 0.5, 0.75, 1].forEach(p => { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillText(p.toFixed(2), xx(p), H - mB + 13 + 8 * g); });
   ctx.font = '10px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText('orbital phase (fraction of a period, P = ' + S.P + ' days)', (mL + W - mR) / 2, H - 4);
-  ctx.save(); ctx.translate(11, (mT + H - mB) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('radial velocity (km/s)', 0, 0); ctx.font = '9px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillText('+ receding, − approaching', 0, 10); ctx.restore();
+  ctx.fillText((g > 0 ? 'orbital phase (P = ' : 'orbital phase (fraction of a period, P = ') + S.P + ' days)', (mL + W - mR) / 2, H - 4);
+  ctx.save(); ctx.translate(11, (mT + H - mB) / 2); ctx.rotate(-Math.PI / 2); if (g > 0) ctx.fillText('v (km/s)', 0, 0); else { ctx.fillText('radial velocity (km/s)', 0, 0); ctx.font = '9px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillText('+ receding, − approaching', 0, 10); } ctx.restore();
   [['v1', COL_A], ['v2', COL_B]].forEach(([k, col]) => {
     ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
     for (let i = 0; i <= 300; i++) { const p = i / 300, y = yy(vr(p)[k]); i === 0 ? ctx.moveTo(xx(p), y) : ctx.lineTo(xx(p), y); }

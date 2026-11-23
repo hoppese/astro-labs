@@ -16,7 +16,7 @@
   .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
   .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
   .header .title { display:flex; align-items:center; gap:10px; }
-  .header .dot { width:11px; height:11px; border-radius:3px; background:#3f8f7a; flex:none; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#4f8a32; flex:none; }
   .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
   .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
   .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
@@ -26,22 +26,22 @@
   .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
   #ladder { aspect-ratio:520/350; }
-  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #3f8f7a; outline-offset:2px; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #4f8a32; outline-offset:2px; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
   .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#2f7060; }
-  input[type=range] { width:100%; accent-color:#3f8f7a; }
+  input[type=range] { width:100%; accent-color:#4f8a32; }
   .chips { display:grid; grid-template-columns:repeat(2,1fr); gap:4px; }
   .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 4px; font:600 10px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; text-align:left; }
-  .chips button:hover { border-color:#3f8f7a; }
-  .chips button.on { background:#e5f1ee; border-color:#3f8f7a; color:#28584b; }
-  .chain { font-size:11.5px; line-height:1.55; color:#3a4a45; background:#e7f1ee; border-radius:8px; padding:10px 12px; }
-  .chain b { color:#28584b; }
+  .chips button:hover { border-color:#4f8a32; }
+  .chips button.on { background:#e8f1e1; border-color:#4f8a32; color:#355f20; }
+  .chain { font-size:11.5px; line-height:1.55; color:#3d4a37; background:#edf3e8; border-radius:8px; padding:10px 12px; }
+  .chain b { color:#355f20; }
   .results { display:flex; flex-direction:column; gap:7px; }
-  .resrow { display:flex; align-items:center; justify-content:space-between; background:#e7f1ee; border-radius:8px; padding:7px 11px; gap:8px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#edf3e8; border-radius:8px; padding:7px 11px; gap:8px; }
   .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#2b463f; }
-  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:#28584b; text-align:right; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:#355f20; text-align:right; }
   .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
   .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
   .modal-backdrop.show { display:flex; }
@@ -65,10 +65,61 @@
   .menu .ico { width:18px; text-align:center; flex:none; }
   .bugmodal .field { width:100%; box-sizing:border-box; font:400 13px 'Source Sans 3',sans-serif; color:#eef2f6; background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:9px 11px; outline:none; margin-bottom:9px; }
   .bugmodal textarea.field { resize:vertical; line-height:1.5; }
-  .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #3f8f7a; background:#3f8f7a; color:#fff; cursor:pointer; }
+  .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #4f8a32; background:#4f8a32; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #4f8a32; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -122,7 +173,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Cosmic Distance Ladder <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Cosmic Distance Ladder <button type="button" class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -158,7 +209,7 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; the distance to Andromeda <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; the distance to Andromeda <button type="button" class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">A Cepheid in the Andromeda Galaxy has a pulsation period of 30 days and an apparent magnitude m = 19.5. The period&ndash;luminosity relation gives such a Cepheid an absolute magnitude M = &minus;5.0. How far away is Andromeda?</p>
     <div class="step"><div class="h">1 &middot; Distance modulus</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Solve for d</div><span class="formula" id="ex2"></span></div>
@@ -168,7 +219,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button type="button" class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -242,13 +293,17 @@ function draw() {
   // scale ticks (log10 of the distance in parsecs)
   const ticks = [[Math.log10(AU_PC), '1 AU'], [Math.log10(1e3 * AU_PC), '1000 AU'], [0, '1 pc'], [3, '1 kpc'], [6, '1 Mpc'], [9, '1 Gpc']];
   ctx.font = '10px "JetBrains Mono",monospace';
+  const g = ctx.fontGrow(10);   // > 1 on phones, where labels are enlarged
+  let tickR = -1e9;
   for (let L = -8; L <= 10; L++) { ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.moveTo(XL(L), yTop - 6); ctx.lineTo(XL(L), axisY); ctx.stroke(); }
   for (const [L, lab] of ticks) {
     ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.beginPath(); ctx.moveTo(XL(L), yTop - 6); ctx.lineTo(XL(L), axisY + 4); ctx.stroke();
+    const tw = ctx.measureText(lab).width; if (XL(L) - tw / 2 < tickR + 6) continue;   // skip a label that would collide (phones)
+    tickR = XL(L) + tw / 2;
     ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.textAlign = 'center'; ctx.fillText(lab, XL(L), axisY + 19);
   }
   ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(GX0, axisY); ctx.lineTo(GX1, axisY); ctx.stroke();
-  label(ctx, 'distance (logarithmic: each faint gridline is 10× farther)', CW / 2, CH - 26, 'rgba(255,255,255,0.5)', '10px "Source Sans 3",sans-serif');
+  label(ctx, 'distance (logarithmic: each faint gridline is 10× farther)', CW / 2, g > 1 ? CH - 9 : CH - 26, 'rgba(255,255,255,0.5)', '10px "Source Sans 3",sans-serif');
 
   const act = activeRung();
   RUNGS.forEach((r, i) => {
@@ -273,7 +328,7 @@ function draw() {
     const lx = Math.max(GX0 + w / 2, Math.min(GX1 - w / 2, x));
     let row = 0; while (placed.some(p => p.row === row && Math.abs(p.x - lx) < (p.w + w) / 2 + 8)) row++;
     placed.push({ x: lx, w, row });
-    const ly = axisY + 40 + row * 13;
+    const ly = axisY + 40 + row * 13 * g;
     ctx.strokeStyle = 'rgba(255,214,107,0.25)'; ctx.beginPath(); ctx.moveTo(x, axisY + 25); ctx.lineTo(x, ly - 9); ctx.stroke();
     ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.moveTo(x, axisY + 1); ctx.lineTo(x - 3.5, axisY + 7); ctx.lineTo(x + 3.5, axisY + 7); ctx.closePath(); ctx.fill();
     label(ctx, name, lx, ly, 'rgba(255,230,150,0.85)', '600 10px "Source Sans 3",sans-serif');
@@ -284,7 +339,7 @@ function draw() {
   ctx.strokeStyle = '#ffd66b'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(cx, yTop - 4); ctx.lineTo(cx, axisY); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
   ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(cx, axisY, 4.5, 0, 7); ctx.fill();
-  label(ctx, 'drag along the scale, or click an object name', 10, CH - 8, 'rgba(255,255,255,0.45)', '10px "Source Sans 3",sans-serif', 'left');
+  if (g === 1) label(ctx, 'drag along the scale, or click an object name', 10, CH - 8, 'rgba(255,255,255,0.45)', '10px "Source Sans 3",sans-serif', 'left');
 }
 function roundRect(ctx, x, y, w, h, r) {
   r = Math.min(r, w / 2, h / 2);

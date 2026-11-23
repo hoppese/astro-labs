@@ -77,7 +77,59 @@
   .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #b0533b; background:#b0533b; color:#fff; cursor:pointer; }
   .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
   .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+  /* shell consistency */
+  button, select, textarea { font-family:inherit; line-height:1.2; }
+  :focus-visible { outline:2px solid #b0533b; outline-offset:2px; }
+  .modal .close { padding:0; font-size:17px; line-height:1; }
+  .header { min-height:59px; }   /* same height as sims whose header has the Random problem button */
+  @media (max-width:520px){ .wrap { padding:8px; } .canvasCol { padding:10px; } }
 </style>
+<script>
+/* Phone legibility: most canvases draw in a fixed design space that is scaled to the screen width, so on a
+   phone a 10 px label would shrink to about 7 px. When a canvas is shown smaller than its design size, every
+   font set on it is enlarged so text shows at 10-10.5 CSS px (sub-8 px marks keep their size), and text drawn
+   with an enlarged font is nudged back inside the canvas if it would now run off an edge. No effect on desktop
+   (canvas at or above design size) or on canvases that already draw in CSS pixels. */
+(function () {
+  const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const d = P && Object.getOwnPropertyDescriptor(P, 'font');
+  if (!d || P.__fontFloor) return; P.__fontFloor = true;
+  const MIN = 10.5;
+  // factor by which a design-size n px font is enlarged on this context right now (1 = unchanged); sims can
+  // call ctx.fontGrow(10) to space stacked labels or move plot edges to make room on phones
+  function grow(ctx, n) {
+    const c = ctx.canvas, cw = c && c.clientWidth;
+    if (!cw || !c.width || !ctx.getTransform) return 1;
+    const t = ctx.getTransform(), k = Math.hypot(t.a, t.b) * cw / c.width;   // CSS px per drawing unit
+    if (!(k > 0.05 && k < 0.995)) return 1;
+    const want = Math.min(MIN, n >= 8 ? Math.max(n, 10) : n);
+    return n * k < want - 0.01 ? want / (n * k) : 1;
+  }
+  P.fontGrow = function (n) { return grow(this, n == null ? 10 : n); };
+  Object.defineProperty(P, 'font', { configurable: true, get() { return d.get.call(this); }, set(v) {
+    let big = false;
+    v = String(v).replace(/(\d*\.?\d+)px/, (m, n) => { const g = grow(this, +n); if (g > 1) { big = true; return (n * g).toFixed(2) + 'px'; } return m; });
+    this.__big = big; d.set.call(this, v);
+  } });
+  const keepIn = f => function (s, x, y, mw) {
+    if (this.__big) {
+      const t = this.getTransform(), c = this.canvas;
+      if (!t.b && !t.c && t.a > 0 && t.d > 0) {
+        const m = this.measureText(s), cssPx = c.width / (c.clientWidth || c.width), pad = 5 * cssPx, padY = 1 * cssPx, al = this.textAlign;   // clear of the rounded corners
+        const X = t.a * x + t.e, Y = t.d * y + t.f, w = m.width * t.a;
+        const L = al === 'center' ? X - w / 2 : (al === 'right' || al === 'end') ? X - w : X;
+        const top = Y - (m.actualBoundingBoxAscent || 0) * t.d, bot = Y + (m.actualBoundingBoxDescent || 0) * t.d;
+        let dx = 0, dy = 0;
+        if (w + 2 * pad < c.width) { if (L < pad) dx = pad - L; else if (L + w > c.width - pad) dx = c.width - pad - L - w; }
+        if (bot - top + 2 * padY < c.height) { if (top < padY) dy = padY - top; else if (bot > c.height - padY) dy = c.height - padY - bot; }
+        x += dx / t.a; y += dy / t.d;
+      }
+    }
+    return mw === undefined ? f.call(this, s, x, y) : f.call(this, s, x, y, mw);
+  };
+  P.fillText = keepIn(P.fillText); P.strokeText = keepIn(P.strokeText);
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -208,7 +260,10 @@ const EARTH = { a: 1.0, P: 1.0 };
 const START = { earth: 100, mars: 250 };   // starting longitudes (deg) tuned so t=0 is well before an opposition
 
 function pl() { return PLANETS[planet]; }
-function tYears() { return +$('tSlider').value; }
+// Play keeps the exact time here; the slider only mirrors it (its 0.01 yr step would round small
+// per-frame advances away at slow speeds and stall the animation). Any other write to the slider wins.
+let tX = null;
+function tYears() { const s = +$('tSlider').value; return (tX != null && Math.abs(tX - s) <= 0.0051) ? tX : s; }
 
 // heliocentric ecliptic position (AU), planet slightly inclined
 function earthPos(t) { const th = (START.earth + 360 * t / EARTH.P) * DEG; return { x: Math.cos(th), y: Math.sin(th), z: 0 }; }
@@ -368,17 +423,21 @@ const A3 = (() => {
       blockCircle(x, y, r) { boxes.push({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }); },
       put(t, x, y, offs, o) {
         o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
-        const w = ctx.measureText(t).width, h = parseFloat((o.font || '11px').match(/(\d+(\.\d+)?)px/)[1]) + 2; ctx.restore();
+        const fpx = parseFloat((o.font || '11px').match(/(\d+(\.\d+)?)px/)[1]), w = ctx.measureText(t).width, h = fpx * (ctx.fontGrow ? ctx.fontGrow(fpx) : 1) + 2; ctx.restore();   // h follows phone-enlarged text
         offs = offs || [[0, -14], [0, 14], [18, 0], [-18, 0]];
-        let best = null;
-        for (const [dx, dy] of offs) {
+        let best = null, bestOv = Infinity;
+        // the given offsets first, then the same directions pushed 1.6x farther out; if every spot is taken,
+        // use the one that overlaps earlier labels least (matters on phones, where text is enlarged)
+        const ov = b => boxes.reduce((a, c) => a + Math.max(0, Math.min(b.x1, c.x1) - Math.max(b.x0, c.x0)) * Math.max(0, Math.min(b.y1, c.y1) - Math.max(b.y0, c.y0)), 0);
+        for (const [dx, dy] of offs.concat(offs.map(([a, b]) => [a * 1.6, b * 1.6]))) {
           const al = o.align || (dx > 2 ? 'left' : dx < -2 ? 'right' : 'center');
           const lx = x + dx, ly = y + dy;
           const x0 = al === 'left' ? lx : al === 'right' ? lx - w : lx - w / 2;
           const b = { x0: x0 - pad, y0: ly - h / 2 - pad / 2, x1: x0 + w + pad, y1: ly + h / 2 + pad / 2, lx, ly, al };
           const inside = b.x0 >= 1 && b.x1 <= W - 1 && b.y0 >= 1 && b.y1 <= H - 1;
-          if (inside && !hit(b)) { best = b; break; }
-          if (!best && inside) best = b;
+          if (!inside) continue;
+          const v = ov(b); if (v === 0) { best = b; break; }
+          if (v < bestOv) { best = b; bestOv = v; }
         }
         if (!best) { const [dx, dy] = offs[0]; best = { lx: clamp(x + dx, w / 2 + 2, W - w / 2 - 2), ly: clamp(y + dy, h, H - h), al: 'center' };
           best.x0 = best.lx - w / 2; best.x1 = best.lx + w / 2; best.y0 = best.ly - h / 2; best.y1 = best.ly + h / 2; }
@@ -623,7 +682,7 @@ function tick(ts) {
   const dt = (ts - lastTs) / 1000; lastTs = ts;
   let t = tYears() + dt * 0.7 * (+$('spdSlider').value);
   if (t > +$('tSlider').max) t = 0;
-  $('tSlider').value = t; render();
+  tX = t; $('tSlider').value = t; render();
   rafId = requestAnimationFrame(tick);
 }
 function setPlaying(p) {
