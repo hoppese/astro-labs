@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phases of Venus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#eef1f4; font-family:'Source Sans 3',system-ui,sans-serif; color:#20262b; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid #e1e6ea; border-radius:12px; overflow:hidden; }
+  .header { background:#15212e; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; flex-wrap:wrap; }
+  .header .title { display:flex; align-items:center; gap:10px; }
+  .header .dot { width:11px; height:11px; border-radius:3px; background:#7f9a2a; flex:none; }
+  .header .name { font-family:'Source Serif 4',serif; font-weight:600; font-size:16px; }
+  .header .sub { font-weight:400; color:#9fb0bf; font-size:12px; }
+  .headbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.06); color:#dfe8f0; }
+  .headbtn:hover { background:rgba(255,255,255,0.12); }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #a3c43c; outline-offset:2px; }
+  .body { display:flex; gap:0; align-items:stretch; flex-wrap:wrap; }
+  .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
+  .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:12px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
+  #orbit { aspect-ratio:520/300; }
+  #view { aspect-ratio:520/170; background:#0d1420; }
+  .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #5f7520; background:#5f7520; color:#fff; }
+  .playbtn:hover { background:#4f6219; }
+  .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
+  .resetbtn:hover { border-color:#7f9a2a; }
+  .seg { display:flex; margin-left:auto; border:1px solid #dfe3e7; border-radius:9px; overflow:hidden; }
+  .seg button { border:0; border-left:1px solid #dfe3e7; background:#fff; padding:7px 11px; font:600 11.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; }
+  .seg button:first-child { border-left:0; }
+  .seg button:hover { background:#f7f9ef; }
+  .seg button.on { background:#f0f3e3; color:#44521a; }
+  .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:-4px; }
+  .slider-row { display:flex; flex-direction:column; gap:5px; }
+  .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
+  .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#5f7520; }
+  input[type=range] { width:100%; accent-color:#7f9a2a; cursor:pointer; }
+  .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 10.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; }
+  .chips button:hover { border-color:#7f9a2a; }
+  .chips button.on { background:#f0f3e3; border-color:#7f9a2a; color:#44521a; }
+  .checkrow { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#4b535b; cursor:pointer; }
+  .checkrow input { accent-color:#7f9a2a; }
+  .results { display:flex; flex-direction:column; gap:4px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f0f3e3; border-radius:8px; padding:5px 11px; gap:8px; }
+  .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#3a4520; }
+  .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:#44521a; text-align:right; white-space:nowrap; }
+  .resrow.hero { background:#7f9a2a; } .resrow.hero .k, .resrow.hero .v { color:#fff; }
+  .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f0f3e3; border-radius:8px; padding:8px 11px; }
+  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
+  .modal-backdrop.show { display:flex; }
+  .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
+  .modal h2 { font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin:0 0 16px; display:flex; justify-content:space-between; align-items:baseline; }
+  .modal .close { cursor:pointer; width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#dce6f2; display:flex; align-items:center; justify-content:center; flex:none; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .yellow { color:#ffd66b; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:9px; }
+  .modal p { font-size:12.5px; line-height:1.58; }
+  .step { background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
+  .step .h { font-size:11.5px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .formula { font-family:'Source Serif 4',serif; font-style:italic; color:#fff; display:block; margin:3px 0; }
+  @media (max-width:680px){ .ctlCol { width:100%; border-left:0; border-top:1px solid #e8ebee; } .grid2 { grid-template-columns:1fr; } .grid2 > div { padding:0 !important; border-left:0 !important; } .wrap { padding:8px; } .seg { margin-left:0; } }
+  .hdr-actions { display:flex; align-items:center; gap:8px; }
+  .menuwrap { position:relative; }
+  .menu-toggle { font-size:15px; line-height:1; padding:7px 11px; }
+  .menu { position:absolute; top:calc(100% + 6px); right:0; z-index:60; background:#1b2836; border:1px solid rgba(255,255,255,0.14); border-radius:11px; padding:6px; min-width:196px; box-shadow:0 14px 34px rgba(0,0,0,0.45); display:flex; flex-direction:column; gap:2px; }
+  .menu a, .menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font:600 12.5px 'Source Sans 3',sans-serif; color:#dfe8f0; background:none; border:0; border-radius:7px; padding:8px 10px; cursor:pointer; text-decoration:none; }
+  .menu a:hover, .menu button:hover { background:rgba(255,255,255,0.08); }
+  .menu[hidden] { display:none; }
+  .menu .ico { width:18px; text-align:center; flex:none; }
+  .bugmodal .field { width:100%; box-sizing:border-box; font:400 13px 'Source Sans 3',sans-serif; color:#eef2f6; background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:9px 11px; outline:none; margin-bottom:9px; }
+  .bugmodal textarea.field { resize:vertical; line-height:1.5; }
+  .bugmodal .sendbtn { font:600 12.5px 'Source Sans 3',sans-serif; padding:9px 18px; border-radius:8px; border:1px solid #7f9a2a; background:#7f9a2a; color:#fff; cursor:pointer; }
+  .bugmodal .sendbtn:disabled { opacity:0.5; cursor:default; }
+  .bugmodal .result { font-size:12px; margin-top:8px; min-height:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span class="dot"></span>
+        <span class="name">Phases of Venus <span class="sub">— planetary configurations, elongation; Galileo vs. Ptolemy</span></span>
+      </div>
+      <div class="hdr-actions">
+        <button class="headbtn" id="randomBtn" hidden>&#127922; Random problem</button>
+        <div class="menuwrap">
+          <button class="headbtn menu-toggle" id="menuBtn" title="Menu" aria-haspopup="true">&#9776;</button>
+          <div class="menu" id="menu" hidden>
+            <a href="../" target="_blank" rel="noopener"><span class="ico">&#8592;</span>All sims</a>
+            <button id="mInfo"><span class="ico">&#9432;</span>Info</button>
+            <button id="mExample"><span class="ico">&#9998;</span>Worked example</button>
+            <button id="mBug"><span class="ico">&#128030;</span>Submit bug</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="canvasCol">
+        <canvas id="orbit" width="1040" height="600" aria-label="Orbits of the planet and Earth seen from above at a tilt"></canvas>
+        <div class="btnrow">
+          <button class="playbtn" id="playBtn">&#9654; Play</button>
+          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+          <div class="seg" id="modelSeg" aria-label="Model">
+            <button data-m="cop" class="on">Copernicus (Sun-centred)</button>
+            <button data-m="pto">Ptolemy (Earth-centred)</button>
+          </div>
+        </div>
+        <canvas id="view" width="1040" height="340" aria-label="The planet seen from Earth: telescope view, position in the sky, and phases over one cycle"></canvas>
+      </div>
+      <div class="ctlCol">
+        <div class="section-label">Planet</div>
+        <div class="chips" id="chips" style="grid-template-columns:1fr 1fr;">
+          <button data-p="Ve" class="on">Venus</button>
+          <button data-p="Me">Mercury</button>
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>date</span><span class="val" id="dVal"></span></div>
+          <input type="range" id="dSlider" min="0" max="1825" step="1" value="325" aria-label="date">
+        </div>
+        <div class="slider-row" id="dRow">
+          <div class="lbl"><span>Ptolemy: epicycle centre</span><span class="val" id="pVal"></span></div>
+          <input type="range" id="pSlider" min="0.2" max="0.57" step="0.01" value="0.5" aria-label="Ptolemaic epicycle centre distance as a fraction of the Sun's distance">
+        </div>
+        <label class="checkrow"><input type="checkbox" id="cfgChk" checked> label the configurations</label>
+        <div class="section-label" style="margin-top:2px;">Seen from Earth</div>
+        <div class="results" id="results"></div>
+        <div class="note" id="note"></div>
+      </div>
+    </div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Real orbital elements, Kepler&rsquo;s equation each frame; orbits flattened into one plane. Ptolemy&rsquo;s epicycle gives the same sky positions.</div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h2>Phases of Venus &amp; Planetary Configurations <span class="close" id="infoClose">&times;</span></h2>
+    <div class="grid2">
+      <div style="padding-right:22px;">
+        <div class="yellow">What this shows</div>
+        <p>Venus and Mercury orbit inside Earth&rsquo;s orbit, so from Earth they never stray far from the Sun: at most about 46&ndash;47&deg; for Venus and 18&ndash;28&deg; for Mercury (its orbit is quite elliptical). That farthest angle is the <b>greatest elongation</b>. East of the Sun the planet is an <b>evening star</b>; west of it, a <b>morning star</b>. Passing between Earth and the Sun is <b>inferior conjunction</b>; passing behind the Sun, <b>superior conjunction</b>.</p>
+        <p>Because the planet&rsquo;s distance from us changes so much, its <b>phase and apparent size change together</b>: a big thin crescent near inferior conjunction, a small nearly full disc near superior conjunction.</p>
+      </div>
+      <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
+        <div class="yellow">How to use</div>
+        <p>Press Play or drag the date. Watch the elongation angle at Earth, the telescope view (phase and size, drawn to one scale for both planets), and where the planet sits in the sky beside the Sun. The strip of nine images is one whole cycle.</p>
+        <p>Switch to <b>Ptolemy</b>. Venus now rides an epicycle whose centre stays on the Earth&ndash;Sun line, always closer to us than the Sun. It reaches the same places in the sky, but its lit side always faces mostly away from us: <b>it can never look gibbous or full</b>. Try the epicycle-centre slider to make it gibbous; you can&rsquo;t without putting Venus beyond the Sun. When Galileo saw a small, nearly full Venus in 1610, Ptolemy&rsquo;s arrangement was ruled out.</p>
+        <p style="color:#b7c2cd;">Fair caveat: Tycho Brahe&rsquo;s hybrid (planets circle the Sun, the Sun circles Earth) gives exactly the Copernican phases, so the phases alone did not decide between Tycho and Copernicus.</p>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Relevant relationships</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;">
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">greatest elongation for circular orbits (a in AU): the sight line is tangent to the orbit.</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">synodic period S (one full cycle of phases as seen from Earth) from the sidereal periods.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">illuminated fraction from the phase angle &alpha; (Sun&ndash;planet&ndash;Earth): &alpha; &lt; 90&deg; is gibbous, &alpha; &gt; 90&deg; crescent.</div></div>
+          <div><span class="formula" id="f4"></span><div style="font-size:11.5px;color:#b7c2cd;">angular diameter of a planet of radius R at distance d (small-angle formula).</div></div>
+        </div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
+        <div class="yellow">Learn more</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/2-4-the-birth-of-modern-astronomy" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 2.4 The Birth of Modern Astronomy (Galileo and the phases of Venus)</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/10-1-the-nearest-planets-an-overview" target="_blank" rel="noopener" style="color:#8fc7ff;">10.1 The Nearest Planets: An Overview</a></li>
+        </ul>
+        <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/venus-crash-course-astronomy-14/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #14 &mdash; Venus</a></li><li><a href="https://thecrashcourse.com/courses/mercury-crash-course-astronomy-13/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #13 &mdash; Mercury</a></li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exampleModal">
+  <div class="modal">
+    <h2>Worked example &mdash; sizing up Venus <span class="close" id="exampleClose">&times;</span></h2>
+    <p style="font-size:11.5px;line-height:1.5;color:#dfe6c8;margin-bottom:12px;">At greatest elongation Venus is 46.3&deg; from the Sun. (a) How far is Venus from the Sun? (b) How big does Venus look (radius 6052 km) at inferior and at superior conjunction? (c) Venus takes 224.7 days to orbit the Sun. How often does it return to the same phase as seen from Earth?</p>
+    <div class="step"><div class="h">1 &middot; (a) At greatest elongation the Earth&ndash;Venus line is tangent to Venus&rsquo;s orbit</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; (b) Distances at the two conjunctions</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; (b) Angular diameters (1 AU = 1.496 &times; 10<sup>8</sup> km, 1 rad = 206 265&Prime;)</div><span class="formula" id="ex3"></span><span class="formula" id="ex4"></span><div style="font-size:11.5px;color:#e6ebd6;margin-top:4px;">Venus looks about 6&times; wider as a thin crescent than as a nearly full disc.</div></div>
+    <div class="step"><div class="h">4 &middot; (c) Synodic period</div><span class="formula" id="ex5"></span><div style="font-size:11.5px;color:#e6ebd6;margin-top:4px;">Venus laps Earth once every 1.6 years, so each evening-star or morning-star season comes round about every 19 months. (Check: inferior conjunctions on 2026 Oct 24 and 2028 Jun 1 in the sim.)</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop bugmodal" id="bugModal">
+  <div class="modal" style="max-width:460px;">
+    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
+    <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
+    <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="sendbtn" id="bugSend">Send report</button>
+      <span class="result" id="bugResult"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEG = Math.PI / 180;
+
+// ---------- orbits: J2000 elements, Kepler's equation; inclinations ignored ----------
+const EL = {
+  Me: { name: 'Mercury', a: 0.38710, e: 0.20563, w: 77.46, L0: 252.25, P: 87.969, R: 2440, col: [190, 182, 172], dark: '#1a1918' },
+  Ve: { name: 'Venus', a: 0.72333, e: 0.00677, w: 131.60, L0: 181.98, P: 224.701, R: 6052, col: [246, 234, 200], dark: '#1d1c18' },
+  Ea: { name: 'Earth', a: 1.00000, e: 0.01671, w: 102.94, L0: 100.46, P: 365.256 },
+};
+const J2000 = Date.UTC(2000, 0, 1, 12), DAY0 = (Date.UTC(2026, 0, 1) - J2000) / 864e5;
+const AU_KM = 1.496e8, RAD_AS = 206265;
+function helio(k, d) {
+  const o = EL[k]; const M = ((o.L0 + 360 / o.P * d - o.w) % 360) * DEG;
+  let E = M; for (let i = 0; i < 30; i++) E -= (E - o.e * Math.sin(E) - M) / (1 - o.e * Math.cos(E));
+  const nu = 2 * Math.atan2(Math.sqrt(1 + o.e) * Math.sin(E / 2), Math.sqrt(1 - o.e) * Math.cos(E / 2));
+  const r = o.a * (1 - o.e * Math.cos(E)), l = nu + o.w * DEG;
+  return { x: r * Math.cos(l), y: r * Math.sin(l) };
+}
+function orbitPt(k, nu) { const o = EL[k]; const r = o.a * (1 - o.e * o.e) / (1 + o.e * Math.cos(nu)), l = nu + o.w * DEG; return { x: r * Math.cos(l), y: r * Math.sin(l) }; }
+const synodic = k => 1 / (1 / EL[k].P - 1 / EL.Ea.P);
+const cross = (a, b) => a.x * b.y - a.y * b.x, dot = (a, b) => a.x * b.x + a.y * b.y, len = a => Math.hypot(a.x, a.y);
+const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y }), scl = (a, s) => ({ x: a.x * s, y: a.y * s });
+function elongOf(sDir, g) { return Math.atan2(cross(sDir, g), dot(sDir, g)) / DEG; }   // + = east
+
+let PL = 'Ve', MODEL = 'cop';
+function dayNum() { return DAY0 + +$('dSlider').value + frac; }
+let frac = 0;
+function Dpt() { return +$('pSlider').value; }
+function maxD(k) { return Math.floor(0.99 / (1 + EL[k].a * (1 + EL[k].e)) * 100) / 100; }
+
+// full state, in Earth-centred coordinates (AU), for either model
+function state(d) {
+  const e = helio('Ea', d), p = helio(PL, d);
+  const gCop = sub(p, e);                         // Copernican Earth→planet
+  const sun = scl(e, -1);                         // Earth→Sun
+  const D = Dpt();
+  const g = MODEL === 'cop' ? gCop : scl(gCop, D);   // Ptolemy: same direction, scaled inside the Sun
+  const toSun = sub(sun, g), toEarth = scl(g, -1);
+  const alpha = Math.acos(Math.max(-1, Math.min(1, dot(toSun, toEarth) / len(toSun) / len(toEarth))));
+  const el = elongOf(sun, g);
+  const dist = len(g);
+  const thetaAs = 2 * EL[PL].R / (len(gCop) * AU_KM) * RAD_AS;   // apparent size (same in both models: Ptolemy only fixes ratios)
+  return { e, p, gCop, g, sun, D, alpha, k: (1 + Math.cos(alpha)) / 2, el, dist, thetaAs };
+}
+// greatest elongation possible for Earth where it is now (scan the orbit)
+function extremes(d) {
+  const e = helio('Ea', d), sun = scl(e, -1);
+  let best = { E: -1, W: 1, near: 1e9, far: -1 }, out = {};
+  for (let i = 0; i < 720; i++) {
+    const nu = i / 720 * 2 * Math.PI, p = orbitPt(PL, nu), g = sub(p, e), el = elongOf(sun, g), dd = len(g);
+    if (el > best.E) { best.E = el; out.E = p; }
+    if (el < best.W) { best.W = el; out.W = p; }
+    if (dd < best.near) { best.near = dd; out.IC = p; }
+    if (dd > best.far) { best.far = dd; out.SC = p; }
+  }
+  out.maxE = best.E; out.maxW = -best.W; return out;
+}
+
+// ---------- drawing helpers ----------
+function ctx2(id, W, H) { const c = $(id), ctx = c.getContext('2d'); ctx.setTransform(c.width / W, 0, 0, c.height / H, 0, 0); return ctx; }
+function label(ctx, t, x, y, o) {
+  o = o || {}; ctx.save(); ctx.font = o.font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+  ctx.lineWidth = 3; ctx.strokeStyle = o.halo || 'rgba(8,11,18,0.85)'; ctx.lineJoin = 'round'; ctx.strokeText(t, x, y);
+  ctx.fillStyle = o.col || '#dfe8f0'; ctx.fillText(t, x, y); ctx.restore();
+}
+// sphere lit from direction L = {x: right, y: up, z: toward viewer} (unit)
+function litSphere(ctx, x, y, r, L, rgb, dark, o) {
+  o = o || {};
+  const cosA = Math.max(-1, Math.min(1, L.z)), sinA = Math.sqrt(1 - cosA * cosA);
+  const th = Math.atan2(-L.y, L.x);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(th);
+  ctx.fillStyle = dark; ctx.beginPath(); ctx.arc(0, 0, r, 0, 2 * Math.PI); ctx.fill();
+  if (o.rim) { ctx.strokeStyle = o.rim; ctx.lineWidth = 1; ctx.setLineDash([2, 2]); ctx.stroke(); ctx.setLineDash([]); }
+  if (cosA > -0.9999) {
+    const g = ctx.createRadialGradient(r * sinA * 0.55, -r * 0.18, r * 0.05, 0, 0, r * 1.05);
+    g.addColorStop(0, 'rgb(' + rgb.map(c => Math.min(255, c + 18)).join(',') + ')');
+    g.addColorStop(0.7, 'rgb(' + rgb.join(',') + ')');
+    g.addColorStop(1, 'rgb(' + rgb.map(c => Math.round(c * 0.62)).join(',') + ')');
+    ctx.fillStyle = g; ctx.beginPath();
+    ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false);
+    ctx.ellipse(0, 0, Math.max(0.01, r * Math.abs(cosA)), r, 0, Math.PI / 2, 3 * Math.PI / 2, cosA < 0);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+function sunGlow(ctx, x, y, r) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2);
+  g.addColorStop(0, 'rgba(255,236,170,0.55)'); g.addColorStop(1, 'rgba(255,200,90,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3.2, 0, 7); ctx.fill();
+  const b = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+  b.addColorStop(0, '#fffbe6'); b.addColorStop(0.6, '#ffd862'); b.addColorStop(1, '#f2a93b');
+  ctx.fillStyle = b; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+}
+
+// ---------- orbit view (tilted, looking down from 58° above the plane) ----------
+const OW = 520, OH = 300, ELEV = 46 * DEG, CE = Math.cos(ELEV), SE = Math.sin(ELEV);
+let OS = 132, OCX = 260, OCY = 150, ORIGIN = { x: 0, y: 0 };
+function P3(w) { const x = w.x - ORIGIN.x, y = w.y - ORIGIN.y; return { x: OCX + x * OS, y: OCY - y * SE * OS, d: -y * CE }; }
+function viewL(from, to) {   // world direction → view-space light vector
+  const v = sub(to, from), n = len(v) || 1, wx = v.x / n, wy = v.y / n;
+  return { x: wx, y: wy * SE, z: -wy * CE };
+}
+function ringPts(f, n) { const pts = []; for (let i = 0; i <= n; i++) pts.push(f(i / n * 2 * Math.PI)); return pts; }
+function strokePath(ctx, pts, col, lw, dash) { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1; }
+// draw a world-plane closed curve with its far half dim and near half bright, split around the Sun/centre
+function orbitRing(ctx, worldPts, col, phase) {
+  const sp = worldPts.map(P3);
+  for (let i = 0; i < sp.length - 1; i++) {
+    const far = (worldPts[i].y + worldPts[i + 1].y) / 2 - ORIGIN.y > 0;
+    if ((phase === 'far') !== far) continue;
+    ctx.strokeStyle = col.replace('A', far ? '0.32' : '0.75'); ctx.lineWidth = far ? 1.1 : 1.6;
+    ctx.beginPath(); ctx.moveTo(sp[i].x, sp[i].y); ctx.lineTo(sp[i + 1].x, sp[i + 1].y); ctx.stroke();
+  }
+  ctx.lineWidth = 1;
+}
+function dirArrow(ctx, wp, wnext, col) {
+  const a = P3(wp), b = P3(wnext), ang = Math.atan2(b.y - a.y, b.x - a.x);
+  ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(ang); ctx.fillStyle = col;
+  ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -3.5); ctx.lineTo(-3, 3.5); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+function drawOrbit(S, X) {
+  const ctx = ctx2('orbit', OW, OH);
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, OW, OH);
+  for (let i = 0; i < 70; i++) { ctx.fillStyle = 'rgba(255,255,255,' + (0.07 + (i % 4) * 0.05) + ')'; ctx.fillRect((i * 97.7) % OW, (i * 57.3) % OH, 1.1, 1.1); }
+  const cop = MODEL === 'cop', pl = EL[PL];
+  // world coordinates: Copernicus = heliocentric; Ptolemy = geocentric
+  let earthW, sunW, planW;
+  if (cop) { ORIGIN = { x: 0, y: 0 }; OS = 182; sunW = { x: 0, y: 0 }; earthW = S.e; planW = S.p; }
+  else { ORIGIN = { x: 0, y: 0 }; OS = 160; earthW = { x: 0, y: 0 }; sunW = S.sun; planW = S.g; }
+  const OC = { x: 0, y: 0 };
+  const items = [];   // painter-sorted bodies
+  // --- orbits / circles, far halves
+  let rings = [];
+  if (cop) {
+    rings.push([ringPts(nu => orbitPt('Ea', nu), 180), 'rgba(120,170,255,A)']);
+    rings.push([ringPts(nu => orbitPt(PL, nu), 180), 'rgba(205,225,140,A)']);
+  } else {
+    const R1 = len(S.sun), cen = scl(S.sun, S.D);
+    const rho = S.D * len(S.p);
+    rings.push([ringPts(t => ({ x: R1 * Math.cos(t), y: R1 * Math.sin(t) }), 180), 'rgba(255,214,107,A)']);
+    rings.push([ringPts(t => ({ x: S.D * R1 * Math.cos(t), y: S.D * R1 * Math.sin(t) }), 180), 'rgba(205,225,140,A)']);
+    rings.push([ringPts(t => ({ x: cen.x + rho * Math.cos(t), y: cen.y + rho * Math.sin(t) }), 120), 'rgba(205,225,140,A)']);
+  }
+  rings.forEach(([pts, col]) => orbitRing(ctx, pts, col, 'far'));
+  // --- sight lines from Earth
+  const E2 = P3(earthW), S2 = P3(sunW), Pp = P3(planW);
+  ctx.strokeStyle = 'rgba(255,214,107,0.45)'; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(E2.x, E2.y); ctx.lineTo(S2.x, S2.y); ctx.stroke();
+  const ext = scl(sub(planW, earthW), 1.25), PX = P3({ x: earthW.x + ext.x, y: earthW.y + ext.y });
+  ctx.strokeStyle = 'rgba(230,240,200,0.75)'; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(E2.x, E2.y); ctx.lineTo(PX.x, PX.y); ctx.stroke();
+  // Ptolemy: the two tangent lines that confine the planet near the Sun
+  if (!cop) {
+    const cen = scl(S.sun, S.D), rho = S.D * len(S.p), dc = len(cen), half = Math.asin(Math.min(1, rho / dc)), base = Math.atan2(cen.y, cen.x);
+    for (const sgn of [-1, 1]) { const a = base + sgn * half, L = Math.sqrt(dc * dc - rho * rho) * 1.35; const q = P3({ x: L * Math.cos(a), y: L * Math.sin(a) });
+      ctx.strokeStyle = 'rgba(205,225,140,0.3)'; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.moveTo(E2.x, E2.y); ctx.lineTo(q.x, q.y); ctx.stroke(); ctx.setLineDash([]); }
+  }
+  // elongation arc at Earth (in the orbital plane)
+  const aS = Math.atan2(sunW.y - earthW.y, sunW.x - earthW.x), aP = Math.atan2(planW.y - earthW.y, planW.x - earthW.x);
+  let dA = aP - aS; while (dA > Math.PI) dA -= 2 * Math.PI; while (dA < -Math.PI) dA += 2 * Math.PI;
+  const rA = Math.min(0.2, 0.5 * len(sub(planW, earthW))), arc = []; for (let i = 0; i <= 30; i++) { const a = aS + dA * i / 30; arc.push(P3({ x: earthW.x + rA * Math.cos(a), y: earthW.y + rA * Math.sin(a) })); }
+  strokePath(ctx, arc, '#c9e07a', 2);
+  const am = aS + dA / 2, lp = P3({ x: earthW.x + (rA + 0.06) * Math.cos(am), y: earthW.y + (rA + 0.06) * Math.sin(am) });
+  // --- bodies, depth sorted
+  const sunR = 13, plR = PL === 'Ve' ? 7 : 5.5, eaR = 7.5;
+  items.push({ d: S2.d, draw: () => sunGlow(ctx, S2.x, S2.y, sunR) });
+  items.push({ d: E2.d, draw: () => litSphere(ctx, E2.x, E2.y, eaR, viewL(earthW, sunW), [86, 150, 230], '#1b2a42') });
+  items.push({ d: Pp.d, draw: () => litSphere(ctx, Pp.x, Pp.y, plR, viewL(planW, sunW), pl.col, pl.dark) });
+  items.sort((a, b) => a.d - b.d).forEach(it => it.draw());
+  rings.forEach(([pts, col]) => orbitRing(ctx, pts, col, 'near'));
+  // re-draw bodies that sit on the near half so the ring doesn't cross them
+  items.forEach(it => it.draw());
+  // direction-of-motion arrows
+  if (cop) {
+    const t0 = -2.2; dirArrow(ctx, orbitPt('Ea', t0), orbitPt('Ea', t0 + 0.05), 'rgba(140,185,255,0.9)'); dirArrow(ctx, orbitPt(PL, t0), orbitPt(PL, t0 + 0.05), 'rgba(205,225,140,0.95)');
+  }
+  // ---- labels, with simple collision avoidance (names first, then configuration markers) ----
+  const boxes = [{ x: 0, y: 0, w: 200, h: 24 }, { x: OW - 190, y: 0, w: 190, h: 24 }];   // corner captions
+  const fontN = '600 10.5px "Source Sans 3",sans-serif', fontM = '10px "Source Sans 3",sans-serif';
+  const boxOf = (t, x, y, font) => { ctx.font = font; const w = ctx.measureText(t).width + 6; return { x: x - w / 2, y: y - 8, w, h: 16 }; };
+  const hits = b => boxes.some(o => b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y);
+  const bodyBox = (q, r) => ({ x: q.x - r, y: q.y - r, w: 2 * r, h: 2 * r });
+  boxes.push(bodyBox(S2, 14), bodyBox(E2, 8), bodyBox(Pp, 8), { x: lp.x - 6, y: lp.y - 7, w: 12, h: 14 });
+  const place = (t, cands, o) => {
+    for (const c of cands) {
+      ctx.font = o.font; const hw = ctx.measureText(t).width / 2;
+      const ax = c.ang == null ? 0 : Math.cos(c.ang) * hw, ay = c.ang == null ? 0 : Math.sin(c.ang) * 5;
+      const x = Math.max(hw + 4, Math.min(OW - hw - 4, c.x + ax)), y = Math.max(28, Math.min(OH - 10, c.y + ay)), b = boxOf(t, x, y, o.font);
+      if (!hits(b) || c.force) { boxes.push(b); label(ctx, t, x, y, o); return true; }
+    }
+    return false;
+  };
+  // offset in screen space by `dist` px from q, at angle `ang`
+  const off = (q, ang, dist) => ({ x: q.x + Math.cos(ang) * dist, y: q.y + Math.sin(ang) * dist, ang });
+  const ring8 = (q, dist, a0) => [0, 1, -1, 2, -2, 3, -3, 4].map(k => off(q, a0 + k * Math.PI / 4, dist));
+  const angFrom = (q, from) => Math.atan2(q.y - from.y, q.x - from.x);
+  label(ctx, 'ε', lp.x, lp.y, { col: '#d6eb8a', font: 'italic 600 12px "Source Serif 4",serif' });
+  place('Sun', [{ x: S2.x, y: S2.y + 23 }, { x: S2.x, y: S2.y - 23 }].concat(ring8(S2, 16, Math.PI / 2)), { col: '#ffe9a8', font: fontN });
+  // planet name: on the side of the sight line away from the Sun
+  const sl = angFrom(Pp, E2), sideSun = Math.sign(Math.sin(angFrom(S2, E2) - sl)) || 1;
+  const pc = ring8(Pp, 9, sl - sideSun * Math.PI / 2); pc.push(Object.assign(off(Pp, sl - sideSun * Math.PI / 2, 16), { force: true }));
+  place(pl.name, pc, { col: '#e3efb5', font: fontN });
+  const ec = ring8(E2, 10, cop ? angFrom(E2, S2) : Math.PI / 2); ec.push(Object.assign(off(E2, Math.PI / 2, 18), { force: true }));
+  place('Earth', ec, { col: '#a9cdfa', font: fontN });
+  if (cop && $('cfgChk').checked) {
+    const marks = [['IC', 'inferior conjunction'], ['SC', 'superior conjunction'], ['E', 'greatest elongation E'], ['W', 'greatest elongation W']];
+    for (const [key, txt] of marks) {
+      const q = P3(X[key]);
+      ctx.strokeStyle = 'rgba(220,235,170,0.85)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(q.x, q.y, 4, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
+      if (Math.hypot(q.x - Pp.x, q.y - Pp.y) < 12) continue;            // the planet is sitting on it
+      const out = angFrom(q, S2);
+      const cands = [off(q, out, 8), off(q, out, 18)].concat(ring8(q, 8, out), ring8(q, 20, out));
+      place(txt, cands, { col: 'rgba(225,238,180,0.95)', font: fontM });
+    }
+  }
+  label(ctx, 'elongation ε = ' + Math.abs(S.el).toFixed(1) + '° ' + (S.el > 0 ? 'E' : 'W'), OW - 10, 13, { align: 'right', col: '#d6eb8a', font: '600 11px "Source Sans 3",sans-serif' });
+  // corner captions
+  label(ctx, cop ? 'Copernicus: Sun at the centre' : 'Ptolemy: Earth at the centre', 10, 13, { align: 'left', col: '#c7d2dc', font: '600 11px "Source Sans 3",sans-serif' });
+}
+
+// ---------- view from Earth ----------
+const VW = 520, VH = 170;
+function drawView(S, X) {
+  const ctx = ctx2('view', VW, VH);
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, VW, VH);
+  const pl = EL[PL], east = S.el > 0;
+  // telescope eyepiece
+  const tx = 84, ty = 88, tr = 74, PXAS = 1.55;
+  ctx.save(); ctx.beginPath(); ctx.arc(tx, ty, tr, 0, 7); ctx.clip();
+  ctx.fillStyle = '#04060b'; ctx.fillRect(tx - tr, ty - tr, 2 * tr, 2 * tr);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.moveTo(tx - tr, ty); ctx.lineTo(tx + tr, ty); ctx.moveTo(tx, ty - tr); ctx.lineTo(tx, ty + tr); ctx.stroke();
+  const rr = Math.max(1.5, S.thetaAs * PXAS / 2);
+  // bright limb toward the Sun: Sun is west (right) of an evening (east) planet
+  const lx = (east ? 1 : -1) * Math.sin(S.alpha);
+  litSphere(ctx, tx, ty, rr, { x: lx, y: 0, z: Math.cos(S.alpha) }, pl.col, '#10131a', { rim: 'rgba(255,255,255,0.18)' });
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tx, ty, tr, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
+  label(ctx, 'telescope view', tx, 8, { col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  label(ctx, 'E', tx - tr + 9, ty, { col: 'rgba(220,228,236,0.6)', font: '9.5px "Source Sans 3",sans-serif' });
+  label(ctx, 'W', tx + tr - 9, ty, { col: 'rgba(220,228,236,0.6)', font: '9.5px "Source Sans 3",sans-serif' });
+  label(ctx, S.thetaAs.toFixed(1) + '″ across', tx, ty + tr - 10, { col: '#e3efb5', font: '600 10px "JetBrains Mono",monospace' });
+
+  // sky strip: Sun at centre, elongation east to the left
+  const x0 = 186, x1 = 512, cx = (x0 + x1) / 2, yL = 50, pxDeg = (x1 - x0 - 20) / 120;
+  label(ctx, 'in the sky, along the ecliptic', x0, 10, { align: 'left', col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.moveTo(x0, yL); ctx.lineTo(x1, yL); ctx.stroke();
+  ctx.fillStyle = 'rgba(220,228,236,0.55)'; ctx.font = '9px "JetBrains Mono",monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let a = -60; a <= 60; a += 15) { const x = cx - a * pxDeg; ctx.fillRect(x - 0.5, yL - 3, 1, 6); if (a !== 0) ctx.fillText(Math.abs(a) + '°', x, yL + 6); }
+  label(ctx, 'E', x0 + 4, yL - 10, { col: 'rgba(220,228,236,0.7)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  label(ctx, 'W', x1 - 6, yL - 10, { col: 'rgba(220,228,236,0.7)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  const mxE = MODEL === 'cop' ? X.maxE : Math.asin(Math.min(1, S.D * len(S.p) / (S.D * len(S.sun)))) / DEG;
+  const mxW = MODEL === 'cop' ? X.maxW : mxE;
+  ctx.strokeStyle = 'rgba(205,225,140,0.45)'; ctx.setLineDash([2, 3]);
+  for (const a of [mxE, -mxW]) { const x = cx - a * pxDeg; ctx.beginPath(); ctx.moveTo(x, yL - 14); ctx.lineTo(x, yL + 4); ctx.stroke(); }
+  ctx.setLineDash([]);
+  sunGlow(ctx, cx, yL, 6);
+  const px = cx - Math.max(-62, Math.min(62, S.el)) * pxDeg;
+  ctx.fillStyle = 'rgb(' + pl.col.join(',') + ')'; ctx.beginPath(); ctx.arc(px, yL, 3.6, 0, 7); ctx.fill();
+  const vis = Math.abs(S.el) < 10 ? 'too close to the Sun to see' : east ? 'evening star: sets after the Sun' : 'morning star: rises before the Sun';
+  label(ctx, vis, x1, 10, { align: 'right', col: Math.abs(S.el) < 10 ? '#f0a58c' : '#e3efb5', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+
+  // phases over one synodic cycle (to scale), SC → E → IC → W → SC
+  const yT = 84, yI = 122, n = 9, sx0 = 204, sx1 = 494;
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.beginPath(); ctx.moveTo(x0, yT - 8); ctx.lineTo(x1, yT - 8); ctx.stroke();
+  label(ctx, 'one full cycle, to scale', x0, yT, { align: 'left', col: 'rgba(220,228,236,0.75)', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  const verdict = MODEL === 'cop' ? 'full set of phases; size changes ' + (seqRatio()).toFixed(1) + '×' : 'only crescents: never gibbous or full';
+  label(ctx, verdict, x1, yT, { align: 'right', col: MODEL === 'cop' ? '#e3efb5' : '#f0a58c', font: '600 10px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  const seq = sequence(n), smax = Math.max(...seq.map(q => q.size));
+  seq.forEach((q, i) => {
+    const x = sx0 + i / (n - 1) * (sx1 - sx0), r = Math.max(1.6, 15 * q.size / smax);
+    litSphere(ctx, x, yI, r, { x: (q.east ? 1 : -1) * Math.sin(q.alpha), y: 0, z: Math.cos(q.alpha) }, pl.col, '#141820', { rim: 'rgba(255,255,255,0.22)' });
+  });
+  const lab = (t, x) => label(ctx, t, x, VH - 9, { col: 'rgba(220,228,236,0.7)', font: '9.5px "Source Sans 3",sans-serif', halo: 'rgba(13,20,32,0.9)' });
+  lab('superior conj.', sx0 + 4); lab('evening', sx0 + (sx1 - sx0) * 0.25); lab('inferior conj.', (sx0 + sx1) / 2); lab('morning', sx0 + (sx1 - sx0) * 0.75); lab('superior conj.', sx1 - 4);
+  // where we are now in the cycle
+  const phi = cyclePhase(S);
+  const mx = sx0 + phi / 360 * (sx1 - sx0);
+  ctx.fillStyle = '#c9e07a'; ctx.beginPath(); ctx.moveTo(mx, yI - 19); ctx.lineTo(mx - 4.5, yI - 26); ctx.lineTo(mx + 4.5, yI - 26); ctx.closePath(); ctx.fill();
+}
+// relative heliocentric angle: 0 at superior conjunction, 180 at inferior
+function cyclePhase(S) { let a = (Math.atan2(S.p.y, S.p.x) - Math.atan2(-S.e.y, -S.e.x)) / DEG; a = ((a % 360) + 360) % 360; return a; }
+function sequence(n) {
+  const a = EL[PL].a, D = Dpt(), out = [];
+  for (let i = 0; i < n; i++) {
+    const phi = i / (n - 1) * 2 * Math.PI;
+    const e = { x: 1, y: 0 }, p = { x: a * Math.cos(Math.PI + phi), y: a * Math.sin(Math.PI + phi) };
+    const gC = sub(p, e), sun = { x: -1, y: 0 }, g = MODEL === 'cop' ? gC : scl(gC, D);
+    const ts = sub(sun, g), te = scl(g, -1);
+    const alpha = Math.acos(Math.max(-1, Math.min(1, dot(ts, te) / len(ts) / len(te))));
+    out.push({ alpha, size: 1 / len(gC), east: elongOf(sun, g) > 0 || (i === 0) });
+  }
+  return out;
+}
+function seqRatio() { const a = EL[PL].a; return (1 + a) / (1 - a); }
+
+// ---------- read-outs ----------
+function row(k, v, cls) { return '<div class="resrow' + (cls ? ' ' + cls : '') + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+function phaseName(S) {
+  const k = S.k;
+  if (k < 0.03) return 'new';
+  if (k < 0.47) return 'crescent';
+  if (k <= 0.53) return 'half lit';
+  if (k < 0.97) return 'gibbous';
+  return 'full';
+}
+function configName(S, X) {
+  const a = Math.abs(S.el), mx = MODEL === 'cop' ? (S.el > 0 ? X.maxE : X.maxW) : null;
+  if (a < (PL === 'Ve' ? 4 : 3)) return S.alpha > Math.PI / 2 ? 'inferior conjunction' : 'superior conjunction';
+  if (mx && a > mx - (PL === 'Ve' ? 0.6 : 0.8)) return 'greatest elongation ' + (S.el > 0 ? 'E' : 'W');
+  return S.el > 0 ? 'east of the Sun' : 'west of the Sun';
+}
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function dateStr(d) { const t = new Date(J2000 + d * 864e5); return t.getUTCDate() + ' ' + MONTHS[t.getUTCMonth()] + ' ' + t.getUTCFullYear(); }
+let rpText = null;
+function render() {
+  const d = dayNum(), S = state(d), X = extremes(d), pl = EL[PL];
+  $('dVal').textContent = dateStr(d);
+  $('pVal').textContent = Dpt().toFixed(2) + ' × d(Sun)';
+  $('cfgChk').disabled = MODEL !== 'cop'; $('cfgChk').parentElement.style.opacity = MODEL === 'cop' ? 1 : 0.45;
+  $('dRow').style.opacity = MODEL === 'pto' ? 1 : 0.45;
+  $('pSlider').disabled = MODEL !== 'pto';
+  const cfg = configName(S, X);
+  const mxTxt = MODEL === 'cop' ? X.maxE.toFixed(1) + '° E / ' + X.maxW.toFixed(1) + '° W' : (Math.asin(pl.a / 1) / DEG).toFixed(1) + '° (by design)';
+  $('results').innerHTML =
+    row('configuration', cfg) +
+    row('elongation from the Sun', Math.abs(S.el).toFixed(1) + '° ' + (S.el > 0 ? 'E' : 'W'), 'hero') +
+    row('phase', phaseName(S) + ', ' + Math.round(100 * S.k) + '% lit') +
+    row('phase angle α', (S.alpha / DEG).toFixed(0) + '°') +
+    row('apparent diameter', S.thetaAs.toFixed(1) + '″') +
+    row('distance from Earth', MODEL === 'cop' ? S.dist.toFixed(3) + ' AU' : S.dist.toFixed(3) + ' × d(Sun)') +
+    row('greatest elongation', mxTxt) +
+    row('synodic period', synodic(PL).toFixed(1) + ' d');
+  let note;
+  if (rpText) note = rpText;
+  else if (MODEL === 'pto') note = 'Ptolemy: ' + pl.name + ' is always nearer than the Sun, so we always see mostly its night side. Galileo saw a small, nearly full Venus: impossible here.';
+  else if (S.k > 0.53) note = pl.name + ' is on the far side of the Sun: small and gibbous. Only a Sun-centred orbit lets us see it like this.';
+  else note = pl.name + ' is on our side of the Sun: large and crescent. Phase and size change together.';
+  $('note').textContent = note;
+  drawOrbit(S, X); drawView(S, X);
+}
+
+// ---------- animation & controls ----------
+let playing = false, rafId = null, lastTs = null;
+function tick(ts) {
+  if (!playing) return;
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+  frac += dt * (PL === 'Ve' ? 40 : 12);   // days per second: one Venus cycle ≈ 15 s, one Mercury cycle ≈ 10 s
+  const sl = $('dSlider'); let v = +sl.value;
+  while (frac >= 1) { frac -= 1; v += 1; }
+  if (v > +sl.max) v = 0;
+  sl.value = v; render();
+  rafId = requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play';
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+}
+function setPlanet(k) {
+  PL = k; document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', b.dataset.p === k));
+  const m = maxD(k), sl = $('pSlider'); sl.max = m; if (+sl.value > m) sl.value = m;
+}
+$('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('resetBtn').addEventListener('click', () => { setPlaying(false); frac = 0; rpText = null; $('dSlider').value = 325; render(); });
+['dSlider', 'pSlider'].forEach(id => $(id).addEventListener('input', () => { frac = 0; rpText = null; render(); }));
+$('cfgChk').addEventListener('change', render);
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { setPlanet(b.dataset.p); rpText = null; render(); }));
+document.querySelectorAll('#modelSeg button').forEach(b => b.addEventListener('click', () => {
+  MODEL = b.dataset.m; document.querySelectorAll('#modelSeg button').forEach(x => x.classList.toggle('on', x === b)); rpText = null; render();
+}));
+
+function katexAll() {
+  const specs = [
+    ['f1', "\\sin \\varepsilon_{\\max} = \\dfrac{a}{a_\\oplus} = \\dfrac{a}{1\\ \\text{AU}}"],
+    ['f2', "\\dfrac{1}{S} = \\dfrac{1}{P} - \\dfrac{1}{P_\\oplus}"],
+    ['f3', "k = \\dfrac{1 + \\cos\\alpha}{2}"],
+    ['f4', "\\theta = \\dfrac{2R}{d}\\ \\text{rad}, \\qquad \\theta\\,('') = 206\\,265 \\times \\dfrac{2R}{d}"],
+    ['ex1', "a = (1\\ \\text{AU})\\sin 46.3^\\circ = 0.723\\ \\text{AU}"],
+    ['ex2', "d_{\\text{inf}} = 1 - 0.723 = 0.277\\ \\text{AU}, \\qquad d_{\\text{sup}} = 1 + 0.723 = 1.723\\ \\text{AU}"],
+    ['ex3', "\\theta_{\\text{inf}} = \\dfrac{2(6052\\ \\text{km})}{0.277 \\times 1.496\\times10^{8}\\ \\text{km}} \\times 206\\,265'' = 60''"],
+    ['ex4', "\\theta_{\\text{sup}} = \\dfrac{2(6052\\ \\text{km})}{1.723 \\times 1.496\\times10^{8}\\ \\text{km}} \\times 206\\,265'' = 9.7''"],
+    ['ex5', "\\dfrac{1}{S} = \\dfrac{1}{224.7\\ \\text{d}} - \\dfrac{1}{365.25\\ \\text{d}} = \\dfrac{1}{583.9\\ \\text{d}} \\quad\\Rightarrow\\quad S = 584\\ \\text{d} \\approx 1.6\\ \\text{yr}"],
+  ];
+  const has = typeof window.katex !== 'undefined';
+  for (const [id, tex] of specs) {
+    const el = $(id); if (!el) continue;
+    if (has) { try { katex.render(tex, el, { throwOnError: false }); continue; } catch (e) {} }
+    el.textContent = tex.replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}^]/g, '').replace(/\s+/g, ' ');
+  }
+}
+const SIM_ID = 'planetary-configurations';
+const RP_IDS = ['dSlider'];
+function rpAfter() {
+  setPlanet(Math.random() < 0.7 ? 'Ve' : 'Me');
+  const S = state(dayNum());
+  rpText = 'Random problem: on ' + dateStr(dayNum()) + ', ' + EL[PL].name + ' is ' + Math.abs(S.el).toFixed(0) + '° ' + (S.el > 0 ? 'east' : 'west') + ' of the Sun. Morning or evening star? Crescent or gibbous? Bigger or smaller than at greatest elongation? Check the views.';
+  render();
+}
+
+// ---- header menu ----
+const _menu = $('menu'), _menuBtn = $('menuBtn');
+function closeMenu() { _menu.hidden = true; }
+_menuBtn.addEventListener('click', e => { e.stopPropagation(); _menu.hidden = !_menu.hidden; });
+document.addEventListener('click', e => { if (!_menu.hidden && !_menu.contains(e.target) && e.target !== _menuBtn) closeMenu(); });
+$('mInfo').addEventListener('click', () => { closeMenu(); $('infoModal').classList.add('show'); });
+$('mExample').addEventListener('click', () => { closeMenu(); $('exampleModal').classList.add('show'); });
+$('mBug').addEventListener('click', () => { closeMenu(); $('bugModal').classList.add('show'); $('bugText').focus(); });
+$('infoClose').addEventListener('click', () => $('infoModal').classList.remove('show'));
+$('exampleClose').addEventListener('click', () => $('exampleModal').classList.remove('show'));
+$('bugClose').addEventListener('click', () => $('bugModal').classList.remove('show'));
+['infoModal', 'exampleModal', 'bugModal'].forEach(m => $(m).addEventListener('click', e => { if (e.target.id === m) $(m).classList.remove('show'); }));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); } });
+
+// ---- bug report ----
+$('bugSend').addEventListener('click', () => {
+  const text = ($('bugText').value || '').trim(), rEl = $('bugResult');
+  if (text.length < 3) { rEl.textContent = 'Please describe the problem first.'; rEl.style.color = '#f0a58c'; return; }
+  const btn = $('bugSend'); btn.disabled = true; rEl.textContent = 'Sending…'; rEl.style.color = '#9fb0bf';
+  fetch('https://sims-api.sethhopper.com/report', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sim: SIM_ID, text: text.slice(0, 4000), email: ($('bugEmail').value || '').trim().slice(0, 200), pageUrl: location.href, userAgent: navigator.userAgent, website: '' })
+  }).then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok, j })))
+    .then(res => {
+      btn.disabled = false;
+      if (res.ok && res.j && res.j.ok) { rEl.textContent = 'Thanks — your report was filed.'; rEl.style.color = '#7fd08a'; $('bugText').value = ''; }
+      else { rEl.textContent = 'Could not send' + (res.j && res.j.error ? ' (' + res.j.error + ')' : '') + '. Try again later.'; rEl.style.color = '#f0a58c'; }
+    }).catch(() => { btn.disabled = false; rEl.textContent = 'Network error. Try again later.'; rEl.style.color = '#f0a58c'; });
+});
+
+// ---- random problem ----
+if (RP_IDS.length) {
+  $('randomBtn').hidden = false;
+  $('randomBtn').addEventListener('click', () => {
+    RP_IDS.forEach(id => {
+      const sl = $(id); if (!sl) return;
+      const mn = +sl.min, mx = +sl.max, st = +sl.step || 1;
+      const n = Math.max(1, Math.round((mx - mn) / st));
+      let v = mn + Math.round(Math.random() * n) * st;
+      sl.value = Math.abs(v) < 1e-9 ? 0 : +v.toFixed(6);
+      sl.dispatchEvent(new Event('input'));
+    });
+    if (typeof rpAfter === 'function') rpAfter();
+  });
+}
+window.addEventListener('load', () => { katexAll(); setPlanet('Ve'); render(); });
+</script>
+</body>
+</html>
