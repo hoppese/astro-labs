@@ -385,12 +385,14 @@ function drawRay() {
   const t = Math.log(p.D / D_MIN) / Math.log(D_MAX / D_MIN);
   const a = H * (0.07 + 0.13 * t);                       // drawn half-aperture (log-mapped)
   const STAR = 'rgba(255,240,200,0.85)', OFF = 'rgba(176,222,110,0.9)';
+  // the second star's drawn angle follows the separation slider (log-mapped, exaggerated): wider pair, steeper bundle
+  const aK = 0.2 + 0.8 * Math.max(0, Math.min(1, Math.log(p.alpha / A_MIN) / Math.log(A_MAX / A_MIN)));
   const LF = '600 12px ' + SANS, CF = '12px ' + SANS;
   let feD, Mdraw, ad;
   const labels = [];
   if (!refl) {
     const y0 = H * 0.55, xL = W * 0.13, Fd = W * 0.52, xF = xL + Fd;
-    Mdraw = Math.max(3, Math.min(p.M, 7)); feD = Fd / Mdraw; ad = 0.30 / Mdraw;   // schematic: real M is in the label
+    Mdraw = Math.max(3, Math.min(p.M, 7)); feD = Fd / Mdraw; ad = 0.30 * aK / Mdraw;   // schematic: real M is in the label
     const xE = xF + feD, xEye = Math.min(W - 22, xE + W * 0.1);
     // tube
     const tg = ctx.createLinearGradient(0, y0 - a - 8, 0, y0 + a + 8);
@@ -430,11 +432,11 @@ function drawRay() {
     haloText(ctx, 'eyepiece', W < 470 ? xE - 8 : xE, Math.max(14, y0 - Math.min(eh, H * 0.3) - 8 + ad * Fd / 2), '#fff', LF, W < 470 || xE > W - 60 ? 'right' : 'center');
     haloText(ctx, 'f_{eye} = ' + p.fe + ' mm', Math.min(W - 6, xF + 10 + 110) , by + 4, 'rgba(255,255,255,0.85)', '600 12px ' + MONO, 'right');
     if (W > 470) haloText(ctx, 'starlight from 2 stars', 10, 18, 'rgba(255,255,255,0.75)', CF, 'left');
-    haloText(ctx, '\u03B1', 22, y0 - a * 0.8 - ad * (xL - 6) * 0.5 - 6, '#e8c48e', 'italic 600 14px ' + SERIF, 'center');
+    haloText(ctx, '\u03B1 = ' + fmtAs(p.alpha), 14, y0 - a * 0.8 - ad * (xL - 6) * 0.5 - 6, '#e8c48e', 'italic 600 13px ' + SERIF, 'left');
     haloText(ctx, 'M\u03B1', xEye + 4, y0 - ad * Mdraw * (xEye - xE) - 10, '#e8c48e', 'italic 600 14px ' + SERIF, 'right');
   } else {
     const y0 = H * 0.64, xP = W * 0.86, Fd = W * 0.58, x0 = 6;
-    Mdraw = Math.max(3, Math.min(p.M, 7)); feD = Math.min(H * 0.16, Fd / Mdraw); Mdraw = Fd / feD; ad = 0.30 / Mdraw;
+    Mdraw = Math.max(3, Math.min(p.M, 7)); feD = Math.min(H * 0.16, Fd / Mdraw); Mdraw = Fd / feD; ad = 0.30 * aK / Mdraw;
     const dz = a + 18, xS = xP - Fd + dz, yF = y0 - dz, yE = yF - feD, yEye = Math.max(24, yE - H * 0.12);
     const xOpen = W * 0.1;
     // tube
@@ -485,7 +487,7 @@ function drawRay() {
     haloText(ctx, 'D', bx + 5, y0 + 4, '#fff', 'italic 600 14px ' + SERIF, 'left');
     haloText(ctx, 'f_{obj} = ' + fmtF(p.fo) + ' (mirror to focus)', (xOpen + xP) / 2 + 10, y0 + a + 26 + 16 > H - 4 ? H - 6 : y0 + a + 42, 'rgba(255,255,255,0.85)', '600 12px ' + MONO, 'center');
     haloText(ctx, 'f_{eye} = ' + p.fe + ' mm', xS - 16, yE + 4, 'rgba(255,255,255,0.85)', '600 12px ' + MONO, 'right');
-    if (W > 470) haloText(ctx, 'starlight from 2 stars', 10, 18, 'rgba(255,255,255,0.75)', CF, 'left');
+    if (W > 470) haloText(ctx, 'starlight from 2 stars, \u03B1 = ' + fmtAs(p.alpha) + ' apart', 10, 18, 'rgba(255,255,255,0.75)', CF, 'left');
   }
   // head read-out
   const head = 'M = f_{obj} / f_{eye} = ' + fmtF(p.fo) + ' / ' + p.fe + ' mm = ' + fmtM(p.M);
