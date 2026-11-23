@@ -25,7 +25,9 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#0b0f16; }
-  #hr { aspect-ratio:520/400; }
+  #hr { aspect-ratio:540/420; }
+  button { font-family:inherit; }
+  button:focus-visible, input:focus-visible { outline:2px solid #3f8f7a; outline-offset:2px; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
   .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #33735f; background:#33735f; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
@@ -95,7 +97,7 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="hr" width="520" height="400"></canvas>
+        <canvas id="hr" width="540" height="420"></canvas>
         <div class="btnrow">
           <button class="playbtn" id="playBtn">&#9654; Age the cluster</button>
           <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
@@ -131,21 +133,21 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Drag the age slider (or hit <b>Age the cluster</b>) and watch the turnoff point slide down the main sequence while red giants pile up in the upper right. Load a real cluster to see its turnoff: the Pleiades still has hot blue O/B stars, so it&rsquo;s young; M13&rsquo;s turnoff is down at a Sun-like mass, so it&rsquo;s ~12 billion years old.</p>
+        <p>Drag the age slider (or hit <b>Age the cluster</b>) and watch the turnoff point slide down the main sequence while red giants pile up in the upper right. Load a real cluster to see its turnoff: the Pleiades still has hot blue B stars on its main sequence, so it&rsquo;s young; M13&rsquo;s turnoff is down at a Sun-like mass, so it&rsquo;s ~12 billion years old. (Every star here has the Sun&rsquo;s composition; real globular clusters are poor in heavy elements, so their turnoff stars are a little hotter and bluer than shown.)</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
-          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">main-sequence lifetime (M in solar masses) &mdash; steeply shorter for massive stars.</div></div>
-          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">the turnoff mass whose lifetime equals the cluster age t.</div></div>
-          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">where that star sits on the main sequence — the observable turnoff.</div></div>
+          <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">main-sequence lifetime: fuel (&prop;&nbsp;M) over burn rate (&prop;&nbsp;L); steeply shorter for massive stars (M in solar masses).</div></div>
+          <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">rule-of-thumb turnoff mass: the star whose lifetime equals the cluster age t.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">how luminous the turnoff star is: the sim reads it (and its temperature) from a table of real main-sequence stars, so its ages can differ from the rule of thumb by ~30%.</div></div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Learn more</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
-          <li><a href="https://openstax.org/books/astronomy-2e/pages/22-3-star-clusters" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 22.3 Star Clusters</a></li>
-          <li><a href="https://openstax.org/books/astronomy-2e/pages/22-2-stellar-evolution-after-the-main-sequence" target="_blank" rel="noopener" style="color:#8fc7ff;">22.2 Stellar Evolution After the Main Sequence</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/22-2-star-clusters" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 22.2 Star Clusters</a></li>
+          <li><a href="https://openstax.org/books/astronomy-2e/pages/22-3-checking-out-the-theory" target="_blank" rel="noopener" style="color:#8fc7ff;">22.3 Checking Out the Theory (cluster H&ndash;R diagrams)</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/star-clusters-crash-course-astronomy-35/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #35 — Star Clusters</a></li></ul>
@@ -158,9 +160,9 @@
   <div class="modal">
     <h2>Worked example &mdash; the age of M67 <span class="close" id="exampleClose">&times;</span></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">The open cluster M67 has a main-sequence turnoff at about 1.3 solar masses. How old is it?</p>
-    <div class="step"><div class="h">1 &middot; The turnoff star&rsquo;s lifetime = the cluster&rsquo;s age</div><span class="formula" id="ex1"></span></div>
-    <div class="step"><div class="h">2 &middot; Evaluate</div><span class="formula" id="ex2"></span></div>
-    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">About 4 billion years &mdash; one of the oldest known open clusters, and a close analogue of what the Sun&rsquo;s birth cluster looks like today. (Detailed models give ~4 Gyr.)</div></div>
+    <div class="step"><div class="h">1 &middot; Rule of thumb: the turnoff star&rsquo;s lifetime = the cluster&rsquo;s age</div><span class="formula" id="ex1"></span></div>
+    <div class="step"><div class="h">2 &middot; Better: use the star&rsquo;s actual luminosity (a 1.3&nbsp;M&#9737; star has L &asymp; 2.8&nbsp;L&#9737;)</div><span class="formula" id="ex2"></span></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">About 4 to 5 billion years, close to the Sun&rsquo;s own age; detailed stellar models give about 4&nbsp;Gyr. That makes M67 one of the older open clusters: most open clusters break apart long before they get this old.</div></div>
   </div>
 </div>
 
@@ -179,7 +181,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
-let playing = false, rafId = null, last = null;
+let playing = false, rafId = null, last = null, playV = 0;
 
 function bbRGB(T) {
   let t = Math.max(10, T) / 100, r, g, b;
@@ -193,95 +195,144 @@ function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; le
 function specType(T) { if (T >= 30000) return 'O'; if (T >= 10000) return 'B'; if (T >= 7500) return 'A'; if (T >= 6000) return 'F'; if (T >= 5200) return 'G'; if (T >= 3700) return 'K'; return 'M'; }
 function fmtAge(t) { if (t < 1) return (t * 1000).toFixed(0) + ' kyr'; if (t < 1000) return Math.round(t) + ' Myr'; return (t / 1000).toPrecision(3) + ' Gyr'; }
 
+// main-sequence starting points from real stars: [mass M_sun, T (K), L (L_sun)] (same table as the Stellar Evolution sim)
+const ZAMS = [[0.08, 2300, 3e-4], [0.1, 2800, 8e-4], [0.2, 3200, 5e-3], [0.3, 3400, 0.012], [0.5, 3800, 0.04], [0.7, 4400, 0.15], [0.8, 5000, 0.35], [1.0, 5772, 1.0], [1.5, 7000, 5], [2, 8800, 16], [3, 11500, 80], [5, 15700, 500], [10, 25000, 6000], [15, 30000, 2e4], [20, 34000, 5e4], [25, 36500, 8e4], [40, 42000, 2.5e5]];
+function zams(M) {
+  const lm = Math.log10(Math.max(0.08, Math.min(40, M)));
+  for (let i = 0; i < ZAMS.length - 1; i++) {
+    const a = ZAMS[i], b = ZAMS[i + 1];
+    if (lm <= Math.log10(b[0]) + 1e-12) {
+      const f = (lm - Math.log10(a[0])) / (Math.log10(b[0]) - Math.log10(a[0]));
+      return { T: Math.pow(10, Math.log10(a[1]) + f * (Math.log10(b[1]) - Math.log10(a[1]))), L: Math.pow(10, Math.log10(a[2]) + f * (Math.log10(b[2]) - Math.log10(a[2]))) };
+    }
+  }
+  return { T: 42000, L: 2.5e5 };
+}
+// main-sequence lifetime in Myr: fuel (∝ M) / burn rate (∝ L); very massive stars lose mass and live a bit longer
+function lifetimeMyr(M) { return 1e4 * M / zams(M).L * Math.max(1, Math.pow(M / 10, 0.9)); }
+function turnoffMass(t) {   // invert lifetimeMyr (it falls steadily with mass)
+  let lo = Math.log10(0.08), hi = Math.log10(40);
+  for (let k = 0; k < 50; k++) { const mid = (lo + hi) / 2; if (lifetimeMyr(Math.pow(10, mid)) > t) lo = mid; else hi = mid; }
+  return Math.pow(10, (lo + hi) / 2);
+}
+const wdL = T => 1.44e-4 * Math.pow(T / 5772, 4);   // white dwarf: fixed radius 0.012 R_sun (about Earth-sized)
+
 const rnd = mulberry32(42);
 function gauss() { const u = 1 - rnd(), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-const stars = [];
+const MMAX = 15, stars = [];
 for (let i = 0; i < 420; i++) {
-  const M = 0.3 * Math.pow(50, rnd());
-  stars.push({ M, Tz: 5772 * Math.pow(M, 0.6) * (1 + 0.015 * gauss()), Lz: Math.pow(M, 3.5) * Math.pow(10, 0.06 * gauss()), tms: 10000 * Math.pow(M, -2.5), jT: 1 + 0.03 * gauss(), jL: 0.15 * gauss() });
+  // masses 0.3-15 M_sun, weighted toward low mass (dN/dM ∝ M^-2: gentler than the real IMF so the upper main sequence stays visible)
+  const M = 1 / (1 / 0.3 - rnd() * (1 / 0.3 - 1 / MMAX)), z = zams(M);
+  stars.push({ M, Tz: z.T * (1 + 0.015 * gauss()), Lz: z.L * Math.pow(10, 0.06 * gauss()), tms: lifetimeMyr(M), jT: 1 + 0.03 * gauss(), jL: 0.15 * gauss() });
 }
+const POST = 0.15;   // giant phases last ~15% of the main-sequence lifetime
 function starPos(s, t) {
-  if (t < s.tms) return { T: s.Tz, L: s.Lz * (1 + 0.9 * t / s.tms) };
-  const post = (t - s.tms) / (0.25 * s.tms);
+  if (t < s.tms) return { T: s.Tz * (1 - 0.07 * t / s.tms), L: s.Lz * (1 + 0.9 * t / s.tms) };
+  const post = (t - s.tms) / (POST * s.tms);
   if (post < 1) {
-    const Tg = 3700 * s.jT, Lg = Math.max(1200, s.Lz * 8) * Math.pow(10, s.jL);
-    const lT = Math.log10(s.Tz) + post * (Math.log10(Tg) - Math.log10(s.Tz));
-    const lL = Math.log10(s.Lz * 1.9) + post * (Math.log10(Lg) - Math.log10(s.Lz * 1.9));
-    return { T: Math.pow(10, lT), L: Math.pow(10, lL), giant: true };
+    const T0 = s.Tz * 0.93, L0 = s.Lz * 1.9;
+    const Tg = (s.M >= 8 ? 3650 : 3800) * s.jT, Lg = (s.M >= 8 ? s.Lz * (1 + 48 / s.M) : Math.max(1200, s.Lz * 8)) * Math.pow(10, s.jL);
+    const Tx = Math.min(5000, T0), Lx = L0 * 1.15;   // end of the quick crossing (subgiants)
+    const lerp = (a, b, f) => Math.pow(10, Math.log10(a) + f * (Math.log10(b) - Math.log10(a)));
+    if (post < 0.12) { const f = post / 0.12; return { T: lerp(T0, Tx, f), L: lerp(L0, Lx, f), giant: true }; }
+    const f = (post - 0.12) / 0.88;
+    return { T: lerp(Tx, Tg, Math.min(1, f * 2.5)), L: lerp(Lx, Lg, f), giant: true };
   }
-  if (s.M >= 8) return null;
-  const tc = t - 1.25 * s.tms;
-  return { T: 25000 * Math.pow(1 + tc / 400, -0.3), L: 0.03 * Math.pow(1 + tc / 400, -1.4), wd: true };
+  if (s.M >= 8) return null;   // supernova: gone
+  const tc = t - (1 + POST) * s.tms;   // Myr since the white dwarf formed
+  const T = 30000 * Math.pow(1 + tc / 40, -0.32);
+  return { T, L: wdL(T), wd: true };
 }
-
-const W = 520, H = 400, mL = 50, mR = 14, mT = 26, mB = 42;
-const logTmax = Math.log10(60000), logTmin = Math.log10(2500), logLmin = -4.4, logLmax = 5.4;
+const W = 540, H = 420, mL = 56, mR = 14, mT = 30, mB = 46;
+const logTmax = Math.log10(60000), logTmin = Math.log10(2500), logLmin = -4.6, logLmax = 5.4;
 const px = T => mL + (logTmax - Math.log10(T)) / (logTmax - logTmin) * (W - mL - mR);
 const py = LL => mT + (logLmax - Math.log10(LL)) / (logLmax - logLmin) * (H - mT - mB);
-
-function getAge() { return Math.pow(13000, +$('age').value / 1000); }
+let ageExact = null;   // exact age of a clicked real cluster (the slider is quantised)
+function getAge() { return ageExact != null ? ageExact : Math.pow(13000, +$('age').value / 1000); }
+function prep(c) {
+  const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const bw = Math.max(1, Math.round(r.width * dpr)), bh = Math.max(1, Math.round(r.height * dpr));
+  if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+  const ctx = c.getContext('2d'), k = Math.min(bw / W, bh / H);
+  ctx.setTransform(k, 0, 0, k, (bw - W * k) / 2, (bh - H * k) / 2);
+  return ctx;
+}
+function label(ctx, txt, x, y, col, font, align) {
+  ctx.font = font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.2; ctx.strokeStyle = 'rgba(11,15,22,0.92)'; ctx.strokeText(txt, x, y);
+  ctx.fillStyle = col; ctx.fillText(txt, x, y);
+}
+const SUPD = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵' };
+function pow10Label(e) { return e === 0 ? '1' : e === 1 ? '10' : e === 2 ? '100' : '10' + String(e).split('').map(ch => SUPD[ch]).join(''); }
 function draw(t) {
-  const c = $('hr'), ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
-  ctx.font = '10px "Source Sans 3",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  const ctx = prep($('hr'));
+  ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  ctx.lineWidth = 1;
   for (let e = -4; e <= 5; e++) {
     const y = py(Math.pow(10, e));
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
-    const lbl = { '-4': '0.0001', '-3': '0.001', '-2': '0.01', '-1': '0.1', '0': '1', '1': '10', '2': '100', '3': '1k', '4': '10k', '5': '100k' }[e];
-    ctx.textAlign = 'right'; ctx.fillText(lbl, mL - 5, y + 3);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.moveTo(mL, y); ctx.lineTo(W - mR, y); ctx.stroke();
+    if (e % 2 === 0 || e === 5) label(ctx, pow10Label(e), mL - 5, y + 3.5, 'rgba(225,232,240,0.7)', '10px "Source Sans 3",sans-serif', 'right');
   }
-  const Ts = [50000, 20000, 10000, 5000, 3000];
-  ctx.textAlign = 'center';
-  Ts.forEach(T => {
+  [50000, 30000, 20000, 10000, 7000, 5000, 4000, 3000].forEach(T => {
     const x = px(T);
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, H - mB); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillText((T / 1000) + 'k', x, H - mB + 14);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.moveTo(x, mT); ctx.lineTo(x, H - mB); ctx.stroke();
+    label(ctx, T.toLocaleString(), x, H - mB + 13, 'rgba(225,232,240,0.7)', '10px "Source Sans 3",sans-serif');
   });
-  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText('temperature (K)  —  hot ← → cool', W / 2, H - 6);
-  ctx.save(); ctx.translate(12, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('luminosity (L☉)', 0, 0); ctx.restore();
-  const cls = [['O', 45000], ['B', 17000], ['A', 8700], ['F', 6700], ['G', 5600], ['K', 4400], ['M', 3000]];
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '700 11px "Source Sans 3",sans-serif';
-  cls.forEach(cc => ctx.fillText(cc[0], px(cc[1]), mT - 8));
-
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.strokeRect(mL, mT, W - mL - mR, H - mT - mB);
+  label(ctx, 'surface temperature T (K, log scale):  hot ←  → cool', (mL + W - mR) / 2, H - 9, 'rgba(225,232,240,0.85)', '11px "Source Sans 3",sans-serif');
+  ctx.save(); ctx.translate(14, (mT + H - mB) / 2); ctx.rotate(-Math.PI / 2);
+  label(ctx, 'luminosity L / L☉ (log scale)', 0, 0, 'rgba(225,232,240,0.85)', '11px "Source Sans 3",sans-serif');
+  ctx.restore();
+  [['O', 60000, 31000], ['B', 31000, 9700], ['A', 9700, 7220], ['F', 7220, 5920], ['G', 5920, 5280], ['K', 5280, 3850], ['M', 3850, 2500]].forEach(([nm, Th, Tl]) => {
+    label(ctx, nm, (px(Th) + px(Tl)) / 2, mT - 10, 'rgba(235,240,248,0.75)', '700 10.5px "Source Sans 3",sans-serif');
+    if (nm !== 'O') { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.moveTo(px(Th), mT - 6); ctx.lineTo(px(Th), mT); ctx.stroke(); }
+  });
+  let nGiant = 0, nWD = 0;
   stars.forEach(s => {
     const p = starPos(s, t);
     if (!p) return;
+    if (p.giant) nGiant++; if (p.wd) nWD++;
     if (p.T < 2500 || p.T > 60000 || p.L < Math.pow(10, logLmin) || p.L > Math.pow(10, logLmax)) return;
     ctx.fillStyle = bbRGB(p.T);
-    ctx.beginPath(); ctx.arc(px(p.T), py(p.L), 2.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(px(p.T), py(p.L), p.giant ? 3 : 2.4, 0, 7); ctx.fill();
   });
-
-  const Mto = Math.pow(10000 / t, 0.4);
-  let res = { Mto: null };
-  if (Mto <= 15) {
-    const Tto = 5772 * Math.pow(Mto, 0.6), Lto = Math.pow(Mto, 3.5) * 1.7;
+  const Mto = turnoffMass(t);
+  let res = { Mto: null, nGiant, nWD };
+  if (Mto <= MMAX) {
+    const z = zams(Mto), Tto = z.T * 0.93, Lto = z.L * 1.9;
     const x = px(Tto), y = py(Lto);
     ctx.strokeStyle = '#5fe3b7'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
-    ctx.fillStyle = '#5fe3b7'; ctx.font = '700 12px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText('turnoff', x + 16, y + 4);
-    res = { Mto, Tto };
+    // label on the hot side: everything hotter than the turnoff has already left, so it is empty there
+    label(ctx, 'turnoff', x - 15, y + 4, '#5fe3b7', '700 12px "Source Sans 3",sans-serif', 'right');
+    res = { Mto, Tto, nGiant, nWD };
+  }
+  if (nWD > 0) {   // find where the white dwarfs are and label them once
+    const wds = stars.map(s => starPos(s, t)).filter(p => p && p.wd && p.L > Math.pow(10, logLmin));
+    if (wds.length) {
+      const hot = wds.reduce((a, b) => (b.T > a.T ? b : a));
+      label(ctx, 'white dwarfs', px(hot.T) + 6, py(hot.L) - 9, 'rgba(200,220,255,0.85)', 'italic 11px "Source Serif 4",serif', 'left');
+    }
   }
   return res;
 }
-
 function update() {
   const t = getAge();
   $('ageVal').textContent = fmtAge(t);
-  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(t - +b.dataset.age) / +b.dataset.age < 0.02));
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(t - +b.dataset.age) / +b.dataset.age < 0.005));
   const res = draw(t);
   if (res.Mto) {
     $('results').innerHTML =
       rowB('turnoff spectral type', specType(res.Tto)) +
       row('turnoff mass', res.Mto.toPrecision(2) + ' M☉') +
-      row('turnoff temperature', Math.round(res.Tto).toLocaleString() + ' K') +
-      row('MS lifetime at turnoff', fmtAge(t) + '  ✓ = age') +
-      row('bluest star left', bluestType(t));
+      row('turnoff temperature', (Math.round(res.Tto / 10) * 10).toLocaleString() + ' K') +
+      row('its MS lifetime', fmtAge(t) + ' = age') +
+      row('giants · white dwarfs', res.nGiant + ' · ' + res.nWD);
     $('note').textContent = 'The turnoff has reached ' + specType(res.Tto) + '-type stars (' + res.Mto.toPrecision(2)
-      + ' M☉). Everything more massive has already left the main sequence — that is the group of red giants in the upper right.';
+      + ' M☉). Every more massive star has already left the main sequence: the giants in the upper right, then white dwarfs (or supernovae, above 8 M☉).';
   } else {
-    $('results').innerHTML = rowB('turnoff', 'none yet') + row('status', 'all stars still on the MS') + row('cluster age', fmtAge(t));
-    $('note').textContent = 'The cluster is younger than even the most massive star&rsquo;s lifetime, so the whole main sequence is still intact — no turnoff.'.replace('&rsquo;', "'");
+    $('results').innerHTML = rowB('turnoff', 'none yet') + row('status', 'all on the main sequence') + row('cluster age', fmtAge(t));
+    $('note').textContent = 'The cluster is younger than even its most massive star’s lifetime (about ' + fmtAge(lifetimeMyr(MMAX)) + ' for ' + MMAX + ' M☉), so the whole main sequence is still intact: no turnoff yet.';
   }
 }
 function bluestType(t) {
@@ -296,29 +347,31 @@ function tick(ts) {
   if (!playing) return;
   if (last == null) last = ts;
   const dt = (ts - last) / 1000; last = ts;
-  let v = +$('age').value + dt * 90; if (v > 1000) { v = 1000; playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster'; }
-  $('age').value = v; update();
+  playV += dt * 90; if (playV >= 1000) { playV = 1000; playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster'; }
+  $('age').value = playV; ageExact = Math.pow(13000, playV / 1000); update();
   if (playing) rafId = requestAnimationFrame(tick);
 }
 $('playBtn').addEventListener('click', () => {
-  if (+$('age').value >= 999) $('age').value = 0;
+  if (+$('age').value >= 999) { $('age').value = 0; ageExact = null; }
+  playV = ageExact != null ? 1000 * Math.log(ageExact) / Math.log(13000) : +$('age').value;
   playing = !playing; $('playBtn').innerHTML = playing ? '&#10073;&#10073; Pause' : '&#9654; Age the cluster';
   if (playing) { last = null; rafId = requestAnimationFrame(tick); }
 });
-$('resetBtn').addEventListener('click', () => { playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster'; $('age').value = 0; update(); });
-$('age').addEventListener('input', () => { playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster'; update(); });
+$('resetBtn').addEventListener('click', () => { playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster'; $('age').value = 0; ageExact = null; update(); });
+$('age').addEventListener('input', () => { playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster'; ageExact = null; update(); });
+window.addEventListener('resize', update);
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
   playing = false; $('playBtn').innerHTML = '&#9654; Age the cluster';
-  $('age').value = Math.round(1000 * Math.log(+b.dataset.age) / Math.log(13000)); update();
+  $('age').value = Math.round(1000 * Math.log(+b.dataset.age) / Math.log(13000)); ageExact = +b.dataset.age; update();
 }));
 
 function katexAll() {
   const specs = [
-    ['f1', "t_{\\text{MS}} \\approx \\dfrac{10\\ \\text{Gyr}}{M^{2.5}}"],
+    ['f1', "t_{\\text{MS}} \\approx 10\\ \\text{Gyr}\\times\\dfrac{M/M_\\odot}{L/L_\\odot} \\approx \\dfrac{10\\ \\text{Gyr}}{M^{2.5}}"],
     ['f2', "M_{\\text{turnoff}} = \\left(\\dfrac{10\\ \\text{Gyr}}{t}\\right)^{0.4}"],
-    ['f3', "T \\approx 5772\\,M^{0.6}\\ \\text{K},\\quad L \\approx M^{3.5}"],
-    ['ex1', "t = \\dfrac{10\\ \\text{Gyr}}{M^{2.5}} = \\dfrac{10}{1.3^{2.5}}"],
-    ['ex2', "= \\dfrac{10}{1.93} \\approx 5.2 \\to \\sim4\\ \\text{Gyr}"],
+    ['f3', "L \\approx M^{3.5}\\ L_\\odot"],
+    ['ex1', "t \\approx \\dfrac{10\\ \\text{Gyr}}{M^{2.5}} = \\dfrac{10\\ \\text{Gyr}}{1.3^{2.5}} = \\dfrac{10\\ \\text{Gyr}}{1.93} \\approx 5.2\\ \\text{Gyr}"],
+    ['ex2', "t \\approx 10\\ \\text{Gyr}\\times\\dfrac{M/M_\\odot}{L/L_\\odot} = 10\\ \\text{Gyr}\\times\\dfrac{1.3}{2.8} \\approx 4.6\\ \\text{Gyr}"],
   ];
   const has = typeof window.katex !== 'undefined';
   for (const [id, tex] of specs) {

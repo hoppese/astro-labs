@@ -25,14 +25,16 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #hr { aspect-ratio:520/420; cursor:crosshair; }
+  #hr { aspect-ratio:540/440; cursor:crosshair; }
+  button { font-family:inherit; }
+  button:focus-visible, input:focus-visible { outline:2px solid #4a78c4; outline-offset:2px; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
   .slider-row .lbl .val { font-family:'JetBrains Mono',monospace; color:#3a5f9e; }
   input[type=range] { width:100%; accent-color:#4a78c4; }
   .chips { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
-  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
+  .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 11.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
   .chips button:hover { border-color:#4a78c4; }
   .chips button.on { background:#e7edf7; border-color:#4a78c4; color:#345086; }
   .results { display:flex; flex-direction:column; gap:7px; }
@@ -92,7 +94,7 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="hr" width="520" height="420"></canvas>
+        <canvas id="hr" width="540" height="440" aria-label="H-R diagram: click to place a star"></canvas>
         <div class="note" id="note"></div>
       </div>
       <div class="ctlCol">
@@ -100,24 +102,24 @@
         <div class="chips" id="chips">
           <button data-t="5772" data-l="1" class="on">Sun</button>
           <button data-t="9940" data-l="25">Sirius A</button>
-          <button data-t="25000" data-l="0.03">Sirius B</button>
+          <button data-t="25000" data-l="0.026">Sirius B</button>
           <button data-t="3600" data-l="90000">Betelgeuse</button>
           <button data-t="3040" data-l="0.0017">Proxima</button>
           <button data-t="11000" data-l="120000">Rigel</button>
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>temperature T</span><span class="val" id="tVal">5772 K</span></div>
-          <input type="range" id="tSlider" min="2400" max="42000" step="50" value="5772">
+          <div class="lbl"><span>temperature T (log)</span><span class="val" id="tVal">5772 K</span></div>
+          <input type="range" id="tSlider" min="3.380" max="4.623" step="0.001" value="3.761">
         </div>
         <div class="slider-row">
           <div class="lbl"><span>luminosity L (log)</span><span class="val" id="lVal">1 L☉</span></div>
-          <input type="range" id="lSlider" min="-4" max="6" step="0.02" value="0">
+          <input type="range" id="lSlider" min="-4" max="6" step="0.01" value="0">
         </div>
         <div class="section-label" style="margin-top:4px;">This star</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Schematic populations; click the diagram to drop your star anywhere.</div>
+    <div class="footer-note">DRAFT &mdash; astro-labs. Schematic populations; click the diagram to drop your star anywhere.</div>
   </div>
 </div>
 
@@ -131,7 +133,7 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Drop one of the named stars, drag the sliders, or click anywhere on the diagram. The dashed diagonals are lines of constant radius. Watch where your star lands: on the main sequence you also get a rough mass and lifetime; off it, the label tells you what kind of object has that temperature and luminosity.</p>
+        <p>Drop one of the named stars, drag the sliders, or click anywhere on the diagram. The dashed diagonals are lines of constant radius (labelled in solar radii, R&#9737;). Watch where your star lands: on the main sequence you also get a rough mass and lifetime; off it, the label tells you what kind of object has that temperature and luminosity. White dwarfs get their own spectral types: DA plus a number equal to 50,400&nbsp;K&nbsp;/&nbsp;T (Sirius&nbsp;B is DA2). <b>Random problem</b> drops a realistic star from one of the groups.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
@@ -160,7 +162,7 @@
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Betelgeuse has a surface temperature of ~3600 K and a luminosity of about 90,000 L&#8857;. What is its radius?</p>
     <div class="step"><div class="h">1 &middot; Rearrange L = 4&pi;R&sup2;&sigma;T&#8308;</div><span class="formula" id="ex1"></span></div>
     <div class="step"><div class="h">2 &middot; Plug in (relative to the Sun)</div><span class="formula" id="ex2"></span></div>
-    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">About 750 solar radii &mdash; if it replaced the Sun, its surface would reach past the orbit of Mars. That is what puts it in the supergiant corner of the diagram.</div></div>
+    <div class="step"><div class="h">3 &middot; Interpret</div><div style="font-size:11.5px;color:#e7d6e4;">About 770 solar radii (3.6&nbsp;AU): if it replaced the Sun, its surface would reach past the orbit of Mars and most of the way to Jupiter. That is what puts it in the supergiant corner of the diagram.</div></div>
   </div>
 </div>
 
@@ -180,180 +182,270 @@
 <script>
 const $ = id => document.getElementById(id);
 const TSUN = 5772;
-let Tk = 5772, Ls = 1;
+let Tk = 5772, Ls = 1, presetName = 'Sun', exact = null;   // exact = {T, L} of a clicked preset (sliders are quantised)
 
-// main-sequence anchor points (T in K, L in L_sun)
+// main-sequence (dwarf) anchor points: T in K, L in L_sun (approx. Pecaut & Mamajek dwarf sequence)
 const MS = [
-  [42000, 5e5], [30000, 2.0e4], [20000, 1.6e4 / 4], [15000, 800], [11000, 180],
-  [9800, 40], [8300, 12], [7200, 5.4], [6600, 2.1], [5900, 1.2],
-  [5772, 1.0], [5300, 0.44], [4600, 0.15], [3900, 0.05], [3400, 0.013],
-  [3000, 0.0035], [2600, 0.0009],
+  [42000, 3.0e5], [31000, 2.0e4], [26000, 6.0e3], [20600, 2.0e3], [15700, 500], [12300, 150],
+  [9700, 40], [8080, 12], [7220, 6], [6510, 2.9], [5920, 1.35], [5772, 1.0], [5280, 0.46],
+  [4440, 0.16], [3850, 0.069], [3560, 0.030], [3060, 0.0045], [2700, 0.0011], [2380, 0.0004],
 ];
-function msL(T) {
-  // interpolate in log-log
-  const lt = Math.log10(T);
-  let a = MS[0], b = MS[MS.length - 1];
-  for (let i = 0; i < MS.length - 1; i++) {
-    if (T <= MS[i][0] && T >= MS[i + 1][0]) { a = MS[i]; b = MS[i + 1]; break; }
+// dwarf spectral subtype -> temperature (index t = 10*class + subtype, O0 = 0 ... M9 = 69)
+const SPT = [[3,44900],[5,41400],[7,36900],[9,33000],[10,31000],[11,26000],[12,20600],[13,17000],[15,15700],[17,13500],[18,12300],[19,10700],[20,9700],[22,8840],[25,8080],[27,7500],[30,7220],[32,6810],[35,6510],[38,6170],[40,5920],[42,5770],[45,5660],[48,5490],[50,5280],[52,5040],[55,4440],[57,4050],[60,3850],[61,3660],[62,3560],[63,3430],[64,3210],[65,3060],[66,2810],[67,2680],[68,2570],[69,2380]];
+function subtypeOfT(T) {
+  if (T >= SPT[0][1]) return 3;
+  for (let i = 0; i < SPT.length - 1; i++) {
+    const [t0, T0] = SPT[i], [t1, T1] = SPT[i + 1];
+    if (T <= T0 && T >= T1) return t0 + (Math.log10(T0) - Math.log10(T)) / (Math.log10(T0) - Math.log10(T1)) * (t1 - t0);
   }
-  const f = (Math.log10(a[0]) - lt) / (Math.log10(a[0]) - Math.log10(b[0]) + 1e-9);
+  return 69;
+}
+function typeName(t) { const ti = Math.max(0, Math.min(69, Math.round(t))); return 'OBAFGKM'[Math.floor(ti / 10)] + (ti % 10); }
+function colourWord(T) { return T >= 30000 ? 'blue' : T >= 10000 ? 'blue-white' : T >= 7500 ? 'white' : T >= 6000 ? 'yellow-white' : T >= 5200 ? 'yellow' : T >= 3700 ? 'orange' : 'red'; }
+function msL(T) {   // log-log interpolation along the main sequence
+  const lt = Math.log10(T);
+  let a = MS[0], b = MS[1];
+  if (T <= MS[MS.length - 1][0]) { a = MS[MS.length - 2]; b = MS[MS.length - 1]; }
+  else for (let i = 0; i < MS.length - 1; i++) if (T <= MS[i][0] && T >= MS[i + 1][0]) { a = MS[i]; b = MS[i + 1]; break; }
+  const f = (Math.log10(a[0]) - lt) / (Math.log10(a[0]) - Math.log10(b[0]));
   return Math.pow(10, Math.log10(a[1]) + f * (Math.log10(b[1]) - Math.log10(a[1])));
 }
-
 function radiusRsun(T, L) { return Math.sqrt(L) / Math.pow(T / TSUN, 2); }
+function bbRGB(T) {
+  let t = Math.max(10, T) / 100, r, g, b;
+  if (t <= 66) r = 255; else r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
+  if (t <= 66) g = 99.4708025861 * Math.log(t) - 161.1195681661; else g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+  if (t >= 66) b = 255; else if (t <= 19) b = 0; else b = 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  const c = x => Math.max(0, Math.min(255, Math.round(x)));
+  return 'rgb(' + c(r) + ',' + c(g) + ',' + c(b) + ')';
+}
 
 function classify(T, L) {
-  const R = radiusRsun(T, L);
-  const onMS = Math.abs(Math.log10(L) - Math.log10(msL(T))) < 0.55;
-  if (R < 0.1 && L < 0.1) return { k: 'white dwarf', on: false };
-  if (onMS) return { k: 'main sequence', on: true };
-  if (L > 3e4) return { k: 'supergiant', on: false };
-  if (R > 8 || (L > 20 && T < 6000)) return { k: 'giant', on: false };
-  if (L < msL(T) * 0.3 && L > 0.1) return { k: 'subdwarf', on: false };
-  return { k: 'main sequence (near)', on: true };
-}
-function specClass(t) {
-  if (t >= 30000) return 'O'; if (t >= 10000) return 'B'; if (t >= 7500) return 'A';
-  if (t >= 6000) return 'F'; if (t >= 5200) return 'G'; if (t >= 3700) return 'K'; return 'M';
+  const R = radiusRsun(T, L), dMS = Math.log10(L) - Math.log10(msL(T));
+  if (R < 0.04) return { k: 'white dwarf', on: false };
+  if (Math.abs(dMS) < 0.5) return { k: 'main sequence', on: true };
+  if (dMS > 0 && (L > 2e4 || R > 100)) return { k: 'supergiant', on: false };
+  if (dMS > 0 && T < 7500) return { k: 'giant', on: false };
+  if (dMS > 0) return { k: 'bright giant / blue giant', on: false };
+  return { k: 'below the main sequence', on: false };
 }
 
 // ---------- diagram ----------
+const W = 540, H = 440;
 const TLO = 2400, THI = 44000, LLO = 1e-4, LHI = 1e6;
-let plotBox = { x0: 46, x1: 506, y0: 388, y1: 14 };
-function TX(T) { const b = plotBox; return b.x0 + (Math.log10(THI) - Math.log10(T)) / (Math.log10(THI) - Math.log10(TLO)) * (b.x1 - b.x0); }
-function LY(L) { const b = plotBox; return b.y1 + (Math.log10(LHI) - Math.log10(L)) / (Math.log10(LHI) - Math.log10(LLO)) * (b.y0 - b.y1); }
-function XT(x) { const b = plotBox; return Math.pow(10, Math.log10(THI) - (x - b.x0) / (b.x1 - b.x0) * (Math.log10(THI) - Math.log10(TLO))); }
-function YL(y) { const b = plotBox; return Math.pow(10, Math.log10(LHI) - (y - b.y1) / (b.y0 - b.y1) * (Math.log10(LHI) - Math.log10(LLO))); }
+const plotBox = { x0: 58, x1: W - 14, y1: 34, y0: H - 46 };
+const lgTHI = Math.log10(THI), lgTLO = Math.log10(TLO), lgLHI = Math.log10(LHI), lgLLO = Math.log10(LLO);
+function TX(T) { const b = plotBox; return b.x0 + (lgTHI - Math.log10(T)) / (lgTHI - lgTLO) * (b.x1 - b.x0); }
+function LY(L) { const b = plotBox; return b.y1 + (lgLHI - Math.log10(L)) / (lgLHI - lgLLO) * (b.y0 - b.y1); }
+function XT(x) { const b = plotBox; return Math.pow(10, lgTHI - (x - b.x0) / (b.x1 - b.x0) * (lgTHI - lgTLO)); }
+function YL(y) { const b = plotBox; return Math.pow(10, lgLHI - (y - b.y1) / (b.y0 - b.y1) * (lgLHI - lgLLO)); }
+
+// crisp canvas: buffer = on-screen size × devicePixelRatio, drawing in design units W×H
+function prep(c) {
+  const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const bw = Math.max(1, Math.round(r.width * dpr)), bh = Math.max(1, Math.round(r.height * dpr));
+  if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+  const ctx = c.getContext('2d'), k = Math.min(bw / W, bh / H);
+  ctx.setTransform(k, 0, 0, k, (bw - W * k) / 2, (bh - H * k) / 2);
+  return ctx;
+}
+function label(ctx, txt, x, y, col, font, align) {
+  ctx.font = font || '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.2; ctx.strokeStyle = 'rgba(11,15,22,0.92)'; ctx.strokeText(txt, x, y);
+  ctx.fillStyle = col; ctx.fillText(txt, x, y);
+}
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶' };
+function pow10Label(e) { return e === 0 ? '1' : e === 1 ? '10' : e === 2 ? '100' : '10' + String(e).split('').map(ch => SUP[ch]).join(''); }
 
 function draw() {
-  const c = $('hr'), ctx = c.getContext('2d');
-  const W = 520, H = 420;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
+  const ctx = prep($('hr'));
   const b = plotBox;
+  ctx.fillStyle = '#0b0f16'; ctx.fillRect(0, 0, W, H);
 
-  // axes
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-  ctx.strokeRect(b.x0, b.y1, b.x1 - b.x0, b.y0 - b.y1);
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  for (const T of [40000, 20000, 10000, 6000, 4000, 3000]) ctx.fillText((T / 1000) + 'k', TX(T), b.y0 + 12);
-  ctx.fillText('temperature (K)  —  hot ← → cool', W / 2, H - 6);
-  ctx.textAlign = 'right';
-  const lLbl = { 1000000: '10⁶', 10000: '10⁴', 100: '100', 1: '1', 0.01: '0.01', 0.0001: '10⁻⁴' };
-  for (const L of [1e6, 1e4, 100, 1, 0.01, 1e-4]) ctx.fillText(lLbl[L], b.x0 - 4, LY(L) + 3);
-  ctx.save(); ctx.translate(11, (b.y0 + b.y1) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
-  ctx.fillText('luminosity (L / L☉)', 0, 0); ctx.restore();
-
-  // spectral-class colour band along the top
-  const classes = [['O', 40000, '#9bb4ff'], ['B', 20000, '#b7c8ff'], ['A', 9000, '#e7ecff'], ['F', 7000, '#fff8f0'], ['G', 5600, '#ffe9b0'], ['K', 4400, '#ffca7a'], ['M', 3200, '#ff9a6a']];
-  classes.forEach(([nm, T, col]) => { ctx.fillStyle = col; ctx.globalAlpha = 0.5; ctx.fillRect(TX(T) - 12, b.y1, 24, 5); ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '8px "Source Sans 3",sans-serif'; ctx.textAlign = 'center'; ctx.fillText(nm, TX(T), b.y1 - 2); });
-
-  // constant-radius diagonals
-  ctx.strokeStyle = 'rgba(150,180,220,0.22)'; ctx.font = '8px "Source Sans 3",sans-serif';
-  for (const R of [0.01, 0.1, 1, 10, 100, 1000]) {
-    ctx.beginPath(); let first = true;
-    for (let T = TLO; T <= THI; T *= 1.05) {
-      const L = R * R * Math.pow(T / TSUN, 4);
-      if (L < LLO || L > LHI) { first = true; continue; }
-      const x = TX(T), y = LY(L);
-      first ? (ctx.moveTo(x, y), first = false) : ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    // label near the top edge
-    const Ltop = LHI * 0.7; const Ttop = TSUN * Math.pow(Ltop / (R * R), 0.25);
-    if (Ttop > TLO && Ttop < THI) { ctx.fillStyle = 'rgba(150,180,220,0.5)'; ctx.textAlign = 'left'; ctx.fillText(R + ' R☉', TX(Ttop) + 3, LY(Ltop)); }
+  // grid + ticks
+  ctx.lineWidth = 1;
+  for (let e = -4; e <= 6; e++) {
+    const y = LY(Math.pow(10, e));
+    ctx.strokeStyle = e % 2 === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)';
+    ctx.beginPath(); ctx.moveTo(b.x0, y); ctx.lineTo(b.x1, y); ctx.stroke();
+    if (e % 2 === 0) label(ctx, pow10Label(e), b.x0 - 5, y + 3.5, 'rgba(225,232,240,0.7)', '10px "Source Sans 3",sans-serif', 'right');
   }
+  for (const T of [40000, 30000, 20000, 10000, 7000, 5000, 4000, 3000]) {
+    const x = TX(T);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.moveTo(x, b.y1); ctx.lineTo(x, b.y0); ctx.stroke();
+    label(ctx, T.toLocaleString(), x, b.y0 + 13, 'rgba(225,232,240,0.7)', '10px "Source Sans 3",sans-serif');
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.strokeRect(b.x0, b.y1, b.x1 - b.x0, b.y0 - b.y1);
+  label(ctx, 'surface temperature T (K, log scale):  hot ←  → cool', (b.x0 + b.x1) / 2, H - 9, 'rgba(225,232,240,0.85)', '11px "Source Sans 3",sans-serif');
+  ctx.save(); ctx.translate(14, (b.y0 + b.y1) / 2); ctx.rotate(-Math.PI / 2);
+  label(ctx, 'luminosity L / L☉ (log scale)', 0, 0, 'rgba(225,232,240,0.85)', '11px "Source Sans 3",sans-serif');
+  ctx.restore();
 
-  // populations
-  // main sequence band
-  ctx.strokeStyle = 'rgba(120,190,255,0.9)'; ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  for (let i = 0; i < MS.length; i++) { const x = TX(MS[i][0]), y = LY(MS[i][1]); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
-  ctx.stroke(); ctx.lineWidth = 1;
-  ctx.fillStyle = 'rgba(120,190,255,0.75)'; ctx.font = 'italic 10px "Source Serif 4",serif'; ctx.textAlign = 'left';
-  ctx.fillText('main sequence', TX(7000) + 4, LY(6) - 4);
+  // spectral classes along the top, each centred on its class's temperature range
+  const cls = [['O', 44000, 31000], ['B', 31000, 9700], ['A', 9700, 7220], ['F', 7220, 5920], ['G', 5920, 5280], ['K', 5280, 3850], ['M', 3850, 2400]];
+  cls.forEach(([nm, Th, Tl]) => {
+    const xa = TX(Th), xb = TX(Tl), xm = (xa + xb) / 2;
+    ctx.fillStyle = bbRGB(Math.sqrt(Th * Tl)); ctx.globalAlpha = 0.55; ctx.fillRect(xa + 1, b.y1 - 6, xb - xa - 2, 4); ctx.globalAlpha = 1;
+    label(ctx, nm, xm, b.y1 - 11, 'rgba(235,240,248,0.85)', '700 10.5px "Source Sans 3",sans-serif');
+  });
 
-  // giants blob
-  blob(ctx, TX(4200), LY(150), 70, 34, 'rgba(255,180,110,0.16)');
-  ctx.fillStyle = 'rgba(255,180,110,0.8)'; ctx.fillText('giants', TX(4200) - 16, LY(150) + 3);
-  // supergiants
-  ctx.fillStyle = 'rgba(255,150,150,0.12)'; ctx.fillRect(TX(THI), LY(1e6), TX(3200) - TX(THI), LY(2e4) - LY(1e6));
-  ctx.fillStyle = 'rgba(255,150,150,0.8)'; ctx.fillText('supergiants', TX(9000), LY(3e5));
-  // white dwarfs
-  blob(ctx, TX(14000), LY(0.003), 66, 26, 'rgba(200,220,255,0.14)');
-  ctx.fillStyle = 'rgba(200,220,255,0.85)'; ctx.fillText('white dwarfs', TX(14000) - 30, LY(0.003) + 3);
+  ctx.save(); ctx.beginPath(); ctx.rect(b.x0, b.y1, b.x1 - b.x0, b.y0 - b.y1); ctx.clip();
+  // populations (behind everything)
+  // supergiants: a band across the top
+  ctx.fillStyle = 'rgba(255,140,140,0.10)';
+  ctx.beginPath(); ctx.moveTo(TX(THI), LY(1e6)); ctx.lineTo(TX(TLO), LY(1e6)); ctx.lineTo(TX(TLO), LY(1.5e4)); ctx.lineTo(TX(THI), LY(1.5e5)); ctx.closePath(); ctx.fill();
+  // giants: elongated blob up and to the right
+  blob(ctx, TX(4400), LY(120), 64, 24, Math.atan2(LY(1500) - LY(15), TX(3700) - TX(5200)), 'rgba(255,180,110,0.16)');
+  // white dwarfs: along a line of roughly constant (Earth-size) radius
+  const wdL = T => 1.44e-4 * Math.pow(T / TSUN, 4);   // R = 0.012 R_sun
+  blob(ctx, TX(13000), LY(wdL(13000)), 108, 13, Math.atan2(LY(wdL(6000)) - LY(wdL(30000)), TX(6000) - TX(30000)), 'rgba(200,220,255,0.15)');
+
+  // constant-radius diagonals (dashed), labelled where they leave the right edge or bottom
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(150,180,220,0.28)';
+  const Rs = [0.01, 0.1, 1, 10, 100, 1000];
+  Rs.forEach(R => {
+    const Lof = T => R * R * Math.pow(T / TSUN, 4);
+    ctx.beginPath(); ctx.moveTo(TX(THI), LY(Lof(THI))); ctx.lineTo(TX(TLO), LY(Lof(TLO))); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  const rBoxes = [];
+  const ang = Math.atan2(LY(Math.pow(TLO / TSUN, 4)) - LY(Math.pow(THI / TSUN, 4)), TX(TLO) - TX(THI));
+  Rs.forEach(R => {
+    const Lof = T => R * R * Math.pow(T / TSUN, 4);
+    let T = TLO; if (Lof(T) < LLO) T = TSUN * Math.pow(LLO / (R * R), 0.25);
+    // walk back up the line a little so the label sits inside the box
+    const x = TX(T) - 34 * Math.cos(ang), y = LY(Lof(T)) - 34 * Math.sin(ang);
+    if (Math.hypot(x - TX(Tk), y - LY(Ls)) < 34) return;   // the placed star sits on this label: skip it
+    rBoxes.push({ x0: x - 24, x1: x + 24, y0: y - 14, y1: y + 6 });
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    label(ctx, (R >= 1 ? R : R) + ' R☉', 0, -4, 'rgba(160,190,230,0.85)', '9.5px "Source Sans 3",sans-serif');
+    ctx.restore();
+  });
+
+  // main sequence band + centre line
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(110,180,255,0.16)'; ctx.lineWidth = 16; pathMS(ctx); ctx.stroke();
+  ctx.strokeStyle = 'rgba(120,190,255,0.85)'; ctx.lineWidth = 2; pathMS(ctx); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.restore();
+
+  // population labels (after the clip, with halos)
+  const popLabels = [
+    ['main sequence', TX(15000), LY(20), 'rgba(140,200,255,0.95)'],
+    ['giants', TX(4400), LY(120) + 4, 'rgba(255,190,120,0.95)'],
+    ['supergiants', TX(23000), LY(4.5e5) + 4, 'rgba(255,160,160,0.95)'],
+    ['white dwarfs', TX(13000) - 4, LY(1.44e-4 * Math.pow(13000 / TSUN, 4)) + 18, 'rgba(205,222,255,0.95)'],
+  ];
+  const boxes = rBoxes.slice();
+  ctx.font = 'italic 11px "Source Serif 4",serif';
+  popLabels.forEach(([t, lx, ly, col]) => {
+    const w = ctx.measureText(t).width;
+    boxes.push({ x0: lx - w / 2 - 2, x1: lx + w / 2 + 2, y0: ly - 11, y1: ly + 3 });
+    label(ctx, t, lx, ly, col, 'italic 11px "Source Serif 4",serif');
+  });
 
   // the placed star
   const x = TX(Tk), y = LY(Ls);
-  ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fill();
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255,214,107,0.4)'; ctx.setLineDash([2, 3]);
+  ctx.strokeStyle = 'rgba(255,214,107,0.45)'; ctx.setLineDash([2, 3]);
   ctx.beginPath(); ctx.moveTo(b.x0, y); ctx.lineTo(x, y); ctx.moveTo(x, b.y0); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
+  ctx.shadowColor = bbRGB(Tk); ctx.shadowBlur = 10;
+  ctx.fillStyle = bbRGB(Tk); ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+  // star label: first of four corners that stays inside the box and clear of the population labels
+  const nm = presetName || 'your star';
+  ctx.font = '600 11px "Source Sans 3",sans-serif';
+  const w = ctx.measureText(nm).width;
+  const cands = [[1, -1], [1, 1], [-1, -1], [-1, 1]].map(([sx, sy]) => {
+    const lx = x + sx * 11, ly = y + (sy < 0 ? -9 : 17);
+    return { lx, ly, al: sx > 0 ? 'left' : 'right', x0: sx > 0 ? lx : lx - w, x1: sx > 0 ? lx + w : lx, y0: ly - 11, y1: ly + 3 };
+  });
+  const ok = c => c.x0 > b.x0 + 2 && c.x1 < b.x1 - 2 && c.y0 > b.y1 + 1 && c.y1 < b.y0 - 1 && !boxes.some(q => c.x0 < q.x1 && c.x1 > q.x0 && c.y0 < q.y1 && c.y1 > q.y0);
+  const pick = cands.find(ok) || cands.find(c => c.x0 > b.x0 + 2 && c.x1 < b.x1 - 2 && c.y0 > b.y1 + 1 && c.y1 < b.y0 - 1) || cands[0];
+  label(ctx, nm, pick.lx, pick.ly, '#ffe3a0', '600 11px "Source Sans 3",sans-serif', pick.al);
 }
-function blob(ctx, x, y, rx, ry, fill) {
-  ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, -0.5, 0, 7); ctx.fill();
-}
+function pathMS(ctx) { ctx.beginPath(); MS.forEach((p, i) => { const x = TX(p[0]), y = LY(p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); }
+function blob(ctx, x, y, rx, ry, rot, fill) { ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, 7); ctx.fill(); }
+
+function fmtL(L) { return L < 0.01 ? L.toExponential(1).replace('e', '×10^') : L < 100 ? L.toPrecision(2) : L < 1e4 ? Math.round(L).toLocaleString() : L.toExponential(1).replace('e', '×10^'); }
+function supify(s) { return s.replace(/×10\^([+-]?)(\d+)/, (m, sg, d) => '×10' + (sg === '-' ? '⁻' : '') + d.split('').map(ch => SUP[ch]).join('')); }
 
 function render() {
-  Tk = +$('tSlider').value;
-  Ls = Math.pow(10, +$('lSlider').value);
+  if (exact) { Tk = exact.T; Ls = exact.L; }
+  else { Tk = Math.round(Math.pow(10, +$('tSlider').value) / 10) * 10; Ls = Math.pow(10, +$('lSlider').value); }
   $('tVal').textContent = Tk.toLocaleString() + ' K';
-  $('lVal').textContent = Ls < 0.01 ? Ls.toExponential(1) + ' L☉' : Ls < 100 ? Ls.toFixed(2) + ' L☉' : Ls.toExponential(1) + ' L☉';
-  document.querySelectorAll('#chips button').forEach(bt =>
-    bt.classList.toggle('on', Math.abs(+bt.dataset.t - Tk) < 100 && Math.abs(Math.log10(+bt.dataset.l) - Math.log10(Ls)) < 0.06));
+  $('lVal').textContent = supify(fmtL(Ls)) + ' L☉';
+  let match = null;
+  document.querySelectorAll('#chips button').forEach(bt => {
+    const on = Math.abs(Math.log10(+bt.dataset.t) - Math.log10(Tk)) < 0.004 && Math.abs(Math.log10(+bt.dataset.l) - Math.log10(Ls)) < 0.03;
+    bt.classList.toggle('on', on); if (on) match = bt.textContent;
+  });
+  presetName = match;
 
   const R = radiusRsun(Tk, Ls);
   const cls = classify(Tk, Ls);
   const rows = [
-    rowB('spectral class', specClass(Tk) + '  ·  ' + (Tk >= 30000 ? 'blue' : Tk >= 10000 ? 'blue-white' : Tk >= 7500 ? 'white' : Tk >= 6000 ? 'yellow-white' : Tk >= 5200 ? 'yellow' : Tk >= 3700 ? 'orange' : 'red')),
+    rowB('spectral type', (cls.k === 'white dwarf' ? 'DA' + (50400 / Tk).toFixed(1) : typeName(subtypeOfT(Tk))) + '  ·  ' + colourWord(Tk)),
     rowB('region', cls.k),
-    row('radius', R < 0.1 ? R.toExponential(1) + ' R☉' : R < 100 ? R.toFixed(2) + ' R☉' : R.toFixed(0) + ' R☉'),
+    row('radius R', R < 0.1 ? R.toFixed(3) + ' R☉' : R < 99.5 ? R.toPrecision(2) + ' R☉' : Math.round(R).toLocaleString() + ' R☉'),
   ];
   if (cls.on) {
     const M = Math.pow(Ls, 1 / 3.5);
-    const life = 10 * M / Ls;   // Gyr, ~ M/L × 10 Gyr
-    rows.push(row('est. mass', M.toFixed(2) + ' M☉'));
-    rows.push(row('main-seq. lifetime', life > 1000 ? '> 10¹² yr' : life > 1 ? life.toPrecision(2) + ' Gyr' : (life * 1000).toPrecision(2) + ' Myr'));
+    const life = 10 * M / Ls;   // Gyr
+    rows.push(row('est. mass M', M.toPrecision(2) + ' M☉'));
+    rows.push(row('main-seq. lifetime', life > 1000 ? '&gt; 1000 Gyr' : life >= 100 ? Math.round(life / 10) * 10 + ' Gyr' : life >= 1 ? life.toPrecision(2) + ' Gyr' : (life * 1000 >= 100 ? Math.round(life * 1000) : (life * 1000).toPrecision(2)) + ' Myr'));
   } else {
-    rows.push(row('L = 4πR²σT⁴', 'off the main sequence'));
+    rows.push(row('mass, lifetime', 'main seq. only'));
   }
   $('results').innerHTML = rows.join('');
 
-  $('note').textContent = cls.k.startsWith('main')
-    ? 'On the main sequence: this star is fusing hydrogen in its core, and it will stay near this spot for most of its life. Hotter, brighter stars up the sequence are more massive and shorter-lived.'
+  const Rtxt = R < 0.1 ? 'about ' + Math.max(1, Math.round(R * 109)) + ' Earth radii' : (R < 10 ? R.toPrecision(2) : Math.round(R).toLocaleString()) + ' times the Sun’s radius';
+  $('note').textContent = cls.k === 'main sequence'
+    ? 'On the main sequence: this star is fusing hydrogen in its core and will stay near this spot for most of its life. Hotter, brighter stars up the sequence are more massive and shorter-lived.'
     : cls.k === 'white dwarf'
-    ? 'A white dwarf: the exposed, Earth-sized core left after a Sun-like star died. It is hot but tiny, so it plots faint despite its colour.'
-    : cls.k.includes('giant')
-    ? 'A ' + cls.k + ': cool at the surface but enormously luminous, which by L = 4πR²σT⁴ means it must be huge — an evolved star that has swelled up after leaving the main sequence.'
-    : 'This combination of temperature and luminosity puts the star off the main sequence.';
-
+    ? 'A white dwarf: the exposed core left after a Sun-like star died. It is hot but tiny (' + Rtxt + '), so it is faint despite its colour.'
+    : cls.k === 'below the main sequence'
+    ? 'Below the main sequence: smaller than a normal star of this temperature (' + Rtxt + ') but too big for a white dwarf. Very few stars sit here.'
+    : 'A ' + cls.k + ': much more luminous than a main-sequence star of the same temperature, so by L = 4πR²σT⁴ it must be large (' + Rtxt + '). An evolved star that has left the main sequence.';
   draw();
 }
 function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 function rowB(k, v) { return '<div class="resrow big"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 
-$('tSlider').addEventListener('input', render);
-$('lSlider').addEventListener('input', render);
+$('tSlider').addEventListener('input', () => { exact = null; render(); });
+$('lSlider').addEventListener('input', () => { exact = null; render(); });
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
-  $('tSlider').value = b.dataset.t; $('lSlider').value = Math.log10(+b.dataset.l); render();
+  $('tSlider').value = Math.log10(+b.dataset.t); $('lSlider').value = Math.log10(+b.dataset.l);
+  exact = { T: +b.dataset.t, L: +b.dataset.l }; render();
 }));
 $('hr').addEventListener('click', e => {
   const r = e.target.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width * 520, y = (e.clientY - r.top) / r.height * 420;
+  const k = Math.min(r.width / W, r.height / H);
+  const x = (e.clientX - r.left - (r.width - W * k) / 2) / k, y = (e.clientY - r.top - (r.height - H * k) / 2) / k;
   if (x < plotBox.x0 || x > plotBox.x1 || y < plotBox.y1 || y > plotBox.y0) return;
-  const T = Math.max(2400, Math.min(42000, XT(x)));
-  const L = Math.max(1e-4, Math.min(1e6, YL(y)));
-  $('tSlider').value = Math.round(T / 50) * 50;
-  $('lSlider').value = Math.log10(L).toFixed(2);
-  render();
+  $('tSlider').value = Math.log10(Math.max(2400, Math.min(42000, XT(x)))).toFixed(3);
+  $('lSlider').value = Math.log10(Math.max(1e-4, Math.min(1e6, YL(y)))).toFixed(2);
+  exact = null; render();
 });
-
+window.addEventListener('resize', draw);
+// Random problem: a realistic star from one of the populations (not a random point in the box)
+function rpAfter() {
+  const r = Math.random(), u = Math.random(), v = Math.random();
+  let T, L;
+  if (r < 0.55) { T = Math.pow(10, 3.42 + u * 1.17); L = msL(T) * Math.pow(10, (v - 0.5) * 0.6); }          // main sequence
+  else if (r < 0.75) { T = Math.pow(10, 3.56 + u * 0.16); L = Math.pow(10, 1 + v * 2.3); }                // giants
+  else if (r < 0.9) { T = Math.pow(10, 3.52 + u * 1.0); L = Math.pow(10, 4.3 + v * 1.5); }                  // supergiants
+  else { T = Math.pow(10, 3.8 + u * 0.6); L = 1.44e-4 * Math.pow(T / TSUN, 4) * Math.pow(10, (v - 0.5) * 0.4); }   // white dwarfs
+  T = Math.max(2400, Math.min(42000, T)); L = Math.max(1e-4, Math.min(1e6, L));
+  $('tSlider').value = Math.log10(T).toFixed(3); $('lSlider').value = Math.log10(L).toFixed(2);
+  exact = null; render();
+}
 function katexAll() {
   const specs = [
     ['f1', "L = 4\\pi R^{2}\\sigma T^{4}"],
     ['f2', "L \\approx M^{3.5}\\quad(\\text{main sequence})"],
     ['f3', "t_{\\text{MS}} \\approx 10\\ \\text{Gyr}\\times\\dfrac{M}{L}"],
     ['ex1', "R = \\sqrt{L}\\,/\\,(T/T_\\odot)^{2}"],
-    ['ex2', "R = \\sqrt{90000}\\,/\\,(3600/5772)^{2} \\approx 760\\ R_\\odot"],
+    ['ex2', "R = \\sqrt{90000}\\,/\\,(3600/5772)^{2} = 300/0.389 \\approx 770\\ R_\\odot"],
   ];
   const has = typeof window.katex !== 'undefined';
   for (const [id, tex] of specs) {
@@ -410,7 +502,7 @@ if (RP_IDS.length) {
     if (typeof rpAfter === 'function') rpAfter();
   });
 }
-window.addEventListener('load', () => { katexAll(); render(); });
+window.addEventListener('load', () => { exact = { T: 5772, L: 1 }; katexAll(); render(); });
 </script>
 </body>
 </html>

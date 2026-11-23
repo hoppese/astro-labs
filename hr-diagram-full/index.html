@@ -25,6 +25,8 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   #hr { display:block; width:100%; height:auto; border-radius:10px; background:#0b0f16; }
+  button { font-family:inherit; }
+  button:focus-visible, input:focus-visible { outline:2px solid #5a7fb8; outline-offset:2px; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
   .slider-row .lbl { display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; }
@@ -103,8 +105,8 @@
           <button data-id="WD">White dwarfs</button>
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>spectral type &nbsp;←&nbsp;hot · cool&nbsp;→</span><span class="val" id="typeVal">G2</span></div>
-          <input type="range" id="slider" min="0" max="70" value="42" step="0.5">
+          <div class="lbl"><span>spectral type (hot ← → cool)</span><span class="val" id="typeVal">G2</span></div>
+          <input type="range" id="slider" min="3" max="69" value="42" step="1">
         </div>
         <div class="section-label" style="margin-top:4px;">This star</div>
         <div class="results" id="results"></div>
@@ -124,7 +126,7 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Pick a luminosity class, then slide the spectral type from O to M. The crosshair tracks the band on the diagram; the panel gives the full type (e.g. <b>G2&nbsp;V</b> for the Sun) and the range of absolute magnitudes stars of that type and class have. Compare a K0&nbsp;III giant with a K0&nbsp;V dwarf &mdash; same temperature, wildly different luminosity.</p>
+        <p>Pick a luminosity class, then slide the spectral type from O to M. The yellow bar marks the band on the diagram; the panel gives the full type (e.g. <b>G2&nbsp;V</b> for the Sun) and the range of absolute magnitudes stars of that type and class have. Compare a K0&nbsp;III giant with a K0&nbsp;V dwarf &mdash; similar temperature, wildly different luminosity. The right-hand axis converts M to an approximate luminosity using the Sun (M&nbsp;=&nbsp;+4.83 is 1&nbsp;L&#9737;); it counts visible light only, so it underestimates the total output of very hot and very cool stars.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">The classification</div>
@@ -173,115 +175,171 @@
 <script>
 const $ = id => document.getElementById(id);
 const svg = $('hr'), NS = 'http://www.w3.org/2000/svg';
-const L = 56, R = 22, T = 18, B = 54, W = 560, H = 500;
-const pw = W - L - R, ph = H - T - B, maxT = 70;
-const textCol = 'rgba(232,236,245,0.75)', gridCol = 'rgba(255,255,255,0.08)', axisCol = 'rgba(255,255,255,0.28)';
-const magMin = -15, magRange = 35;
-
-function magY(m) { return T + ((m - magMin) / magRange) * ph; }
-function typeX(t) { return L + (t / maxT) * pw; }
-function typeLabel(t) { const cls = Math.min(Math.floor(t / 10), 6), sub = Math.round(t % 10); return ['O', 'B', 'A', 'F', 'G', 'K', 'M'][cls] + sub; }
+const W = 560, H = 500, L = 54, R = 54, T = 46, B = 52;
+const pw = W - L - R, ph = H - T - B, tMin = 0, tMax = 70;   // x runs O0 ... M9 (+1 so M9 has width)
+const textCol = 'rgba(232,236,245,0.78)', gridCol = 'rgba(255,255,255,0.07)', axisCol = 'rgba(255,255,255,0.28)';
+const magMin = -10, magMax = 21;
+const MSUN = 4.83;   // Sun's absolute visual magnitude
+function magY(m) { return T + ((m - magMin) / (magMax - magMin)) * ph; }
+function typeX(t) { return L + ((t + 0.5 - tMin) / (tMax - tMin)) * pw; }   // subtype t sits in the middle of its slot
+function aOrAn(t) { return 'OAFM'.includes(typeLabel(t)[0]) ? 'an' : 'a'; }   // 'an O5', 'an F2', 'an M3'
+function typeLabel(t) { const ti = Math.max(0, Math.min(69, Math.round(t))); return 'OBAFGKM'[Math.floor(ti / 10)] + (ti % 10); }
 function interp(pts, t) {
   if (t <= pts[0][0]) return pts[0][1];
   if (t >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
   for (let i = 0; i < pts.length - 1; i++) { const [t0, m0] = pts[i], [t1, m1] = pts[i + 1]; if (t >= t0 && t <= t1) return m0 + (t - t0) / (t1 - t0) * (m1 - m0); }
   return pts[pts.length - 1][1];
 }
+function interpLog(pts, t) {   // for temperatures
+  return Math.pow(10, interp(pts.map(p => [p[0], Math.log10(p[1])]), t));
+}
 function mk(tag, attrs) { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; }
-function txt(c, attrs) { const el = mk('text', attrs); el.textContent = c; return el; }
-function fmtMag(m) { return (m >= 0 ? '+' : '') + m.toFixed(1); }
-function bandPath(u, l) {
-  let d = u.map((p, i) => (i === 0 ? 'M' : 'L') + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ');
-  d += ' ' + l.slice().reverse().map(p => 'L' + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ') + ' Z';
-  return d;
-}
+function txt(c, attrs) { const el = mk('text', Object.assign({ 'font-family': 'Source Sans 3, sans-serif', fill: textCol }, attrs)); el.textContent = c; return el; }
+function fmtMag(m) { return (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1); }
+
+// ---- data (approximate modern values: Pecaut & Mamajek dwarf sequence; Schmidt-Kaler giants/supergiants) ----
+// dwarf (V) temperature by subtype index t = 10*class + subtype
+const TEFF_V = [[3,44900],[5,41400],[7,36900],[9,33000],[10,31000],[11,26000],[12,20600],[13,17000],[15,15700],[17,13500],[18,12300],[19,10700],[20,9700],[22,8840],[25,8080],[27,7500],[30,7220],[32,6810],[35,6510],[38,6170],[40,5920],[42,5770],[45,5660],[48,5490],[50,5280],[52,5040],[55,4440],[57,4050],[60,3850],[61,3660],[62,3560],[63,3430],[64,3210],[65,3060],[66,2810],[67,2680],[68,2570],[69,2380]];
+// giants and supergiants of type G-M are cooler than dwarfs of the same type
+const TEFF_GIANT = [[35,6510],[40,5600],[42,5400],[45,5050],[48,4950],[50,4750],[52,4500],[55,3950],[60,3850],[62,3700],[65,3400],[67,3150],[69,2900]];
+// absolute visual magnitude: band centre and half-width per class; range = subtypes the class covers
 const classes = [
-  { id: 'I', label: 'Supergiants (I)', color: '#e07f6a', upper: [[10, -9], [20, -8.5], [30, -8], [40, -7.5], [50, -7], [60, -6.5], [70, -5.5]], lower: [[10, -6.5], [20, -6], [30, -5.5], [40, -5], [50, -4.5], [60, -4], [70, -3.5]] },
-  { id: 'III', label: 'Giants (III)', color: '#c58ad0', upper: [[10, -3], [20, -1.5], [30, -0.5], [40, 0], [50, 0.5], [60, 0], [65, -0.5], [70, -1]], lower: [[10, -1], [20, 0.5], [30, 1.5], [40, 2], [50, 2.5], [60, 2], [65, 1.5], [70, 1]] },
-  { id: 'V', label: 'Main Sequence (V)', color: '#6fa8e0', upper: [[0, -10.5], [3, -8.5], [6, -6.5], [10, -4.7], [14, -3], [18, -1.5], [20, -0.3], [25, 1], [30, 1.7], [35, 2.4], [40, 3], [45, 3.5], [48, 4], [50, 4.3], [55, 5], [60, 6], [65, 7.3], [70, 9]], lower: [[0, -9.5], [3, -7.5], [6, -5.5], [10, -3.7], [14, -2], [18, -0.5], [20, 0.7], [25, 2], [30, 2.7], [35, 3.4], [40, 4], [45, 4.5], [48, 5], [50, 5.3], [55, 6], [60, 7], [65, 8.3], [70, 10]] },
-  { id: 'WD', label: 'White Dwarfs', color: '#9ec9ff', upper: [[10, 9], [20, 9.5], [30, 10], [40, 11], [50, 12], [60, 13], [70, 14]], lower: [[10, 11], [20, 11.5], [30, 12], [40, 13], [50, 14], [60, 15], [70, 16]] },
+  { id: 'I', label: 'Supergiants (I)', color: '#e07f6a', half: 1.4, range: [3, 69],
+    mid: [[3, -6.6], [20, -6.8], [40, -6.6], [55, -6.0], [69, -5.3]] },
+  { id: 'III', label: 'Giants (III)', color: '#c58ad0', half: 0.9, range: [3, 69],
+    mid: [[3, -5.8], [10, -5.0], [15, -2.2], [20, -0.6], [30, 1.3], [40, 1.0], [45, 0.9], [50, 0.7], [55, -0.2], [60, -0.4], [65, -0.8], [69, -1.0]] },
+  { id: 'V', label: 'Main sequence (V)', color: '#6fa8e0', half: 0.6, range: [3, 69],
+    mid: [[3, -5.8], [5, -5.4], [7, -4.9], [9, -4.3], [10, -3.9], [11, -3.0], [12, -2.2], [13, -1.6], [15, -1.1], [17, -0.6], [18, -0.2], [19, 0.4], [20, 1.1], [22, 1.5], [25, 1.9], [27, 2.2], [30, 2.5], [32, 2.9], [35, 3.4], [38, 4.0], [40, 4.4], [42, 4.8], [45, 5.1], [48, 5.5], [50, 5.9], [52, 6.4], [55, 7.3], [57, 8.0], [60, 8.9], [61, 9.5], [62, 10.3], [63, 11.4], [64, 12.8], [65, 14.3], [66, 16.5], [67, 17.5], [68, 18.6], [69, 19.3]] },
+  { id: 'WD', label: 'White dwarfs', color: '#9ec9ff', half: 0.8, range: [3, 57],
+    mid: [[3, 9.6], [10, 10.0], [12, 10.6], [15, 11.2], [20, 11.9], [27, 12.9], [30, 13.2], [38, 13.9], [42, 14.1], [50, 14.9], [57, 16.0]] },
 ];
-const CLASS_NAME = { I: 'supergiant', III: 'giant', V: 'main-sequence (dwarf)', WD: 'white dwarf' };
+const CLASS_NAME = { I: 'supergiant', III: 'giant', V: 'main sequence', WD: 'white dwarf' };
+function teffFor(id, t) { return (id === 'I' || id === 'III') && t >= 35 ? interpLog(TEFF_GIANT, t) : interpLog(TEFF_V, t); }
 
-svg.appendChild(mk('rect', { x: 0, y: 0, width: W, height: H, fill: '#0b0f16' }));
-for (let m = -15; m <= 20; m += 5) {
-  const gy = magY(m); if (gy < T || gy > T + ph) continue;
-  svg.appendChild(mk('line', { x1: L, y1: gy, x2: L + pw, y2: gy, stroke: gridCol, 'stroke-width': '0.5' }));
-  svg.appendChild(txt(m > 0 ? '+' + m : (m === 0 ? '0' : String(m)), { x: L - 6, y: gy + 4, 'text-anchor': 'end', 'font-size': '10', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
+// ---- static drawing ----
+svg.appendChild(mk('rect', { x: 0, y: 0, width: W, height: H, fill: '#0b0f16', rx: 0 }));
+// magnitude grid + left axis
+for (let m = -10; m <= 20; m += 5) {
+  const gy = magY(m);
+  svg.appendChild(mk('line', { x1: L, y1: gy, x2: L + pw, y2: gy, stroke: gridCol, 'stroke-width': '0.6' }));
+  svg.appendChild(txt(m > 0 ? '+' + m : (m === 0 ? '0' : '−' + Math.abs(m)), { x: L - 6, y: gy + 4, 'text-anchor': 'end', 'font-size': '10.5' }));
 }
-svg.appendChild(txt('absolute magnitude', { x: 13, y: T + ph / 2, 'text-anchor': 'middle', 'font-size': '11', fill: textCol, 'font-family': 'Source Sans 3, sans-serif', transform: 'rotate(-90,13,' + (T + ph / 2) + ')' }));
-svg.appendChild(txt('bright', { x: L - 6, y: T - 6, 'text-anchor': 'end', 'font-size': '9', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
-svg.appendChild(txt('dim', { x: L - 6, y: T + ph + 16, 'text-anchor': 'end', 'font-size': '9', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
+svg.appendChild(txt('absolute magnitude M  (brighter ↑)', { x: 14, y: T + ph / 2, 'text-anchor': 'middle', 'font-size': '11.5', transform: 'rotate(-90,14,' + (T + ph / 2) + ')' }));
+// right axis: approximate luminosity from M (visual band, no bolometric correction)
+for (let e = -6; e <= 6; e += 2) {
+  const m = MSUN - 2.5 * e, gy = magY(m);
+  if (gy < T - 1 || gy > T + ph + 1) continue;
+  svg.appendChild(mk('line', { x1: L + pw, y1: gy, x2: L + pw + 4, y2: gy, stroke: axisCol, 'stroke-width': '1' }));
+  const lab = e === 0 ? '1' : e === 2 ? '100' : '10';
+  const t = txt(lab, { x: L + pw + 7, y: gy + 4, 'text-anchor': 'start', 'font-size': '10.5' });
+  if (e !== 0 && e !== 2) { const sup = mk('tspan', { dy: '-4', 'font-size': '8' }); sup.textContent = (e < 0 ? '−' : '') + Math.abs(e); t.appendChild(sup); }
+  svg.appendChild(t);
+}
+svg.appendChild(txt('≈ luminosity L / L☉  (log scale)', { x: W - 10, y: T + ph / 2, 'text-anchor': 'middle', 'font-size': '11.5', transform: 'rotate(90,' + (W - 10) + ',' + (T + ph / 2) + ')' }));
+// spectral classes (bottom) with subtype ticks; temperatures of each class's 0 subtype (top)
 ['O', 'B', 'A', 'F', 'G', 'K', 'M'].forEach((cls, ci) => {
-  const xStart = typeX(ci * 10), xMid = (xStart + typeX((ci + 1) * 10)) / 2;
-  svg.appendChild(mk('line', { x1: xStart, y1: T, x2: xStart, y2: T + ph, stroke: axisCol, 'stroke-width': '1' }));
-  svg.appendChild(txt(cls, { x: xMid, y: T + ph + 18, 'text-anchor': 'middle', 'font-size': '13', 'font-weight': '700', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
+  const xStart = L + (ci * 10 / tMax) * pw, xEnd = L + ((ci + 1) * 10 / tMax) * pw;
+  if (ci > 0) svg.appendChild(mk('line', { x1: xStart, y1: T, x2: xStart, y2: T + ph, stroke: axisCol, 'stroke-width': '0.8' }));
+  for (let s = 1; s < 10; s++) { const x = xStart + s * (xEnd - xStart) / 10; svg.appendChild(mk('line', { x1: x, y1: T + ph, x2: x, y2: T + ph + (s === 5 ? 5 : 3), stroke: axisCol, 'stroke-width': '0.8' })); }
+  svg.appendChild(txt(cls, { x: (xStart + xEnd) / 2, y: T + ph + 19, 'text-anchor': 'middle', 'font-size': '13', 'font-weight': '700' }));
+  if (ci > 0) {
+    const Tc = interpLog(TEFF_V, ci * 10);
+    svg.appendChild(txt(Tc >= 10000 ? Math.round(Tc / 1000) + 'k' : (Math.round(Tc / 100) * 100).toLocaleString(), { x: xStart, y: T - 6, 'text-anchor': 'middle', 'font-size': '10' }));
+  }
 });
-svg.appendChild(txt('spectral type', { x: L + pw / 2, y: T + ph + 40, 'text-anchor': 'middle', 'font-size': '11', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
-svg.appendChild(mk('rect', { x: L, y: T, width: pw, height: ph, fill: 'none', stroke: axisCol, 'stroke-width': '0.75' }));
+svg.appendChild(txt('spectral type (each letter split 0–9):  hot ←  → cool', { x: L + pw / 2, y: T + ph + 40, 'text-anchor': 'middle', 'font-size': '11.5' }));
+svg.appendChild(txt('main-sequence temperature (K) at B0, A0, F0 …', { x: L + pw / 2, y: T - 24, 'text-anchor': 'middle', 'font-size': '11' }));
+svg.appendChild(mk('rect', { x: L, y: T, width: pw, height: ph, fill: 'none', stroke: axisCol, 'stroke-width': '0.8' }));
 
+// bands
 const bandEls = {}, labelEls = {};
+function bandPts(cls, sign) { const pts = []; for (let t = cls.range[0]; t <= cls.range[1] + 1e-9; t += 0.5) pts.push([t, interp(cls.mid, t) + sign * cls.half]); return pts; }
+function pathOf(pts) { return pts.map((p, i) => (i ? 'L' : 'M') + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' '); }
+const clip = mk('clipPath', { id: 'plotclip' }); clip.appendChild(mk('rect', { x: L, y: T, width: pw, height: ph })); svg.appendChild(clip);
+const bandG = mk('g', { 'clip-path': 'url(#plotclip)' }); svg.appendChild(bandG);
 classes.forEach(cls => {
-  const band = mk('path', { d: bandPath(cls.upper, cls.lower), fill: cls.color, opacity: '0.14', 'stroke-width': '0' });
-  svg.appendChild(band); bandEls[cls.id] = band;
-  const centerPts = cls.upper.map(p => [p[0], (p[1] + interp(cls.lower, p[0])) / 2]);
-  const cd = centerPts.map((p, i) => (i === 0 ? 'M' : 'L') + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ');
-  const cline = mk('path', { d: cd, fill: 'none', stroke: cls.color, 'stroke-width': '1.5', 'stroke-linejoin': 'round', 'stroke-dasharray': cls.id === 'WD' ? '6 3' : 'none', opacity: '0.3' });
-  svg.appendChild(cline); bandEls[cls.id + '_line'] = cline;
-  const lu = cls.upper[cls.upper.length - 1], ll = cls.lower[cls.lower.length - 1];
-  const lbl = txt(cls.id, { x: typeX(lu[0]) + 5, y: magY((lu[1] + ll[1]) / 2) + 4, 'font-size': '11', 'font-weight': '700', fill: cls.color, opacity: '0.35', 'font-family': 'Source Sans 3, sans-serif' });
+  const up = bandPts(cls, -1), lo = bandPts(cls, 1);
+  const d = pathOf(up) + ' ' + lo.slice().reverse().map(p => 'L' + typeX(p[0]).toFixed(1) + ',' + magY(p[1]).toFixed(1)).join(' ') + ' Z';
+  const band = mk('path', { d, fill: cls.color, opacity: '0.14' }); bandG.appendChild(band); bandEls[cls.id] = band;
+  const cline = mk('path', { d: pathOf(bandPts(cls, 0)), fill: 'none', stroke: cls.color, 'stroke-width': '1.5', 'stroke-linejoin': 'round', 'stroke-dasharray': cls.id === 'WD' ? '6 3' : 'none', opacity: '0.3' });
+  bandG.appendChild(cline); bandEls[cls.id + '_line'] = cline;
+});
+// class labels inside the plot, at a quiet spot of each band
+const LBL_AT = { I: [62, -6.0 - 2.1], III: [64, -0.7 - 1.6], V: [27, 2.2 + 1.9], WD: [13, 12.9] };
+classes.forEach(cls => {
+  const [lt, lm] = LBL_AT[cls.id];
+  const lbl = txt(cls.label, { x: typeX(lt), y: magY(lm), 'text-anchor': 'middle', 'font-size': '11', 'font-weight': '700', fill: cls.color, opacity: '0.35' });
   svg.appendChild(lbl); labelEls[cls.id] = lbl;
 });
-
-// Sun marker
-const sunT = 42, sunMid = (interp(classes[2].upper, sunT) + interp(classes[2].lower, sunT)) / 2;
+// crosshair (behind the Sun marker)
+const crossG = mk('g', {});
+const vLine = mk('line', { y1: T, y2: T + ph, stroke: '#ffd66b', 'stroke-width': '1.2', 'stroke-dasharray': '4 3', opacity: '0.8' });
+const rangeBar = mk('line', { stroke: '#ffd66b', 'stroke-width': '5', 'stroke-linecap': 'round', opacity: '0.9' });
+const tickU = mk('line', { stroke: '#ffd66b', 'stroke-width': '1.6' }), tickL = mk('line', { stroke: '#ffd66b', 'stroke-width': '1.6' });
+[vLine, rangeBar, tickU, tickL].forEach(e => crossG.appendChild(e));
+svg.appendChild(crossG);
+const noStars = txt('', { 'text-anchor': 'middle', 'font-size': '11', fill: '#ffd66b' }); svg.appendChild(noStars);
+// Sun marker at G2 V, M = +4.83
 let sunPts = '';
 for (let si = 0; si < 10; si++) { const sr = si % 2 === 0 ? 7 : 3.5, sa = (si * 36 - 90) * Math.PI / 180; sunPts += (sr * Math.cos(sa)).toFixed(1) + ',' + (sr * Math.sin(sa)).toFixed(1) + ' '; }
-svg.appendChild(mk('polygon', { points: sunPts, fill: '#ffd353', transform: 'translate(' + typeX(sunT) + ',' + magY(sunMid) + ')' }));
-svg.appendChild(txt('Sun (G2 V)', { x: typeX(sunT) + 11, y: magY(sunMid) - 9, 'font-size': '10', fill: textCol, 'font-family': 'Source Sans 3, sans-serif' }));
-
-const crossG = document.createElementNS(NS, 'g');
-const vLine = mk('line', { x1: 0, y1: T, x2: 0, y2: T + ph, stroke: '#ffd66b', 'stroke-width': '1.4', 'stroke-dasharray': '4 3' });
-const dotU = mk('circle', { r: '4', fill: '#ffd66b' });
-const dotL = mk('circle', { r: '4', fill: '#ffd66b' });
-crossG.appendChild(vLine); crossG.appendChild(dotU); crossG.appendChild(dotL);
-svg.appendChild(crossG);
+svg.appendChild(mk('polygon', { points: sunPts, fill: '#ffd353', stroke: '#0b0f16', 'stroke-width': '1', transform: 'translate(' + typeX(42) + ',' + magY(MSUN) + ')' }));
+const sunLbl = txt('Sun (G2 V)', { x: typeX(42) - 10, y: magY(MSUN) + 4, 'text-anchor': 'end', 'font-size': '10.5', 'font-weight': '600', fill: '#ffe39a', stroke: '#0b0f16', 'stroke-width': '3', 'paint-order': 'stroke' });
+svg.appendChild(sunLbl);
 
 let activeId = 'V';
 function getActive() { return classes.find(c => c.id === activeId) || classes[2]; }
+function ratioText(dm) {   // dm = magnitudes brighter (+) or fainter (-)
+  const f = Math.pow(10, Math.abs(dm) / 2.5);
+  const n = f >= 1000 ? (Math.round(f / Math.pow(10, Math.floor(Math.log10(f)) - 1)) * Math.pow(10, Math.floor(Math.log10(f)) - 1)).toLocaleString() : f >= 10 ? Math.round(f).toString() : f.toFixed(1);
+  return '≈ ' + n + '× ' + (dm >= 0 ? 'brighter' : 'fainter');
+}
 function update() {
-  const t = parseFloat($('slider').value), cls = getActive();
-  const mU = interp(cls.upper, t), mL = interp(cls.lower, t), mMid = (mU + mL) / 2;
-  const x = typeX(t);
-  const yU = Math.max(T, Math.min(T + ph, magY(mU))), yL = Math.max(T, Math.min(T + ph, magY(mL)));
+  const t = Math.round(parseFloat($('slider').value)), cls = getActive();
+  const x = typeX(t), inRange = t >= cls.range[0] && t <= cls.range[1];
   vLine.setAttribute('x1', x); vLine.setAttribute('x2', x);
-  dotU.setAttribute('cx', x); dotU.setAttribute('cy', yU);
-  dotL.setAttribute('cx', x); dotL.setAttribute('cy', yL);
   classes.forEach(c => {
     const on = c.id === activeId;
-    bandEls[c.id].setAttribute('opacity', on ? '0.28' : '0.07');
-    bandEls[c.id + '_line'].setAttribute('opacity', on ? '0.9' : '0.12');
-    labelEls[c.id].setAttribute('opacity', on ? '1' : '0.22');
+    bandEls[c.id].setAttribute('opacity', on ? '0.30' : '0.08');
+    bandEls[c.id + '_line'].setAttribute('opacity', on ? '0.9' : '0.15');
+    labelEls[c.id].setAttribute('opacity', on ? '1' : '0.35');
   });
-  $('typeVal').textContent = typeLabel(t) + ' ' + activeId;
-  const ti = Math.min(Math.floor(t / 10), 6);
-  const temp = Math.round([40000, 20000, 9000, 7000, 5600, 4400, 3200][ti]);
-  const vMid = (interp(classes[2].upper, t) + interp(classes[2].lower, t)) / 2;   // main-seq magnitude at this type
-  const dm = vMid - mMid;   // how many mag brighter than a main-seq star of the same type
+  const temp = teffFor(activeId, t), tRound = temp >= 10000 ? Math.round(temp / 100) * 100 : Math.round(temp / 10) * 10;
+  const fullType = activeId === 'WD' ? 'DA' + (50400 / temp).toFixed(1) : typeLabel(t) + ' ' + activeId;
+  $('typeVal').textContent = activeId === 'WD' ? typeLabel(t) + ' colour' : typeLabel(t) + ' ' + activeId;
+  if (!inRange) {
+    [rangeBar, tickU, tickL].forEach(e => e.setAttribute('visibility', 'hidden'));
+    noStars.textContent = 'no white dwarfs this cool';
+    noStars.setAttribute('x', Math.min(x, L + pw - 70)); noStars.setAttribute('y', magY(17.5));
+    $('results').innerHTML =
+      '<div class="resrow big"><span class="k">full type</span><span class="v">—</span></div>' +
+      '<div class="resrow"><span class="k">temperature</span><span class="v">' + tRound.toLocaleString() + ' K</span></div>' +
+      '<div class="resrow"><span class="k">absolute magnitude M</span><span class="v">—</span></div>';
+    $('note').textContent = 'The coolest white dwarfs in the Galaxy are only about 4,000 K (a K7 colour): the Universe is not old enough for any to have cooled further. Pick a hotter type.';
+    return;
+  }
+  noStars.textContent = '';
+  const mMid = interp(cls.mid, t), mU = mMid - cls.half, mL = mMid + cls.half;
+  const yU = magY(mU), yL = magY(mL);
+  [rangeBar, tickU, tickL].forEach(e => e.setAttribute('visibility', 'visible'));
+  rangeBar.setAttribute('x1', x); rangeBar.setAttribute('x2', x); rangeBar.setAttribute('y1', yU); rangeBar.setAttribute('y2', yL);
+  tickU.setAttribute('x1', x - 7); tickU.setAttribute('x2', x + 7); tickU.setAttribute('y1', yU); tickU.setAttribute('y2', yU);
+  tickL.setAttribute('x1', x - 7); tickL.setAttribute('x2', x + 7); tickL.setAttribute('y1', yL); tickL.setAttribute('y2', yL);
+  const vMid = interp(classes[2].mid, t);
+  const Lsun = Math.pow(10, 0.4 * (MSUN - mMid));
+  const fmtLum = Lsun >= 100 ? (+Lsun.toPrecision(2)).toLocaleString() : Lsun >= 1 ? Lsun.toPrecision(2) : Lsun >= 0.01 ? Lsun.toPrecision(2) : Lsun.toExponential(1).replace(/e-(\d+)/, (m0, d) => '×10⁻' + d.split('').map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c]).join(''));
   $('results').innerHTML =
-    '<div class="resrow big"><span class="k">full type</span><span class="v">' + typeLabel(t) + ' ' + activeId + '</span></div>' +
+    '<div class="resrow big"><span class="k">full type</span><span class="v">' + fullType + '</span></div>' +
     '<div class="resrow"><span class="k">luminosity class</span><span class="v">' + CLASS_NAME[activeId] + '</span></div>' +
-    '<div class="resrow"><span class="k">≈ surface temperature</span><span class="v">' + temp.toLocaleString() + ' K</span></div>' +
+    '<div class="resrow"><span class="k">surface temperature</span><span class="v">≈ ' + tRound.toLocaleString() + ' K</span></div>' +
     '<div class="resrow"><span class="k">absolute magnitude M</span><span class="v">' + fmtMag(mU) + ' to ' + fmtMag(mL) + '</span></div>' +
-    '<div class="resrow"><span class="k">vs a dwarf of this type</span><span class="v">' + (activeId === 'V' ? '—' : activeId === 'WD' ? '≈ 10⁴× fainter' : '≈ ' + Math.round(Math.pow(10, dm / 2.5)) + '× brighter') + '</span></div>';
+    '<div class="resrow"><span class="k">visual luminosity</span><span class="v">≈ ' + fmtLum + ' L☉</span></div>' +
+    '<div class="resrow"><span class="k">vs same-type dwarf</span><span class="v">' + (activeId === 'V' ? 'same' : ratioText(vMid - mMid)) + '</span></div>';
   $('note').textContent = activeId === 'V'
-    ? 'A main-sequence star of type ' + typeLabel(t) + ': fusing hydrogen in its core. Its position along the sequence is set by its mass — earlier (hotter) types are more massive and more luminous.'
+    ? (aOrAn(t) === 'an' ? 'An ' : 'A ') + typeLabel(t) + ' V star: a main-sequence star fusing hydrogen in its core. Its place along the sequence is set by its mass: earlier (hotter) types are more massive and more luminous.'
     : activeId === 'WD'
-    ? 'A white dwarf: same temperature as a ' + typeLabel(t) + ' main-sequence star but ~10,000× fainter, because it is only Earth-sized.'
-    : 'A ' + CLASS_NAME[activeId] + ' of type ' + typeLabel(t) + ': far more luminous than a main-sequence star of the same temperature, so it must be much larger — an evolved star.';
+    ? 'A white dwarf as hot as ' + aOrAn(t) + ' ' + typeLabel(t) + ' star (white dwarfs get their own types: DA plus 50,400 K / T). Same colour as ' + aOrAn(t) + ' ' + typeLabel(t) + ' V dwarf but ' + ratioText(vMid - mMid).replace('≈ ', 'about ') + ', because it is only about Earth-sized.'
+    : 'A ' + CLASS_NAME[activeId] + ' of type ' + typeLabel(t) + ': ' + ratioText(vMid - mMid).replace('≈ ', 'about ') + ' than a main-sequence star of the same type' + (t >= 40 ? ' (and a bit cooler)' : '') + ', so it must be ' + (vMid - mMid > 2.5 ? 'much larger' : 'somewhat larger') + '. An evolved star' + (t < 20 ? ': for the hottest types the classes crowd together, because these stars are already very luminous on the main sequence.' : '.');
 }
-function fmtL(x) { return x >= 1e4 ? x.toExponential(1) : x >= 100 ? Math.round(x).toLocaleString() : x >= 1 ? x.toPrecision(2) : x.toPrecision(2); }
-
 $('slider').addEventListener('input', update);
 document.querySelectorAll('#classChips button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#classChips button').forEach(x => x.classList.remove('on'));
@@ -289,9 +347,10 @@ document.querySelectorAll('#classChips button').forEach(b => b.addEventListener(
 }));
 function rpAfter() {
   const btns = [...document.querySelectorAll('#classChips button')];
-  btns[Math.floor(Math.random() * btns.length)].click();
+  let b = btns[Math.floor(Math.random() * btns.length)];
+  if (b.dataset.id === 'WD' && +$('slider').value > 57) $('slider').value = 10 + Math.floor(Math.random() * 45);
+  b.click();
 }
-
 function katexAll() {
   const specs = [
     ['ex1', "m - M = 10.9 - 5.9 = 5.0"],
