@@ -25,10 +25,19 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:300px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #dome { aspect-ratio:520/300; }
+  #dome { aspect-ratio:520/300; touch-action:none; }
+  .underrow { display:flex; gap:10px; align-items:center; }
+  .underrow .note { flex:1; min-width:0; }
+  @media (max-width:640px){ .underrow { flex-wrap:wrap; } .underrow .note { flex-basis:100%; } }
+  .toggleRow { display:flex; gap:0; border:1px solid #d3d8dd; border-radius:9px; overflow:hidden; }
+  .toggleRow button { flex:1; border:0; background:#fff; color:#525a63; font:600 11.5px 'Source Sans 3',sans-serif; padding:8px 6px; cursor:pointer; }
+  .toggleRow button.on { background:#46508a; color:#fff; }
+  .toggleRow button:not(.on):hover { background:#eff0f8; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #5b6bb0; outline-offset:2px; }
+  .playbtn:hover { filter:brightness(1.12); } .resetbtn:hover { border-color:#5b6bb0; }
   #alt { aspect-ratio:520/150; background:#0d1420; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
-  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #46508a; background:#46508a; color:#fff; }
+  .playbtn { min-width:124px; justify-content:center; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #46508a; background:#46508a; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
@@ -96,13 +105,15 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="dome" width="520" height="300"></canvas>
+        <canvas id="dome" width="520" height="300" aria-label="The celestial sphere around you; drag to turn it"></canvas>
         <canvas id="alt" width="520" height="150"></canvas>
-        <div class="btnrow">
-          <button class="playbtn" id="playBtn">&#9654; Run the night</button>
-          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        <div class="underrow">
+          <div class="btnrow" style="flex:none;">
+            <button class="playbtn" id="playBtn">&#9654; Turn the sky</button>
+            <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+          </div>
+          <div class="note" id="note"></div>
         </div>
-        <div class="note" id="note"></div>
       </div>
       <div class="ctlCol">
         <div class="section-label">Your latitude</div>
@@ -112,32 +123,36 @@
         </div>
         <div class="section-label">Pick a star</div>
         <div class="chips" id="chips">
-          <button data-d="89.3">Polaris</button>
-          <button data-d="38.8" class="on">Vega</button>
-          <button data-d="7.4">Betelgeuse</button>
-          <button data-d="0">Mintaka (equ.)</button>
-          <button data-d="-16.7">Sirius</button>
-          <button data-d="-60.8">Acrux</button>
+          <button data-d="89.3" data-name="Polaris">Polaris</button>
+          <button data-d="38.8" data-name="Vega" class="on">Vega</button>
+          <button data-d="7.4" data-name="Betelgeuse">Betelgeuse</button>
+          <button data-d="-0.3" data-name="Mintaka" title="On the celestial equator (belt of Orion)">Mintaka (equator)</button>
+          <button data-d="-16.7" data-name="Sirius">Sirius</button>
+          <button data-d="-63.1" data-name="Acrux">Acrux</button>
         </div>
         <div class="slider-row">
           <div class="lbl"><span>declination &delta;</span><span class="val" id="decVal">+38.8&deg;</span></div>
-          <input type="range" id="decSlider" min="-90" max="90" step="0.5" value="38.8">
+          <input type="range" id="decSlider" min="-90" max="90" step="0.1" value="38.8">
         </div>
         <div class="slider-row">
           <div class="lbl"><span>time (hour angle)</span><span class="val" id="haVal">0.0 h</span></div>
           <input type="range" id="haSlider" min="-12" max="12" step="0.1" value="-3">
         </div>
-        <div class="section-label" style="margin-top:4px;">Results</div>
+        <div class="toggleRow" id="viewRow" title="How the top panel is drawn">
+          <button data-v="3d" class="on">3D sphere</button>
+          <button data-v="map">Flat sky map</button>
+        </div>
+        <div class="section-label" style="margin-top:2px;">Results</div>
         <div class="results" id="results"></div>
       </div>
     </div>
-    <div class="footer-note">DRAFT &mdash; intro-astro-sims. Azimuthal sky map: centre = straight up, edge = the horizon.</div>
+    <div class="footer-note">DRAFT &mdash; intro-astro-sims. The sphere turns once per sidereal day (23 h 56 min); stars keep fixed declinations.</div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>The Celestial Sphere <span class="close" id="infoClose">&times;</span></h2>
+    <h2>The Celestial Sphere <button class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -145,7 +160,7 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Set your latitude, pick a star (or dial its declination), and drag the time slider or hit <b>Run the night</b>. The map shows the star&rsquo;s whole daily circle; the solid arc is above the horizon, the dashed part is below. The lower strip is its altitude over the night &mdash; the shaded band is when it is up.</p>
+        <p>Set your latitude, pick a star (or dial its declination), and drag the time slider or hit <b>Turn the sky</b>. The 3D view shows you at the centre of the sphere, standing on the green horizon plane; drag it to look from any side. The star&rsquo;s whole daily circle is drawn in blue: solid and bright where it is above your horizon and on the near side, faint or dashed elsewhere. The gold axis points at the celestial pole, whose altitude equals your latitude. The lower strip is the star&rsquo;s altitude over one turn of the sky; above the green band it is up.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
@@ -162,7 +177,7 @@
           <li><a href="https://openstax.org/books/astronomy-2e/pages/4-1-earth-and-sky" target="_blank" rel="noopener" style="color:#8fc7ff;">4.1 Earth and Sky</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
-        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/naked-eye-observations-crash-course-astronomy-2/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #2 — Naked-Eye Observations</a></li><li><a href="https://thecrashcourse.com/courses/cycles-in-the-sky-crash-course-astronomy-3/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #3 — Cycles in the Sky</a></li></ul>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/naked-eye-observations-crash-course-astronomy-2/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #2: Naked-Eye Observations</a></li><li><a href="https://thecrashcourse.com/courses/cycles-in-the-sky-crash-course-astronomy-3/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #3: Cycles in the Sky</a></li></ul>
       </div>
     </div>
   </div>
@@ -170,17 +185,17 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; is the Big Dipper circumpolar from Chicago? <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; is the Big Dipper circumpolar from Chicago? <button class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Chicago is at latitude 42&deg; N. The lowest star of the Big Dipper&rsquo;s bowl has declination about +54&deg;. Does it ever set?</p>
     <div class="step"><div class="h">1 &middot; Circumpolar limit</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">Any star with &delta; &gt; 48&deg; stays above the horizon all night.</div></div>
-    <div class="step"><div class="h">2 &middot; Compare</div><div style="font-size:11.5px;color:#e7d6e4;">+54&deg; &gt; 48&deg; &mdash; yes, it is circumpolar. The whole Dipper wheels around Polaris without ever setting.</div></div>
+    <div class="step"><div class="h">2 &middot; Compare</div><div style="font-size:11.5px;color:#e7d6e4;">+54&deg; &gt; 48&deg;, so yes: it is circumpolar. The whole Dipper wheels around Polaris without ever setting.</div></div>
     <div class="step"><div class="h">3 &middot; From Miami (26&deg; N)?</div><div style="font-size:11.5px;color:#e7d6e4;">Limit is 90&deg; &minus; 26&deg; = 64&deg;. Now +54&deg; &lt; 64&deg;, so from Miami the Dipper dips below the northern horizon for part of the night.</div></div>
   </div>
 </div>
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -192,9 +207,188 @@
 </div>
 
 <script>
+/* A3-KIT-BEGIN — small 3D drawing kit for the astro sims (camera, Sun-lit spheres, halo labels,
+   label placement, hi-DPI canvases). World axes: z = up (north of the reference plane). */
+const A3 = (() => {
+  const V = (x, y, z) => ({ x, y, z });
+  const add = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z);
+  const sub = (a, b) => V(a.x - b.x, a.y - b.y, a.z - b.z);
+  const mul = (a, k) => V(a.x * k, a.y * k, a.z * k);
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const cross = (a, b) => V(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const norm = a => { const l = Math.hypot(a.x, a.y, a.z) || 1; return V(a.x / l, a.y / l, a.z / l); };
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  // rotate vector v about unit axis k by angle t (Rodrigues)
+  const rot = (v, k, t) => { const c = Math.cos(t), s = Math.sin(t);
+    return add(add(mul(v, c), mul(cross(k, v), s)), mul(k, dot(k, v) * (1 - c))); };
+
+  // canvas drawn in logical W x H units, backed at device resolution
+  function hidpi(c, W, H) {
+    const css = c.clientWidth || W;
+    const s = Math.max(1, css / W) * Math.min(window.devicePixelRatio || 1, 2);
+    const pw = Math.round(W * s), ph = Math.round(H * s);
+    if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+    const ctx = c.getContext('2d');
+    ctx.setTransform(pw / W, 0, 0, ph / H, 0, 0);
+    ctx._s = pw / W;
+    return ctx;
+  }
+  // pointer position in logical canvas units
+  function ptr(c, W, H, e) { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+
+  // orbit camera: looks at `target` from azimuth yaw / elevation pitch (radians), perspective distance `dist`
+  function camera(o) {
+    const cy = Math.cos(o.yaw), sy = Math.sin(o.yaw), cp = Math.cos(o.pitch), sp = Math.sin(o.pitch);
+    const b = V(cp * cy, cp * sy, sp);           // toward the viewer
+    const r = V(-sy, cy, 0);                     // screen right
+    const u = cross(b, r);                       // screen up
+    const T = o.target || V(0, 0, 0), D = o.dist || 1e9, S = o.scale, X0 = o.cx, Y0 = o.cy;
+    const P = p => { const q = sub(p, T); const x = dot(q, r), y = dot(q, u), z = dot(q, b);
+      const f = D / Math.max(D * 0.05, D - z); return { x: X0 + x * S * f, y: Y0 - y * S * f, d: z, s: S * f }; };
+    return { P, b, r, u, scale: S };
+  }
+
+  // stars on a fixed pseudo-random pattern
+  function stars(ctx, W, H, n, seed) {
+    let s = seed || 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    ctx.save(); ctx.fillStyle = '#fff';
+    for (let i = 0; i < n; i++) { const x = rnd() * W, y = rnd() * H, a = 0.12 + rnd() * 0.45, z = rnd() < 0.08 ? 1.7 : 1.1;
+      ctx.globalAlpha = a; ctx.fillRect(x, y, z, z); }
+    ctx.restore();
+  }
+
+  // Sun-lit sphere, rendered per pixel. cam gives the view axes; L = unit vector toward the light (world).
+  // o.surface(nWorld) -> [r,g,b] albedo (0-255); o.ambient (0-1); o.moon (crisp terminator, flat disc);
+  // o.night(nWorld) -> [r,g,b] added on the dark side (city lights etc); o.rim [r,g,b] atmosphere colour.
+  const off = document.createElement('canvas');
+  function sphere(ctx, cam, x, y, rad, L, o) {
+    o = o || {};
+    const sc = (ctx._s || 1) * (o.sharp || 1);
+    const N = Math.max(4, Math.ceil(rad * sc)), size = 2 * N + 2;
+    if (off.width < size || off.height < size) { off.width = Math.max(off.width, size); off.height = Math.max(off.height, size); }
+    const oc = off.getContext('2d');
+    oc.clearRect(0, 0, size, size);
+    const img = oc.createImageData(size, size), d = img.data;
+    const R = cam.r, U = cam.u, B = cam.b, amb = o.ambient == null ? 0.07 : o.ambient;
+    const lr = dot(L, R), lu = dot(L, U), lb = dot(L, B);
+    const surf = o.surface || (() => o.color || [200, 200, 200]);
+    for (let j = 0; j < size; j++) {
+      const ny = -((j - N - 0.5) / N);
+      for (let i = 0; i < size; i++) {
+        const nx = (i - N - 0.5) / N, rr = nx * nx + ny * ny;
+        if (rr > 1.0 + 2 / N) continue;
+        const edge = clamp((1 - Math.sqrt(rr)) * N + 0.6, 0, 1);
+        if (edge <= 0) continue;
+        const nz = Math.sqrt(Math.max(0, 1 - rr));
+        const lam = nx * lr + ny * lu + nz * lb;
+        const n = V(nx * R.x + ny * U.x + nz * B.x, nx * R.y + ny * U.y + nz * B.y, nx * R.z + ny * U.z + nz * B.z);
+        const c = surf(n);
+        let sh;
+        if (o.moon) { sh = clamp((lam + 0.03) / 0.09, 0, 1); sh = sh * sh * (3 - 2 * sh) * (0.82 + 0.18 * Math.max(0, lam)); }
+        else { const t = clamp((lam + 0.06) / 0.12, 0, 1); sh = Math.max(0, lam) * 0.85 + t * 0.15; }
+        const k = amb + (1 - amb) * sh;
+        let rC = c[0] * k, gC = c[1] * k, bC = c[2] * k;
+        if (o.night && sh < 0.2) { const nl = o.night(n); if (nl) { const w = (0.2 - sh) / 0.2; rC += nl[0] * w; gC += nl[1] * w; bC += nl[2] * w; } }
+        if (o.rim) { const rim = Math.pow(1 - nz, 3) * (0.06 + 0.94 * clamp(lam + 0.25, 0, 1)); rC += o.rim[0] * rim; gC += o.rim[1] * rim; bC += o.rim[2] * rim; }
+        const p = (j * size + i) * 4;
+        d[p] = rC; d[p + 1] = gC; d[p + 2] = bC; d[p + 3] = 255 * edge;
+      }
+    }
+    oc.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, size, size, x - rad - rad / N, y - rad - rad / N, size * rad / N, size * rad / N);
+    if (o.outline) { ctx.save(); ctx.strokeStyle = o.outline; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, rad + 0.3, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+  }
+
+  // a circle lying on a sphere's surface (e.g. a latitude line), drawn with front/back distinguished.
+  // centre (x,y), radius rad px; the circle = points cosA*e1 + sinA*e2 scaled by ring radius rr, offset h along n.
+  function sphereCircle(ctx, cam, x, y, rad, axis, h, o) {
+    o = o || {};
+    const a = norm(axis);
+    let e1 = norm(cross(a, Math.abs(a.z) < 0.9 ? V(0, 0, 1) : V(1, 0, 0))); const e2 = cross(a, e1);
+    const rr = Math.sqrt(Math.max(0, 1 - h * h)), N = 96, pts = [];
+    for (let i = 0; i <= N; i++) { const t = i / N * 2 * Math.PI;
+      const p = add(mul(a, h), add(mul(e1, rr * Math.cos(t)), mul(e2, rr * Math.sin(t))));
+      pts.push({ x: x + rad * dot(p, cam.r), y: y - rad * dot(p, cam.u), front: dot(p, cam.b) >= 0 }); }
+    ctx.save(); ctx.lineCap = 'round';
+    const run = (front) => { ctx.beginPath(); let pen = false;
+      for (let i = 1; i < pts.length; i++) { const A = pts[i - 1], Bp = pts[i];
+        if (A.front === front && Bp.front === front) { if (!pen) { ctx.moveTo(A.x, A.y); pen = true; } ctx.lineTo(Bp.x, Bp.y); } else pen = false; }
+      ctx.stroke(); };
+    if (o.back) { ctx.strokeStyle = o.back; ctx.lineWidth = o.backW || 1; ctx.setLineDash(o.backDash || [2, 3]); run(false); }
+    ctx.strokeStyle = o.col || '#fff'; ctx.lineWidth = o.w || 1.2; ctx.setLineDash(o.dash || []); run(true);
+    ctx.restore();
+  }
+
+  // text with a dark halo
+  function label(ctx, t, x, y, o) {
+    o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
+    ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = o.halo == null ? 3.2 : o.halo; ctx.strokeStyle = o.haloCol || 'rgba(8,11,18,0.9)';
+    if (ctx.lineWidth > 0) ctx.strokeText(t, x, y);
+    ctx.fillStyle = o.col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+  }
+
+  // greedy label placer: put(text, x, y, offsets, style) tries each [dx,dy] until the box is clear of
+  // earlier labels, `block` boxes and the canvas edge. Returns the box used.
+  function placer(ctx, W, H, pad) {
+    const boxes = []; pad = pad == null ? 3 : pad;
+    const hit = (b) => boxes.some(c => b.x0 < c.x1 && b.x1 > c.x0 && b.y0 < c.y1 && b.y1 > c.y0);
+    return {
+      block(x0, y0, x1, y1) { boxes.push({ x0, y0, x1, y1 }); },
+      blockCircle(x, y, r) { boxes.push({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }); },
+      put(t, x, y, offs, o) {
+        o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
+        const w = ctx.measureText(t).width, h = parseFloat((o.font || '11px').match(/(\d+(\.\d+)?)px/)[1]) + 2; ctx.restore();
+        offs = offs || [[0, -14], [0, 14], [18, 0], [-18, 0]];
+        let best = null;
+        for (const [dx, dy] of offs) {
+          const al = o.align || (dx > 2 ? 'left' : dx < -2 ? 'right' : 'center');
+          const lx = x + dx, ly = y + dy;
+          const x0 = al === 'left' ? lx : al === 'right' ? lx - w : lx - w / 2;
+          const b = { x0: x0 - pad, y0: ly - h / 2 - pad / 2, x1: x0 + w + pad, y1: ly + h / 2 + pad / 2, lx, ly, al };
+          const inside = b.x0 >= 1 && b.x1 <= W - 1 && b.y0 >= 1 && b.y1 <= H - 1;
+          if (inside && !hit(b)) { best = b; break; }
+          if (!best && inside) best = b;
+        }
+        if (!best) { const [dx, dy] = offs[0]; best = { lx: clamp(x + dx, w / 2 + 2, W - w / 2 - 2), ly: clamp(y + dy, h, H - h), al: 'center' };
+          best.x0 = best.lx - w / 2; best.x1 = best.lx + w / 2; best.y0 = best.ly - h / 2; best.y1 = best.ly + h / 2; }
+        boxes.push(best);
+        label(ctx, t, best.lx, best.ly, Object.assign({}, o, { align: best.al }));
+        return best;
+      }
+    };
+  }
+
+  // cheap smooth "continents" on a unit-sphere body normal
+  function land(b) {
+    const f = Math.sin(2.1 * b.x + 1.3) * Math.sin(2.6 * b.y + 0.4) + 0.75 * Math.sin(3.3 * b.z + 2.2 * b.x + 0.9)
+      + 0.45 * Math.sin(5.1 * b.y - 3.7 * b.z + 1.7) + 0.25 * Math.sin(7.3 * b.x + 6.1 * b.z);
+    return f;
+  }
+  function earthColor(b) {   // b = body-frame normal (z = north pole)
+    const lat = Math.asin(clamp(b.z, -1, 1));
+    if (Math.abs(lat) > 1.2) return [232, 238, 244];
+    const f = land(b);
+    if (f > 0.55) { const dry = clamp((0.9 - Math.abs(lat)) * 1.2, 0, 1); return [74 + 96 * dry, 138 + 14 * dry, 72 + 26 * dry]; }
+    return [44, 112 + 22 * f, 200 + 20 * f];
+  }
+  function moonColor(b) {
+    const m = Math.sin(3.1 * b.x + 0.7) * Math.sin(2.3 * b.z + 1.1) + 0.6 * Math.sin(4.7 * b.y + 2.9 * b.x);
+    const g = m > 0.55 ? 150 : 205 + 10 * Math.sin(9 * b.y + 4 * b.z);
+    return [g, g * 0.98, g * 0.93];
+  }
+
+  return { V, add, sub, mul, dot, cross, norm, clamp, rot, hidpi, ptr, camera, stars, sphere, sphereCircle, label, placer, land, earthColor, moonColor };
+})();
+/* A3-KIT-END */
+
 const $ = id => document.getElementById(id);
 const D = Math.PI / 180;
+const DOME_W = 520, DOME_H = 300, ALT_W = 520, ALT_H = 150;
 let playing = false, rafId = null, lastTs = null;
+let domeView = '3d';                    // '3d' | 'map'
+let camYaw = -28 * D, camPitch = 16 * D;
+let starName = 'Vega';
 
 function lat() { return +$('latSlider').value; }
 function dec() { return +$('decSlider').value; }
@@ -222,108 +416,200 @@ function status(phi, d) {
   }
   return 'rises and sets';
 }
+const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const compass = az => COMPASS[Math.round(az / 22.5) % 16];
 
-// ---------- azimuthal sky map ----------
+// ---------- 3D celestial sphere (horizon frame: x = east, y = north, z = up) ----------
+function poleVec(phi) { return A3.V(0, Math.cos(phi * D), Math.sin(phi * D)); }          // north celestial pole
+function eqTop(phi) { return A3.V(0, -Math.sin(phi * D), Math.cos(phi * D)); }           // equator on the meridian
+function starVec(phi, d, Hdeg) {   // H > 0: west of the meridian
+  const P = poleVec(phi), Q = eqTop(phi), E = A3.V(1, 0, 0), h = Hdeg * D;
+  return A3.add(A3.mul(P, Math.sin(d * D)), A3.mul(A3.add(A3.mul(Q, Math.cos(h)), A3.mul(E, -Math.sin(h))), Math.cos(d * D)));
+}
+function domeCam() { return A3.camera({ yaw: camYaw, pitch: camPitch, dist: 30, scale: 118, cx: DOME_W / 2 - 18, cy: DOME_H / 2 + 6 }); }
+
+// stroke a polyline of sphere points split into four classes: above/below horizon x front/back
+function sphereCurve(ctx, cam, pts3, style) {
+  const P = cam.P;
+  const pts = pts3.map(p => { const q = P(p); q.up = p.z >= -1e-9; q.front = A3.dot(p, cam.b) >= 0; return q; });
+  const pass = (up, front) => {
+    const st = style(up, front); if (!st) return;
+    ctx.save(); ctx.strokeStyle = st.col; ctx.lineWidth = st.w; ctx.setLineDash(st.dash || []); ctx.lineCap = 'round';
+    ctx.beginPath(); let pen = false;
+    for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i];
+      if (a.up === up && b.up === up && a.front === front && b.front === front) { if (!pen) { ctx.moveTo(a.x, a.y); pen = true; } ctx.lineTo(b.x, b.y); } else pen = false; }
+    ctx.stroke(); ctx.restore();
+  };
+  return pass;
+}
+function greatCircle(axis, n) {
+  const a = A3.norm(axis), e1 = A3.norm(A3.cross(a, Math.abs(a.z) < 0.9 ? A3.V(0, 0, 1) : A3.V(1, 0, 0))), e2 = A3.cross(a, e1), out = [];
+  for (let i = 0; i <= (n || 180); i++) { const t = i / (n || 180) * 2 * Math.PI; out.push(A3.add(A3.mul(e1, Math.cos(t)), A3.mul(e2, Math.sin(t)))); }
+  return out;
+}
+
+function draw3D(ctx, W, H) {
+  const cam = domeCam(), P = cam.P, phi = lat(), d = dec(), L = A3.placer(ctx, W, H);
+  const O = P(A3.V(0, 0, 0)), R = cam.scale * (O.s / cam.scale);
+  const pole = poleVec(phi), visPole = phi >= 0 ? pole : A3.mul(pole, -1);
+
+  // curves
+  const horizon = greatCircle(A3.V(0, 0, 1));
+  const meridian = greatCircle(A3.V(1, 0, 0));
+  const equator = greatCircle(pole);
+  const diurnal = []; for (let i = 0; i <= 240; i++) diurnal.push(starVec(phi, d, -180 + i * 1.5));
+  const passes = [
+    sphereCurve(ctx, cam, meridian, (up, f) => ({ col: up ? (f ? 'rgba(200,210,230,0.32)' : 'rgba(200,210,230,0.16)') : 'rgba(200,210,230,0.1)', w: 1, dash: f && up ? [] : [2, 3] })),
+    sphereCurve(ctx, cam, equator, (up, f) => ({ col: up ? (f ? 'rgba(255,200,110,0.85)' : 'rgba(255,200,110,0.38)') : (f ? 'rgba(255,200,110,0.3)' : 'rgba(255,200,110,0.16)'), w: f && up ? 1.6 : 1, dash: f && up ? [] : [3, 3] })),
+    sphereCurve(ctx, cam, diurnal, (up, f) => ({ col: up ? (f ? 'rgba(125,185,255,1)' : 'rgba(125,185,255,0.5)') : (f ? 'rgba(125,185,255,0.38)' : 'rgba(125,185,255,0.2)'), w: up ? (f ? 2.4 : 1.5) : 1.1, dash: up ? (f ? [] : [4, 3]) : [2, 3] })),
+  ];
+  const horizonPass = sphereCurve(ctx, cam, horizon, (up, f) => ({ col: f ? 'rgba(140,200,140,0.95)' : 'rgba(140,200,140,0.5)', w: f ? 1.8 : 1.2 }));
+
+  // 1. sphere body: a faint glass ball, darker at the rim
+  const sg = ctx.createRadialGradient(O.x - R * 0.35, O.y - R * 0.4, R * 0.1, O.x, O.y, R);
+  sg.addColorStop(0, 'rgba(110,130,200,0.05)'); sg.addColorStop(0.75, 'rgba(80,100,170,0.12)'); sg.addColorStop(1, 'rgba(120,150,220,0.28)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(O.x, O.y, R, 0, 7); ctx.fill();
+
+  // 2. everything below the horizon, then the ground disc drawn over it
+  passes.forEach(p => { p(false, false); p(false, true); });
+  const gpts = horizon.map(p => P(p));
+  ctx.beginPath(); gpts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+  const gg = ctx.createLinearGradient(0, O.y - R * Math.sin(camPitch), 0, O.y + R * Math.sin(camPitch));
+  gg.addColorStop(0, 'rgba(38,60,34,0.78)'); gg.addColorStop(1, 'rgba(52,80,44,0.85)');
+  ctx.fillStyle = gg; ctx.fill();
+  // 3. sky behind, the horizon ring, the observer, the pole axis
+  passes.forEach(p => p(true, false));
+  horizonPass(true, false); horizonPass(true, true);
+
+  // polar axis through the observer (the half below the ground is dimmer)
+  const pn = P(pole), ps = P(A3.mul(pole, -1));
+  const abovePole = phi >= 0 ? pn : ps, belowPole = phi >= 0 ? ps : pn;
+  ctx.strokeStyle = 'rgba(255,214,107,0.3)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(belowPole.x, belowPole.y); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(255,214,107,0.85)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(abovePole.x, abovePole.y); ctx.stroke();
+  // pole altitude = latitude: arc from the horizon point under the pole up to the pole
+  const hp = A3.V(0, phi >= 0 ? 1 : -1, 0), arc = [];
+  for (let i = 0; i <= 30; i++) { const t = i / 30 * Math.abs(phi) * D; arc.push(P(A3.add(A3.mul(hp, 0.32 * Math.cos(t)), A3.V(0, 0, 0.32 * Math.sin(t))))); }
+  if (Math.abs(phi) > 2) { ctx.strokeStyle = 'rgba(255,214,107,0.9)'; ctx.lineWidth = 1.3; ctx.beginPath(); arc.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); }
+  // zenith
+  const Z = P(A3.V(0, 0, 1));
+  ctx.fillStyle = 'rgba(220,230,240,0.8)'; ctx.beginPath(); ctx.arc(Z.x, Z.y, 2.2, 0, 7); ctx.fill();
+  // observer
+  ctx.fillStyle = '#e8eef4'; ctx.beginPath(); ctx.arc(O.x, O.y - 7, 2.6, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#e8eef4'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(O.x, O.y - 4.5); ctx.lineTo(O.x, O.y); ctx.stroke();
+
+  // star altitude drop line (along its vertical circle) when above the horizon
+  const now = altaz(phi, d, ha() * 15), sv = starVec(phi, d, ha() * 15), S = P(sv);
+  if (now.alt > 0.5) {
+    const foot = A3.norm(A3.V(sv.x, sv.y, 0)), seg = [];
+    for (let i = 0; i <= 24; i++) { const t = i / 24 * now.alt * D; seg.push(P(A3.add(A3.mul(foot, Math.cos(t)), A3.V(0, 0, Math.sin(t))))); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1.2;
+    ctx.beginPath(); seg.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // 4. sky in front
+  passes.forEach(p => p(true, true));
+
+  // the star
+  const sFront = A3.dot(sv, cam.b) >= 0, sUp = now.alt >= 0;
+  const sa = sUp ? (sFront ? 1 : 0.6) : 0.35;
+  ctx.save(); ctx.globalAlpha = sa;
+  const glow = ctx.createRadialGradient(S.x, S.y, 0, S.x, S.y, 11); glow.addColorStop(0, 'rgba(255,255,255,0.9)'); glow.addColorStop(1, 'rgba(160,200,255,0)');
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(S.x, S.y, 11, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(S.x, S.y, 3.6, 0, 7); ctx.fill();
+  ctx.restore();
+
+  // labels: reserve bodies, then names
+  L.blockCircle(S.x, S.y, 6); L.blockCircle(O.x, O.y - 4, 6);
+  L.put('drag to turn the sphere', W - 8, H - 11, [[-1, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put(starName, S.x, S.y, [[0, -14], [12, -8], [-12, -8], [0, 15]], { col: sUp ? '#ffffff' : '#8d9bb0', font: '600 11.5px "Source Sans 3",sans-serif' });
+  const card = [['N', A3.V(0, 1, 0)], ['E', A3.V(1, 0, 0)], ['S', A3.V(0, -1, 0)], ['W', A3.V(-1, 0, 0)]];
+  card.forEach(([t, v]) => { const p = P(A3.mul(v, 1.1)), f = A3.dot(v, cam.b) >= 0;
+    L.put(t, p.x, p.y, [[0, 0], [0, 10], [0, -10]], { col: f ? '#bfe3bf' : 'rgba(170,210,170,0.6)', font: '700 11.5px "Source Sans 3",sans-serif' }); });
+  L.put('zenith', Z.x, Z.y, [[0, -9], [24, 0], [-24, 0]], { col: 'rgba(220,230,240,0.7)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put(phi >= 0 ? 'NCP' : 'SCP', abovePole.x, abovePole.y, [[0, -10], [14, -4], [-14, -4], [0, 11]], { col: '#ffd66b', font: '700 10.5px "Source Sans 3",sans-serif' });
+  if (Math.abs(phi) > 2) { const mid = arc[15]; L.put('pole altitude ' + Math.abs(phi) + '°', mid.x, mid.y, [[8, -8], [-8, -8], [8, 8]], { col: '#ffd66b', font: '10.5px "Source Sans 3",sans-serif' }); }
+  // equator label at its highest front point
+  const eqFront = equator.map(p => ({ p, q: P(p) })).filter(o => o.p.z > 0.05 && A3.dot(o.p, cam.b) > 0.2);
+  if (eqFront.length) { const top = eqFront.reduce((a, b) => (b.q.x > a.q.x ? b : a)); L.put('celestial equator', top.q.x, top.q.y, [[-6, -9], [-6, 9], [0, -12]], { col: 'rgba(255,205,120,0.9)', font: '10.5px "Source Sans 3",sans-serif' }); }
+  if (now.alt > 3) { const fp = P(A3.add(A3.mul(A3.norm(A3.V(sv.x, sv.y, 0)), Math.cos(now.alt * D / 2)), A3.V(0, 0, Math.sin(now.alt * D / 2))));
+    L.put('alt ' + now.alt.toFixed(0) + '°', fp.x, fp.y, [[22, 0], [-22, 0], [0, -10]], { col: 'rgba(255,255,255,0.75)', font: '10.5px "Source Sans 3",sans-serif' }); }
+  // legend
+  const lg = [['#7db9ff', "star's daily circle"], ['#ffc86e', 'celestial equator'], ['#8cc88c', 'horizon']];
+  lg.forEach(([c, t], i) => { const y = 16 + i * 15; ctx.fillStyle = c; ctx.fillRect(10, y - 1, 14, 2.4); L.put(t, 30, y, [[0, 0]], { align: 'left', col: 'rgba(225,232,240,0.8)', font: '10.5px "Source Sans 3",sans-serif' }); });
+  L.put('solid = above horizon, front', 10, 16 + 3 * 15, [[0, 0]], { align: 'left', col: 'rgba(225,232,240,0.55)', font: '10.5px "Source Sans 3",sans-serif' });
+}
+
+// ---------- flat sky map (the old view) ----------
 function proj(cx, cy, R, alt, az) {
   let r = (90 - alt) / 90 * R;
-  if (r > R * 1.16) r = R * 1.16;   // keep deep-below-horizon arcs from ballooning off-canvas
-  // screen: North at top, East to the right (looking down on the dome from outside/above,
-  // but we want the sky as seen looking up, so East is to the LEFT... use compass convention:
-  // put N up, E right — a plan view of the horizon.
+  if (r > R * 1.16) r = R * 1.16;
   const a = az * D;
   return { x: cx + r * Math.sin(a), y: cy - r * Math.cos(a) };
 }
-function drawDome() {
-  const c = $('dome'), ctx = c.getContext('2d');
-  const W = 520, H = 300;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2, R = H / 2 - 16;
-
-  // horizon disc
+function drawMap(ctx, W, H) {
+  const cx = W / 2, cy = H / 2, R = H / 2 - 22, L = A3.placer(ctx, W, H);
   ctx.fillStyle = '#0c1220'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
   ctx.strokeStyle = '#39506e'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
-  // altitude rings
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   for (const a of [30, 60]) { ctx.beginPath(); ctx.arc(cx, cy, (90 - a) / 90 * R, 0, 7); ctx.stroke(); }
-  // cardinal points
-  ctx.fillStyle = '#9fb0bf'; ctx.font = '600 11px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('N', cx, cy - R - 5); ctx.fillText('S', cx, cy + R + 12);
-  ctx.fillText('E', cx + R + 9, cy + 4); ctx.fillText('W', cx - R - 9, cy + 4);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText('zenith', cx, cy - 6);
-
   const phi = lat(), d = dec();
-
-  // celestial pole
-  const poleAlt = Math.abs(phi), poleAz = phi >= 0 ? 0 : 180;
-  const pp = proj(cx, cy, R, poleAlt, poleAz);
-  ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(pp.x, pp.y, 3, 0, 7); ctx.fill();
-  ctx.fillStyle = '#ffd66b'; ctx.font = '9px "Source Sans 3",sans-serif';
-  ctx.fillText(phi >= 0 ? 'NCP' : 'SCP', pp.x, pp.y - 8);
-
-  // the star's full diurnal circle
-  ctx.beginPath(); let started = false;
   const seg = [];
-  for (let Hh = -12; Hh <= 12.001; Hh += 0.15) {
-    const aa = altaz(phi, d, Hh * 15);
-    const p = proj(cx, cy, R, aa.alt, aa.az);
-    seg.push({ p, up: aa.alt >= 0 });
-  }
-  // draw above-horizon solid, below dashed
-  for (let i = 1; i < seg.length; i++) {
-    const A = seg[i - 1], B = seg[i];
+  for (let Hh = -12; Hh <= 12.001; Hh += 0.15) { const aa = altaz(phi, d, Hh * 15); seg.push({ p: proj(cx, cy, R, aa.alt, aa.az), up: aa.alt >= 0 }); }
+  for (let i = 1; i < seg.length; i++) { const A = seg[i - 1], B = seg[i];
     ctx.beginPath(); ctx.moveTo(A.p.x, A.p.y); ctx.lineTo(B.p.x, B.p.y);
-    if (B.up && A.up) { ctx.strokeStyle = 'rgba(120,180,255,0.85)'; ctx.setLineDash([]); ctx.lineWidth = 2; }
+    if (B.up && A.up) { ctx.strokeStyle = 'rgba(120,180,255,0.9)'; ctx.setLineDash([]); ctx.lineWidth = 2; }
     else { ctx.strokeStyle = 'rgba(120,140,170,0.35)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1; }
-    // clip below-horizon points to the disc edge visually
-    ctx.stroke();
-  }
+    ctx.stroke(); }
   ctx.setLineDash([]); ctx.lineWidth = 1;
-
-  // current star position
+  const poleAlt = Math.abs(phi), poleAz = phi >= 0 ? 0 : 180, pp = proj(cx, cy, R, poleAlt, poleAz);
+  ctx.fillStyle = '#ffd66b'; ctx.beginPath(); ctx.arc(pp.x, pp.y, 3, 0, 7); ctx.fill();
   const now = altaz(phi, d, ha() * 15);
-  if (now.alt >= -0.5) {
-    const p = proj(cx, cy, R, Math.max(now.alt, 0), now.az);
-    ctx.fillStyle = now.alt >= 0 ? '#fff' : '#556';
-    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 7); ctx.fill();
-    ctx.strokeStyle = '#7bb4ff'; ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 7); ctx.stroke();
-  }
+  let sp = null;
+  if (now.alt >= -0.5) { sp = proj(cx, cy, R, Math.max(now.alt, 0), now.az);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sp.x, sp.y, 5, 0, 7); ctx.fill(); ctx.strokeStyle = '#7bb4ff'; ctx.stroke(); }
+  L.blockCircle(cx, cy, 3); if (sp) L.blockCircle(sp.x, sp.y, 6);
+  [['N', 0, -R - 9], ['S', 0, R + 10], ['E', R + 10, 0], ['W', -R - 10, 0]].forEach(([t, dx, dy]) => L.put(t, cx + dx, cy + dy, [[0, 0]], { col: '#bfe3bf', font: '700 11.5px "Source Sans 3",sans-serif' }));
+  L.put('zenith', cx, cy, [[0, -10], [0, 10]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put(phi >= 0 ? 'NCP' : 'SCP', pp.x, pp.y, [[0, -10], [12, 0], [-12, 0], [0, 10]], { col: '#ffd66b', font: '700 10.5px "Source Sans 3",sans-serif' });
+  if (sp) L.put(starName, sp.x, sp.y, [[0, -13], [12, 0], [-12, 0], [0, 13]], { col: '#fff', font: '600 11px "Source Sans 3",sans-serif' });
+  L.put('centre = straight up', 10, H - 24, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put('edge = horizon (E on the right, as on a map)', 10, H - 10, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put('solid = above the horizon', 10, 14, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+}
 
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('solid = above the horizon, dashed = below', 10, H - 10);
+function drawDome() {
+  const c = $('dome'), ctx = A3.hidpi(c, DOME_W, DOME_H), W = DOME_W, H = DOME_H;
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  A3.stars(ctx, W, H, 80, 21);
+  if (domeView === '3d') draw3D(ctx, W, H); else drawMap(ctx, W, H);
+  c.style.cursor = domeView === '3d' ? 'grab' : 'default';
 }
 
 // ---------- altitude vs time ----------
 function drawAlt() {
-  const c = $('alt'), ctx = c.getContext('2d');
-  const W = 520, H = 150;
-  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
-  const x0 = 34, x1 = W - 10, y0 = H - 22, y1 = 12;
+  const c = $('alt'), ctx = A3.hidpi(c, ALT_W, ALT_H), W = ALT_W, H = ALT_H;
+  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const x0 = 40, x1 = W - 12, y0 = H - 24, y1 = 22;
   const X = h => x0 + (h + 12) / 24 * (x1 - x0);
-  const Y = a => y0 + (a - (-20)) / (90 - (-20)) * (y1 - y0);
-
-  // horizon
-  ctx.fillStyle = 'rgba(60,80,50,0.25)'; ctx.fillRect(x0, Y(0), x1 - x0, y0 - Y(0));
-  ctx.strokeStyle = '#3c5230'; ctx.beginPath(); ctx.moveTo(x0, Y(0)); ctx.lineTo(x1, Y(0)); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText('90°', x0 - 4, Y(90) + 3); ctx.fillText('0°', x0 - 4, Y(0) + 3);
-  ctx.textAlign = 'center';
-  for (const h of [-12, -6, 0, 6, 12]) ctx.fillText((h === 0 ? 'transit' : (h > 0 ? '+' + h + 'h' : h + 'h')), X(h), y0 + 13);
-
+  const Y = a => y0 + (a + 90) / 180 * (y1 - y0);
+  ctx.fillStyle = 'rgba(52,80,44,0.45)'; ctx.fillRect(x0, Y(0), x1 - x0, y0 - Y(0));
+  ctx.strokeStyle = '#4f7a42'; ctx.beginPath(); ctx.moveTo(x0, Y(0)); ctx.lineTo(x1, Y(0)); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  [-60, -30, 30, 60].forEach(a => { ctx.beginPath(); ctx.moveTo(x0, Y(a)); ctx.lineTo(x1, Y(a)); ctx.stroke(); });
+  const f = '10px "Source Sans 3",sans-serif';
+  [[90, '+90°'], [0, '0°'], [-90, '−90°']].forEach(([a, t]) => A3.label(ctx, t, x0 - 5, Y(a), { align: 'right', col: 'rgba(255,255,255,0.55)', font: f, halo: 0 }));
+  for (const h of [-12, -6, 0, 6, 12]) A3.label(ctx, h === 0 ? 'transit' : (h > 0 ? '+' + h + ' h' : '−' + (-h) + ' h'), X(h), y0 + 13, { col: 'rgba(255,255,255,0.55)', font: f, halo: 0 });
+  A3.label(ctx, 'below the horizon', x1 - 4, Y(-78), { align: 'right', col: 'rgba(160,210,150,0.75)', font: f, halo: 0 });
   const phi = lat(), d = dec();
   ctx.beginPath();
-  for (let h = -12; h <= 12.001; h += 0.1) {
-    const a = altaz(phi, d, h * 15).alt;
-    const px = X(h), py = Y(Math.max(a, -20));
-    h === -12 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-  }
+  for (let h = -12; h <= 12.001; h += 0.1) { const a = altaz(phi, d, h * 15).alt; const px = X(h), py = Y(a); h === -12 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); }
   ctx.strokeStyle = '#7bb4ff'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
-
-  // current time marker
-  ctx.strokeStyle = 'rgba(255,214,107,0.8)'; ctx.setLineDash([3, 2]);
-  ctx.beginPath(); ctx.moveTo(X(ha()), y1); ctx.lineTo(X(ha()), y0); ctx.stroke(); ctx.setLineDash([]);
-
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('altitude of the star through the night', 8, 11);
+  const a = altaz(phi, d, ha() * 15).alt;
+  ctx.strokeStyle = 'rgba(255,214,107,0.7)'; ctx.setLineDash([3, 2]);
+  ctx.beginPath(); ctx.moveTo(X(ha()), y1 - 4); ctx.lineTo(X(ha()), y0); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = a >= 0 ? '#fff' : '#8d9bb0'; ctx.beginPath(); ctx.arc(X(ha()), Y(a), 4, 0, 7); ctx.fill();
+  A3.label(ctx, 'altitude of ' + starName + ' over one full turn of the sky (23 h 56 min)', 10, 11, { align: 'left', col: 'rgba(255,255,255,0.55)', font: '10.5px "Source Sans 3",sans-serif', halo: 0 });
 }
 
 function render() {
@@ -331,7 +617,7 @@ function render() {
   $('latLbl').innerHTML = lat() === 0 ? 'Equator' : Math.abs(lat()) + '&deg; ' + (lat() > 0 ? 'N' : 'S');
   $('decVal').textContent = (dec() >= 0 ? '+' : '') + dec().toFixed(1) + '°';
   $('haVal').textContent = (ha() >= 0 ? '+' : '') + ha().toFixed(1) + ' h';
-  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.d - dec()) < 0.3));
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.d - dec()) < 0.05));
 
   const phi = lat(), d = dec();
   const now = altaz(phi, d, ha() * 15);
@@ -339,16 +625,16 @@ function render() {
   const tA = transitAlt(phi, d);
 
   $('results').innerHTML =
-    rowB('right now', now.alt >= 0 ? ('up — alt ' + now.alt.toFixed(0) + '°, az ' + now.az.toFixed(0) + '°') : 'below the horizon') +
+    rowB('right now', now.alt >= 0 ? ('alt ' + now.alt.toFixed(0) + '°, az ' + now.az.toFixed(0) + '° (' + compass(now.az) + ')') : 'below the horizon') +
     rowB('this star', st) +
     row('highest it gets', (tA > 0 ? tA.toFixed(0) + '° at transit' : 'stays down')) +
     row('celestial pole altitude', Math.abs(phi).toFixed(0) + '°') +
-    row('circumpolar if δ >', (90 - Math.abs(phi)).toFixed(0) + '°' + (phi < 0 ? ' (south)' : ''));
+    row(phi >= 0 ? 'circumpolar if δ >' : 'circumpolar if δ <', (phi >= 0 ? '+' : '−') + (90 - Math.abs(phi)).toFixed(0) + '°');
 
   $('note').textContent =
-    st === 'circumpolar' ? 'This star never sets from your latitude — it circles the pole all night, all year.'
-    : st === 'never rises' ? 'This star never climbs above your horizon — you would have to travel toward its hemisphere to see it.'
-    : 'This star rises in the east, arcs across to a maximum of ' + tA.toFixed(0) + '° at transit, and sets in the west.';
+    st === 'circumpolar' ? 'This star never sets from your latitude: its whole daily circle stays above the horizon.'
+    : st === 'never rises' ? 'This star never climbs above your horizon; you would have to travel toward its hemisphere to see it.'
+    : 'This star rises in the east, climbs to ' + tA.toFixed(0) + '° at transit (on the meridian), and sets in the west.';
 
   drawDome(); drawAlt();
 }
@@ -359,26 +645,40 @@ function tick(ts) {
   if (!playing) return;
   if (lastTs == null) lastTs = ts;
   const dt = (ts - lastTs) / 1000; lastTs = ts;
-  let h = ha() + dt * 3; if (h > 12) h -= 24;
+  let h = ha() + dt * 2.4; if (h > 12) h -= 24;
   $('haSlider').value = h; render();
   rafId = requestAnimationFrame(tick);
 }
 function setPlaying(p) {
   playing = p;
-  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Run the night';
+  $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Turn the sky';
   if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { setPlaying(false); $('haSlider').value = -3; render(); });
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('haSlider').value = -3; camYaw = -28 * D; camPitch = 16 * D; render(); });
 $('latSlider').addEventListener('input', render);
-$('decSlider').addEventListener('input', render);
+$('decSlider').addEventListener('input', () => {
+  const chip = [...document.querySelectorAll('#chips button')].find(b => Math.abs(+b.dataset.d - dec()) < 0.05);
+  starName = chip ? chip.dataset.name : 'star'; render(); });
 $('haSlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
-document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('decSlider').value = b.dataset.d; render(); }));
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('decSlider').value = b.dataset.d; starName = b.dataset.name; render(); }));
+document.querySelectorAll('#viewRow button').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('#viewRow button').forEach(x => x.classList.toggle('on', x === btn)); domeView = btn.dataset.v; render();
+}));
+(function () {   // drag to turn the sphere
+  const c = $('dome'); let drag = null;
+  c.addEventListener('pointerdown', e => { if (domeView !== '3d') return; drag = { x: e.clientX, y: e.clientY, yaw: camYaw, pitch: camPitch }; c.setPointerCapture(e.pointerId); c.style.cursor = 'grabbing'; });
+  c.addEventListener('pointermove', e => { if (!drag) return; const k = DOME_W / c.getBoundingClientRect().width;
+    camYaw = drag.yaw - (e.clientX - drag.x) * k * 0.01; camPitch = Math.max(2 * D, Math.min(88 * D, drag.pitch + (e.clientY - drag.y) * k * 0.01)); drawDome(); });
+  const end = () => { drag = null; if (domeView === '3d') c.style.cursor = 'grab'; };
+  c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
+})();
+window.addEventListener('resize', () => render());
 
 function katexAll() {
   const specs = [
     ['f1', "\\sin a = \\sin\\varphi\\sin\\delta + \\cos\\varphi\\cos\\delta\\cos H"],
-    ['f2', "\\delta > 90^\\circ - |\\varphi| \\;\\Rightarrow\\; \\text{circumpolar}"],
+    ['f2', "|\\delta| > 90^\\circ - |\\varphi|\\ \\text{(same hemisphere)} \\;\\Rightarrow\\; \\text{circumpolar}"],
     ['f3', "a_{\\text{transit}} = 90^\\circ - |\\varphi - \\delta|"],
     ['ex1', "90^\\circ - 42^\\circ = 48^\\circ"],
   ];

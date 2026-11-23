@@ -25,10 +25,16 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #sky { aspect-ratio:520/300; }
-  #disc { aspect-ratio:520/190; }
+  #sky { aspect-ratio:520/290; cursor:grab; touch-action:none; }
+  #sky.dragging { cursor:grabbing; }
+  #disc { aspect-ratio:520/160; }
+  .underrow { display:flex; gap:10px; align-items:center; }
+  .underrow .note { flex:1; min-width:0; }
+  button:focus-visible, input:focus-visible, a:focus-visible, canvas:focus-visible { outline:2px solid #c9a24b; outline-offset:2px; }
+  .playbtn:hover { filter:brightness(1.1); } .resetbtn:hover { border-color:#c9a24b; } .toggleRow button:not(.on):hover { background:#f7f2e6; }
+  @media (max-width:640px){ .underrow { flex-wrap:wrap; } .underrow .note { flex-basis:100%; } }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
-  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #8a6d2a; background:#8a6d2a; color:#fff; }
+  .playbtn { min-width:118px; justify-content:center; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #8a6d2a; background:#8a6d2a; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
@@ -42,8 +48,8 @@
   .phasechips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 3px; font:600 10px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
   .phasechips button:hover { border-color:#c9a24b; }
   .phasechips button.on { background:#f4ecd9; border-color:#c9a24b; color:#6b5320; }
-  .results { display:flex; flex-direction:column; gap:7px; }
-  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f5f1e6; border-radius:8px; padding:7px 11px; gap:8px; }
+  .results { display:flex; flex-direction:column; gap:5px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f5f1e6; border-radius:8px; padding:6px 11px; gap:8px; }
   .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#4b4030; }
   .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#7a5f24; text-align:right; }
   .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:13px; }
@@ -99,19 +105,21 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="sky" width="520" height="300"></canvas>
-        <canvas id="disc" width="520" height="190"></canvas>
-        <div class="btnrow">
-          <button class="playbtn" id="playBtn">&#9654; Play month</button>
-          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        <canvas id="sky" width="520" height="290" tabindex="0" aria-label="Space view of the Moon's orbit. Drag the Moon around its orbit, or use the arrow keys."></canvas>
+        <canvas id="disc" width="520" height="160"></canvas>
+        <div class="underrow">
+          <div class="btnrow" style="flex:none;">
+            <button class="playbtn" id="playBtn">&#9654; Play month</button>
+            <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+          </div>
+          <div class="note" id="note"></div>
         </div>
-        <div class="note" id="note"></div>
       </div>
       <div class="ctlCol">
         <div class="section-label">Where in its orbit</div>
         <div class="slider-row">
           <div class="lbl"><span>Age of the Moon</span><span class="val" id="dayVal">0.0 d</span></div>
-          <input type="range" id="daySlider" min="0" max="29.53" step="0.05" value="0">
+          <input type="range" id="daySlider" min="0" max="29.53" step="any" value="0">
         </div>
         <div class="phasechips" id="chips">
           <button data-deg="0">New</button>
@@ -119,13 +127,16 @@
           <button data-deg="180">Full</button>
           <button data-deg="270">Third&nbsp;qtr</button>
         </div>
-        <div class="toggleRow">
+        <div class="toggleRow" title="Which hemisphere you watch from">
           <button id="hemN" class="on">N. hemisphere</button>
           <button id="hemS">S. hemisphere</button>
         </div>
-        <div class="section-label" style="margin-top:4px;">Results &mdash; you read off</div>
+        <div class="toggleRow" id="viewRow" title="How the space view is drawn">
+          <button data-v="tilt" class="on">Tilted view</button>
+          <button data-v="top">View from above</button>
+        </div>
+        <div class="section-label" style="margin-top:4px;">Results: you read off</div>
         <div class="results" id="results"></div>
-        <div class="note" id="eclipseNote" style="display:none;"></div>
       </div>
     </div>
     <div class="footer-note">DRAFT &mdash; intro-astro-sims. Phase depends only on the Sun&ndash;Moon&ndash;Earth angle, not on Earth&rsquo;s shadow.</div>
@@ -134,7 +145,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Moon Phases <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Moon Phases <button class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -142,14 +153,14 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Drag the age slider or hit <b>Play month</b> and watch the top view: the Moon&rsquo;s lit side always points at the Sun. The lower panel is the same Moon seen from Earth. Use the quarter buttons to jump to the named phases, and switch hemispheres to see why the lit edge flips.</p>
+        <p>Drag the Moon around its orbit (or use the age slider, or <b>Play month</b>) and watch the space view: the Moon&rsquo;s lit half always faces the Sun, while the dashed ring marks the half that faces Earth. The phase is how much of the lit half falls inside that ring. The lower panel is the same Moon seen from Earth. Switch hemispheres to see the whole face turn upside down, and switch the space view between tilted and straight down.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;">
           <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">illuminated fraction from the elongation angle &theta; (Sun&ndash;Earth&ndash;Moon). &theta; = 0&deg; new, 180&deg; full.</div></div>
           <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">the Moon&rsquo;s age in days from &theta; &mdash; one synodic month is 29.53 d.</div></div>
-          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">rough moonrise: the Moon rises about 50 min later each day, ~6 AM at new, noon at first quarter, 6 PM at full.</div></div>
+          <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">rough moonrise: the Moon rises about 49 min later each day (24 h &divide; 29.5), ~6 AM at new, noon at first quarter, 6 PM at full.</div></div>
         </div>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
@@ -163,7 +174,7 @@
           <li><a href="https://svs.gsfc.nasa.gov/Gallery/moonphase.html" target="_blank" rel="noopener" style="color:#8fc7ff;">NASA SVS &mdash; Moon phase visualizations</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
-        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/moon-phases-crash-course-astronomy-4/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #4 — Moon Phases</a></li></ul>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/moon-phases-crash-course-astronomy-4/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #4: Moon Phases</a></li></ul>
       </div>
     </div>
   </div>
@@ -171,9 +182,9 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; a 7-day-old Moon <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; a 7-day-old Moon <button class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">Tonight the Moon is 7 days past new. What phase is it, roughly how lit is it, and when is it up? Assume you are in the Northern hemisphere.</p>
-    <div class="step"><div class="h">1 &middot; Turn age into an angle</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">7 days is a bit under a quarter of the 29.53-day cycle, so &theta; &asymp; 85&deg; &mdash; just before first quarter.</div></div>
+    <div class="step"><div class="h">1 &middot; Turn age into an angle</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">7 days is a bit under a quarter of the 29.53-day cycle, so &theta; &asymp; 85&deg; (just before first quarter).</div></div>
     <div class="step"><div class="h">2 &middot; Illuminated fraction</div><span class="formula" id="ex2"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">About 46% lit and growing &rarr; <b>waxing crescent</b>, nearly first quarter. In the N. hemisphere the lit edge is on the <b>right</b>.</div></div>
     <div class="step"><div class="h">3 &middot; When is it visible?</div><div style="font-size:11.5px;color:#e7d6e4;">First quarter rises around noon and sets around midnight, so a 7-day Moon is highest in the early evening and sets a little before midnight &mdash; the classic &ldquo;there&rsquo;s the Moon in the afternoon sky&rdquo; phase.</div></div>
   </div>
@@ -181,7 +192,7 @@
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -234,147 +245,331 @@ function fmtTime(h) {
   return h12 + ':' + String(mm).padStart(2, '0') + ' ' + ap;
 }
 
-// ---------- top-down space view ----------
+/* A3-KIT-BEGIN — small 3D drawing kit for the astro sims (camera, Sun-lit spheres, halo labels,
+   label placement, hi-DPI canvases). World axes: z = up (north of the reference plane). */
+const A3 = (() => {
+  const V = (x, y, z) => ({ x, y, z });
+  const add = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z);
+  const sub = (a, b) => V(a.x - b.x, a.y - b.y, a.z - b.z);
+  const mul = (a, k) => V(a.x * k, a.y * k, a.z * k);
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const cross = (a, b) => V(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const norm = a => { const l = Math.hypot(a.x, a.y, a.z) || 1; return V(a.x / l, a.y / l, a.z / l); };
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  // rotate vector v about unit axis k by angle t (Rodrigues)
+  const rot = (v, k, t) => { const c = Math.cos(t), s = Math.sin(t);
+    return add(add(mul(v, c), mul(cross(k, v), s)), mul(k, dot(k, v) * (1 - c))); };
+
+  // canvas drawn in logical W x H units, backed at device resolution
+  function hidpi(c, W, H) {
+    const css = c.clientWidth || W;
+    const s = Math.max(1, css / W) * Math.min(window.devicePixelRatio || 1, 2);
+    const pw = Math.round(W * s), ph = Math.round(H * s);
+    if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+    const ctx = c.getContext('2d');
+    ctx.setTransform(pw / W, 0, 0, ph / H, 0, 0);
+    ctx._s = pw / W;
+    return ctx;
+  }
+  // pointer position in logical canvas units
+  function ptr(c, W, H, e) { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+
+  // orbit camera: looks at `target` from azimuth yaw / elevation pitch (radians), perspective distance `dist`
+  function camera(o) {
+    const cy = Math.cos(o.yaw), sy = Math.sin(o.yaw), cp = Math.cos(o.pitch), sp = Math.sin(o.pitch);
+    const b = V(cp * cy, cp * sy, sp);           // toward the viewer
+    const r = V(-sy, cy, 0);                     // screen right
+    const u = cross(b, r);                       // screen up
+    const T = o.target || V(0, 0, 0), D = o.dist || 1e9, S = o.scale, X0 = o.cx, Y0 = o.cy;
+    const P = p => { const q = sub(p, T); const x = dot(q, r), y = dot(q, u), z = dot(q, b);
+      const f = D / Math.max(D * 0.05, D - z); return { x: X0 + x * S * f, y: Y0 - y * S * f, d: z, s: S * f }; };
+    return { P, b, r, u, scale: S };
+  }
+
+  // stars on a fixed pseudo-random pattern
+  function stars(ctx, W, H, n, seed) {
+    let s = seed || 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    ctx.save(); ctx.fillStyle = '#fff';
+    for (let i = 0; i < n; i++) { const x = rnd() * W, y = rnd() * H, a = 0.12 + rnd() * 0.45, z = rnd() < 0.08 ? 1.7 : 1.1;
+      ctx.globalAlpha = a; ctx.fillRect(x, y, z, z); }
+    ctx.restore();
+  }
+
+  // Sun-lit sphere, rendered per pixel. cam gives the view axes; L = unit vector toward the light (world).
+  // o.surface(nWorld) -> [r,g,b] albedo (0-255); o.ambient (0-1); o.moon (crisp terminator, flat disc);
+  // o.night(nWorld) -> [r,g,b] added on the dark side (city lights etc); o.rim [r,g,b] atmosphere colour.
+  const off = document.createElement('canvas');
+  function sphere(ctx, cam, x, y, rad, L, o) {
+    o = o || {};
+    const sc = (ctx._s || 1) * (o.sharp || 1);
+    const N = Math.max(4, Math.ceil(rad * sc)), size = 2 * N + 2;
+    if (off.width < size || off.height < size) { off.width = Math.max(off.width, size); off.height = Math.max(off.height, size); }
+    const oc = off.getContext('2d');
+    oc.clearRect(0, 0, size, size);
+    const img = oc.createImageData(size, size), d = img.data;
+    const R = cam.r, U = cam.u, B = cam.b, amb = o.ambient == null ? 0.07 : o.ambient;
+    const lr = dot(L, R), lu = dot(L, U), lb = dot(L, B);
+    const surf = o.surface || (() => o.color || [200, 200, 200]);
+    for (let j = 0; j < size; j++) {
+      const ny = -((j - N - 0.5) / N);
+      for (let i = 0; i < size; i++) {
+        const nx = (i - N - 0.5) / N, rr = nx * nx + ny * ny;
+        if (rr > 1.0 + 2 / N) continue;
+        const edge = clamp((1 - Math.sqrt(rr)) * N + 0.6, 0, 1);
+        if (edge <= 0) continue;
+        const nz = Math.sqrt(Math.max(0, 1 - rr));
+        const lam = nx * lr + ny * lu + nz * lb;
+        const n = V(nx * R.x + ny * U.x + nz * B.x, nx * R.y + ny * U.y + nz * B.y, nx * R.z + ny * U.z + nz * B.z);
+        const c = surf(n);
+        let sh;
+        if (o.moon) { sh = clamp((lam + 0.03) / 0.09, 0, 1); sh = sh * sh * (3 - 2 * sh) * (0.82 + 0.18 * Math.max(0, lam)); }
+        else { const t = clamp((lam + 0.06) / 0.12, 0, 1); sh = Math.max(0, lam) * 0.85 + t * 0.15; }
+        const k = amb + (1 - amb) * sh;
+        let rC = c[0] * k, gC = c[1] * k, bC = c[2] * k;
+        if (o.night && sh < 0.2) { const nl = o.night(n); if (nl) { const w = (0.2 - sh) / 0.2; rC += nl[0] * w; gC += nl[1] * w; bC += nl[2] * w; } }
+        if (o.rim) { const rim = Math.pow(1 - nz, 3) * (0.06 + 0.94 * clamp(lam + 0.25, 0, 1)); rC += o.rim[0] * rim; gC += o.rim[1] * rim; bC += o.rim[2] * rim; }
+        const p = (j * size + i) * 4;
+        d[p] = rC; d[p + 1] = gC; d[p + 2] = bC; d[p + 3] = 255 * edge;
+      }
+    }
+    oc.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, size, size, x - rad - rad / N, y - rad - rad / N, size * rad / N, size * rad / N);
+    if (o.outline) { ctx.save(); ctx.strokeStyle = o.outline; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, rad + 0.3, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+  }
+
+  // a circle lying on a sphere's surface (e.g. a latitude line), drawn with front/back distinguished.
+  // centre (x,y), radius rad px; the circle = points cosA*e1 + sinA*e2 scaled by ring radius rr, offset h along n.
+  function sphereCircle(ctx, cam, x, y, rad, axis, h, o) {
+    o = o || {};
+    const a = norm(axis);
+    let e1 = norm(cross(a, Math.abs(a.z) < 0.9 ? V(0, 0, 1) : V(1, 0, 0))); const e2 = cross(a, e1);
+    const rr = Math.sqrt(Math.max(0, 1 - h * h)), N = 96, pts = [];
+    for (let i = 0; i <= N; i++) { const t = i / N * 2 * Math.PI;
+      const p = add(mul(a, h), add(mul(e1, rr * Math.cos(t)), mul(e2, rr * Math.sin(t))));
+      pts.push({ x: x + rad * dot(p, cam.r), y: y - rad * dot(p, cam.u), front: dot(p, cam.b) >= 0 }); }
+    ctx.save(); ctx.lineCap = 'round';
+    const run = (front) => { ctx.beginPath(); let pen = false;
+      for (let i = 1; i < pts.length; i++) { const A = pts[i - 1], Bp = pts[i];
+        if (A.front === front && Bp.front === front) { if (!pen) { ctx.moveTo(A.x, A.y); pen = true; } ctx.lineTo(Bp.x, Bp.y); } else pen = false; }
+      ctx.stroke(); };
+    if (o.back) { ctx.strokeStyle = o.back; ctx.lineWidth = o.backW || 1; ctx.setLineDash(o.backDash || [2, 3]); run(false); }
+    ctx.strokeStyle = o.col || '#fff'; ctx.lineWidth = o.w || 1.2; ctx.setLineDash(o.dash || []); run(true);
+    ctx.restore();
+  }
+
+  // text with a dark halo
+  function label(ctx, t, x, y, o) {
+    o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
+    ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = o.halo == null ? 3.2 : o.halo; ctx.strokeStyle = o.haloCol || 'rgba(8,11,18,0.9)';
+    if (ctx.lineWidth > 0) ctx.strokeText(t, x, y);
+    ctx.fillStyle = o.col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+  }
+
+  // greedy label placer: put(text, x, y, offsets, style) tries each [dx,dy] until the box is clear of
+  // earlier labels, `block` boxes and the canvas edge. Returns the box used.
+  function placer(ctx, W, H, pad) {
+    const boxes = []; pad = pad == null ? 3 : pad;
+    const hit = (b) => boxes.some(c => b.x0 < c.x1 && b.x1 > c.x0 && b.y0 < c.y1 && b.y1 > c.y0);
+    return {
+      block(x0, y0, x1, y1) { boxes.push({ x0, y0, x1, y1 }); },
+      blockCircle(x, y, r) { boxes.push({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }); },
+      put(t, x, y, offs, o) {
+        o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
+        const w = ctx.measureText(t).width, h = parseFloat((o.font || '11px').match(/(\d+(\.\d+)?)px/)[1]) + 2; ctx.restore();
+        offs = offs || [[0, -14], [0, 14], [18, 0], [-18, 0]];
+        let best = null;
+        for (const [dx, dy] of offs) {
+          const al = o.align || (dx > 2 ? 'left' : dx < -2 ? 'right' : 'center');
+          const lx = x + dx, ly = y + dy;
+          const x0 = al === 'left' ? lx : al === 'right' ? lx - w : lx - w / 2;
+          const b = { x0: x0 - pad, y0: ly - h / 2 - pad / 2, x1: x0 + w + pad, y1: ly + h / 2 + pad / 2, lx, ly, al };
+          const inside = b.x0 >= 1 && b.x1 <= W - 1 && b.y0 >= 1 && b.y1 <= H - 1;
+          if (inside && !hit(b)) { best = b; break; }
+          if (!best && inside) best = b;
+        }
+        if (!best) { const [dx, dy] = offs[0]; best = { lx: clamp(x + dx, w / 2 + 2, W - w / 2 - 2), ly: clamp(y + dy, h, H - h), al: 'center' };
+          best.x0 = best.lx - w / 2; best.x1 = best.lx + w / 2; best.y0 = best.ly - h / 2; best.y1 = best.ly + h / 2; }
+        boxes.push(best);
+        label(ctx, t, best.lx, best.ly, Object.assign({}, o, { align: best.al }));
+        return best;
+      }
+    };
+  }
+
+  // cheap smooth "continents" on a unit-sphere body normal
+  function land(b) {
+    const f = Math.sin(2.1 * b.x + 1.3) * Math.sin(2.6 * b.y + 0.4) + 0.75 * Math.sin(3.3 * b.z + 2.2 * b.x + 0.9)
+      + 0.45 * Math.sin(5.1 * b.y - 3.7 * b.z + 1.7) + 0.25 * Math.sin(7.3 * b.x + 6.1 * b.z);
+    return f;
+  }
+  function earthColor(b) {   // b = body-frame normal (z = north pole)
+    const lat = Math.asin(clamp(b.z, -1, 1));
+    if (Math.abs(lat) > 1.2) return [232, 238, 244];
+    const f = land(b);
+    if (f > 0.55) { const dry = clamp((0.9 - Math.abs(lat)) * 1.2, 0, 1); return [74 + 96 * dry, 138 + 14 * dry, 72 + 26 * dry]; }
+    return [44, 112 + 22 * f, 200 + 20 * f];
+  }
+  function moonColor(b) {
+    const m = Math.sin(3.1 * b.x + 0.7) * Math.sin(2.3 * b.z + 1.1) + 0.6 * Math.sin(4.7 * b.y + 2.9 * b.x);
+    const g = m > 0.55 ? 150 : 205 + 10 * Math.sin(9 * b.y + 4 * b.z);
+    return [g, g * 0.98, g * 0.93];
+  }
+
+  return { V, add, sub, mul, dot, cross, norm, clamp, rot, hidpi, ptr, camera, stars, sphere, sphereCircle, label, placer, land, earthColor, moonColor };
+})();
+/* A3-KIT-END */
+
+// ---------- space view (Sun far to the left; orbit seen from above or tilted) ----------
+const D2R = Math.PI / 180;
+const SKY_W = 520, SKY_H = 290, DISC_W = 520, DISC_H = 160;
+let view = 'tilt';          // 'top' | 'tilt'
+const SUN_DIR = A3.V(-1, 0, 0);   // unit vector toward the Sun
+function skyCam() {
+  return view === 'top'
+    ? A3.camera({ yaw: -Math.PI / 2, pitch: Math.PI / 2 - 1e-4, dist: 40, scale: 102, cx: 300, cy: 140 })
+    : A3.camera({ yaw: -Math.PI / 2, pitch: 32 * D2R, dist: 6, scale: 124, cx: 300, cy: 150 });
+}
+// Moon position: theta from the sunward (new) point, counter-clockwise seen from the north (+z)
+function moonPos(thDeg) { const t = thDeg * D2R; return A3.V(-Math.cos(t), -Math.sin(t), 0); }
+
 function drawSky() {
-  const c = $('sky'), ctx = c.getContext('2d');
-  const W = 520, H = 300;
-  ctx.clearRect(0, 0, W, H);
+  const c = $('sky'), ctx = A3.hidpi(c, SKY_W, SKY_H), W = SKY_W, H = SKY_H;
   ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  // starfield
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  for (let i = 0; i < 90; i++) {
-    const x = (i * 97.13) % W, y = (i * 53.71 + i * i * 0.3) % H;
-    ctx.globalAlpha = 0.2 + (i % 5) * 0.13;
-    ctx.fillRect(x, y, 1.4, 1.4);
+  A3.stars(ctx, W, H, 110, 11);
+  const cam = skyCam(), P = cam.P, L = A3.placer(ctx, W, H);
+
+  // sunlight streaming in from the left
+  const grad = ctx.createLinearGradient(0, 0, 175, 0);
+  grad.addColorStop(0, 'rgba(255,214,120,0.26)'); grad.addColorStop(1, 'rgba(255,214,120,0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 175, H);
+  ctx.strokeStyle = 'rgba(255,220,140,0.42)'; ctx.lineWidth = 1.4;
+  for (let y = 58; y < H - 20; y += 44) {
+    ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(118, y); ctx.moveTo(110, y - 4); ctx.lineTo(118, y); ctx.lineTo(110, y + 4); ctx.stroke();
   }
-  ctx.globalAlpha = 1;
+  L.put('sunlight (Sun far off to the left)', 10, 18, [[2, 0]], { col: '#ffd66b', font: '600 11.5px "Source Sans 3",sans-serif' });
 
-  const ex = W * 0.60, ey = H * 0.5;   // Earth position
-  const orbitR = 96;
+  const th = theta(), mp = moonPos(th);
+  const E = P(A3.V(0, 0, 0)), M = P(mp);
+  const eR = 25 * E.s / cam.scale, mR = 12.5 * M.s / cam.scale;
 
-  // sunlight streaming from the left
-  const grad = ctx.createLinearGradient(0, 0, 220, 0);
-  grad.addColorStop(0, 'rgba(255,214,120,0.32)');
-  grad.addColorStop(1, 'rgba(255,214,120,0)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 220, H);
-  for (let y = 40; y < H; y += 46) {
-    ctx.strokeStyle = 'rgba(255,220,140,0.45)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(6, y); ctx.lineTo(150, y);
-    ctx.lineTo(142, y - 4); ctx.moveTo(150, y); ctx.lineTo(142, y + 4);
-    ctx.stroke();
-  }
-  ctx.fillStyle = '#ffd66b'; ctx.font = '600 12px "Source Sans 3",sans-serif';
-  ctx.textAlign = 'left'; ctx.fillText('☀  sunlight', 8, 24);
+  // orbit, split into far and near halves so it passes behind / in front of Earth
+  const orbit = [];
+  for (let i = 0; i <= 180; i++) orbit.push(P(moonPos(i * 2)));
+  const strokeOrbit = (front) => {
+    ctx.beginPath(); let pen = false;
+    for (let i = 1; i < orbit.length; i++) { const a = orbit[i - 1], b = orbit[i]; const f = (a.d + b.d) / 2 >= 0;
+      if (f === front) { if (!pen) { ctx.moveTo(a.x, a.y); pen = true; } ctx.lineTo(b.x, b.y); } else pen = false; }
+    ctx.strokeStyle = front ? 'rgba(200,215,235,0.42)' : 'rgba(200,215,235,0.2)'; ctx.lineWidth = front ? 1.4 : 1; ctx.stroke();
+  };
+  // direction of travel arrow on the orbit (just ahead of first quarter)
+  strokeOrbit(false);
 
-  // Moon orbit path
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(ex, ey, orbitR, 0, Math.PI * 2); ctx.stroke();
+  // named positions around the orbit
+  const named = [[0, 'new'], [90, '1st quarter'], [180, 'full'], [270, '3rd quarter']];
+  const orbitLabelOffsets = (deg) => {
+    const o = P(A3.mul(moonPos(deg), 1.0)), o2 = P(A3.mul(moonPos(deg), 1.3));
+    const dx = o2.x - o.x, dy = o2.y - o.y, l = Math.hypot(dx, dy) || 1;
+    return { o, offs: [[dx / l * 26, dy / l * 18], [dx / l * 40, dy / l * 22], [0, -16], [0, 16]] };
+  };
 
-  // Earth (lit on the left / sunward side)
-  drawBall(ctx, ex, ey, 17, Math.PI, '#3b6ea5', '#12233a');
-  ctx.fillStyle = '#9fb0bf'; ctx.font = '11px "Source Sans 3",sans-serif';
-  ctx.textAlign = 'center'; ctx.fillText('Earth', ex, ey + 33);
+  // depth-sorted bodies
+  const items = [
+    { d: E.d, draw: () => {
+      A3.sphere(ctx, cam, E.x, E.y, eR, SUN_DIR, { surface: n => A3.earthColor(n), ambient: 0.1, rim: [70, 130, 230], outline: 'rgba(160,190,230,0.22)' });
+      // north-pole stub so the tilted view reads as a globe
+    } },
+    { d: M.d, draw: () => {
+      // tidally locked: the same face (maria) always points at Earth
+      const toE = A3.norm(A3.sub(A3.V(0, 0, 0), mp)), side = A3.cross(A3.V(0, 0, 1), toE);
+      A3.sphere(ctx, cam, M.x, M.y, mR, SUN_DIR, { moon: true, ambient: 0.07, outline: 'rgba(230,220,200,0.2)',
+        surface: n => A3.moonColor(A3.V(A3.dot(n, toE), A3.dot(n, side), n.z)) });
+      // edge of the half that faces Earth
+      A3.sphereCircle(ctx, cam, M.x, M.y, mR + 0.6, toE, 0, { col: 'rgba(130,200,255,0.95)', w: 1.5, dash: [3, 2.5] });
+    } },
+  ];
 
-  // Moon: theta from the sunward (new) point. Orbit runs new (W) → first
-  // quarter (S, screen-bottom) → full (E) → third quarter (N) → new, matching
-  // the standard textbook top-down diagram. Same for both hemispheres.
-  const th = theta() * Math.PI / 180;
-  const mx = ex - orbitR * Math.cos(th);
-  const my = ey + orbitR * Math.sin(th);
-  // lit hemisphere always faces the Sun (screen-left)
-  drawBall(ctx, mx, my, 9, Math.PI, '#e9e2d0', '#2a2b30');
+  // sight line Earth -> Moon (drawn under the bodies)
+  ctx.strokeStyle = 'rgba(130,200,255,0.5)'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(E.x, E.y); ctx.lineTo(M.x, M.y); ctx.stroke(); ctx.setLineDash([]);
 
-  // wedge: the face of the Moon turned toward Earth
-  ctx.strokeStyle = 'rgba(150,200,255,0.55)'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(mx, my); ctx.stroke();
-  ctx.setLineDash([]);
+  const [earthItem, moonItem] = items;
+  if (M.d < 0) moonItem.draw();
+  earthItem.draw();
+  strokeOrbit(true);          // near half of the orbit passes in front of Earth
+  if (M.d >= 0) moonItem.draw();
 
-  ctx.fillStyle = '#c9d3dd'; ctx.font = '11px "Source Sans 3",sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Moon', mx, my - 16);
+  // travel-direction arrowhead on the near side of the orbit
+  { const a = P(moonPos(118)), b = P(moonPos(124)); const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    ctx.fillStyle = 'rgba(200,215,235,0.7)'; ctx.beginPath();
+    ctx.moveTo(b.x + 6 * Math.cos(ang), b.y + 6 * Math.sin(ang));
+    ctx.lineTo(b.x + 6 * Math.cos(ang + 2.5), b.y + 6 * Math.sin(ang + 2.5));
+    ctx.lineTo(b.x + 6 * Math.cos(ang - 2.5), b.y + 6 * Math.sin(ang - 2.5)); ctx.fill(); }
 
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10.5px "Source Sans 3",sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('top view — looking down on the orbit', W - 8, H - 10);
+  // captions (reserved first), then bodies, then the orbit names, which give way to everything else
+  L.put(view === 'top' ? 'seen from above the north pole' : 'tilted view of the orbit', W - 8, 16, [[-1, 0]], { col: 'rgba(255,255,255,0.5)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put('- - - edge of the half that faces Earth  ·  sizes not to scale', W - 8, H - 11, [[-1, 0]], { col: 'rgba(130,200,255,0.85)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.blockCircle(E.x, E.y, eR + 2); L.blockCircle(M.x, M.y, mR + 2);
+  L.put('Earth', E.x, E.y, [[0, eR + 11], [0, -eR - 10]], { col: '#a9c8e6' });
+  const mo = A3.norm(A3.V(M.x - E.x, M.y - E.y, 0));
+  L.put('Moon', M.x, M.y, [[mo.x * (mR + 22), mo.y * (mR + 12)], [0, -mR - 10], [0, mR + 11], [mR + 6, 0], [-mR - 6, 0]], { col: '#e7ddc6' });
+  named.forEach(([deg, name]) => {
+    if (Math.abs(((th - deg) % 360 + 540) % 360 - 180) < 22) return;   // the Moon (and its label) is there
+    const { o, offs } = orbitLabelOffsets(deg);
+    L.put(name, o.x, o.y, offs, { col: 'rgba(200,212,226,0.62)', font: '10.5px "Source Sans 3",sans-serif' });
+  });
+
+  skyState = { cam, orbit };
 }
-
-// a sphere lit from direction `lightAng` (radians, 0 = from the right)
-function drawBall(ctx, x, y, r, lightAng, litCol, darkCol) {
-  ctx.save();
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = darkCol; ctx.fill();
-  ctx.clip();
-  const lx = x + Math.cos(lightAng) * r * 1.1;
-  const ly = y - Math.sin(lightAng) * r * 1.1;
-  const g = ctx.createRadialGradient(lx, ly, r * 0.2, lx, ly, r * 2.1);
-  g.addColorStop(0, litCol); g.addColorStop(0.55, litCol); g.addColorStop(1, darkCol);
-  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-}
+let skyState = null;
 
 // ---------- the Moon as seen from Earth ----------
+// maria positions on the near side (x right, y up, unit disc), roughly like the real face
+const MARIA = [[-0.42, 0.38, 0.26], [-0.12, 0.42, 0.15], [0.12, 0.2, 0.17], [0.55, 0.28, 0.12], [-0.55, -0.05, 0.3], [-0.2, -0.35, 0.16], [0.18, -0.25, 0.12], [0.02, 0.0, 0.1]];
 function drawDisc() {
-  const c = $('disc'), ctx = c.getContext('2d');
-  const W = 520, H = 190;
-  ctx.clearRect(0, 0, W, H);
+  const c = $('disc'), ctx = A3.hidpi(c, DISC_W, DISC_H), W = DISC_W, H = DISC_H;
   ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  for (let i = 0; i < 60; i++) {
-    const x = (i * 131.7) % W, y = (i * 71.3) % H;
-    ctx.globalAlpha = 0.15 + (i % 4) * 0.12; ctx.fillRect(x, y, 1.3, 1.3);
-  }
-  ctx.globalAlpha = 1;
+  A3.stars(ctx, W, H, 50, 5);
 
-  const cx = W / 2, cy = H / 2 + 4, R = 66;
-  const th = theta();
-  const k = illumFraction(th);           // illuminated fraction 0..1
+  const cx = W / 2, cy = H / 2 + 6, R = 58;
+  const th = theta(), k = illumFraction(th);
   const thm = ((th % 360) + 360) % 360;
-  let waxing = thm < 180;                 // lit limb on the right in N. hemisphere
-  if (hemisphere === 'S') waxing = !waxing;
+  const waxing = thm < 180;
+  // In the N. hemisphere the waxing Moon is lit on the right. From the S. hemisphere the whole face is upside down.
+  const flip = hemisphere === 'S';
 
-  // dark disc with faint earthshine
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.fillStyle = '#1c2531'; ctx.fill();
-
-  // lit region: right (or left) limb semicircle + terminator half-ellipse
-  const cosPhase = 1 - 2 * k;             // +1 at new, -1 at full
   ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
-  ctx.beginPath();
-  const s = waxing ? 1 : -1;
-  // limb semicircle from top to bottom on the lit side
-  ctx.ellipse(cx, cy, R, R, 0, -Math.PI / 2 * s, Math.PI / 2 * s, s < 0);
-  // terminator: half-ellipse back from bottom to top
-  ctx.ellipse(cx, cy, R * Math.abs(cosPhase), R, 0, Math.PI / 2 * s, -Math.PI / 2 * s, cosPhase > 0 ? s > 0 : s < 0);
+  ctx.translate(cx, cy); if (flip) ctx.rotate(Math.PI);
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.clip();
+  // the full face: highlands + maria
+  const fg = ctx.createRadialGradient(-R * 0.2, -R * 0.25, R * 0.1, 0, 0, R * 1.1);
+  fg.addColorStop(0, '#f6f1e3'); fg.addColorStop(1, '#d3c9b0');
+  ctx.fillStyle = fg; ctx.fillRect(-R, -R, 2 * R, 2 * R);
+  ctx.fillStyle = 'rgba(112,110,116,0.38)'; ctx.filter = 'blur(' + (R * 0.035).toFixed(1) + 'px)';
+  MARIA.forEach(([x, y, r], i) => { ctx.beginPath(); ctx.ellipse(x * R, -y * R, r * R * (1.15 - 0.1 * (i % 3)), r * R * (0.85 + 0.08 * (i % 2)), i * 0.7, 0, 7); ctx.fill(); });
+  ctx.filter = 'none';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';   // Tycho and its bright spot
+  ctx.beginPath(); ctx.arc(-0.12 * R, 0.62 * R, R * 0.035, 0, 7); ctx.fill();
+  // night side: complement of the lit region (earthshine leaves it faintly visible)
+  const s = waxing ? 1 : -1;             // lit limb on +x (right) when waxing, in the un-flipped frame
+  const e = Math.abs(1 - 2 * k) * R, bulge = k < 0.5 ? 1 : -1;
+  ctx.beginPath(); ctx.rect(-R - 2, -R - 2, 2 * R + 4, 2 * R + 4);
+  for (let i = 0; i <= 48; i++) { const t = -Math.PI / 2 + i / 48 * Math.PI; const x = s * R * Math.cos(t), y = R * Math.sin(t); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  for (let i = 0; i <= 48; i++) { const t = Math.PI / 2 - i / 48 * Math.PI; ctx.lineTo(s * bulge * e * Math.cos(t), R * Math.sin(t)); }
   ctx.closePath();
-  const mg = ctx.createRadialGradient(cx - R * 0.3 * s, cy - R * 0.3, R * 0.1, cx, cy, R * 1.3);
-  mg.addColorStop(0, '#fdfaf1'); mg.addColorStop(0.7, '#e7ddc6'); mg.addColorStop(1, '#ccc0a2');
-  ctx.fillStyle = mg; ctx.fill();
-  // a couple of maria so the disc reads as the Moon
-  ctx.fillStyle = 'rgba(120,120,135,0.28)';
-  ctx.beginPath(); ctx.arc(cx - 18, cy - 14, 13, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx + 12, cy + 18, 9, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx + 22, cy - 20, 6, 0, 7); ctx.fill();
+  ctx.filter = 'blur(1.2px)';
+  ctx.fillStyle = 'rgba(10,14,22,0.9)'; ctx.fill('evenodd');
+  ctx.filter = 'none';
   ctx.restore();
-
   ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
 
   // labels
-  ctx.fillStyle = '#e7ddc6'; ctx.textAlign = 'center';
-  ctx.font = '600 14px "Source Serif 4",serif';
-  ctx.fillText(phaseName(th), cx, 22);
-  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10.5px "Source Sans 3",sans-serif';
-  ctx.fillText('the same Moon, seen from Earth (' + hemisphere + '. hemisphere)', cx, H - 9);
-
-  // waxing / waning arrow
-  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '11px "Source Sans 3",sans-serif';
-  ctx.textAlign = waxing ? 'left' : 'right';
-  const tag = (thm > 4 && thm < 176) ? 'waxing → more each night'
-    : (thm > 184 && thm < 356) ? '← waning, less each night' : '';
-  if (tag) ctx.fillText(tag, waxing ? cx + R + 12 : cx - R - 12, cy + 3);
+  A3.label(ctx, phaseName(th), cx, 15, { col: '#efe4c8', font: '600 14px "Source Serif 4",serif' });
+  A3.label(ctx, 'the same Moon, seen from Earth (' + (flip ? 'Southern' : 'Northern') + ' hemisphere)', 10, H - 10, { align: 'left', col: 'rgba(255,255,255,0.5)', font: '10.5px "Source Sans 3",sans-serif' });
+  const litRight = (waxing !== flip);
+  const tag = (thm > 4 && thm < 176) ? 'waxing: more lit each night' : (thm > 184 && thm < 356) ? 'waning: less lit each night' : '';
+  if (tag) A3.label(ctx, tag, litRight ? cx + R + 14 : cx - R - 14, cy, { align: litRight ? 'left' : 'right', col: 'rgba(255,255,255,0.7)', font: '11.5px "Source Sans 3",sans-serif' });
 }
 
 function render() {
@@ -395,24 +590,19 @@ function render() {
     row('phase', phaseName(th), true) +
     row('illuminated', (k * 100).toFixed(0) + '%') +
     row('elongation θ', th.toFixed(0) + '°') +
-    row('age', age.toFixed(1) + ' d of 29.5') +
+    row('lit side (as you see it)', (thm < 3 || thm > 357) ? 'none (new)' : Math.abs(thm - 180) < 3 ? 'all (full)' : ((thm < 180) !== (hemisphere === 'S') ? 'right' : 'left'), true) +
     row('moonrise', fmtTime(rise), true) +
     row('moonset', fmtTime(set), true) +
-    row('overhead near', fmtTime((rise + 6) % 24), true);
+    row('highest in the sky', fmtTime((rise + 6) % 24), true);
 
-  const near = (d) => Math.abs(((thm - d) % 360 + 360) % 360) < 3 || Math.abs(((thm - d) % 360 + 360) % 360) > 357;
-  const en = $('eclipseNote');
-  if (near(0)) { en.style.display = ''; en.innerHTML = '<b>New moon.</b> A solar eclipse is possible now &mdash; but only if the Moon is also near an orbital node. Most months it slips just above or below the Sun.'; }
-  else if (near(180)) { en.style.display = ''; en.innerHTML = '<b>Full moon.</b> A lunar eclipse is possible now &mdash; but only near a node. Most full moons miss Earth&rsquo;s shadow entirely.'; }
-  else en.style.display = 'none';
 
   $('note').textContent =
     thm < 6 || thm > 354
-      ? 'New Moon: the lit side faces entirely away from us. It is up in the daytime, near the Sun, so we cannot see it.'
+      ? 'New Moon: the lit half faces away from us. A solar eclipse needs a new Moon near a node of its tilted orbit; most months it misses.'
       : thm > 174 && thm < 186
-      ? 'Full Moon: we see the whole lit face. It rises at sunset and sets at sunrise, up all night.'
-      : (thm < 180 ? 'Waxing: the lit fraction grows each night. ' : 'Waning: the lit fraction shrinks each night. ') +
-        'The Sun lights the same half of the Moon the whole time — only our viewing angle changes.';
+      ? 'Full Moon: we see the whole lit half, up all night. A lunar eclipse needs a full Moon near a node; most months it misses.'
+      : (thm < 180 ? 'Waxing: more of the lit half turns toward us each night. ' : 'Waning: less of the lit half faces us each night. ') +
+        'The Sun always lights half the Moon; only our view of that half changes.';
 
   drawSky(); drawDisc();
 }
@@ -447,12 +637,34 @@ document.querySelectorAll('#chips button').forEach(b => {
 });
 $('hemN').addEventListener('click', () => { hemisphere = 'N'; $('hemN').classList.add('on'); $('hemS').classList.remove('on'); render(); });
 $('hemS').addEventListener('click', () => { hemisphere = 'S'; $('hemS').classList.add('on'); $('hemN').classList.remove('on'); render(); });
+document.querySelectorAll('#viewRow button').forEach(b => b.addEventListener('click', () => {
+  view = b.dataset.v; document.querySelectorAll('#viewRow button').forEach(x => x.classList.toggle('on', x === b)); render();
+}));
+// drag the Moon around its orbit (nearest point on the drawn orbit)
+(function () {
+  const c = $('sky'); let drag = false;
+  const angleAt = (e) => {
+    if (!skyState) return null; const p = A3.ptr(c, SKY_W, SKY_H, e); let best = 1e9, bi = -1;
+    skyState.orbit.forEach((q, i) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d < best) { best = d; bi = i; } });
+    return { deg: bi * 2, dist: best };
+  };
+  c.addEventListener('pointerdown', e => { const a = angleAt(e); if (!a || a.dist > 60) return;
+    drag = true; c.setPointerCapture(e.pointerId); c.classList.add('dragging'); setPlaying(false); setTheta(a.deg); render(); });
+  c.addEventListener('pointermove', e => { if (!drag) return; const a = angleAt(e); if (a) { setTheta(a.deg); render(); } });
+  const end = () => { drag = false; c.classList.remove('dragging'); };
+  c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
+  c.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { setPlaying(false); setTheta(theta() + 5); render(); e.preventDefault(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { setPlaying(false); setTheta(theta() - 5); render(); e.preventDefault(); }
+  });
+})();
+window.addEventListener('resize', () => render());
 
 function katexAll() {
   const specs = [
     ['f1', "k = \\dfrac{1 - \\cos\\theta}{2}"],
     ['f2', "\\text{age} = \\dfrac{\\theta}{360^\\circ}\\times 29.53\\ \\text{d}"],
-    ['f3', "t_{rise} \\approx 6\\,\\text{AM} + \\dfrac{\\theta}{360^\\circ}\\times 24\\,\\text{h}"],
+    ['f3', "t_{\\text{rise}} \\approx 6\\,\\text{AM} + \\dfrac{\\theta}{360^\\circ}\\times 24\\,\\text{h}"],
     ['ex1', "\\theta = \\dfrac{7}{29.53}\\times 360^\\circ \\approx 85^\\circ"],
     ['ex2', "k = \\dfrac{1 - \\cos 85^\\circ}{2} \\approx 0.46"],
   ];

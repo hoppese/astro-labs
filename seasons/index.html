@@ -25,10 +25,21 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #space { aspect-ratio:520/270; }
-  #ground { aspect-ratio:520/232; background:#0d1420; }
+  #space { aspect-ratio:520/258; }
+  #ground { aspect-ratio:520/226; background:#0d1420; }
+  .lowerwrap { position:relative; }
+  .tabs { position:absolute; top:8px; right:8px; display:flex; border:1px solid rgba(255,255,255,0.22); border-radius:8px; overflow:hidden; }
+  .tabs button { border:0; background:rgba(13,20,32,0.82); color:#c9d4de; font:600 11px 'Source Sans 3',sans-serif; padding:5px 10px; cursor:pointer; }
+  .tabs button:hover { background:rgba(40,56,76,0.9); }
+  .tabs button.on { background:#3f7a4e; color:#fff; }
+  @media (max-width:640px){ .tabs { position:static; width:max-content; margin:6px 0 0 auto; border-color:#d3d8dd; } .tabs button { background:#fff; color:#525a63; } }
+  .underrow { display:flex; gap:10px; align-items:center; }
+  .underrow .note { flex:1; min-width:0; }
+  @media (max-width:640px){ .underrow { flex-wrap:wrap; } .underrow .note { flex-basis:100%; } }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid #5aa06b; outline-offset:2px; }
+  .playbtn:hover { filter:brightness(1.1); } .resetbtn:hover { border-color:#5aa06b; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
-  .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #3f7a4e; background:#3f7a4e; color:#fff; }
+  .playbtn { min-width:108px; justify-content:center; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #3f7a4e; background:#3f7a4e; color:#fff; }
   .resetbtn { font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:9px; cursor:pointer; border:1px solid #d3d8dd; background:#fff; color:#525a63; }
   .section-label { font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#9aa2ab; margin-bottom:2px; }
   .slider-row { display:flex; flex-direction:column; gap:5px; }
@@ -96,32 +107,40 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="space" width="520" height="270"></canvas>
-        <canvas id="ground" width="520" height="232"></canvas>
-        <div class="btnrow">
-          <button class="playbtn" id="playBtn">&#9654; Play year</button>
-          <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+        <canvas id="space" width="520" height="258" aria-label="Earth orbiting the Sun, tilted view"></canvas>
+        <div class="lowerwrap">
+          <canvas id="ground" width="520" height="226"></canvas>
+          <div class="tabs" id="lowerTabs" role="tablist">
+            <button data-t="daynight" class="on" role="tab">Day &amp; night</button>
+            <button data-t="beam" role="tab">Sunlight angle</button>
+          </div>
         </div>
-        <div class="note" id="note"></div>
+        <div class="underrow">
+          <div class="btnrow" style="flex:none;">
+            <button class="playbtn" id="playBtn">&#9654; Play year</button>
+            <button class="resetbtn" id="resetBtn">&#8635; Reset</button>
+          </div>
+          <div class="note" id="note"></div>
+        </div>
       </div>
       <div class="ctlCol">
         <div class="section-label">Time of year</div>
         <div class="slider-row">
           <div class="lbl"><span id="dateLbl">Date</span><span class="val" id="dateVal">Mar 20</span></div>
-          <input type="range" id="daySlider" min="0" max="364" step="1" value="79">
+          <input type="range" id="daySlider" min="0" max="364" step="1" value="171">
         </div>
         <div class="chips" id="chips">
-          <button data-n="79">Mar equinox</button>
-          <button data-n="172">Jun solstice</button>
-          <button data-n="265">Sep equinox</button>
-          <button data-n="355">Dec solstice</button>
+          <button data-n="78">Mar equinox</button>
+          <button data-n="171">Jun solstice</button>
+          <button data-n="264">Sep equinox</button>
+          <button data-n="354">Dec solstice</button>
         </div>
         <div class="section-label" style="margin-top:4px;">Your latitude</div>
         <div class="slider-row">
           <div class="lbl"><span id="latLbl">40&deg; N</span><span class="val" id="latVal">40&deg;</span></div>
           <input type="range" id="latSlider" min="-90" max="90" step="1" value="40">
         </div>
-        <div class="section-label" style="margin-top:4px;">Results &mdash; you compute</div>
+        <div class="section-label" style="margin-top:4px;">Results: you compute</div>
         <div class="results" id="results"></div>
       </div>
     </div>
@@ -131,7 +150,7 @@
 
 <div class="modal-backdrop" id="infoModal">
   <div class="modal">
-    <h2>Seasons <span class="close" id="infoClose">&times;</span></h2>
+    <h2>Seasons <button class="close" id="infoClose" aria-label="Close">&times;</button></h2>
     <div class="grid2">
       <div style="padding-right:22px;">
         <div class="yellow">What this shows</div>
@@ -139,7 +158,7 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Drag the date through the year and watch the top view: the axis never changes direction, but which hemisphere catches the Sun does. Pick your latitude and read off the noon Sun altitude and the length of the day. The lower panel shows how the same sunbeam spreads over more ground when the Sun is low.</p>
+        <p>Drag the date through the year (or <b>Play year</b>) and watch the orbit view: the orange axis never changes direction, but which hemisphere leans toward the Sun does. Pick your latitude. The <b>Day &amp; night</b> panel shows your latitude circle on the globe: the yellow part is in daylight, so its share of the circle is your day length. The <b>Sunlight angle</b> panel shows how the same sunbeam spreads over more ground when the Sun is low.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
@@ -153,10 +172,10 @@
         <div class="yellow">Learn more</div>
         <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;">
           <li><a href="https://openstax.org/books/astronomy-2e/pages/4-2-the-seasons" target="_blank" rel="noopener" style="color:#8fc7ff;">OpenStax <em>Astronomy 2e</em> &mdash; 4.2 The Seasons</a></li>
-          <li><a href="https://www.pbslearningmedia.org/resource/buac17-912-sci-ess-seasonsmodel/a-private-universe-seasons/" target="_blank" rel="noopener" style="color:#8fc7ff;"><em>A Private Universe</em> &mdash; the classic seasons misconception</a></li>
+          <li><a href="https://spaceplace.nasa.gov/seasons/en/" target="_blank" rel="noopener" style="color:#8fc7ff;">NASA Space Place &mdash; What causes the seasons?</a></li>
         </ul>
         <div style="font-size:11px;color:#9fb0bf;margin:9px 0 5px;">Video</div>
-        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/cycles-in-the-sky-crash-course-astronomy-3/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #3 — Cycles in the Sky</a></li></ul>
+        <ul style="margin:0;padding-left:15px;color:#d7e0e8;font-size:12px;line-height:1.6;"><li><a href="https://thecrashcourse.com/courses/cycles-in-the-sky-crash-course-astronomy-3/" target="_blank" rel="noopener" style="color:#8fc7ff;">Crash Course Astronomy #3: Cycles in the Sky</a></li></ul>
       </div>
     </div>
   </div>
@@ -164,17 +183,17 @@
 
 <div class="modal-backdrop" id="exampleModal">
   <div class="modal">
-    <h2>Worked example &mdash; June noon Sun at 40&deg; N <span class="close" id="exampleClose">&times;</span></h2>
+    <h2>Worked example &mdash; June noon Sun at 40&deg; N <button class="close" id="exampleClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:11.5px;line-height:1.5;color:#d9c7d6;margin-bottom:12px;">How high is the noon Sun at latitude 40&deg; N on the June solstice, and how does that compare with the December solstice?</p>
     <div class="step"><div class="h">1 &middot; Declination at each solstice</div><span class="formula" id="ex1"></span><div style="font-size:11.5px;color:#e7d6e4;margin-top:4px;">June: &delta; = +23.5&deg;. December: &delta; = &minus;23.5&deg;.</div></div>
     <div class="step"><div class="h">2 &middot; Noon Sun altitude, a = 90&deg; &minus; |&phi; &minus; &delta;|</div><span class="formula" id="ex2"></span></div>
-    <div class="step"><div class="h">3 &middot; The difference</div><div style="font-size:11.5px;color:#e7d6e4;">73.5&deg; vs 26.5&deg; &mdash; a 47&deg; swing, exactly twice the tilt. In June the sunlight lands nearly straight down and the day is ~15 h long; in December it comes in at a low slant and the day is ~9 h. That is the whole reason for the seasons.</div></div>
+    <div class="step"><div class="h">3 &middot; The difference</div><div style="font-size:11.5px;color:#e7d6e4;">73.5&deg; vs 26.5&deg;: a 47&deg; swing, exactly twice the tilt. In June the sunlight lands nearly straight down and the day is ~15 h long; in December it comes in at a low slant and the day is ~9 h. That is the whole reason for the seasons.</div></div>
   </div>
 </div>
 
 <div class="modal-backdrop bugmodal" id="bugModal">
   <div class="modal" style="max-width:460px;">
-    <h2>Report a problem <span class="close" id="bugClose">&times;</span></h2>
+    <h2>Report a problem <button class="close" id="bugClose" aria-label="Close">&times;</button></h2>
     <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
     <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
@@ -188,7 +207,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const TILT = 23.44;
-let playing = false, rafId = null, lastTs = null;
+let playing = false, rafId = null, lastTs = null, dayF = null;
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MDAYS = [31,28,31,30,31,30,31,31,30,31,30,31];
 
@@ -200,8 +219,8 @@ function dateStr(n) {
   return 'Dec 31';
 }
 function declination(n) {
-  // δ ≈ 23.44° · sin(360°·(n−80)/365.24)  (n = day of year, 0-based; ≈0 at Mar equinox)
-  return TILT * Math.sin(2 * Math.PI * (n - 80) / 365.24);
+  // sin δ = sin ε · sin λ☉, with the Sun's longitude λ☉ from sunLon() (includes the orbit's eccentricity)
+  return Math.asin(Math.sin(TILT * Math.PI / 180) * Math.sin(sunLon(n))) * 180 / Math.PI;
 }
 function noonAltitude(phi, dec) { return 90 - Math.abs(phi - dec); }
 function daylightHours(phi, dec) {
@@ -215,100 +234,364 @@ function seasonName(n, phi) {
   // meteorological-ish quarters keyed to the solstices/equinoxes, flipped south
   const north = phi >= 0;
   let s;
-  if (n >= 79 && n < 172) s = 'spring';
-  else if (n >= 172 && n < 265) s = 'summer';
-  else if (n >= 265 && n < 355) s = 'autumn';
+  if (n >= 78 && n < 171) s = 'spring';
+  else if (n >= 171 && n < 264) s = 'summer';
+  else if (n >= 264 && n < 354) s = 'autumn';
   else s = 'winter';
   if (!north) s = { spring: 'autumn', summer: 'winter', autumn: 'spring', winter: 'summer' }[s];
   return s;
 }
 
-// ---------- space view (heliocentric, axis fixed in space) ----------
-const AX = 23.44 * Math.PI / 180;               // axis angle from vertical, CONSTANT
-const AXV = { x: -Math.sin(AX), y: -Math.cos(AX) }; // fixed screen direction of the N pole
+/* A3-KIT-BEGIN — small 3D drawing kit for the astro sims (camera, Sun-lit spheres, halo labels,
+   label placement, hi-DPI canvases). World axes: z = up (north of the reference plane). */
+const A3 = (() => {
+  const V = (x, y, z) => ({ x, y, z });
+  const add = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z);
+  const sub = (a, b) => V(a.x - b.x, a.y - b.y, a.z - b.z);
+  const mul = (a, k) => V(a.x * k, a.y * k, a.z * k);
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const cross = (a, b) => V(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const norm = a => { const l = Math.hypot(a.x, a.y, a.z) || 1; return V(a.x / l, a.y / l, a.z / l); };
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  // rotate vector v about unit axis k by angle t (Rodrigues)
+  const rot = (v, k, t) => { const c = Math.cos(t), s = Math.sin(t);
+    return add(add(mul(v, c), mul(cross(k, v), s)), mul(k, dot(k, v) * (1 - c))); };
 
-function drawSpace() {
-  const c = $('space'), ctx = c.getContext('2d');
-  const W = 520, H = 270;
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  for (let i = 0; i < 70; i++) { const x = (i * 113.7) % W, y = (i * 67.3) % H; ctx.globalAlpha = 0.15 + (i % 4) * 0.12; ctx.fillRect(x, y, 1.3, 1.3); }
-  ctx.globalAlpha = 1;
+  // canvas drawn in logical W x H units, backed at device resolution
+  function hidpi(c, W, H) {
+    const css = c.clientWidth || W;
+    const s = Math.max(1, css / W) * Math.min(window.devicePixelRatio || 1, 2);
+    const pw = Math.round(W * s), ph = Math.round(H * s);
+    if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+    const ctx = c.getContext('2d');
+    ctx.setTransform(pw / W, 0, 0, ph / H, 0, 0);
+    ctx._s = pw / W;
+    return ctx;
+  }
+  // pointer position in logical canvas units
+  function ptr(c, W, H, e) { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
 
-  const scx = W / 2, scy = H / 2 + 6, orbRx = 150, orbRy = 84;
-  // Sun at the centre
-  const sg = ctx.createRadialGradient(scx, scy, 3, scx, scy, 34);
-  sg.addColorStop(0, '#fff3c4'); sg.addColorStop(0.5, '#ffd353'); sg.addColorStop(1, 'rgba(255,211,83,0)');
-  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(scx, scy, 34, 0, 7); ctx.fill();
-  ctx.fillStyle = '#ffdf6b'; ctx.beginPath(); ctx.arc(scx, scy, 15, 0, 7); ctx.fill();
-  ctx.fillStyle = '#9fb0bf'; ctx.font = '11px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('Sun', scx, scy + 30);
+  // orbit camera: looks at `target` from azimuth yaw / elevation pitch (radians), perspective distance `dist`
+  function camera(o) {
+    const cy = Math.cos(o.yaw), sy = Math.sin(o.yaw), cp = Math.cos(o.pitch), sp = Math.sin(o.pitch);
+    const b = V(cp * cy, cp * sy, sp);           // toward the viewer
+    const r = V(-sy, cy, 0);                     // screen right
+    const u = cross(b, r);                       // screen up
+    const T = o.target || V(0, 0, 0), D = o.dist || 1e9, S = o.scale, X0 = o.cx, Y0 = o.cy;
+    const P = p => { const q = sub(p, T); const x = dot(q, r), y = dot(q, u), z = dot(q, b);
+      const f = D / Math.max(D * 0.05, D - z); return { x: X0 + x * S * f, y: Y0 - y * S * f, d: z, s: S * f }; };
+    return { P, b, r, u, scale: S };
+  }
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.setLineDash([4, 4]);
-  ctx.beginPath(); ctx.ellipse(scx, scy, orbRx, orbRy, 0, 0, 7); ctx.stroke();
-  ctx.setLineDash([]);
+  // stars on a fixed pseudo-random pattern
+  function stars(ctx, W, H, n, seed) {
+    let s = seed || 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    ctx.save(); ctx.fillStyle = '#fff';
+    for (let i = 0; i < n; i++) { const x = rnd() * W, y = rnd() * H, a = 0.12 + rnd() * 0.45, z = rnd() < 0.08 ? 1.7 : 1.1;
+      ctx.globalAlpha = a; ctx.fillRect(x, y, z, z); }
+    ctx.restore();
+  }
 
-  // orbital angle: 0 at Jun solstice → Earth to the RIGHT of the Sun, fixed axis
-  // (pointing up-left) then leans toward the Sun = N. summer.
-  const orbAng = n => 2 * Math.PI * (n - 172) / 365.24;
-  const pos = n => ({ x: scx + orbRx * Math.cos(orbAng(n)), y: scy + orbRy * Math.sin(orbAng(n)) });
+  // Sun-lit sphere, rendered per pixel. cam gives the view axes; L = unit vector toward the light (world).
+  // o.surface(nWorld) -> [r,g,b] albedo (0-255); o.ambient (0-1); o.moon (crisp terminator, flat disc);
+  // o.night(nWorld) -> [r,g,b] added on the dark side (city lights etc); o.rim [r,g,b] atmosphere colour.
+  const off = document.createElement('canvas');
+  function sphere(ctx, cam, x, y, rad, L, o) {
+    o = o || {};
+    const sc = (ctx._s || 1) * (o.sharp || 1);
+    const N = Math.max(4, Math.ceil(rad * sc)), size = 2 * N + 2;
+    if (off.width < size || off.height < size) { off.width = Math.max(off.width, size); off.height = Math.max(off.height, size); }
+    const oc = off.getContext('2d');
+    oc.clearRect(0, 0, size, size);
+    const img = oc.createImageData(size, size), d = img.data;
+    const R = cam.r, U = cam.u, B = cam.b, amb = o.ambient == null ? 0.07 : o.ambient;
+    const lr = dot(L, R), lu = dot(L, U), lb = dot(L, B);
+    const surf = o.surface || (() => o.color || [200, 200, 200]);
+    for (let j = 0; j < size; j++) {
+      const ny = -((j - N - 0.5) / N);
+      for (let i = 0; i < size; i++) {
+        const nx = (i - N - 0.5) / N, rr = nx * nx + ny * ny;
+        if (rr > 1.0 + 2 / N) continue;
+        const edge = clamp((1 - Math.sqrt(rr)) * N + 0.6, 0, 1);
+        if (edge <= 0) continue;
+        const nz = Math.sqrt(Math.max(0, 1 - rr));
+        const lam = nx * lr + ny * lu + nz * lb;
+        const n = V(nx * R.x + ny * U.x + nz * B.x, nx * R.y + ny * U.y + nz * B.y, nx * R.z + ny * U.z + nz * B.z);
+        const c = surf(n);
+        let sh;
+        if (o.moon) { sh = clamp((lam + 0.03) / 0.09, 0, 1); sh = sh * sh * (3 - 2 * sh) * (0.82 + 0.18 * Math.max(0, lam)); }
+        else { const t = clamp((lam + 0.06) / 0.12, 0, 1); sh = Math.max(0, lam) * 0.85 + t * 0.15; }
+        const k = amb + (1 - amb) * sh;
+        let rC = c[0] * k, gC = c[1] * k, bC = c[2] * k;
+        if (o.night && sh < 0.2) { const nl = o.night(n); if (nl) { const w = (0.2 - sh) / 0.2; rC += nl[0] * w; gC += nl[1] * w; bC += nl[2] * w; } }
+        if (o.rim) { const rim = Math.pow(1 - nz, 3) * (0.06 + 0.94 * clamp(lam + 0.25, 0, 1)); rC += o.rim[0] * rim; gC += o.rim[1] * rim; bC += o.rim[2] * rim; }
+        const p = (j * size + i) * 4;
+        d[p] = rC; d[p + 1] = gC; d[p + 2] = bC; d[p + 3] = 255 * edge;
+      }
+    }
+    oc.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, size, size, x - rad - rad / N, y - rad - rad / N, size * rad / N, size * rad / N);
+    if (o.outline) { ctx.save(); ctx.strokeStyle = o.outline; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, rad + 0.3, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+  }
 
-  [[79, 'Mar'], [172, 'Jun'], [265, 'Sep'], [355, 'Dec']].forEach(([mn, lab]) => {
-    const g = pos(mn);
-    ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.arc(g.x, g.y, 13, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(lab, g.x, g.y + (g.y < scy ? -17 : 24));
-  });
+  // a circle lying on a sphere's surface (e.g. a latitude line), drawn with front/back distinguished.
+  // centre (x,y), radius rad px; the circle = points cosA*e1 + sinA*e2 scaled by ring radius rr, offset h along n.
+  function sphereCircle(ctx, cam, x, y, rad, axis, h, o) {
+    o = o || {};
+    const a = norm(axis);
+    let e1 = norm(cross(a, Math.abs(a.z) < 0.9 ? V(0, 0, 1) : V(1, 0, 0))); const e2 = cross(a, e1);
+    const rr = Math.sqrt(Math.max(0, 1 - h * h)), N = 96, pts = [];
+    for (let i = 0; i <= N; i++) { const t = i / N * 2 * Math.PI;
+      const p = add(mul(a, h), add(mul(e1, rr * Math.cos(t)), mul(e2, rr * Math.sin(t))));
+      pts.push({ x: x + rad * dot(p, cam.r), y: y - rad * dot(p, cam.u), front: dot(p, cam.b) >= 0 }); }
+    ctx.save(); ctx.lineCap = 'round';
+    const run = (front) => { ctx.beginPath(); let pen = false;
+      for (let i = 1; i < pts.length; i++) { const A = pts[i - 1], Bp = pts[i];
+        if (A.front === front && Bp.front === front) { if (!pen) { ctx.moveTo(A.x, A.y); pen = true; } ctx.lineTo(Bp.x, Bp.y); } else pen = false; }
+      ctx.stroke(); };
+    if (o.back) { ctx.strokeStyle = o.back; ctx.lineWidth = o.backW || 1; ctx.setLineDash(o.backDash || [2, 3]); run(false); }
+    ctx.strokeStyle = o.col || '#fff'; ctx.lineWidth = o.w || 1.2; ctx.setLineDash(o.dash || []); run(true);
+    ctx.restore();
+  }
 
-  const p = pos(dayN());
-  drawEarth(ctx, p.x, p.y, 20, scx, scy);
+  // text with a dark halo
+  function label(ctx, t, x, y, o) {
+    o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
+    ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = o.halo == null ? 3.2 : o.halo; ctx.strokeStyle = o.haloCol || 'rgba(8,11,18,0.9)';
+    if (ctx.lineWidth > 0) ctx.strokeText(t, x, y);
+    ctx.fillStyle = o.col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+  }
 
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10.5px "Source Sans 3",sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('top view — the axis (orange) never changes direction', 10, 16);
+  // greedy label placer: put(text, x, y, offsets, style) tries each [dx,dy] until the box is clear of
+  // earlier labels, `block` boxes and the canvas edge. Returns the box used.
+  function placer(ctx, W, H, pad) {
+    const boxes = []; pad = pad == null ? 3 : pad;
+    const hit = (b) => boxes.some(c => b.x0 < c.x1 && b.x1 > c.x0 && b.y0 < c.y1 && b.y1 > c.y0);
+    return {
+      block(x0, y0, x1, y1) { boxes.push({ x0, y0, x1, y1 }); },
+      blockCircle(x, y, r) { boxes.push({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }); },
+      put(t, x, y, offs, o) {
+        o = o || {}; ctx.save(); ctx.font = o.font || '600 11px "Source Sans 3",sans-serif';
+        const w = ctx.measureText(t).width, h = parseFloat((o.font || '11px').match(/(\d+(\.\d+)?)px/)[1]) + 2; ctx.restore();
+        offs = offs || [[0, -14], [0, 14], [18, 0], [-18, 0]];
+        let best = null;
+        for (const [dx, dy] of offs) {
+          const al = o.align || (dx > 2 ? 'left' : dx < -2 ? 'right' : 'center');
+          const lx = x + dx, ly = y + dy;
+          const x0 = al === 'left' ? lx : al === 'right' ? lx - w : lx - w / 2;
+          const b = { x0: x0 - pad, y0: ly - h / 2 - pad / 2, x1: x0 + w + pad, y1: ly + h / 2 + pad / 2, lx, ly, al };
+          const inside = b.x0 >= 1 && b.x1 <= W - 1 && b.y0 >= 1 && b.y1 <= H - 1;
+          if (inside && !hit(b)) { best = b; break; }
+          if (!best && inside) best = b;
+        }
+        if (!best) { const [dx, dy] = offs[0]; best = { lx: clamp(x + dx, w / 2 + 2, W - w / 2 - 2), ly: clamp(y + dy, h, H - h), al: 'center' };
+          best.x0 = best.lx - w / 2; best.x1 = best.lx + w / 2; best.y0 = best.ly - h / 2; best.y1 = best.ly + h / 2; }
+        boxes.push(best);
+        label(ctx, t, best.lx, best.ly, Object.assign({}, o, { align: best.al }));
+        return best;
+      }
+    };
+  }
 
-  const dec = declination(dayN());
-  ctx.textAlign = 'center'; ctx.fillStyle = '#dfe8f0'; ctx.font = '600 11px "Source Sans 3",sans-serif';
-  ctx.fillText(dec > 1.5 ? 'North pole leaning toward the Sun — N. hemisphere summer'
-    : dec < -1.5 ? 'North pole leaning away from the Sun — N. hemisphere winter'
-    : 'axis side-on to the Sun — equinox, equal day and night everywhere', W / 2, H - 12);
+  // cheap smooth "continents" on a unit-sphere body normal
+  function land(b) {
+    const f = Math.sin(2.1 * b.x + 1.3) * Math.sin(2.6 * b.y + 0.4) + 0.75 * Math.sin(3.3 * b.z + 2.2 * b.x + 0.9)
+      + 0.45 * Math.sin(5.1 * b.y - 3.7 * b.z + 1.7) + 0.25 * Math.sin(7.3 * b.x + 6.1 * b.z);
+    return f;
+  }
+  function earthColor(b) {   // b = body-frame normal (z = north pole)
+    const lat = Math.asin(clamp(b.z, -1, 1));
+    if (Math.abs(lat) > 1.2) return [232, 238, 244];
+    const f = land(b);
+    if (f > 0.55) { const dry = clamp((0.9 - Math.abs(lat)) * 1.2, 0, 1); return [74 + 96 * dry, 138 + 14 * dry, 72 + 26 * dry]; }
+    return [44, 112 + 22 * f, 200 + 20 * f];
+  }
+  function moonColor(b) {
+    const m = Math.sin(3.1 * b.x + 0.7) * Math.sin(2.3 * b.z + 1.1) + 0.6 * Math.sin(4.7 * b.y + 2.9 * b.x);
+    const g = m > 0.55 ? 150 : 205 + 10 * Math.sin(9 * b.y + 4 * b.z);
+    return [g, g * 0.98, g * 0.93];
+  }
+
+  return { V, add, sub, mul, dot, cross, norm, clamp, rot, hidpi, ptr, camera, stars, sphere, sphereCircle, label, placer, land, earthColor, moonColor };
+})();
+/* A3-KIT-END */
+
+// ---------- geometry shared by both 3D views ----------
+// World: ecliptic plane = xy, z = ecliptic north. dir(λ) is the direction of ecliptic longitude λ.
+// With the camera yaw used below, λ = 90° (where the Sun sits at the June solstice) points screen-left.
+const DR = Math.PI / 180, EPS = TILT * DR;
+const SP_W = 520, SP_H = 258, GR_W = 520, GR_H = 226;
+let lowerTab = 'daynight';   // 'daynight' | 'beam'
+const dirL = lam => A3.V(-Math.sin(lam), Math.cos(lam), 0);
+const AXIS = A3.V(-Math.sin(EPS), 0, Math.cos(EPS));          // Earth's north pole: FIXED in space
+// Sun's ecliptic longitude (rad) on day n, with the orbit's eccentricity, so equinoxes land on Mar 20 / Sep 22
+function sunLon(n) {
+  const g = 2 * Math.PI / 365.24;
+  return g * (n + 10) + 2 * 0.0167 * Math.sin(g * (n - 2)) - Math.PI / 2;
+}
+function earthSunAU(n) { return 1 - 0.0167 * Math.cos(2 * Math.PI * (n - 3) / 365.256); }
+// Earth's body frame: z = the fixed axis, x/y fixed in space (Earth's daily spin is not shown)
+const BX = A3.norm(A3.cross(A3.V(0, 1, 0), AXIS)), BY = A3.cross(AXIS, BX);
+const toBody = n => A3.V(A3.dot(n, BX), A3.dot(n, BY), A3.dot(n, AXIS));
+// a point on the unit globe at latitude phi (deg), on the meridian facing direction s (local noon)
+function noonPoint(phi, s) {
+  const m = A3.norm(A3.sub(s, A3.mul(AXIS, A3.dot(s, AXIS))));
+  return A3.add(A3.mul(m, Math.cos(phi * DR)), A3.mul(AXIS, Math.sin(phi * DR)));
+}
+// latitude circle on a globe drawn at (x,y,rad): day part warm, night part cool; front solid, back faint
+function latCircle(ctx, cam, x, y, rad, phi, s, o) {
+  const N = 120, h = Math.sin(phi * DR), rr = Math.cos(phi * DR), pts = [];
+  for (let i = 0; i <= N; i++) { const t = i / N * 2 * Math.PI;
+    const p = A3.add(A3.mul(AXIS, h), A3.add(A3.mul(BX, rr * Math.cos(t)), A3.mul(BY, rr * Math.sin(t))));
+    pts.push({ x: x + rad * A3.dot(p, cam.r), y: y - rad * A3.dot(p, cam.u), f: A3.dot(p, cam.b) >= 0, day: A3.dot(p, s) >= 0 }); }
+  ctx.save(); ctx.lineCap = 'round';
+  for (const front of [false, true]) for (const day of [false, true]) {
+    if (!front && !o.back) continue;
+    ctx.beginPath(); let pen = false;
+    for (let i = 1; i < pts.length; i++) { const A = pts[i - 1], B = pts[i];
+      if (A.f === front && B.f === front && A.day === day && B.day === day) { if (!pen) { ctx.moveTo(A.x, A.y); pen = true; } ctx.lineTo(B.x, B.y); } else pen = false; }
+    ctx.globalAlpha = front ? 1 : 0.35; ctx.setLineDash(front ? [] : [2, 3]);
+    ctx.strokeStyle = o.split ? (day ? o.dayCol : o.nightCol) : o.col; ctx.lineWidth = front ? o.w : 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+// rotation axis through a globe: the part behind the globe is hidden
+function axisLine(ctx, cam, x, y, rad, ext, col, w) {
+  const tip = k => ({ x: x + rad * k * A3.dot(AXIS, cam.r), y: y - rad * k * A3.dot(AXIS, cam.u) });
+  const frontN = A3.dot(AXIS, cam.b) >= 0;   // is the north pole on the near hemisphere?
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+  // outside the globe: both stubs always visible
+  const a1 = tip(1), a2 = tip(1 + ext), b1 = tip(-1), b2 = tip(-1 - ext);
+  ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(a2.x, a2.y); ctx.moveTo(b1.x, b1.y); ctx.lineTo(b2.x, b2.y); ctx.stroke();
+  // inside: only the half from the centre to the near pole shows through the surface? No: it is hidden by the globe,
+  // so mark just the near pole with a dot.
+  const pn = frontN ? a1 : b1;
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(pn.x, pn.y, w * 0.9, 0, 7); ctx.fill();
+  ctx.restore();
+  return { n: a2, s: b2 };
+}
+function drawGlobe(ctx, cam, x, y, rad, s, o) {
+  A3.sphere(ctx, cam, x, y, rad, s, { surface: n => A3.earthColor(toBody(n)), ambient: 0.11, rim: [70, 130, 230], outline: 'rgba(160,190,230,0.22)' });
+  const g = { col: 'rgba(255,255,255,0.55)', w: 1 };
+  latCircle(ctx, cam, x, y, rad, 0, s, { col: 'rgba(255,255,255,0.6)', w: 1.1 });
+  if (o.tropics) [TILT, -TILT, 90 - TILT, TILT - 90].forEach(p => latCircle(ctx, cam, x, y, rad, p, s, { col: 'rgba(255,255,255,0.28)', w: 0.9 }));
+  if (o.lat != null && Math.abs(o.lat) < 89.5)
+    latCircle(ctx, cam, x, y, rad, o.lat, s, { split: true, dayCol: '#ffd36b', nightCol: '#7fa6d6', w: o.latW || 2, back: o.back });
+  const ends = axisLine(ctx, cam, x, y, rad, o.ext || 0.45, '#ff8f6b', o.axisW || 2);
+  if (o.lat != null) {   // you, at local noon
+    const p = noonPoint(o.lat, s);
+    if (A3.dot(p, cam.b) > -0.05) { const px = x + rad * A3.dot(p, cam.r), py = y - rad * A3.dot(p, cam.u);
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#2f5a3b'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(px, py, o.youR || 3, 0, 7); ctx.fill(); ctx.stroke();
+      ends.you = { x: px, y: py }; }
+  }
+  return ends;
 }
 
-function drawEarth(ctx, x, y, r, sx, sy) {
-  const toSun = Math.atan2(sy - y, sx - x);
-  // lit hemisphere faces the Sun
-  ctx.save();
-  ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip();
-  ctx.fillStyle = '#16324e'; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
-  const lx = x + Math.cos(toSun) * r, ly = y + Math.sin(toSun) * r;
-  const g = ctx.createRadialGradient(lx, ly, r * 0.2, lx, ly, r * 2.2);
-  g.addColorStop(0, '#4f93d6'); g.addColorStop(0.55, '#3b74ad'); g.addColorStop(1, '#16324e');
-  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke();
+// ---------- orbit view (tilted, Earth's axis fixed in space) ----------
+function spaceCam() { return A3.camera({ yaw: -Math.PI / 2, pitch: 22 * DR, dist: 9, scale: 172, cx: SP_W / 2, cy: 136 }); }
+function drawSpace() {
+  const c = $('space'), ctx = A3.hidpi(c, SP_W, SP_H), W = SP_W, H = SP_H;
+  ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
+  A3.stars(ctx, W, H, 90, 3);
+  const cam = spaceCam(), P = cam.P, L = A3.placer(ctx, W, H);
+  const n = dayN(), lam = sunLon(n);
+  const ePos = A3.mul(dirL(lam + Math.PI), 1), E = P(ePos), S0 = P(A3.V(0, 0, 0));
+  const sToSun = A3.norm(A3.sub(A3.V(0, 0, 0), ePos));
 
-  // FIXED rotation axis (same screen direction all year)
-  ctx.strokeStyle = '#ff8f6b'; ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.moveTo(x - AXV.x * (r + 13), y - AXV.y * (r + 13));
-  ctx.lineTo(x + AXV.x * (r + 13), y + AXV.y * (r + 13));
-  ctx.stroke(); ctx.lineWidth = 1;
-  ctx.fillStyle = '#ff8f6b'; ctx.font = '9px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('N', x + AXV.x * (r + 21), y + AXV.y * (r + 21) + 3);
+  L.put('tilted view of the orbit · sizes and distances not to scale', 8, 14, [[2, 0]], { col: 'rgba(255,255,255,0.5)', font: '10.5px "Source Sans 3",sans-serif' });
 
-  // equator (perpendicular to axis)
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.setLineDash([3, 2]);
-  ctx.beginPath(); ctx.moveTo(x - AXV.y * r, y + AXV.x * r); ctx.lineTo(x + AXV.y * r, y - AXV.x * r); ctx.stroke();
-  ctx.setLineDash([]);
+  // orbit ring, far half first
+  const ring = []; for (let i = 0; i <= 180; i++) ring.push(P(dirL(i * 2 * DR)));
+  const strokeRing = front => { ctx.beginPath(); let pen = false;
+    for (let i = 1; i < ring.length; i++) { const a = ring[i - 1], b = ring[i]; if (((a.d + b.d) / 2 >= 0) === front) { if (!pen) { ctx.moveTo(a.x, a.y); pen = true; } ctx.lineTo(b.x, b.y); } else pen = false; }
+    ctx.strokeStyle = front ? 'rgba(200,215,235,0.4)' : 'rgba(200,215,235,0.2)'; ctx.lineWidth = front ? 1.3 : 1; ctx.stroke(); };
+  strokeRing(false);
 
+  // solstice / equinox markers on the ring
+  const marks = [[78, 'Mar 20'], [171, 'Jun 21'], [264, 'Sep 22'], [354, 'Dec 21']].map(([d, t]) => {
+    const p = P(dirL(sunLon(d) + Math.PI)), q = P(A3.mul(dirL(sunLon(d) + Math.PI), 1.25));
+    return { p, q, t, d };
+  });
+  marks.forEach(m => { ctx.fillStyle = 'rgba(220,230,240,0.45)'; ctx.beginPath(); ctx.arc(m.p.x, m.p.y, 2.2, 0, 7); ctx.fill(); });
+
+  const eR = 30 * E.s / cam.scale;
+  const drawSun = () => {
+    const g = ctx.createRadialGradient(S0.x, S0.y, 4, S0.x, S0.y, 46);
+    g.addColorStop(0, 'rgba(255,240,190,0.9)'); g.addColorStop(0.4, 'rgba(255,205,90,0.35)'); g.addColorStop(1, 'rgba(255,205,90,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(S0.x, S0.y, 46, 0, 7); ctx.fill();
+    const g2 = ctx.createRadialGradient(S0.x - 5, S0.y - 6, 2, S0.x, S0.y, 19);
+    g2.addColorStop(0, '#fffbe6'); g2.addColorStop(0.6, '#ffdf6b'); g2.addColorStop(1, '#f2b337');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(S0.x, S0.y, 19, 0, 7); ctx.fill();
+  };
+  let ends;
+  const drawE = () => { ends = drawGlobe(ctx, cam, E.x, E.y, eR, sToSun, { lat: lat(), tropics: false, ext: 0.5, axisW: 2.2, youR: 2.6 }); };
+  // painter order: whatever is farther first. The near half of the ring passes in front of the Sun.
+  if (E.d < 0) { drawE(); drawSun(); strokeRing(true); }
+  else { drawSun(); strokeRing(true); drawE(); }
+
+  // labels (bodies reserved first)
+  L.blockCircle(S0.x, S0.y, 21); L.blockCircle(E.x, E.y, eR + 3);
+  L.put('N', ends.n.x, ends.n.y, [[-7, -4], [0, -9], [7, -4]], { col: '#ff8f6b', font: '700 10.5px "Source Sans 3",sans-serif' });
+  L.put('Sun', S0.x, S0.y, [[0, 30], [0, -30]], { col: '#ffdf8b' });
+  L.put('Earth', E.x, E.y, [[eR + 8, 6], [-eR - 8, 6], [0, eR + 12]], { col: '#a9c8e6' });
+  marks.forEach(m => {
+    if (Math.abs(m.d - n) < 14 || Math.abs(m.d - n) > 351) return;   // Earth is sitting on it
+    const dx = m.q.x - m.p.x, dy = m.q.y - m.p.y, l = Math.hypot(dx, dy) || 1;
+    L.put(m.t, m.p.x, m.p.y, [[dx / l * 22, dy / l * 13], [dx / l * 34, dy / l * 16], [0, -12], [0, 12]], { col: 'rgba(210,222,234,0.62)', font: '10.5px "Source Sans 3",sans-serif' });
+  });
+  L.put('axis (orange) keeps pointing the same way all year', W - 8, H - 11, [[-1, 0]], { col: 'rgba(255,170,140,0.85)', font: '10.5px "Source Sans 3",sans-serif' });
+}
+
+// ---------- day & night on the globe ----------
+function drawDayNight(ctx, W, H) {
+  const n = dayN(), lam = sunLon(n), phi = lat(), dec = declination(n);
+  const s = dirL(lam);                                   // toward the Sun from Earth
+  // camera: Sun to the left, looking slightly down on the globe so latitude circles open into ellipses
+  const cam = A3.camera({ yaw: lam + Math.PI - 0.38, pitch: 16 * DR, dist: 1e6, scale: 1, cx: 0, cy: 0 });
+  const gx = W * 0.40, gy = H / 2 + 2, R = 76;
+  // sunlight from the left
+  const grad = ctx.createLinearGradient(0, 0, 120, 0);
+  grad.addColorStop(0, 'rgba(255,214,120,0.22)'); grad.addColorStop(1, 'rgba(255,214,120,0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 120, H);
+  ctx.strokeStyle = 'rgba(255,220,140,0.4)'; ctx.lineWidth = 1.3;
+  for (let y = 50; y < H - 30; y += 40) { ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(70, y); ctx.moveTo(63, y - 4); ctx.lineTo(70, y); ctx.lineTo(63, y + 4); ctx.stroke(); }
+  A3.label(ctx, 'sunlight', 10, 18, { align: 'left', col: '#ffd66b' });
+
+  const ends = drawGlobe(ctx, cam, gx, gy, R, s, { lat: phi, tropics: true, ext: 0.22, axisW: 2.4, latW: 2.6, back: true, youR: 4 });
+  // sub-solar point: where the Sun is straight overhead at noon (latitude = δ)
+  const ss = noonPoint(dec, s);
+  if (A3.dot(ss, cam.b) > 0) { const px = gx + R * A3.dot(ss, cam.r), py = gy - R * A3.dot(ss, cam.u);
+    ctx.fillStyle = '#ffe58a'; ctx.beginPath(); ctx.arc(px, py, 3.2, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(80,60,0,0.8)'; ctx.lineWidth = 1; ctx.stroke(); }
+
+  const Lp = A3.placer(ctx, W, H);
+  Lp.blockCircle(gx, gy, R + 2);
+  Lp.put('N', ends.n.x, ends.n.y, [[0, -9], [-9, -3], [9, -3]], { col: '#ff8f6b', font: '700 11px "Source Sans 3",sans-serif' });
+  Lp.put('S', ends.s.x, ends.s.y, [[0, 9], [-9, 3], [9, 3]], { col: '#ff8f6b', font: '700 11px "Source Sans 3",sans-serif' });
+
+  // read-out panel on the right
+  const dh = daylightHours(phi, dec), x0 = W * 0.665;
+  const fmt = h => h <= 0 ? '0 h' : h >= 24 ? '24 h' : Math.floor(h) + ' h ' + String(Math.round((h % 1) * 60)).padStart(2, '0') + ' m';
+  A3.label(ctx, 'your latitude: ' + (phi === 0 ? 'equator' : Math.abs(phi) + '° ' + (phi > 0 ? 'N' : 'S')), x0, 52, { align: 'left', col: '#e6edf3', font: '600 12px "Source Sans 3",sans-serif' });
+  ctx.fillStyle = '#ffd36b'; ctx.fillRect(x0, 74, 18, 3);
+  A3.label(ctx, 'in daylight: ' + fmt(dh), x0 + 24, 76, { align: 'left', col: '#ffd36b', font: '600 12px "Source Sans 3",sans-serif' });
+  ctx.fillStyle = '#7fa6d6'; ctx.fillRect(x0, 96, 18, 3);
+  A3.label(ctx, 'in darkness: ' + fmt(24 - dh), x0 + 24, 98, { align: 'left', col: '#9fbde3', font: '600 12px "Source Sans 3",sans-serif' });
+  ctx.fillStyle = '#ffe58a'; ctx.beginPath(); ctx.arc(x0 + 9, 120, 3.2, 0, 7); ctx.fill();
+  A3.label(ctx, 'Sun overhead: ' + Math.abs(dec).toFixed(1) + '° ' + (dec >= 0 ? 'N' : 'S'), x0 + 24, 120, { align: 'left', col: '#e9dca6', font: '11.5px "Source Sans 3",sans-serif' });
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#2f5a3b'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x0 + 9, 142, 3.5, 0, 7); ctx.fill(); ctx.stroke();
+  A3.label(ctx, 'you, at local noon', x0 + 24, 142, { align: 'left', col: '#d3dde6', font: '11.5px "Source Sans 3",sans-serif' });
+  A3.label(ctx, 'faint rings: tropics and polar circles', x0, 166, { align: 'left', col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+  A3.label(ctx, 'Earth spins once a day, so the lit', x0, 190, { align: 'left', col: 'rgba(255,255,255,0.5)', font: '10.5px "Source Sans 3",sans-serif' });
+  A3.label(ctx, 'share of your circle is your day length.', x0, 204, { align: 'left', col: 'rgba(255,255,255,0.5)', font: '10.5px "Source Sans 3",sans-serif' });
 }
 
 // ---------- ground / light-spreading view ----------
 function drawGround() {
-  const c = $('ground'), ctx = c.getContext('2d');
-  const W = 520, H = 232;
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
+  const c = $('ground'), ctx = A3.hidpi(c, GR_W, GR_H), W = GR_W, H = GR_H;
+  ctx.fillStyle = lowerTab === 'beam' ? '#0d1420' : '#080b12'; ctx.fillRect(0, 0, W, H);
+  if (lowerTab === 'daynight') { A3.stars(ctx, W, H, 50, 9); drawDayNight(ctx, W, H); return; }
 
   const dec = declination(dayN());
   const alt = noonAltitude(lat(), dec);
@@ -318,17 +601,15 @@ function drawGround() {
   ctx.strokeStyle = '#3c5230'; ctx.beginPath(); ctx.moveTo(0, horizonY); ctx.lineTo(W, horizonY); ctx.stroke();
 
   if (alt <= 0) {
-    ctx.fillStyle = '#9fb0bf'; ctx.font = '13px "Source Serif 4",serif'; ctx.textAlign = 'center';
-    ctx.fillText('The noon Sun stays below the horizon — polar night', W / 2, H / 2);
+    A3.label(ctx, 'Polar night: the Sun stays below the horizon all day', W / 2, H / 2 - 20, { col: '#b8c6d3', font: '13px "Source Serif 4",serif' });
     return;
   }
 
   const a = alt * Math.PI / 180;
-  const beamW = 46;                       // fixed cross-section of the sunbeam
-  const anchorX = 150;                    // right edge of the lit patch stays put
+  const anchorX = 120;                    // left edge of the lit patch stays put
   const ratio = 1 / Math.sin(a);
-  const spreadReal = beamW * ratio;
-  const spread = Math.min(spreadReal, W - anchorX - 30);   // clamp the drawn width
+  const beamW = Math.min(46, (W - anchorX - 40) / ratio);   // beam cross-section (narrower only for a very low Sun)
+  const spread = beamW * ratio;
   // ray direction toward the ground (coming from upper-right)
   const gx = -Math.cos(a), gy = Math.sin(a);
   const px = -gy, py = gx;                          // perpendicular = beam-width axis
@@ -359,11 +640,10 @@ function drawGround() {
 
   // two brackets below the horizon: "if overhead" vs "now"
   bracket(ctx, anchorX, anchorX + beamW, horizonY + 13, 'rgba(200,210,220,0.7)', 'if overhead');
-  bracket(ctx, footL, footR, horizonY + 34, '#ffd66b', ratio.toFixed(1) + '× wider now');
+  bracket(ctx, footL, footR, horizonY + 34, '#ffd66b', ratio.toFixed(ratio < 1.95 ? 2 : 1) + '× wider now');
 
-  ctx.fillStyle = 'rgba(255,255,255,0.62)'; ctx.font = '11px "Source Sans 3",sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('same energy over ' + ratio.toFixed(1) + '× the ground  →  '
-    + (100 * Math.sin(a)).toFixed(0) + '% of the overhead intensity', W / 2, 18);
+  A3.label(ctx, 'the same beam spreads over ' + ratio.toFixed(ratio < 1.95 ? 2 : 1) + '× the ground,', 10, 16, { align: 'left', col: 'rgba(255,255,255,0.7)', font: '11px "Source Sans 3",sans-serif' });
+  A3.label(ctx, 'so each m² gets ' + (100 * Math.sin(a)).toFixed(0) + '% of the overhead intensity', 10, 31, { align: 'left', col: '#ffe082', font: '600 11px "Source Sans 3",sans-serif' });
 }
 
 function bracket(ctx, x0, x1, y, col, label) {
@@ -388,21 +668,24 @@ function render() {
 
   document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(n - (+b.dataset.n)) < 1));
 
+  const dm = Math.round(dh * 60);
   const dhStr = dh <= 0 ? '0 h (polar night)' : dh >= 24 ? '24 h (midnight Sun)' :
-    Math.floor(dh) + ' h ' + Math.round((dh % 1) * 60) + ' m';
+    Math.floor(dm / 60) + ' h ' + String(dm % 60).padStart(2, '0') + ' m';
+  const au = earthSunAU(n);
 
   $('results').innerHTML =
     row('season where you are', seasonName(n, phi), true) +
     row('sub-solar latitude δ', dec.toFixed(1) + '°') +
     row('noon Sun altitude', alt > 0 ? alt.toFixed(1) + '°' : 'below horizon') +
     row('hours of daylight', dhStr, true) +
-    row('sunlight concentration', alt > 0 ? Math.sin(alt * Math.PI / 180).toFixed(2) + ' × overhead' : '—');
+    row('noon sunlight per m²', alt > 0 ? (100 * Math.sin(alt * Math.PI / 180)).toFixed(0) + '% of overhead' : 'none') +
+    row('Earth–Sun distance', au.toFixed(3) + ' AU');
 
   $('note').textContent =
     Math.abs(dec) < 1.5
       ? 'Equinox: the Sun is over the equator, every latitude gets a 12-hour day, and the axis points neither toward nor away from the Sun.'
       : (dec > 0 ? 'The North pole is tilted sunward. ' : 'The South pole is tilted sunward. ') +
-        'In that hemisphere the noon Sun is high and the days are long — summer. In the other hemisphere, the opposite.';
+        'There the noon Sun is high and days are long (summer); the other hemisphere has winter. Distance barely changes.';
 
   drawSpace(); drawGround();
 }
@@ -412,20 +695,24 @@ function tick(ts) {
   if (!playing) return;
   if (lastTs == null) lastTs = ts;
   const dt = (ts - lastTs) / 1000; lastTs = ts;
-  let n = dayN() + dt * 45; if (n > 364) n -= 365;
-  $('daySlider').value = Math.round(n);
+  dayF = (dayF == null ? dayN() : dayF) + dt * 40; if (dayF > 364.5) dayF -= 365;
+  $('daySlider').value = Math.round(dayF);
   render();
   rafId = requestAnimationFrame(tick);
 }
 function setPlaying(p) {
   playing = p;
   $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Play year';
-  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
+  if (p) { lastTs = null; dayF = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { setPlaying(false); $('daySlider').value = 79; $('latSlider').value = 40; render(); });
+$('resetBtn').addEventListener('click', () => { setPlaying(false); $('daySlider').value = 171; $('latSlider').value = 40; render(); });
 $('daySlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
 $('latSlider').addEventListener('input', render);
+document.querySelectorAll('#lowerTabs button').forEach(b => b.addEventListener('click', () => {
+  lowerTab = b.dataset.t; document.querySelectorAll('#lowerTabs button').forEach(x => x.classList.toggle('on', x === b)); render();
+}));
+window.addEventListener('resize', () => render());
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { setPlaying(false); $('daySlider').value = b.dataset.n; render(); }));
 
 function katexAll() {
