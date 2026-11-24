@@ -4,7 +4,7 @@ A Stellarium-inspired web planetarium for astro-labs. Static files, no build ste
 Spec: the lead's `SPEC.md` (Tiers 1-3) and `SPEC-LABS.md` (Tier 4, classic measurements). This file is the
 hand-over: architecture, data provenance, what is done, what is left, known issues. Keep it current.
 
-Last updated 2026-11-23: five sections, one per agent; the last ("Deep stars: Gaia DR3") is the most recent and overrides earlier statements about faint stars, star limits and the Tycho-2 tiles.
+Last updated 2026-11-23: five sections, one per agent; the last ("Deep stars: Gaia DR3") is the most recent and overrides earlier statements about faint stars, star limits and the Tycho-2 tiles. 2026-11-24: "Bright-star astrometry" (near the end) overrides what is said here about the HYG star files, their record and their proper motion.
 
 ## Run / test
 - Served at `http://127.0.0.1:8111/planetarium/` (repo root is served). Relative URLs only, so it also
@@ -701,3 +701,257 @@ Stars drawn per cm². Cygnus = RA 305.5° Dec +41° (l 79, b +2; 2026-08-12 05:3
    Saturn's moons readable; it also means no faint field stars beside a planet. OK?
 4. **Gaia G vs V**: fine to show Gaia stars with their G magnitude, or convert to an estimated V (formula exists, σ 0.03–0.05 mag)?
 5. `data/tycho/` (29 MB, local only) and `tools/build_tycho.py` can be deleted.
+
+---
+
+# Deep stars on our own storage: Gaia DR3, G 12 to 17, as static tiles (sixth agent, 2026-11-24)
+
+Seth's decision: the stars from G = 12 to 17 are served as static files from a Cloudflare R2 bucket of their own; GAVO stays for
+G > 17 and as the fallback. This pass built the tile set, the loader and the checks. **The tiles are NOT in the repo**: they are in
+`~/Documents/GitHub/astro-labs-stars/gaia/v1/` (a plain folder, no git). Nothing was uploaded: no Cloudflare command was run.
+
+## What is where
+- `tools/build_deep.py`: download + tiles in one resumable job (its header holds the full format). New.
+- `tools/check-deep.mjs`: section 19 of `node tools/check.mjs` (two small edits there: `netFetch` at the top, the call at the end). New.
+- `js/deepstars.js`: hosted layer added (search for "hosted"); `js/ui.js` (read-out source, three lines), `js/info.js` (one note string).
+- `~/Documents/GitHub/astro-labs-stars/gaia/v1/`: `manifest.json`, `progress.json` (audit trail, not needed online),
+  `<level 0-9>/<order 3-11>/<ipix>.bin`.
+
+## Tile set (version 1)
+- Source: ESA Gaia archive, `gaiadr3.gaia_source`, 12 <= G < 17, anonymous synchronous TAP (as `fetch_gaia.py`), 263 chunks of about
+  600,000 rows (one half-magnitude level x a run of whole HEALPix order-3 pixels = a source_id range), five at a time, about
+  50,000 rows a second (each connection gives about 10,000 rows/s whatever the chunk). Columns rounded in the query to what the
+  tile can hold (66 bytes a row instead of 127). Every chunk's row count was checked against the archive's per-cell count table
+  AND a `COUNT(*)` of the same WHERE; raw CSV is deleted as soon as its tiles are written (never more than 250 MB on disk).
+- Ten half-magnitude levels (0 = 12.0-12.5 ... 9 = 16.5-17.0), the same as the online layer's first ten. Per level a quadtree over
+  the 768 order-3 HEALPix (nested, ICRS) pixels: a pixel with more than 4,096 stars is split in four. A tile = the Gaia sources
+  whose source_id lies in the pixel and whose G lies in the level: exactly what `tileQuery()` asks of GAVO for the same pixel, so
+  the two suppliers are interchangeable tile for tile (checked: section 19 compares one tile with GAVO's answer).
+- Record: 10 bytes a star, column by column (x, y: 20 bits each in the tile's tangent plane, epoch 2000.0; G to 0.002 mag;
+  BP-RP to 0.02; proper motion in a square-root code, 0.2 mas/yr steps near zero, range 279 mas/yr; parallax likewise, 0.04 mas
+  steps, range 138 mas, 0 = not positive) + a 20-byte header + 16 bytes for each star whose motion or parallax does not fit the code
+  (exact Float32 values). Missing colour / motion / parallax stay missing. No source_id (a click looks the star up at GAVO by place,
+  like the bundled stars). Worst position rounding 0.042" (order-3 tiles), typically under 0.01".
+- `manifest.json`: format, version, credit / acknowledgement / licence (CC BY-NC 3.0 IGO, see "Licence" above: the same question
+  as for `data/gaia/`), the record's constants, and per level: m0, m1, stars, tiles, bytes and `tree` (the quadtree, depth first:
+  2 = split, 1 = tile, 0 = no stars, no file). It lists only levels that are complete over the whole sky.
+- Result (2026-11-24, 61 minutes of download): **154,643,438 stars, 82,869 tiles, 1,548,273,504 bytes of tiles** (10.01 bytes a
+  star; with `manifest.json` 82,870 files, 1,548,412,877 bytes to upload). All ten levels complete; every level equal to the
+  archive's COUNT(*) (1,706,784 / 2,575,022 / 3,823,640 / 5,650,889 / 8,223,733 / 11,841,446 / 16,951,372 / 24,091,612 /
+  33,612,859 / 46,166,081). Tiles are order 3 to 9, at most 4,096 stars = 40,980 bytes, mean 18.7 kB. One chunk arrived
+  cut short (1,146,213 of 1,159,604 rows, no error from the server); the row check caught it and the retry was complete.
+  1,190,714 sources have no proper motion in Gaia, 1,577,922 no colour; 11,359 use the exception table.
+- That is above the 1 GB aim (the aim assumed 7 bytes a star; 154.6 million is also more than the 150 estimated). What would
+  shrink it: storing the tiles brotli-compressed with `Content-Encoding: br` saves 19 % (1.25 GB; gzip only 7 %: the
+  positions are incompressible); an 8-byte record (18-bit positions = 0.1-0.2" in the coarsest tiles, colour to 0.1 mag, proper
+  motion and parallax in 5 and 3 bits) would save 310 MB and is not worth what it loses. R2's free tier is 10 GB; what matters
+  for speed is bytes per view (150-600 kB cold), not the total.
+- **Stars the app already has** (`manifest.skip`, `manifest.skipIds`): 780 of the 101,652 HYG stars that `build_stars.py` ties to
+  a Gaia source have G >= 12 and are in these tiles as well. The tiles keep them (counts stay equal to the archive, files stay
+  immutable, the list can change with HYG without touching a tile); `--exclude` finds each one's tile and index (all 780 found,
+  677 tiles) and the manifest carries them: the loader drops them while decoding, and drops the same source_ids from GAVO's rows
+  whenever the manifest has loaded. Checked on screen: Gaia DR3 at RA 34.124 Dec +13.587 (G 13.56, 664 mas/yr): one object under
+  the cursor, the HYG star. Not covered: with the hosted set unreachable there is no list, so GAVO's rows for G 12-17 double
+  those 780 (as before this pass); and about 200 HYG stars fainter than V 10 that carry no Gaia id still have a tile star within
+  2" (perhaps 40 by chance): they need a source_id from `build_stars.py` to be skipped.
+- Immutable: nothing under `gaia/v1/` ever changes except `manifest.json` (which only ever gains levels). A rebuild with other
+  settings (MAX_STARS, record) must go to `gaia/v2/` and `DEEP_TILE_BASE` with it.
+
+## Rebuild / resume / audit
+    python3 tools/build_deep.py ~/Documents/GitHub/astro-labs-stars/gaia/v1 WORK_DIR --status     # chunks done per level
+    python3 tools/build_deep.py ~/Documents/GitHub/astro-labs-stars/gaia/v1 WORK_DIR              # (re)start: finished chunks are skipped
+    python3 tools/build_deep.py ~/Documents/GitHub/astro-labs-stars/gaia/v1 WORK_DIR --verify     # every file present, right size and count
+    python3 tools/build_deep.py ~/Documents/GitHub/astro-labs-stars/gaia/v1 WORK_DIR --exclude RAW_HIP/hyg_gaia_ids.csv   # skip list (below)
+    python3 tools/build_deep.py ~/Documents/GitHub/astro-labs-stars/gaia/v1 WORK_DIR --list       # files.tsv: path, bytes, md5 (run last)
+    node tools/check.mjs            # section 19, offline, 6 s in all: manifest, every 50th tile's header, four tiles decoded
+    node tools/check.mjs --net      # + all 82,869 headers, three tiles against ESA, one against GAVO, level counts against COUNT(*): 3 min
+WORK_DIR = any scratch folder (raw chunks in hand + five small count tables; needs under 1 GB). `--gmax 18` would add two levels
+(G 17-18: about 147 million more stars by the count map's 2 % sample, 1.5 GB) with no other change: the loader takes the depth from the manifest.
+
+---
+
+# Bright-star astrometry: HYG's places replaced by Hipparcos-2 and Gaia DR3 (seventh agent, 2026-11-24)
+
+Overrides every earlier statement that the star tiers are "HYG, no values changed", the 9-field record, and "proper motion is linear
+in RA/Dec; no radial velocity". Names, designations, V, B−V, distance and radial velocity are still HYG's.
+
+## The defect, and its cause (proved, not guessed)
+HYG v4.1 took each Hipparcos (ESA 1997, CDS I/239) position at epoch 1991.25 and carried it to 2000.0 with
+`RA += pmRA × 8.75 yr`. pmRA is μα* = (dα/dt) cos δ, so the step must be divided by cos δ; it was not. Declinations are right.
+- "Hipparcos 1997 + pmRA × 8.75, no cos δ" reproduces HYG for 117,950 of its 117,951 Hipparcos stars to under 0.1″ (median
+  0.0095″, 99 % under 0.026″: rounding). The one left is Barnard's star (HYG clips pmDec at 9999.99). The correct formula leaves
+  18,368 stars over 0.1″; "no motion at all" 81,821. So it is neither mixed epochs nor rounding.
+- Error on the sky = μα* × 8.75 yr × (1 − cos δ); correlation of the measured RA error with that prediction: 0.993.
+- HYG against Hipparcos-2 carried properly to 2000.0, all 117,951 stars: median 0.027″, 90 % under 0.16″, 99 % under 0.90″,
+  largest 17.9″ (Proxima). **Over 0.1″: 19,280 (16 %); over 1″: 980; over 5″: 48.** Histogram (″): <0.01 18,402 · 0.01–0.03
+  45,505 · 0.03–0.1 34,764 · 0.1–0.3 13,517 · 0.3–1 4,783 · 1–3 876 · 3–5 56 · 5–10 34 · >10 14. Naked-eye tier (V ≤ 6.5):
+  1,937 over 0.1″, 108 over 1″, 16 over 5″. Worst: Proxima 17.9, Kapteyn's star 16.7, α Cen A 16.5 / B 16.2, ε Ind 15.7, β Hyi 15.1,
+  μ Cas 12.7, 61 Cyg 8.1 / 7.9, Groombridge 1830 7.3; θ UMa 3.2, η Cas 4.4, χ Dra 3.3 (the "11″" in the section above was wrong).
+- HYG's 1,672 stars WITHOUT a Hipparcos number (Gliese catalogue) are worse: against their Gaia identifications the median
+  error is 8.1″, 90 % under 31″, largest 116″; 893 of the 1,188 identified are over 5″.
+
+## The fix (`tools/fetch_hipparcos.py`, `tools/build_stars.py`, then `tools/build_gaia.py`)
+    python3 tools/fetch_hipparcos.py RAW/hip                                  # 1 min; add --with-1997 only to redo the proof above
+    python3 -I tools/build_stars.py RAW/hyg/hygdata_v41.csv RAW/hip RAW_GAIA data/      # 30 s; RAW_GAIA = fetch_gaia.py's folder
+    python3 -I tools/build_gaia.py RAW_GAIA RAW/hip/hyg_gaia_ids.csv data/              # 2 min; ARGUMENTS CHANGED (was the HYG csv)
+Position + proper motion of each star, by `src` (new field; shown in the info panel as "Position and proper motion: …"):
+| src | n | from |
+|---|---|---|
+| 2 | 97,518 | Gaia DR3, the source ESA's `gaiadr3.hipparcos2_best_neighbour` pairs with the Hipparcos number |
+| 3 | 4,134 | Gaia DR3, identified here: 2,946 Hipparcos stars brighter than V 7.5 that ESA's table leaves unpaired (θ UMa, η Cas …: the only G < 7 source within 1″ of the Hipparcos-2 place at 2016.0, V within 0.5 mag), and 1,188 stars without a Hipparcos number (Gaia Catalogue of Nearby Stars + the G < 12 download: within 2′, proper motion within 25 % or 40 mas/yr, V within 0.6 mag, exactly one candidate, claimed by no other star) |
+| 1 | 17,487 | Hipparcos, the New Reduction (van Leeuwen 2007, CDS I/311): no Gaia pair 15,268; pair has no proper motion in Gaia 1,624; ambiguous pair 483; G < 3 102; pair more than 1″ from the Hipparcos place 10 |
+| 0 | 484 | **uncorrected: HYG's own numbers, flagged.** No Hipparcos number and no single Gaia source that fits (159 nothing near, 259 nothing acceptable, 58 two candidates, 8 contested). 390 are fainter than V 9.5; the 39 brighter than V 6.5 are nearly all components of bright pairs that HYG lists separately (Castor B, ξ UMa A and B, ξ Sco, γ CrA B …), for which Gaia has no full solution or no unique source, plus a few HD stars (η Car) |
+- Rule: Gaia where it has a 5- or 6-parameter solution, G ≥ 3, and (moved back to 1991.25) lies within 1″ of the Hipparcos-2 place;
+  else Hipparcos-2. This is SIMBAD's practice too. **No RUWE cut, on purpose** (first version had RUWE < 1.4, G ≥ 6 and a 30 mas
+  agreement test: it put θ UMa, η Cas and 61 Cyg on Hipparcos-2, 0.16–0.70″ from Gaia's place for today). RUWE is high for most
+  stars brighter than G 4 and for unresolved doubles (10,386 of the Gaia-sourced stars); there the two missions' proper motions
+  differ and neither straight line holds for long, but Gaia's is measured 25 years nearer to now. How much the choice matters:
+  for 13,035 of the 100,464 Gaia-sourced Hipparcos stars the two catalogues' places for 2027 differ by over 0.1″ (643 by over 0.5″),
+  for 1,633 they differ by over 0.1″ at 2000.0. Nothing is fitted or averaged: every number is one catalogue's, propagated.
+- Each place is carried to epoch 2000.0 with the rigorous space-motion formulae (ESA SP-1200 vol. 1 §1.5.5: source parallax, HYG
+  radial velocity) and the proper motion re-expressed there. The app (`catalog.js` `starPlace`) now moves stars the same way:
+  straight line in space including the radial ("perspective") term, instead of linearly in RA and Dec.
+- Record: 13 Float32 (was 9): the old nine, then `dra`, `ddec` (what Float32 rounding of ra/dec lost: up to 0.055″ before),
+  `rv`, `src`. The loader takes the field count from `stars.json`, so old 9-field files still load. Drawing vectors are Float64 now.
+- Sizes: stars-0 321 → 464 kB (the file loaded at start: +143 kB), stars-1 607 → 877 kB, stars-2 1,297 → 1,873 kB, stars-3
+  1,340 → 1,936 kB, stars-4 741 → 1,070 kB; all five 4.31 → 6.22 MB. Star order and `starnames.json` are unchanged.
+- Gaia bundle re-built against the corrected stars: 2,967,176 → 2,967,006 stars (index.json 317 → 305 kB; tiles 30.4 MB; the tile
+  layout is unchanged). Left out: 99,208 by ESA's Hipparcos pairing, 3,538 by `hyg_gaia_ids.csv`, 18,069 by position. The position
+  test is now made at 2016.0 AND at 2000.0, and the allowance for HYG's RA error is gone. Gaia stars within 3″ of a base star with
+  V within 1 mag (= would look double): 21 before, 2 now (2.94″ and 2.98″, real neighbours); within 1.5″ at any magnitude 63 → 40.
+
+## Also fixed while verifying (rendering, not data)
+`render/stars.js` and `deepstars.js` added the aberration vector to a star's unit vector and then took `asin(hz)` for refraction
+without normalising, so with refraction on every drawn star sat (r·β) tan(alt) too high or low: 10.7″ for 61 Cyg at altitude 40°
+(measured: drawn 61.7 px from its own selection marker at FOV 2.4′), an arcminute near the zenith. HYG and Gaia stars shared the
+error, so they agreed with each other but not with the marker, the angle tool, or the planets. One line each: normalise first.
+
+## Sources and terms
+| Data | Source | Terms |
+|---|---|---|
+| Hipparcos-2 | van Leeuwen 2007, A&A 474, 653; CDS I/311 `hip2.dat.gz`, from the VizieR mirror at CfA (`vizier.cfa.harvard.edu/ftp/cats/I/311/`; CDS Strasbourg answered "Page unavailable" again on 2026-11-24) | The catalogue's ReadMe states no licence. CDS's "Rules of usage of VizieR data" (read from the Internet Archive copy, the site being down): free "in a scientific context" provided the authors and publication are cited; "commercial usage … subject to rules depending of the origin"; A&A tables "free for a scientific usage". So: cite, non-commercial. |
+| Hipparcos 1997 (diagnosis only, not in the build) | ESA SP-1200; CDS I/239 `hip_main.dat` | its ReadMe: "License: CC-BY-NC-3.0 IGO" |
+| Gaia DR3 astrometry of the paired stars; Gaia Catalogue of Nearby Stars (`external.gaiaedr3_gcns_main_1`); G < 7 sources | ESA Gaia archive, anonymous sync TAP | CC BY-NC 3.0 IGO, credit ESA/Gaia/DPAC (as for the tiles) |
+| Reference places in check.mjs §18 | SIMBAD TAP at `simbad.cfa.harvard.edu` (CDS mirror), 21 rows typed in | facts, cited |
+Credits panel: new "Star positions" row, and the closing paragraph now says the star files are for non-commercial use.
+Archive quirk worth knowing: a join that runs long is cut off WITHOUT an error at 8,192 or 32,769 rows (and COUNT(*) over the join
+times out, HTTP 408). `fetch_hipparcos.py` chunks the one join it needs and checks every count against the driving table.
+
+## Verification (2026-11-24)
+- `node tools/check.mjs` runs clean; new section 18. Against SIMBAD's J2000 places, 21 stars: **before 17.9″ worst (18 of 21 over
+  0.1″); now 19 of 21 within 0.04″.** The two over 0.1″ are Barnard's star 0.165″ and Kapteyn's star 0.141″, and that is SIMBAD:
+  its J2000 place is Gaia's moved back 16 years without the radial-velocity term (reproduced to 1e-12°), which for those two is
+  0.164″ and 0.141″. Against Gaia itself at 2016.0 the app is within 0.0007″ for all eight Gaia-sourced rows. On 2026-11-24 with
+  proper motion applied: worst 0.070″ (α Cen A, the same radial term over 27 years; SIMBAD's α Cen is Hipparcos-2, as here).
+  Before → now at J2000: θ UMa 3.200 → 0.000″, η Cas 4.463 → 0.000, χ Dra 3.256 → 0.000, 61 Cyg A 7.930 → 0.026, B 7.914 → 0.025,
+  α Cen A 16.510 → 0.006, B 16.204 → 0.006, Proxima 17.896 → 0.012, Sirius 0.210 → 0.000, Vega 0.410 → 0.000, Polaris 0.384 → 0.000,
+  Arcturus 0.513 → 0.000.
+- Dubhe–Merak 5.37405° → 5.37404° (SIMBAD 5.37403°; today 5.37346°). Pollux–Castor 4.50570° → 4.50563° (SIMBAD 4.50563°; today
+  4.50339°). 61 Cyg A–B today 32.83″ → 32.22″ (Gaia's places carried forward: 32.22″). α Cen A–B 19.06″ → 16.47″ at J2000, 9.54″ today as two straight
+  lines (their real orbit is ignored, as before).
+- Barnard's star: 10.413″/yr averaged over 2026–2036 (Gaia 10.393 in 2016 + 1.3 mas/yr² of perspective acceleration).
+- In Chrome at FOV 2.4′, 2026-11-24: 61 Cyg A and B (333 Gaia stars in the field, nearest to A is G 18.0 at 3.9″), θ UMa, η Cas
+  (its companion η Cas B, an HYG star, 13.7″ away), χ Dra, Barnard's star: each drawn exactly on its selection marker (0.00 px
+  after the refraction fix), no second image. Proper-motion and parallax switches still act (check §15 unchanged in form).
+
+## Left undone / for Seth
+1. **Licence of the star files.** `data/stars-*.bin` are needed by the live site and now contain Gaia DR3 (CC BY-NC 3.0 IGO) and
+   Hipparcos-2 (cite; scientific use) positions. They can no longer be described as plain CC BY-SA 4.0 (Credits says so). Fine for
+   a free teaching site; a decision if the repo's licence statement matters. (Hipparcos 1997, HYG's own source, is CC BY-NC too.)
+2. 484 stars keep HYG's place (`src = 0`); the info panel says so. Most of the 39 bright ones are companions whose primaries are right.
+3. The deeper Gaia layers (hosted tiles G 12–17, online) do not remove stars that are also in HYG. About 600 of the red dwarfs
+   identified here have G ≥ 12, so they are drawn twice at the same spot (before: twice, 8″ apart). `hyg_gaia_ids.csv` has the
+   source ids if `build_deep.py` should skip them.
+4. Bundled Gaia tile stars are still moved linearly in RA/Dec by `deepstars.js` (stars over 250 mas/yr are in the full-precision
+   list). Not measured here. Only the HYG stars got the rigorous motion.
+5. Orbital motion of doubles is still ignored (α Cen, 61 Cyg, Sirius, η Cas: straight lines).
+
+## Loader (`js/deepstars.js`)
+- `DEEP_TILE_BASE = 'https://stars.sethhopper.com/gaia/v1/'` is the one constant. `?stars=<url>` reads another copy
+  (`?stars=http://127.0.0.1:8123/gaia/v1/`), `?stars=off` none (GAVO for everything, as before this pass).
+- At start (after `data/gaia/index.json`): ONE request for `manifest.json` (6 s limit). While it is on its way nobody is asked for
+  deep stars. Answer -> hosted tiles for every level it lists (to G 17), GAVO for the levels beyond, in the same frame, never both
+  for one level (so nothing is drawn twice). No answer -> GAVO for everything exactly as before, one `console.info` line, and no
+  second try until the browser comes back online, the Settings switch is flipped, or the page is reloaded. (The browser itself
+  prints one network-error line for the failed request; that cannot be suppressed.) Today the address answers 404 with CORS
+  headers, so this is the path the app takes until the upload: checked, GAVO behaviour unchanged.
+- Hosted tiles: no settling delay (they cost nobody anything), 8 in flight, 80 wanted per view, brighter levels first then nearest
+  the centre, queued requests for tiles that left the view dropped and requests in flight cancelled (AbortController) after
+  250 ms out of view. Memory LRU shared with the online tiles (now 600,000 stars, about 30 MB). Cache storage
+  `planetarium-gaia-tiles-v1` (3,000 tiles, about 60 MB, oldest dropped first) on top of the HTTP cache. Same fade-in (450 ms).
+- Three hosted tiles failing in a row (404, timeout 15 s, bad header) -> hosted marked down, GAVO takes over in the next frame; the
+  manifest is asked for again after 30 s, 60 s ... 5 min while a view wants deep stars, and the delay only resets when a tile
+  actually arrives. Tested with a copy that had the manifest and no tiles: 6 requests, then GAVO. With GAVO down and hosted up the
+  depth is 17 (`depthNow()`), read-out "deep stars unavailable ...: showing stars to mag 17.0".
+- The Settings switch "Fetch faint stars online" turns hosted tiles off too (they are online). Read-out: "faintest: Gaia DR3,
+  deep tiles" to G 17, "Gaia DR3, online (GAVO)" beyond. Info panel: "from the deep star tiles (G 12 to 17)", values rounded as
+  the tile stores them until the GAVO look-up answers (by position, as for bundled stars).
+- Hosted stars use the same drawing loop as the others (the aberration re-normalisation fix of the astrometry pass applies) and,
+  like the bundled and online Gaia stars, move in a straight line in RA and Dec from 2000 (not along a great circle: under
+  0.04" in 30 years for the fastest stars away from the poles).
+- `planetarium.deep.debug({storage: true, base: '...'})` (console): forget deep stars in memory / Cache storage, switch the
+  address: for timing tests.
+- **Text not changed** (wording is Seth's): About ("How many stars", "Faint stars, online") and the Settings hint still say the
+  stars below 12 come from GAVO. After the switch-over they should say: to 17 from this site's own star tiles
+  (stars.sethhopper.com), beyond that from GAVO.
+
+## Upload (the lead does this; nothing here ran a Cloudflare command)
+- Upload the CONTENTS of `~/Documents/GitHub/astro-labs-stars/gaia/v1/` to bucket `astro-stars` under the key prefix `gaia/v1/`,
+  so that `https://stars.sethhopper.com/gaia/v1/manifest.json` and `.../gaia/v1/0/3/0.bin` exist. Leave out `progress.json`,
+  `skip.json`, `files.tsv` (harmless if uploaded). `files.tsv` lists the 82,870 files with bytes and md5 (an R2 ETag of a
+  single-part upload is the md5): 82,870 files, 1,548,412,877 bytes.
+- `*.bin`: `Content-Type: application/octet-stream`, `Cache-Control: public, max-age=31536000, immutable`, no Content-Encoding (raw).
+- `manifest.json`: `Content-Type: application/json`, `Cache-Control: public, max-age=300` (it is the one file that changes: new
+  levels, a new skip list). Upload it LAST: the app trusts it, and a manifest ahead of its tiles means failed requests (it would
+  fall back to GAVO, but why).
+- CORS on the bucket: `Access-Control-Allow-Origin: *`, methods GET and HEAD (already so). The requests are plain GETs without
+  custom headers: no preflight.
+- Tool: `rclone` (not installed here; `brew install rclone`) with an R2 S3 token:
+  `rclone copy ~/Documents/GitHub/astro-labs-stars/gaia/v1 r2:astro-stars/gaia/v1 --exclude manifest.json --exclude progress.json
+  --exclude skip.json --exclude files.tsv --transfers 32 --checkers 32 --s3-no-check-bucket --header-upload "Cache-Control: public,
+  max-age=31536000, immutable"`, then the manifest alone with `--header-upload "Cache-Control: public, max-age=300"`; then
+  `rclone check` (or compare `rclone lsf -R --format ps` with `files.tsv`). 82,870 class-A operations (free tier: 1 million a month).
+  `wrangler r2 object put` is one file per call: far too slow for this.
+- Raw or pre-compressed: raw. Brotli (`Content-Encoding: br`, measured on tiles: -19 %; gzip -7 %) would save 0.3 GB and 30-100 kB
+  a view, at the price of a compress step, a per-object header that must never be wrong, and Cloudflare re-encoding for clients
+  that do not accept br. Not worth it at these sizes. Cloudflare does not compress `application/octet-stream` by itself;
+  `manifest.json` (139 kB, 21 kB gzipped) is compressed on the fly as JSON.
+- Local test before or after: any static server with a CORS header on the parent folder, e.g.
+  `python3 -c "import http.server,functools as f;H=http.server.SimpleHTTPRequestHandler;H.end_headers=lambda s,e=H.end_headers:(s.send_header('Access-Control-Allow-Origin','*'),e(s))[1];http.server.ThreadingHTTPServer(('127.0.0.1',8123),f.partial(H,directory='$HOME/Documents/GitHub/astro-labs-stars')).serve_forever()"`
+  and `?stars=http://127.0.0.1:8123/gaia/v1/`.
+- Backblaze started backing the 1.5 GB of tiles up as they were written; exclude `astro-labs-stars` there if that is not wanted.
+
+## Measured (Chrome 157, 1512 x 828 CSS px = 876 cm², Bortle 4, no Moon; 2026-11-24)
+The bucket was empty, so "hosted" = the same files from a local server: (a) plain localhost, (b) localhost with 80 ms added to
+every request and 24 Mbit/s shared by all of them (a stand-in for an ordinary connection; 6 connections, where R2 over HTTP/2
+allows the 8 the loader uses). GAVO was slow today: median answer 3.5-4 s (1.5 s yesterday), several 25 s time-outs.
+Jump from FOV 60° straight to the field; "t90" = seconds until 90 % of the final star count is on screen; "all" = until nothing
+is loading and the limit has stopped moving (includes the 450 ms fade and the field correction of density.js, which costs
+0.3-0.6 s even with every tile in memory). Cold = memory and Cache storage emptied; warm = memory emptied only.
+Cygnus = RA 305.5 Dec +41 (2026-08-12 05:30 UT); pole = north galactic pole (2026-04-17 05:30 UT).
+| Field | limit, stars, /cm² | hosted (b) cold: t90 / all, requests, kB | hosted (a) cold | hosted warm (b) | GAVO cold: t90 / all, requests, kB | GAVO warm |
+|---|---|---|---|---|---|---|
+| Cygnus 5° | 9.72, 1185, 1.35 | no deep stars needed (bundled only) | | | same | |
+| Cygnus 2° | 11.77, 1158, 1.32 | no deep stars needed | | | same | |
+| Cygnus 1° | 13.83, 1236, 1.41 | **0.66 / 0.58 s**, 9, 185 | 0.62 / 0.53 | 0.91 / 0.78 | **48 s / not complete in 60 s**, 26, 303, 2 failed | 18.6 / 44 (not really warm) |
+| Cygnus 40′ | 14.9, 1046-1072, 1.19-1.22 | **0.55 / 0.41 s**, 13, 273 | 0.47 | 0.56 | **38 s to 586 stars, not complete in 60 s**, 23, 250, 4 failed | 6.6 |
+| Pole 5° | 12.2, 1166, 1.33 | **0.97 / 0.91 s**, 6, 30 (+36 bundled tiles) | 0.59 / 0.53 | 0.52 | **12.9 / 17.7 s**, 10, 92 | 0.54 |
+| Pole 2° | 14.95, 1112, 1.27 | **0.56 / 0.53 s**, 12, 141 | 0.44 | 0.47 | **51 s to 798 stars, not complete in 60 s**, 34, 299, 4 failed | 24 |
+| Pole 1° | 18.0, 1224, 1.40 | hosted to 17 in 0.6 s, then GAVO for 17-18: **6.5 s** (11 + 5 GAVO, 188 + 99) | 12.5 | 0.64 | **33.7 / 58 s**, 25, 412 | 1.4 |
+| Pole 40′ | 19.65, 1087-1118, 1.24-1.28 | hosted to 17 in 0.6 s, then GAVO for 17-19.5: **36 s** (11 + 24 GAVO, 188 + 354) | 35 | 1.1 | **59 s to 748 stars, not complete**, 39, 503, 3 failed | 3.0 |
+- So: everything that ends at G <= 17 fills in 0.5-1 s cold; the density target (1.2-1.4 stars/cm²) is met as before.
+  **At the galactic pole the limit passes 17 at a field of about 1.3°**, so pole fields of 1° and less still wait for GAVO for their
+  faintest one to five levels (the bright 80 % of the field is there in 0.6 s, and the limit shown holds 1.2 mag past it while
+  the rest arrives). In the Milky Way the hosted set covers fields down to about 20′ (the limit was 16.4 at 24′ in Cygnus). By interpolation
+  between the pole rows, `--gmax 18` would move the pole's boundary to about 1° for 1.5 GB more, and 19 (2.7 GB on top) to about 45′.
+- A session, real wheel and drags (Cygnus, cold, hosted (b)): 60° -> 31′ in nine wheel bursts, then three drags of 500-700 px:
+  **20-28 hosted requests, 382-569 kB, 0 failed, 0 cancelled** (+ 41 bundled tiles, 728 kB); request time median 112-118 ms, 90 %
+  under 154 ms (80 of that is the added delay). Every stop was 90 % full within 0.05-0.64 s of the wheel stopping and the drags
+  showed no empty sky. The same session on GAVO: 15 requests, 182 kB, and the 31′ field held 308 of about 1,100 stars after 43 s.
+- Frames. The machine was busy (Steam and a backup at 100 % of a core each), so two samples: quiet, JS per frame median 4.8 ms,
+  p95 6.1, max 10.2, frame interval median 8.3, p95 9.8, max 36, none over 50 ms (303 frames, 28 tiles arriving); loaded, median
+  8.7, p95 36, max 79, 20 frames over 50 ms. GAVO session: median 3.1, p95 5.0, max 13 (it drew a third of the stars). Steady view
+  at 31′ with 21,000 hosted and 31,000 bundled stars in memory for the window: frame 5.5 ms, of which the deep layer 3.4 ms for
+  1,104 stars drawn. Not measured on a quiet machine end to end, nor on a slow laptop.
+- Not tested: the real bucket (latency, HTTP/2, Cloudflare caching of `.bin`), Safari, Firefox, a phone, a class of 30 at once,
+  Cache-storage trimming (3,000 tiles never reached).

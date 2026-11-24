@@ -5,11 +5,16 @@ import { A, DEG, fromRot, transpose, mulMV, sph, toSph, mod } from './astro.js';
 import { emit, state } from './state.js';
 
 const BASE = new URL('../data/', import.meta.url);
-const NF = 9;                                     // floats per star, see stars.json "fields"
-export const F = { ra: 0, dec: 1, mag: 2, bv: 3, hip: 4, hd: 5, dist: 6, pmra: 7, pmdec: 8 };
+let NF = 13;                                      // floats per star = stars.json "fields".length (9 in files built before 2026-11-24)
+// ra, dec: ICRS at epoch 2000.0, degrees, as the nearest Float32; dra, ddec: what that rounding lost (degrees), so that
+// ra + dra is good to a microarcsecond. pmra (times cos dec), pmdec: mas/yr at epoch 2000.0. rv: km/s (0 = unknown).
+// src: where position and proper motion come from (ASTROMETRY below). See tools/build_stars.py.
+export const F = { ra: 0, dec: 1, mag: 2, bv: 3, hip: 4, hd: 5, dist: 6, pmra: 7, pmdec: 8, dra: 9, ddec: 10, rv: 11, src: 12 };
+export const ASTROMETRY = ['HYG catalogue (no cross-identification: place may be several arcseconds out)', 'Hipparcos, the new reduction (van Leeuwen 2007)',
+  'Gaia DR3', 'Gaia DR3 (identified by position and brightness)'];
 
 /** Star tiers, brightest first. tier = {file, n, magMin, magMax, data, vec, loaded, loading}. */
-export const stars = { tiers: [], names: { name: {}, bayer: {}, flam: {} }, epochYears: null, NF };
+export const stars = { tiers: [], names: { name: {}, bayer: {}, flam: {} }, epochYears: null, NF, astrometry: null };
 export const constellations = [];                 // [{id, name, gen, rank, label, lines, bounds, lineVecs, boundVecs, labelVec}]
 export const dso = { rows: [], deepLoaded: false, deepLoading: false };
 export let cities = [];
@@ -21,6 +26,8 @@ export async function loadCore() {
     getJSON('stars.json'), getJSON('starnames.json'), getJSON('constellations.json'), getJSON('dso.json'), getJSON('cities.json'),
   ]);
   let lo = -99;
+  NF = stars.NF = manifest.fields.length;
+  stars.astrometry = manifest.astrometry || null;
   stars.tiers = manifest.tiers.map((t, k) => { const o = { ...t, k, magMin: lo, data: null, vec: null, loaded: false, loading: null }; lo = t.magMax; return o; });
   stars.names = names;
   await loadTier(0);
@@ -73,7 +80,7 @@ export function loadTier(k) {
       .then((buf) => {
         t.data = new Float32Array(buf);
         t.n = t.data.length / NF;
-        t.vec = new Float32Array(t.n * 3);
+        t.vec = new Float64Array(t.n * 3);
         computeVecs(t, stars.epochYears || 0);
         t.loaded = true; t.failed = false;
         emit('catalog', 'stars');
@@ -93,15 +100,30 @@ export function wantMagnitude(limMag) {
   for (const t of stars.tiers) if (!t.loaded && !t.loading && t.magMin < limMag) loadTier(t.k);
 }
 
+// Where a star is `years` after epoch 2000.0, as a J2000 unit vector written to out[j..j+2]. Uniform motion in a
+// straight line through space (ESA 1997, The Hipparcos and Tycho Catalogues, vol. 1, section 1.5.5): with r the
+// direction at 2000.0, p and q the unit vectors toward increasing RA and Dec there,
+//   b = r (1 + zeta t) + (pmra p + pmdec q) t,   direction = b / |b|,   zeta = rv * parallax / 4.740470446
+// (proper motions and zeta in radians per year, rv in km/s, parallax in the proper motion's unit; 4.74... km/s is
+// 1 au/yr). The zeta term is the foreshortening of the path of a star that is approaching or receding
+// ("perspective acceleration": 0.46 arcsec for Barnard's star between 2000 and 2027); the parallax is 1 / the
+// catalogue distance. No light-time term (as in Hipparcos and Gaia, whose proper motions are apparent ones).
+const MAS = Math.PI / 648000000;                  // radians per milliarcsecond
+const KMS_PER_AU_YR = 4.740470446;
+function starPlace(d, o, years, out, j) {
+  const ext = NF >= 12;
+  const ra = (ext ? d[o] + d[o + 9] : d[o]) * DEG, dec = (ext ? d[o + 1] + d[o + 10] : d[o + 1]) * DEG;
+  const ca = Math.cos(ra), sa = Math.sin(ra), cd = Math.cos(dec), sd = Math.sin(dec);
+  if (!years) { out[j] = cd * ca; out[j + 1] = cd * sa; out[j + 2] = sd; return; }
+  const k = years * MAS, ma = d[o + 7] * k, md = d[o + 8] * k;
+  const g = 1 + (ext && d[o + 6] > 0 && d[o + 11] ? d[o + 11] * (1000 / d[o + 6]) / KMS_PER_AU_YR * k : 0);
+  const x = cd * ca * g - sa * ma - sd * ca * md, y = cd * sa * g + ca * ma - sd * sa * md, z = sd * g + cd * md;
+  const f = 1 / Math.sqrt(x * x + y * y + z * z);
+  out[j] = x * f; out[j + 1] = y * f; out[j + 2] = z * f;
+}
 function computeVecs(t, years) {
   const d = t.data, v = t.vec;
-  for (let i = 0; i < t.n; i++) {
-    const o = i * NF;
-    const dec = (d[o + 1] + d[o + 8] / 3.6e6 * years) * DEG;
-    const cd = Math.cos(dec);
-    const ra = (d[o] + d[o + 7] / 3.6e6 * years / Math.max(cd, 1e-6)) * DEG;
-    v[3 * i] = cd * Math.cos(ra); v[3 * i + 1] = cd * Math.sin(ra); v[3 * i + 2] = Math.sin(dec);
-  }
+  for (let i = 0; i < t.n; i++) starPlace(d, i * NF, years, v, 3 * i);
 }
 /** Apply proper motion for the given epoch (years since J2000). Cheap; redone when the date moves by > 1 year. */
 export function setStarEpoch(years) {
@@ -115,8 +137,9 @@ export function setStarEpoch(years) {
 /** Plain-object view of one star. */
 export function starRecord(k, i) {
   const t = stars.tiers[k], d = t.data, o = i * NF;
-  const s = { k, i, ra: d[o], dec: d[o + 1], mag: d[o + 2], bv: d[o + 3] > 50 ? null : d[o + 3], hip: d[o + 4] || null,
-    hd: d[o + 5] || null, dist: d[o + 6] || null, pmra: d[o + 7], pmdec: d[o + 8],
+  const ext = NF >= 13;
+  const s = { k, i, ra: ext ? d[o] + d[o + 9] : d[o], dec: ext ? d[o + 1] + d[o + 10] : d[o + 1], mag: d[o + 2], bv: d[o + 3] > 50 ? null : d[o + 3], hip: d[o + 4] || null,
+    hd: d[o + 5] || null, dist: d[o + 6] || null, pmra: d[o + 7], pmdec: d[o + 8], rv: ext ? d[o + 11] : 0, src: ext ? d[o + 12] : null,
     vec: [t.vec[3 * i], t.vec[3 * i + 1], t.vec[3 * i + 2]] };
   if (k === 0) { s.name = stars.names.name[i] || null; s.bayer = stars.names.bayer[i] || null; s.flam = stars.names.flam[i] || null; }
   return s;
@@ -157,16 +180,16 @@ export const DSO_TYPES = {
 
 // ---- exact apparent place of one star (labs: aberration, parallax, proper motion) ----------------
 const RAD_PER_ARCSEC = Math.PI / 648000;
-/** J2000 unit vector of star (k, i) as seen at `frame`: proper motion to the exact instant (not the
- *  1-year steps of the drawing arrays), annual parallax from the catalogue distance when frame.parallax
+const PLACE = [0, 0, 0];
+/** J2000 unit vector of star (k, i) as seen at `frame`: space motion to the exact instant (not the
+ *  1-year steps of the drawing arrays; see starPlace), annual parallax from the catalogue distance when frame.parallax
  *  is on, annual aberration when it is on (frame.beta is zero otherwise). Double precision throughout. */
 export function starApparentEqj(k, i, frame) {
   const t = stars.tiers[k]; if (!t || !t.loaded) return null;
   const d = t.data, o = i * NF;
   const years = state.fx.properMotion ? frame.years : 0;
-  const dec = (d[o + 1] + d[o + 8] / 3.6e6 * years) * DEG, cd = Math.cos(dec);
-  const ra = (d[o] + d[o + 7] / 3.6e6 * years / Math.max(cd, 1e-6)) * DEG;
-  let x = cd * Math.cos(ra), y = cd * Math.sin(ra), z = Math.sin(dec);
+  starPlace(d, o, years, PLACE, 0);
+  let x = PLACE[0], y = PLACE[1], z = PLACE[2];
   if (frame.parallax && d[o + 6] > 0) {
     const w = RAD_PER_ARCSEC / d[o + 6];                  // parallax in radians = 1 arcsec / distance in pc
     x -= frame.epos[0] * w; y -= frame.epos[1] * w; z -= frame.epos[2] * w;

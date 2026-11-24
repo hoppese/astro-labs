@@ -19,6 +19,13 @@
 //    No cookies, no referrer, no custom headers: the request holds the sky tile and nothing else.
 //    Without the service (offline, switched off in Settings, or failing) the bundled layer carries on to G = 12.
 //
+// 3. HOSTED (between the two): Gaia DR3 from G = 12 to 17 (154.6 million stars) as static tiles on our own storage
+//    (DEEP_TILE_BASE; built by tools/build_deep.py, format in its header and in the tile set's manifest.json).
+//    The same HEALPix pixels and half-magnitude levels as the online layer, so a tile is the same set of stars
+//    whoever supplies it: the levels the manifest lists come from our files (no waiting for the view to settle,
+//    8 at a time, requests for tiles that left the view are cancelled), the levels beyond it from the service, and
+//    all of them from the service when our files cannot be reached.
+//
 // A selected star of either layer is referred to as {kind: 'gaia', t: tile, i}: the reference holds the tile
 // itself, so it stays valid after the tile has been dropped from the cache.
 
@@ -58,10 +65,29 @@ const NET_ROWS = 2000;                  // row cap of one request (brightest fir
 const NET_TARGET = 400;                 // a level's tiles are the largest pixels expected to hold no more stars than this
 const NET_SETTLE_MS = 350;              // the view must have been still this long before anything is asked for
 const NET_TIMEOUT_MS = 25000;
-const NET_CACHE_STARS = 300000;         // online stars kept in memory
+const NET_CACHE_STARS = 600000;         // online and hosted stars kept in memory (about 50 bytes a star)
 const STORE = 'planetarium-gaia-dr3-v1';      // Cache storage name
 const STORE_MAX = 2500, STORE_KEEP = 2000;    // entries kept in Cache storage (measured 14 kB each: about 35 MB), oldest dropped first
 const GAIA_EPOCH = 16;                  // Gaia DR3 positions are for 2016.0 = J2000 + 16 years
+
+// ---- our own deep tiles ---------------------------------------------------------------------------------
+// Where the hosted tile set lives (the folder that holds manifest.json; it must end with a slash). The folder name
+// carries the version, and its tiles never change, so they can be cached for ever. `?stars=<url>` in the page's
+// address reads another copy (for testing: ?stars=http://127.0.0.1:8123/gaia/v1/), `?stars=off` none at all.
+export const DEEP_TILE_BASE = 'https://stars.sethhopper.com/gaia/v1/';
+const HOST_PARALLEL = 8;                // requests in flight to our own files
+const HOST_MAX_WANTED = 80;             // tiles wanted for one view
+const HOST_TIMEOUT_MS = 15000;
+const HOST_MANIFEST_MS = 6000;          // how long the first view waits to learn whether the hosted set is there
+const HOST_STALE_MS = 250;              // a request whose tile has been out of view this long is cancelled
+const HOST_STORE = 'planetarium-gaia-tiles-v1';       // Cache storage name
+const HOST_STORE_MAX = 3000, HOST_STORE_KEEP = 2400;  // tiles kept there (about 20 kB each: 60 MB), oldest dropped first
+function tileBase() {
+  if (baseOverride) return baseOverride;
+  let b = DEEP_TILE_BASE;
+  try { const q = new URLSearchParams(location.search).get('stars'); if (q) b = /^(off|none|0)$/i.test(q) ? '' : q; } catch (e) { /* no page (Node) */ }
+  return b && !b.endsWith('/') ? b + '/' : b;
+}
 
 export const deep = {
   ready: false, failed: false,
@@ -71,7 +97,9 @@ export const deep = {
   map: null,                             // {order, m0, step, n, scale, allsky, data: Uint16Array | null}: counts per order-4 cell
   magEnd: 9.5,                           // where the bundled stars end (9.5 = HYG alone)
   net: { status: 'ok', fails: 0, downUntil: 0, downCount: 0, lastError: '', wanted: false, settled: true, probing: false, complete: Infinity },
-  stats: { drawn: 0, tiles: 0, loading: 0, wanted: 0, stars: 0, failed: 0, bytes: 0, requests: 0,
+  // hosted tiles: status 'none' (no address) | 'wait' (manifest on its way) | 'ok' | 'down'; levels: [{dir, m0, leaves: Map, maxOrder}]
+  host: { base: '', status: 'none', levels: [], magEnd: 12, rec: null, skip: new Map(), skipIds: new Set(), fails: 0, downUntil: 0, downCount: 0, everOk: false, lastError: '', askedAt: 0 },
+  stats: { hostRequests: 0, hostBytes: 0, hostCacheHits: 0, hostFailed: 0, hostAborted: 0, hostMs: [], drawn: 0, tiles: 0, loading: 0, wanted: 0, stars: 0, failed: 0, bytes: 0, requests: 0,
     netDrawn: 0, netTiles: 0, netLoading: 0, netRequests: 0, netBytes: 0, netCacheHits: 0, netFailed: 0, netStars: 0, netMs: [], lookups: 0 },
 };
 let inFlight = 0, cachedStars = 0, indexTries = 0;
@@ -98,8 +126,16 @@ const offline = () => typeof navigator !== 'undefined' && navigator.onLine === f
 export function netUsable() {
   return deep.ready && !!deep.map && !!deep.map.data && state.show.netStars !== false && !offline() && deep.net.status !== 'down';
 }
-/** Faintest magnitude that can be supplied at the moment: 21 online, 12 from the bundle (and the old value without it). */
-export function depthNow() { return netUsable() ? NET_END : 12; }
+/** May our own deep tiles be used right now? */
+export function hostUsable() {
+  return deep.ready && deep.host.status === 'ok' && state.show.netStars !== false && !offline();
+}
+/** Faintest magnitude that can be supplied at the moment: 21 online, 17 from our own deep tiles alone, 12 from the bundle. */
+export function depthNow() { return netUsable() ? NET_END : hostUsable() ? deep.host.magEnd : 12; }
+/** Where the stars at limiting magnitude `lim` (past 12) come from, for the read-out. */
+export function deepSource(lim) {
+  return hostUsable() && lim <= deep.host.magEnd + 0.1 ? 'Gaia DR3, deep tiles' : `Gaia DR3, online (${PROVIDER.short})`;
+}
 /** The limit to draw with, given the limit the view should reach: held 1.2 mag past the depth to which the online
  *  stars of this window have arrived, and gliding (3 mag a second) as they do. */
 let shown = null, shownAt = 0, held = false;
@@ -164,6 +200,7 @@ export function initDeepStars() {
     deep.special = t;
     deep.ready = true; deep.failed = false;
     emit('catalog', 'deep');
+    initHost();
     return fetch(new URL(m.map.file, BASE)).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then((buf) => {
       deep.map.data = new Uint16Array(buf);
       emit('catalog', 'deep-map');
@@ -185,7 +222,10 @@ export function initDeepStars() {
     on('selection', () => { const ref = state.selected; if (ref && ref.kind === 'gaia') lookupStar(ref); });
   }
 }
-function resetNet() { const n = deep.net; n.status = 'ok'; n.fails = 0; n.downUntil = 0; n.downCount = 0; n.probing = false; }
+function resetNet() {
+  const n = deep.net; n.status = 'ok'; n.fails = 0; n.downUntil = 0; n.downCount = 0; n.probing = false;
+  if (deep.host.status === 'down') initHost();              // back online, or switched on again: look for our tiles once more
+}
 
 // ---- positions: proper motion from epoch 2000 to the date on screen ----------------------------------------
 /** (Re)compute a tile's unit vectors for `years` after J2000 (0 when the proper-motion switch is off). */
@@ -328,16 +368,19 @@ async function fetchQuery(q) {
   }
   return text;
 }
-async function trimStore(c) {
+async function trimStore(c, max = STORE_MAX, keep = STORE_KEEP) {
   try {
     const keys = await c.keys();                 // in the order they were stored
-    if (keys.length > STORE_MAX) for (const k of keys.slice(0, keys.length - STORE_KEEP)) await c.delete(k);
+    if (keys.length > max) for (const k of keys.slice(0, keys.length - keep)) await c.delete(k);
   } catch (e) { /* storage unavailable: fine */ }
 }
 
 function parseNet(t, text) {
   const lines = text.split(/\r?\n/);            // the service ends its lines with CR LF
   let n = 0;
+  // not the stars the bright-star catalogue already draws (their source_ids come with the hosted tiles' manifest, when that is reachable)
+  const skipIds = deep.host.skipIds;
+  if (skipIds.size) for (let k = 1; k < lines.length; k++) if (lines[k].length > 10 && skipIds.has(lines[k].slice(0, lines[k].indexOf(',')))) lines[k] = '';
   for (let k = 1; k < lines.length; k++) if (lines[k].length > 10) n++;
   const mag = new Float32Array(n), spr = new Uint8Array(n), plx = new Float32Array(n), col = new Float32Array(n);
   const ra0 = new Float64Array(n), dec0 = new Float64Array(n), pmr = new Float32Array(n), pmd = new Float32Array(n), ids = new Array(n);
@@ -410,6 +453,188 @@ function renderIn(ms) {
   renderTimer = setTimeout(() => { renderTimer = 0; emit('render'); }, ms);
 }
 
+// ---- our own deep tiles: manifest, which tile, fetching, decoding ------------------------------------------------
+const hostQueue = [], hostFlying = new Set();
+let hostStoreP = null, hostPuts = 0, hostGen = 0;
+function hostStore() {
+  if (hostStoreP === null) hostStoreP = (typeof caches !== 'undefined' ? caches.open(HOST_STORE) : Promise.reject(new Error('no Cache storage'))).catch(() => null);
+  return hostStoreP;
+}
+/** The levels of a tile-set manifest: for each, the quadtree's leaves as a Map (order * 2^28 + ipix -> 1 a tile, 0 no stars).
+ *  Throws when the manifest is not one this code can read. */
+export function readDeepManifest(m) {
+  if (!m || m.format !== 'gaia-deep-tiles' || m.version !== 1 || m.magStart !== NET_LEVELS[0][0] || !Array.isArray(m.levels)) throw new Error('not a deep-tile manifest (version 1)');
+  const levels = m.levels.map((lv, L) => {
+    if (!NET_LEVELS[L] || lv.m0 !== NET_LEVELS[L][0] || lv.m1 !== NET_LEVELS[L][1]) throw new Error('manifest levels do not match');
+    const leaves = new Map(), tree = lv.tree;
+    let pos = 0, maxOrder = m.rootOrder;
+    const walk = (order, ipix) => {
+      const ch = tree.charCodeAt(pos++);
+      if (ch === 50) { for (let k = 0; k < 4; k++) walk(order + 1, 4 * ipix + k); }           // '2'
+      else if (ch === 49 || ch === 48) { leaves.set(order * 268435456 + ipix, ch - 48); if (order > maxOrder) maxOrder = order; }
+      else throw new Error('manifest tree is damaged');
+    };
+    for (let r = 0; r < 12 * 4 ** m.rootOrder; r++) walk(m.rootOrder, r);
+    if (pos !== tree.length) throw new Error('manifest tree is damaged');
+    return { dir: lv.dir, m0: lv.m0, m1: lv.m1, stars: lv.stars, tiles: lv.tiles, leaves, minOrder: m.rootOrder, maxOrder };
+  });
+  // stars the app already draws from its bright-star catalogue: by index within a tile, and by source_id for the service's rows
+  const skip = new Map();
+  for (const key of Object.keys(m.skip || {})) { const [L, o, p] = key.split('/').map(Number); skip.set((L * 16 + o) * 268435456 + p, m.skip[key]); }
+  return { levels, magEnd: levels.length ? levels[levels.length - 1].m1 : m.magStart, rec: m.record, skip, skipIds: new Set(m.skipIds || []) };
+}
+/** Fetch the hosted set's manifest. One request; a set that has never answered is not asked again (until the browser
+ *  comes back online or the page is reloaded), one that worked and then failed is looked for again with back-off. */
+function initHost() {
+  const host = deep.host, gen = ++hostGen;
+  host.base = tileBase();
+  if (!host.base || typeof performance === 'undefined') { host.status = 'none'; return; }
+  host.status = host.everOk ? 'down' : 'wait'; host.askedAt = performance.now();
+  host.downUntil = host.askedAt + Math.min(300000, 30000 * Math.pow(2, host.downCount++));
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), HOST_MANIFEST_MS);
+  fetch(host.base + 'manifest.json', { mode: 'cors', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal })
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then((m) => {
+      if (gen !== hostGen) return;
+      const h = readDeepManifest(m);
+      host.levels = h.levels; host.magEnd = h.magEnd; host.rec = h.rec; host.skip = h.skip; host.skipIds = h.skipIds;
+      host.status = 'ok'; host.everOk = true; host.fails = 0;             // downCount is cleared by the first tile that arrives
+      emit('catalog', 'host-up');
+    })
+    .catch((e) => {
+      if (gen !== hostGen) return;
+      host.status = 'down'; host.lastError = String((e && e.message) || e);
+      if (!host.everOk) console.info('Deep-star tiles not reachable at ' + host.base + ' (' + host.lastError + '): faint stars from ' + PROVIDER.short + ' instead.');
+      emit('catalog', 'host-down');
+    })
+    .finally(() => { clearTimeout(timer); emit('render'); });
+}
+/** The hosted tile of level L that holds order-12 pixel p12 (null: the manifest says there are no stars there). */
+function hostTile(L, p12) {
+  const lv = deep.host.levels[L], leaves = lv.leaves;
+  for (let o = lv.minOrder; o <= lv.maxOrder; o++) {
+    const ipix = p12 >>> (2 * (12 - o)), v = leaves.get(o * 268435456 + ipix);
+    if (v === 1) return netTile(L, o, ipix);
+    if (v === 0) return null;
+  }
+  return null;
+}
+/** Decode a hosted tile (format: tools/build_deep.py) into the same arrays an online tile has. */
+export function parseHosted(t, buf, rec, m0, skip) {
+  const dv = new DataView(buf);
+  if (buf.byteLength < rec.header || dv.getUint32(0, false) !== 0x47445431) throw new Error('not a deep tile');         // 'GDT1'
+  const n = dv.getUint32(4, true), nx = dv.getUint32(8, true);
+  if (buf.byteLength !== rec.header + rec.bytes * n + rec.exception * nx || dv.getUint32(12, true) !== t.ipix || dv.getUint8(16) !== t.order || dv.getUint8(17) !== t.L) throw new Error('deep tile does not match its name');
+  const u8 = new Uint8Array(buf), H = rec.header, o = H + 4 * n;
+  const mag = new Float32Array(n), spr = new Uint8Array(n), plx = new Float32Array(n), col = new Float32Array(n);
+  const ra0 = new Float64Array(n), dec0 = new Float64Array(n), pmr = new Float32Array(n), pmd = new Float32Array(n);
+  // the tile's tangent plane: centre c, east e = unit(z x c), north = c x e
+  const c0 = t.cx, c1 = t.cy, c2 = t.cz, h = Math.hypot(c0, c1), e0 = -c1 / h, e1 = c0 / h;
+  const n0 = -c2 * e1, n1 = c2 * e0, n2 = c0 * e1 - c1 * e0;
+  const half = 1 << (rec.posBits - 1), k = Math.tan(rec.reach * Math.sqrt(Math.PI / 3) / (1 << t.order) + rec.posMargin) / half;
+  const [pa, pb] = rec.pm, [xa, xb] = rec.plx;
+  for (let i = 0; i < n; i++) {
+    const hi = u8[o + i];
+    const xi = ((u8[H + 2 * i] | u8[H + 2 * i + 1] << 8 | (hi & 15) << 16) - half) * k, eta = ((u8[H + 2 * n + 2 * i] | u8[H + 2 * n + 2 * i + 1] << 8 | (hi >> 4) << 16) - half) * k;
+    const x = c0 + xi * e0 + eta * n0, y = c1 + xi * e1 + eta * n1, z = c2 + eta * n2;
+    let ra = Math.atan2(y, x) * RAD; if (ra < 0) ra += 360;
+    ra0[i] = ra; dec0[i] = Math.atan2(z, Math.hypot(x, y)) * RAD;
+    mag[i] = m0 + u8[o + n + i] * rec.gStep;
+    const cq = u8[o + 2 * n + i];
+    col[i] = cq === 255 ? NaN : rec.colMin + cq * rec.colStep; spr[i] = spriteIndex(col[i]);
+    const qa = dv.getInt8(o + 3 * n + i), qd = dv.getInt8(o + 4 * n + i), qp = u8[o + 5 * n + i];
+    pmr[i] = qa === -128 || qa === 127 ? NaN : (qa < 0 ? -1 : 1) * Math.abs(qa) * (pa + pb * Math.abs(qa));
+    pmd[i] = qd === -128 || qd === 127 ? NaN : (qd < 0 ? -1 : 1) * Math.abs(qd) * (pa + pb * Math.abs(qd));
+    plx[i] = qp >= 254 ? NaN : qp * (xa + xb * qp);
+  }
+  // the few stars whose motion or parallax the one-byte codes cannot hold: their exact values
+  for (let j = 0, q = H + rec.bytes * n; j < nx; j++, q += rec.exception) {
+    const i = dv.getUint32(q, true);
+    if (i >= n) throw new Error('deep tile is damaged');
+    pmr[i] = dv.getFloat32(q + 4, true); pmd[i] = dv.getFloat32(q + 8, true); plx[i] = dv.getFloat32(q + 12, true);
+  }
+  let m = n;
+  if (skip && skip.length) {
+    // leave out the stars the bright-star catalogue already draws (indices from the manifest, ascending)
+    m = 0;
+    for (let i = 0, k = 0; i < n; i++) {
+      while (k < skip.length && skip[k] < i) k++;
+      if (skip[k] === i) continue;
+      mag[m] = mag[i]; spr[m] = spr[i]; plx[m] = plx[i]; col[m] = col[i]; ra0[m] = ra0[i]; dec0[m] = dec0[i]; pmr[m] = pmr[i]; pmd[m] = pmd[i]; m++;
+    }
+  }
+  t.n = m; t.vec = new Float32Array(3 * m); t.mag = mag; t.spr = spr; t.plx = plx; t.col = col; t.ra0 = ra0; t.dec0 = dec0; t.pmr = pmr; t.pmd = pmd; t.ids = null;
+  t.epoch = null; t.full = false; t.hosted = true;
+}
+async function fetchHosted(t) {
+  const host = deep.host, st = deep.stats, url = host.base + host.levels[t.L].dir + '/' + t.order + '/' + t.ipix + '.bin';
+  const c = await hostStore();
+  if (c) {
+    const hit = await c.match(url).catch(() => null);
+    if (hit) { st.hostCacheHits++; return hit.arrayBuffer(); }
+  }
+  const t0 = performance.now();
+  st.hostRequests++;
+  const ctl = t.ctl = new AbortController(), timer = setTimeout(() => { t.timedOut = true; ctl.abort(); }, HOST_TIMEOUT_MS);
+  let buf;
+  try {
+    const r = await fetch(url, { mode: 'cors', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    buf = await r.arrayBuffer();
+  } finally { clearTimeout(timer); t.ctl = null; }
+  st.hostBytes += buf.byteLength;
+  if (st.hostMs.length < 2000) st.hostMs.push(Math.round(performance.now() - t0));
+  if (c) {
+    c.put(url, new Response(buf.slice(0), { headers: { 'content-type': 'application/octet-stream' } }))
+      .then(() => { if (++hostPuts % 100 === 1) trimStore(c, HOST_STORE_MAX, HOST_STORE_KEEP); }).catch(() => {});
+  }
+  return buf;
+}
+function hostPump() {
+  const host = deep.host;
+  while (hostFlying.size < HOST_PARALLEL && hostQueue.length) {
+    const t = hostQueue.shift();
+    if (t.status !== 1) continue;
+    hostFlying.add(t); t.timedOut = false;
+    fetchHosted(t).then((buf) => {
+      parseHosted(t, buf, host.rec, host.levels[t.L].m0, host.skip.get(t.key));
+      t.status = 2; t.fails = 0; t.loadedAt = performance.now(); t.lastUsed = t.loadedAt;
+      netStars += t.n; host.fails = 0; host.downCount = 0;
+      netEvict();
+    }).catch((e) => {
+      t.status = 0;
+      if (e && e.name === 'AbortError' && !t.timedOut) { deep.stats.hostAborted++; return; }       // we cancelled it: the view moved on
+      t.fails++; t.retryAt = performance.now() + Math.min(300000, 4000 * Math.pow(2, t.fails));
+      deep.stats.hostFailed++; host.lastError = String((e && e.message) || e);
+      if (++host.fails >= 3 && host.status === 'ok') {
+        // three in a row: stop using our files (the service takes over in the next frame); look for them again after 30 s, 60 s ... 5 min
+        host.status = 'down'; host.downUntil = performance.now() + Math.min(300000, 30000 * Math.pow(2, host.downCount++));
+        for (const q of hostQueue) q.status = 0;
+        hostQueue.length = 0;
+        for (const q of hostFlying) if (q.ctl) q.ctl.abort();
+        emit('catalog', 'host-down');
+      }
+    }).finally(() => { hostFlying.delete(t); hostPump(); emit('render'); });
+  }
+}
+
+/** For timing tests from the console (planetarium.deep.debug): forget the deep stars in memory, optionally the browser's
+ *  stored copies too, and optionally read the hosted tiles from another address ('' = none: the service for everything). */
+deep.debug = async ({ storage = false, base } = {}) => {
+  for (const t of hostFlying) if (t.ctl) t.ctl.abort();
+  for (const t of hostQueue) t.status = 0;
+  for (const t of netQueue) t.status = 0;
+  hostQueue.length = 0; netQueue.length = 0; netTiles.clear(); netStars = 0;
+  if (storage && typeof caches !== 'undefined') { await caches.delete(STORE); await caches.delete(HOST_STORE); storeP = null; hostStoreP = null; }
+  if (base !== undefined) {
+    const host = deep.host;
+    hostGen++; host.base = base; host.levels = []; host.everOk = false; host.fails = 0; host.downCount = 0; host.status = 'none';
+    if (base) { baseOverride = base; initHost(); }
+  }
+  emit('render');
+};
+let baseOverride = '';
+
 // is the view moving? (drag, zoom, fly-to): nothing is asked of the service until it has been still for a moment
 const last = { f0: 0, f1: 0, f2: 1, fov: 0, t: 0, movedAt: 0 };
 function viewSettled(f0, f1, f2, now) {
@@ -421,20 +646,25 @@ function viewSettled(f0, f1, f2, now) {
   return now - last.movedAt >= NET_SETTLE_MS;
 }
 
+const hostWant = [];
 const want = [], GX = 17, GY = 10, nPts = new Uint16Array(NET_LEVELS.length), nGot = new Uint16Array(NET_LEVELS.length);
 /** Collect the online tiles that overlap the view cone into `visible`, and queue the missing ones. */
 function netCollect(lim, f0, f1, f2, now, visible) {
   const st = deep.stats, net = deep.net;
-  st.netLoading = netInFlight + netQueue.length;
+  st.netLoading = netInFlight + netQueue.length + hostFlying.size + hostQueue.length;
   net.wanted = false; net.complete = Infinity;
   const settled = viewSettled(f0, f1, f2, now);
   net.settled = settled;
   if (lim <= NET_LEVELS[0][0] + 0.1 || !deep.map || !deep.map.data) return false;
   if (state.show.netStars === false) return false;      // switched off: the built-in catalogue only, even if online stars are still in memory
   if (!levelOrder) prepareNet();
-  const off = offline();
-  let fading = false, pending = 0;
-  want.length = 0;
+  const off = offline(), host = deep.host;
+  // our own tiles: until their manifest has answered (or failed) nobody is asked for anything
+  if (host.status === 'wait') { if (now - host.askedAt < HOST_MANIFEST_MS + 500) { net.wanted = true; net.complete = NET_LEVELS[0][0]; renderIn(120); return false; } host.status = 'down'; }
+  if (host.status === 'down' && host.everOk && !off && now >= host.downUntil) initHost();     // they were there before: look again (back-off)
+  const HL = hostUsable() ? host.levels.length : 0;
+  let fading = false, pending = 0, hostPending = 0;
+  want.length = 0; hostWant.length = 0;
   // Which tiles does the window touch? Every tile asked for costs the service work, so not "every tile near the view
   // cone" but exactly those under a grid of points across the window (17 x 10, a little beyond its edges, skipping
   // points below the horizon): each point is turned back into a true J2000 direction and looked up in the pixelisation.
@@ -452,15 +682,28 @@ function netCollect(lim, f0, f1, f2, now, visible) {
     const p12 = vec2pix(12, Mhj[0] * h[0] + Mhj[1] * h[1] + Mhj[2] * h[2], Mhj[3] * h[0] + Mhj[4] * h[1] + Mhj[5] * h[2], Mhj[6] * h[0] + Mhj[7] * h[1] + Mhj[8] * h[2]);
     const c4 = p12 >>> 16;
     for (let L = 0; L < Lmax; L++) {
-      const order = levelOrder[L][c4], t = netTile(L, order, p12 >>> (2 * (12 - order)));
-      nPts[L]++; if (t.status === 2) nGot[L]++;
+      // one supplier per level in any one frame (ours for the levels its manifest lists, else the service), so no star is drawn twice
+      const t = L < HL ? hostTile(L, p12) : netTile(L, levelOrder[L][c4], p12 >>> (2 * (12 - levelOrder[L][c4])));
+      nPts[L]++;
+      if (t === null) { nGot[L]++; continue; }          // our manifest says: no stars in this pixel at this level
+      if (t.status === 2) nGot[L]++;
       if (t.lastUsed === now) continue;                 // already met at another grid point
       t.lastUsed = now;
       if (t.status === 2) { visible.push(t); if (now - t.loadedAt < FADE_MS) fading = true; }
-      else if (t.status === 1) pending++;
-      else if (now >= t.retryAt) want.push(t);
+      else if (t.status === 1) { if (t.via === 'host') hostPending++; else pending++; }
+      else if (now >= t.retryAt) (L < HL ? hostWant : want).push(t);
     }
   }
+  // our own files: asked for at once (no settling: they cost nobody anything), brighter levels first, then nearest the centre;
+  // what has left the view is dropped from the queue, and cancelled if already on its way
+  for (let k = hostQueue.length - 1; k >= 0; k--) if (hostQueue[k].lastUsed !== now) { hostQueue[k].status = 0; hostQueue.splice(k, 1); }
+  for (const t of hostFlying) if (t.lastUsed !== now && now - t.lastUsed > HOST_STALE_MS && t.ctl) t.ctl.abort();
+  if (hostWant.length && !off) {
+    net.wanted = true;
+    hostWant.sort((a, b) => a.L - b.L || (f0 * b.cx + f1 * b.cy + f2 * b.cz) - (f0 * a.cx + f1 * a.cy + f2 * a.cz));
+    for (const t of hostWant.slice(0, Math.max(0, HOST_MAX_WANTED - hostPending))) { t.status = 1; t.via = 'host'; hostQueue.push(t); }
+  }
+  if (hostQueue.length) hostPump();
   // How deep is the window actually covered? The first level with stars on less than half of it: sky.js holds the
   // limit shown near that magnitude until the tiles arrive, so the stars already there do not swell while the
   // fainter ones are still on their way.
@@ -477,11 +720,11 @@ function netCollect(lim, f0, f1, f2, now, visible) {
     else {
       // brighter levels first, then nearest the centre of the view; a view that would need a flood of tiles gets the nearest ones only
       want.sort((a, b) => a.L - b.L || (f0 * b.cx + f1 * b.cy + f2 * b.cz) - (f0 * a.cx + f1 * a.cy + f2 * a.cz));
-      for (const t of want.slice(0, Math.max(0, NET_MAX_WANTED - pending - netQueue.length))) { t.status = 1; netQueue.push(t); }
+      for (const t of want.slice(0, Math.max(0, NET_MAX_WANTED - pending - netQueue.length))) { t.status = 1; t.via = 'net'; netQueue.push(t); }
     }
   }
   if (netQueue.length) netPump();
-  st.netLoading = netInFlight + netQueue.length;
+  st.netLoading = netInFlight + netQueue.length + hostFlying.size + hostQueue.length;
   return fading;
 }
 
@@ -516,10 +759,11 @@ function lookupStar(ref) {
 
 /** Plain-object view of one deep star. Every number is Gaia DR3's: from the full record when the online look-up has
  *  answered (`exact`), else from the tile (bundled tiles round G to 0.001, BP-RP to 0.02, proper motion to 2 mas/yr,
- *  parallax to 0.2 mas, the place to 0.3 arcsec). */
+ *  parallax to 0.2 mas, the place to 0.3 arcsec; hosted tiles G to 0.002, BP-RP to 0.02, proper motion to 0.2-4 mas/yr,
+ *  parallax to 0.04 mas and up, the place to 0.03 arcsec, and like the bundled ones they hold no source_id). */
 export function deepRecord(ref) {
   const t = ref.t, i = ref.i;
-  const s = { mag: t.mag[i], vec: [t.vec[3 * i], t.vec[3 * i + 1], t.vec[3 * i + 2]], src: t.kind === 'net' ? 'online' : 'bundled', id: null, exact: null, lookup: '', rounded: false };
+  const s = { mag: t.mag[i], vec: [t.vec[3 * i], t.vec[3 * i + 1], t.vec[3 * i + 2]], src: t.hosted ? 'hosted' : t.kind === 'net' ? 'online' : 'bundled', id: null, exact: null, lookup: '', rounded: false };
   if (t.kind === 'zone') {
     const dv = t.raw, o = i * t.rec, c = dv.getUint8(o + 6), p = dv.getUint8(o + 9), fine = t.rec === 12;
     s.ra0 = (t.c + (dv.getUint16(o, true) + (fine ? dv.getUint8(o + 10) / 256 : 0)) / 65536) * t.w;
@@ -528,7 +772,7 @@ export function deepRecord(ref) {
     s.plx = p === 255 ? null : p * deep.rec.plxUnit; s.rounded = true;
   } else {
     const nn = (v) => (v === v ? v : null);
-    s.ra0 = t.ra0[i]; s.dec0 = t.dec0[i]; s.col = nn(t.col[i]); s.pmra = nn(t.pmr[i]); s.pmdec = nn(t.pmd[i]); s.plx = nn(t.plx[i]); s.id = t.ids[i];
+    s.ra0 = t.ra0[i]; s.dec0 = t.dec0[i]; s.col = nn(t.col[i]); s.pmra = nn(t.pmr[i]); s.pmdec = nn(t.pmd[i]); s.plx = nn(t.plx[i]); s.id = t.ids ? t.ids[i] : null; s.rounded = !!t.hosted;
   }
   s.plxErr = null; s.rv = null;
   const x = t.extra && t.extra.get(i);
@@ -611,6 +855,9 @@ export function drawDeepStars(ctx) {
       let x = v[3 * i] + bx, y = v[3 * i + 1] + by, z = v[3 * i + 2] + bz;
       if (f0 * x + f1 * y + f2 * z < zLoose) continue;
       if (par) { const w = px[i]; if (w > 0) { x -= ex * w; y -= ey * w; z -= ez * w; } }
+      // back to unit length: adding the aberration vector changes it by up to 1e-4, and the refraction step below takes asin(hz),
+      // which turned that into an altitude error of (1e-4 x tan alt): 10 arcsec at 40 deg, an arcminute near the zenith
+      { const f = 1 / Math.sqrt(x * x + y * y + z * z); x *= f; y *= f; z *= f; }
       let hz = m6 * x + m7 * y + m8 * z;
       if (hz < minZ) continue;
       let hx = m0 * x + m1 * y + m2 * z, hy = m3 * x + m4 * y + m5 * z;

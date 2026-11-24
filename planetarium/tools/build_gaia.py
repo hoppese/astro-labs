@@ -3,7 +3,8 @@
 layer: sky tiles of the stars that the base catalogue (HYG, data/stars-*.bin) does not already hold, and the
 all-sky star-count map that sets the limiting magnitude at every zoom, down to G = 21.5.
 
-usage: python3 -I tools/build_gaia.py <raw gaia dir> <raw/hyg/hygdata_v41.csv> <planetarium/data>
+usage: python3 -I tools/build_gaia.py <raw gaia dir> <raw hip dir>/hyg_gaia_ids.csv <planetarium/data>
+       (run tools/build_stars.py first: it writes data/stars-*.bin, read here as "HYG", and hyg_gaia_ids.csv)
 
 Input (not in the repo): gaia_g12_<0..11>.csv, hip_xmatch.csv, counts_*.csv exactly as fetch_gaia.py saves them
   (ESA Gaia archive, gaiadr3.gaia_source and gaiadr3.hipparcos2_best_neighbour).
@@ -35,15 +36,16 @@ years with Gaia's own proper motion, linearly in RA cos(dec) and Dec), which is 
 tiers; the app then applies the stored proper motion for the date on screen. A star with no proper motion
 in Gaia DR3 (2-parameter solution) is stored at its 2016.0 place with zero motion.
 
-Overlap with HYG, so that no star is drawn twice. Left out:
+Overlap with HYG, so that no star is drawn twice. "HYG" here means the base catalogue as build_stars.py wrote it
+(data/stars-*.bin): HYG's stars at their corrected places (Hipparcos-2 or Gaia DR3; see build_stars.py). Left out:
   1. every source that ESA's own cross-match (gaiadr3.hipparcos2_best_neighbour) pairs with a Hipparcos number
-     present in HYG;
-  2. every source within 3 arcsec of an HYG star (compared at Gaia's epoch, 2016.0: HYG's place moved forward
-     16 years with HYG's proper motion, because the brightest Gaia sources have no proper motion of their own
-     to move them back with; the 3 arcsec grow for fast stars at high declination, where HYG's own right
-     ascension is off: see load_hyg) whose V is within 1.5 mag of the source's estimated V; within 1.5 arcsec
-     the magnitudes need not agree (variable stars: eta Car, R Leo); HYG's fast stars with no Hipparcos number
-     are searched to 15 arcsec, with tighter tests (see load_hyg).   V - G from BP-RP: Gaia DR3 documentation, table 5.9 (Johnson-Cousins relationships):
+     present in HYG, and every source that build_stars.py itself identified with an HYG star (src 3 in
+     hyg_gaia_ids.csv);
+  2. every source within 3 arcsec of an HYG star (compared at Gaia's epoch, 2016.0: the star's place moved forward
+     16 years with its proper motion, because the brightest Gaia sources have no proper motion of their own
+     to move them back with) whose V is within 1.5 mag of the source's estimated V; within 1.5 arcsec
+     the magnitudes need not agree (variable stars: eta Car, R Leo); the fast stars that build_stars.py could
+     not identify (src = 0: HYG's own rough place) are searched to 15 arcsec, with tighter tests (see load_hyg).   V - G from BP-RP: Gaia DR3 documentation, table 5.9 (Johnson-Cousins relationships):
      G - V = -0.02704 + 0.01424 x - 0.2156 x^2 + 0.01426 x^3,  x = BP-RP  (sigma 0.03; valid -0.5 < x < 5).
      A source with no colour is compared in G directly.
 Gaia is incomplete for the very brightest stars (G < 3 has many missing); those are all in HYG.
@@ -113,42 +115,50 @@ def fnum(s):
     return float(s) if s not in ('', 'null', 'NaN') else None
 
 
-def load_hyg(path):
-    hips, grid = set(), {}
+def load_hyg(data):
+    """The base catalogue as the app loads it: <data>/stars.json and its tiers (13 Float32 fields a star, see build_stars.py)."""
+    man = json.load(open(os.path.join(data, 'stars.json')))
+    F = {f: i for i, f in enumerate(man['fields'])}
+    assert 'dra' in F and 'src' in F, 'data/stars-*.bin are in the old format: run tools/build_stars.py first'
+    nf = len(man['fields'])
+    hips, grid, grid0 = set(), {}, {}
     hist = [0] * HN
     cells = [[0] * MAP_N for _ in range(NCELL)]         # differential, per map bin: stars with edge[b-1] <= m < edge[b] (bin 0: m < 8)
     cell = 1e-4                                         # 20.6 arcsec
     n = 0
-    for r in csv.DictReader(open(path, newline='')):
-        if r['id'] == '0': continue
-        try: mag = float(r['mag'])
-        except ValueError: continue
-        if mag > 20: continue
-        n += 1
-        if r['hip']: hips.add(int(float(r['hip'])))
-        ra_d, dec_d = float(r['ra']) * 15, float(r['dec'])
-        # where the star is at Gaia's epoch, for the cross-match (HYG: epoch 2000.0, pmra includes cos dec, mas/yr)
-        pmra, pmdec = float(r['pmra'] or 0), float(r['pmdec'] or 0)
-        if r['hip'] and int(float(r['hip'])) == 87937 and abs(pmdec - 9999.99) < 0.01: pmdec = 10326.93      # Barnard's star: HYG clips it (see build_stars.py)
-        dec = math.radians(dec_d + pmdec * EPOCH_BACK / 3.6e6)
-        ra = math.radians(ra_d + pmra * EPOCH_BACK / 3.6e6 / max(1e-6, math.cos(math.radians(dec_d))))
-        x, y, z = math.cos(dec) * math.cos(ra), math.cos(dec) * math.sin(ra), math.sin(dec)
-        # Tolerance: 3 arcsec, plus an allowance for an error in HYG itself: its epoch-2000 right ascensions were carried
-        # from the Hipparcos epoch (1991.25) WITHOUT dividing the motion by cos(dec), so a fast star far from the equator
-        # sits pmra * 8.75 yr * (1 / cos(dec) - 1) off in RA (theta UMa 3.2 arcsec, eta Cas 5, chi Dra 11). Found here
-        # because those three were not matched at 3 arcsec.
-        cd = max(0.05, math.cos(math.radians(dec_d)))
-        tol = min(20.0, 3.0 + abs(pmra) / 1000 * 8.75 * (1 / cd - 1) * cd * 1.2)
-        # HYG's stars WITHOUT a Hipparcos number (1,672, mostly nearby stars from the Gliese catalogue) have rougher places,
-        # up to about 13 arcsec out: for the fast ones the search goes to 15 arcsec, and the star must then also agree in
-        # brightness to 0.7 mag and (where Gaia has one) in proper motion.
-        loose = (not r['hip']) and math.hypot(pmra, pmdec) > 100
-        if loose: tol = 15.0
-        grid.setdefault((int(x / cell), int(y / cell), int(z / cell)), []).append((x, y, z, mag, (tol / 206264.806) ** 2, loose, pmra, pmdec))
-        b = int((mag - HM0) / HSTEP)
-        if 0 <= b < HN: hist[b] += 1
-        cells[ang2pix_nest(MAP_ORDER, ra_d, dec_d)][mapbin(mag)] += 1
-    return hips, grid, hist, cells, cell, n
+    k = math.pi / 648000000 * EPOCH_BACK                # mas/yr -> radians moved in 16 years
+    for t in man['tiers']:
+        buf = open(os.path.join(data, t['file']), 'rb').read()
+        assert len(buf) == t['n'] * nf * 4, t['file']
+        for i in range(t['n']):
+            r = struct.unpack_from('<%df' % nf, buf, i * nf * 4)
+            n += 1
+            mag = r[F['mag']]
+            if r[F['hip']]: hips.add(int(r[F['hip']]))
+            ra_d, dec_d = r[F['ra']] + r[F['dra']], r[F['dec']] + r[F['ddec']]
+            pmra, pmdec = r[F['pmra']], r[F['pmdec']]
+            # where the star is at Gaia's epoch, for the cross-match: straight-line motion from epoch 2000.0, as in the app
+            # (js/catalog.js starPlace; g is the radial term, rv x parallax)
+            a, d = math.radians(ra_d), math.radians(dec_d)
+            ca, sa, cd, sd = math.cos(a), math.sin(a), math.cos(d), math.sin(d)
+            g = 1 + (r[F['rv']] * (1000 / r[F['dist']]) / 4.740470446 * k if r[F['dist']] > 0 else 0)
+            x = cd * ca * g + (-sa * pmra - sd * ca * pmdec) * k
+            y = cd * sa * g + (ca * pmra - sd * sa * pmdec) * k
+            z = sd * g + cd * pmdec * k
+            f = 1 / math.sqrt(x * x + y * y + z * z); x *= f; y *= f; z *= f
+            tol = 3.0
+            # The stars build_stars.py could not identify in Gaia (src = 0; nearly all from the Gliese catalogue) still have
+            # HYG's rough places, up to about 13 arcsec out and more: for the fast ones the search goes to 15 arcsec, and the
+            # source must then also agree in brightness to 0.7 mag and (where Gaia has one) in proper motion.
+            loose = r[F['src']] == 0 and math.hypot(pmra, pmdec) > 100
+            if loose: tol = 15.0
+            grid.setdefault((int(x / cell), int(y / cell), int(z / cell)), []).append((x, y, z, mag, (tol / 206264.806) ** 2, loose, pmra, pmdec))
+            # the same star at epoch 2000.0, for the second comparison (see main)
+            grid0.setdefault((int(cd * ca / cell), int(cd * sa / cell), int(sd / cell)), []).append((cd * ca, cd * sa, sd, mag, (3.0 / 206264.806) ** 2, False, pmra, pmdec))
+            b = int((mag - HM0) / HSTEP)
+            if 0 <= b < HN: hist[b] += 1
+            cells[ang2pix_nest(MAP_ORDER, ra_d, dec_d)][mapbin(mag)] += 1
+    return hips, grid, grid0, hist, cells, cell, n
 
 
 def mapbin(m):
@@ -157,8 +167,11 @@ def mapbin(m):
     return int((m - MAP_M0) / MAP_STEP) + 1
 
 
-def main(raw, hyg_csv, out):
-    hips, grid, hist_hyg, cells, cell, nhyg = load_hyg(hyg_csv)
+def main(raw, ids_csv, out):
+    hips, grid, grid0, hist_hyg, cells, cell, nhyg = load_hyg(out)
+    # Gaia sources that build_stars.py itself identified with an HYG star (src 3: not in ESA's Hipparcos table)
+    named = set(int(r['source_id']) for r in csv.DictReader(open(ids_csv, newline='')) if r['src'] == '3')
+    print('identified by build_stars.py (src 3): %d sources' % len(named))
     print('HYG: %d stars, %d Hipparcos numbers' % (nhyg, len(hips)))
     xm = {}
     for r in csv.DictReader(open(os.path.join(raw, 'hip_xmatch.csv'), newline='')):
@@ -168,7 +181,7 @@ def main(raw, hyg_csv, out):
     tiles = {lv['id']: {} for lv in LEVELS}
     special = []
     hist = [0] * HN
-    st = dict(read=0, hip=0, near_hyg=0, kept=0, no_colour=0, no_pm=0, no_plx=0, special_bright=0, special_fast=0, special_near=0,
+    st = dict(read=0, hip=0, identified=0, near_hyg=0, kept=0, no_colour=0, no_pm=0, no_plx=0, special_bright=0, special_fast=0, special_near=0,
               healpix_checked=0, healpix_differs=0)
     brightest = {lv['id']: 99 for lv in LEVELS}
     files = sorted(glob.glob(os.path.join(raw, 'gaia_g12_*.csv')))
@@ -186,6 +199,7 @@ def main(raw, hyg_csv, out):
                     st['healpix_checked'] += 1
                     if ang2pix_nest(12, ra, dec) != sid >> 35: st['healpix_differs'] += 1
                 if xm.get(sid) in hips: st['hip'] += 1; continue
+                if sid in named: st['identified'] += 1; continue
                 if pmra is None or pmdec is None: st['no_pm'] += 1; pmra = pmdec = 0.0; has_pm = False
                 else: has_pm = True
                 dec0 = dec - pmdec * EPOCH_BACK / 3.6e6
@@ -196,10 +210,19 @@ def main(raw, hyg_csv, out):
                 vest = g - g_minus_v(col) if col is not None else g
                 ix, iy, iz = int(x / cell), int(y / cell), int(z / cell)
                 dup = False
-                for a in (ix - 1, ix, ix + 1):
+                # Compared twice: at 2016.0 (the source where Gaia saw it, the HYG star moved forward), and, when the source
+                # has a proper motion, at 2000.0 (the source moved back, the HYG star at its catalogue place). The second
+                # catches the few sources whose own proper motion is far from the Hipparcos one for the same star.
+                where = [(grid, x, y, z)]
+                if has_pm:
+                    a0, d0 = math.radians(ra0), math.radians(dec0)
+                    where.append((grid0, math.cos(d0) * math.cos(a0), math.cos(d0) * math.sin(a0), math.sin(d0)))
+                for (gr, x, y, z) in where:
+                  ix, iy, iz = int(x / cell), int(y / cell), int(z / cell)
+                  for a in (ix - 1, ix, ix + 1):
                     for b in (iy - 1, iy, iy + 1):
                         for c in (iz - 1, iz, iz + 1):
-                            for (hx, hy, hz, hm, tol2, loose, hpa, hpd) in grid.get((a, b, c), ()):
+                            for (hx, hy, hz, hm, tol2, loose, hpa, hpd) in gr.get((a, b, c), ()):
                                 d2 = (hx - x) ** 2 + (hy - y) ** 2 + (hz - z) ** 2
                                 if d2 >= tol2: continue
                                 if d2 < TIGHT2: dup = True                    # the same place to 1.5 arcsec: the same star, whatever its magnitude (variables)

@@ -6,7 +6,7 @@ import { A, DEG, RAD, AU_KM, LY_PER_PC, mod, mulMV, toSph, horToAzAlt, fmtRA, fm
 import { state, on, emit } from './state.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, MOON_PARENT } from './ephem.js';
-import { starRecord, dso, constellations, DSO_TYPES } from './catalog.js';
+import { starRecord, dso, constellations, DSO_TYPES, ASTROMETRY } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
 import { deepRecord, PROVIDER } from './deepstars.js';
@@ -99,6 +99,8 @@ function render(force) {
     row('Magnitude', fmtMag(s.mag) + ' (V)');
     row('Colour index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
     row('Distance', s.dist ? `${sig(s.dist * LY_PER_PC, 3)} ly (${sig(s.dist, 3)} pc)` : ND);
+    // where the place and proper motion come from (tools/build_stars.py); everything else is HYG's
+    if (s.src != null && ASTROMETRY[s.src]) note = 'Position and proper motion: ' + ASTROMETRY[s.src] + '.';
   } else if (ref.kind === 'gaia') {
     // a star of the Gaia DR3 layers: every number is Gaia's own (the tile's rounded copy until the full record arrives)
     const s = deepRecord(ref);
@@ -115,7 +117,7 @@ function render(force) {
     }
     row('Proper motion', s.pmra == null || s.pmdec == null ? ND : `${Math.hypot(s.pmra, s.pmdec).toFixed(r ? 0 : 2)} mas/yr (RA ${s.pmra.toFixed(r ? 0 : 2)}, Dec ${s.pmdec.toFixed(r ? 0 : 2)})`);
     if (s.rv != null) row('Radial velocity', s.rv.toFixed(1) + ' km/s');
-    note = 'Gaia DR3 (ESA/Gaia/DPAC), ' + (s.src === 'online' ? `fetched from ${PROVIDER.short} for this field. ` : 'from the bundled catalogue. ') +
+    note = 'Gaia DR3 (ESA/Gaia/DPAC), ' + (s.src === 'online' ? `fetched from ${PROVIDER.short} for this field. ` : s.src === 'hosted' ? 'from the deep star tiles (G 12 to 17). ' : 'from the bundled catalogue. ') +
       (s.exact ? `Full record from ${PROVIDER.short}.` : s.lookup === 'pending' ? 'Looking up the full record…' :
         s.lookup === 'none' ? 'The online look-up found no matching source; values are the catalogue tile’s, rounded.' :
         s.src === 'online' ? '' : 'Values rounded as stored in the tile; the source number and exact values need the online look-up' + (s.lookup === 'failed' ? ', which did not answer.' : s.lookup === 'off' ? ', which is off or unavailable.' : '.'));

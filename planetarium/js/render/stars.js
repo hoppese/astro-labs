@@ -111,6 +111,9 @@ export function drawStars(ctx) {
       let x = v[3 * i] + bx, y = v[3 * i + 1] + by, z = v[3 * i + 2] + bz;
       if (f0 * x + f1 * y + f2 * z < zLoose) continue;
       if (par) { const dd = d[o + 6]; if (dd > 0) { x -= ex / dd; y -= ey / dd; z -= ez / dd; } }
+      // back to unit length: adding the aberration vector changes it by up to 1e-4, and the refraction step below takes asin(hz),
+      // which turned that into an altitude error of (1e-4 x tan alt): 10 arcsec at 40 deg, an arcminute near the zenith
+      { const f = 1 / Math.sqrt(x * x + y * y + z * z); x *= f; y *= f; z *= f; }
       let hz = m6 * x + m7 * y + m8 * z;
       if (hz < minZ) continue;
       let hx = m0 * x + m1 * y + m2 * z, hy = m3 * x + m4 * y + m5 * z;

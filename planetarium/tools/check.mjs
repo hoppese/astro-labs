@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { A } from './check-env.mjs';
 
+const netFetch = globalThis.fetch;         // the real one, for the hosted-tile section (tools/check-deep.mjs)
 // catalog.js loads data with fetch(); serve file: URLs from disk
 globalThis.fetch = async (url) => {
   const buf = readFileSync(new URL(url));
@@ -251,7 +252,7 @@ line('== 15. Aberration, parallax, proper motion (catalog.starApparentEqj) ==');
   }
   const bs = await hipStar(87937);
   const pmv = X.angleBetween(place(bs, t0, { ab: false, par: false, pm: true }), place(bs, t0 + 3652.5 * DAYMS, { ab: false, par: false, pm: true })) * 3600 / 10;
-  line(`  proper motion of Barnard's star: ${f2(pmv, 3)}"/yr (Hipparcos 10.358"/yr; HYG's own pmdec is clipped at 9999.99 mas/yr, restored in build_stars.py)`);
+  line(`  proper motion of Barnard's star: ${f2(pmv, 3)}"/yr (Gaia DR3: 10.393"/yr in 2016, growing 1.3 mas/yr every year as the star approaches; mean of 2026-2036 expected 10.412)`);
 }
 
 line('== 16. Half Moon as seen from the site; ecliptic of date ==');
@@ -310,3 +311,97 @@ line('== 17. Gaia layers: HEALPix numbering, tile requests, the bundled tiles (j
     }
   }
 }
+
+line();
+line('== 18. Bright-star astrometry against SIMBAD (data/stars-*.bin, tools/build_stars.py) ==');
+{
+  // Reference: SIMBAD (simbad.cfa.harvard.edu, TAP, table "basic"), queried 2026-11-24: ICRS coordinates at epoch J2000
+  // (degrees), proper motion (mas/yr), parallax (mas), radial velocity (km/s), and where SIMBAD took the place from
+  // (G = Gaia DR3, 2020yCat.1350....0G; H = Hipparcos new reduction, 2007A&A...474..653V). Typed in, not computed here.
+  const REF = [
+    ['theta UMa', 46853, 143.21429555749293, 51.67731480847444, -942.567, -542.016, 73.8284, 14.356, 'G'],
+    ['eta Cas', 3821, 12.276227476217503, 57.81517728880999, 1078.609, -551.133, 168.8322, 8.404, 'G'],
+    ['chi Dra', 89937, 275.2640939542736, 72.73284772361531, 531.21, -349.71, 124.11, 31.9, 'H'],
+    ['61 Cyg A', 104214, 316.7247482895925, 38.74941731943694, 4164.209, 3249.614, 285.9949, -65.82, 'G'],
+    ['61 Cyg B', 104217, 316.7302660185276, 38.74204403329556, 4105.976, 3155.942, 286.0054, -64.248, 'G'],
+    ["Barnard's star", 87937, 269.4520769586187, 4.693364966576667, -801.551, 10362.394, 546.9759, -110.11, 'G'],
+    ['alpha Cen A', 71683, 219.90205833170774, -60.83399268831004, -3679.25, 473.67, 742.12, -15.252, 'H'],
+    ['alpha Cen B', 71681, 219.89609628987276, -60.83752756558407, -3614.39, 802.98, 742.12, -22.586, 'H'],
+    ['Proxima Cen', 70890, 217.42894222160578, -62.67949018907555, -3781.741, 769.465, 768.0665, -20.578199, 'G'],
+    ['Sirius', 32349, 101.28715533333335, -16.71611586111111, -546.01, -1223.07, 379.21, -5.5, 'H'],
+    ['Vega', 91262, 279.234734787025, 38.783688956244, 200.94, 286.23, 130.23, -13.5, 'H'],
+    ['Polaris', 11767, 37.954560670189856, 89.26410896994187, 44.48, -11.85, 7.54, -16.42, 'H'],
+    ['Arcturus', 69673, 213.915300294925, 19.1824091615312, -1093.39, -2000.06, 88.83, -5.229, 'H'],
+    ["Kapteyn's star", 24186, 77.91912433145708, -45.01843381524333, 6491.223, -5708.614, 254.1986, 245.234, 'G'],
+    ['Groombridge 1830', 57939, 178.2448639115646, 37.718681698090286, 4002.655, -5817.8, 109.0296, -98.008, 'G'],
+    ['Dubhe', 54061, 165.9319646738126, 61.751034687818226, -134.11, -34.7, 26.54, -9.4, 'H'],
+    ['Merak', 53910, 165.46033229797294, 56.382433649496384, 79.959, 32.365, 38.6031, -13.1, 'G'],
+    ['Pollux', 37826, 116.32895777437875, 28.02619889009357, -626.55, -45.8, 96.54, 3.391, 'H'],
+    ['Castor', 36850, 113.64947163976585, 31.88828221646326, -191.45, -145.19, 64.12, -11.23, 'H'],
+    ['Betelgeuse', 27989, 88.79293899077537, 7.407063995272694, 27.54, 11.3, 6.55, 21.91, 'H'],
+    ['Rigel', 24436, 78.63446706693006, -8.201638364722209, 1.31, 0.5, 3.78, 17.8, 'H'],
+  ];
+  // Gaia DR3 itself (ESA archive, gaiadr3.gaia_source, downloaded 2026-11-24) for the rows SIMBAD takes from Gaia:
+  // ICRS at Gaia's own epoch, 2016.0. SIMBAD's J2000 place of these is Gaia's moved back 16 years in a straight line
+  // WITHOUT the radial-velocity term (checked: Barnard's star reproduces to 1e-12 deg), so for a fast, near star with a
+  // large radial velocity it is not where the star was in 2000: Barnard's star 0.16", Kapteyn's star 0.14". The app
+  // carries that term, so it is compared with Gaia at 2016.0 directly, and "today" is reckoned from there.
+  const GAIA2016 = {
+    46853: [143.20753978122536, 51.67490604097004], 3821: [12.285227381524425, 57.81272812559009],
+    104214: [316.7484792940004, 38.76386244649797], 104217: [316.753662752556, 38.75607277205679],
+    87937: [269.44850252543836, 4.739420051112412], 70890: [217.39232147200883, -62.67607511676666],
+    24186: [77.9599373502188, -45.0438126993602], 57939: [178.26735320817272, 37.69282694689086],
+  };
+  // A star's direction t years after the epoch of (ra, dec), written independently of js/catalog.js: the standard
+  // space-motion model (ESA SP-1200 vol. 1, 1.5.5) from SIMBAD's proper motion, parallax and radial velocity.
+  const refPlace = ([, , ra, dec, pa, pd, plx, rv], t) => {
+    const k = Math.PI / 648e6, a = ra * X.DEG, d = dec * X.DEG;
+    const r = [Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)], p = [-Math.sin(a), Math.cos(a), 0];
+    const q = [-Math.sin(d) * Math.cos(a), -Math.sin(d) * Math.sin(a), Math.cos(d)];
+    const zeta = rv * plx / 4.740470446 * k;
+    return X.unit(r.map((ri, i) => ri * (1 + zeta * t) + (pa * p[i] + pd * q[i]) * k * t));
+  };
+  await C.loadAllTiers();
+  const byHip = new Map();
+  for (const t of C.stars.tiers) for (let i = 0; i < t.n; i++) { const h = t.data[i * C.stars.NF + 4]; if (h) byHip.set(h, { k: t.k, i }); }
+  const tNow = utc('2026-11-24T00:00:00Z');
+  const app = (s, t, pm) => { const fr = makeFrame(t, RICHMOND); fr.parallax = false; fr.beta[0] = fr.beta[1] = fr.beta[2] = 0; state.fx.properMotion = pm; const v = C.starApparentEqj(s.k, s.i, fr); state.fx.properMotion = true; return { v, years: fr.years }; };
+  const SRC = ['HYG', 'Hipparcos-2', 'Gaia DR3', 'Gaia DR3 (id.)'];
+  let worst0 = 0, worstNow = 0, worstDraw = 0, worst16 = 0, n01 = 0;
+  const t2016 = Date.UTC(2000, 0, 1, 12) + 16 * 365.25 * 86400000 - 68184;       // J2016.0 (TT) as UTC ms
+  line('  star (SIMBAD source) | app source | app - SIMBAD at J2000 | app - Gaia DR3 at 2016.0 | on 2026-11-24, proper motion applied: app vs the reference');
+  line('  (reference for today: Gaia\'s 2016.0 place where listed, else SIMBAD\'s J2000 place, carried forward with SIMBAD\'s motion, parallax and radial velocity)');
+  C.setStarEpoch(0);
+  for (const ref of REF) {
+    const s = byHip.get(ref[1]), rec = C.starRecord(s.k, s.i);
+    const d0 = X.angleBetween(app(s, tNow, false).v, refPlace(ref, 0)) * 3600;
+    const now = app(s, tNow, true), g = GAIA2016[ref[1]];
+    const g16 = g ? [0, 0, g[0], g[1], ...ref.slice(4, 8)] : null;
+    const d16 = g ? X.angleBetween(app(s, t2016, true).v, refPlace(g16, 0)) * 3600 : null;
+    const d1 = X.angleBetween(now.v, g ? refPlace(g16, now.years - 16) : refPlace(ref, now.years)) * 3600;
+    const moved = X.angleBetween(now.v, refPlace(ref, 0)) * 3600;
+    // the size of the term SIMBAD leaves out over 16 years: mu * (rv * parallax / 4.74) * t^2
+    const persp = g ? Math.hypot(ref[4], ref[5]) / 1000 * Math.abs(ref[7] * ref[6] / 4.740470446) * Math.PI / 648e6 * 256 : 0;
+    worst0 = Math.max(worst0, d0); worstNow = Math.max(worstNow, d1); if (g) worst16 = Math.max(worst16, d16); if (d0 > 0.1) n01++;
+    worstDraw = Math.max(worstDraw, X.angleBetween(rec.vec, refPlace(ref, 0)) * 3600);
+    line(`  ${ref[0].padEnd(17)} (${ref[8]}) | ${(SRC[rec.src] ?? 'old file').padEnd(14)} | ${f2(d0, 3).padStart(7)}"${g ? ` (radial term ${f2(persp, 3)}")` : ''.padEnd(22)} | ${g ? f2(d16, 4).padStart(8) + '"' : '        -'} | ${f2(d1, 3).padStart(7)}"  (has moved ${f2(moved, 2)}" since 2000)`);
+  }
+  line(`  largest difference from SIMBAD at J2000: ${f2(worst0, 3)}" (${n01} of ${REF.length} stars over 0.1"); from Gaia at 2016.0: ${f2(worst16, 4)}"; on 2026-11-24: ${f2(worstNow, 3)}"`);
+  line(`  the drawing arrays (Float64 unit vectors) at J2000: largest difference ${f2(worstDraw, 3)}"`);
+  const sepHip = (a, b, t, pm) => X.angleBetween(app(byHip.get(a), t, pm).v, app(byHip.get(b), t, pm).v);
+  const sepRef = (a, b, t) => X.angleBetween(refPlace(REF.find((r) => r[1] === a), t), refPlace(REF.find((r) => r[1] === b), t));
+  const yrs = app(byHip.get(54061), tNow, true).years;
+  for (const [nm, a, b] of [['Dubhe-Merak', 54061, 53910], ['Pollux-Castor', 37826, 36850], ['Betelgeuse-Rigel', 27989, 24436], ['61 Cyg A-B', 104214, 104217], ['alpha Cen A-B', 71683, 71681]]) {
+    const small = sepRef(a, b, 0) < 0.1, u = small ? '"' : ' deg', m = small ? 3600 : 1, n = small ? 2 : 5;
+    line(`  ${nm}: J2000 ${f2(sepHip(a, b, tNow, false) * m, n)}${u} (SIMBAD ${f2(sepRef(a, b, 0) * m, n)}${u}); 2026-11-24 ${f2(sepHip(a, b, tNow, true) * m, n)}${u} (SIMBAD carried forward ${f2(sepRef(a, b, yrs) * m, n)}${u})`);
+  }
+  if (C.stars.astrometry) line('  catalogue: ' + C.stars.astrometry.map((a) => `${a.n} ${SRC[a.src]}`).join(', '));
+  // every star: the stored Float32 pair + its remainder must give back a place inside the sky, and src must be 0-3
+  let bad = 0, n = 0; const cnt = [0, 0, 0, 0];
+  for (const t of C.stars.tiers) for (let i = 0; i < t.n; i++) { const r = C.starRecord(t.k, i); n++; if (!(r.ra >= 0 && r.ra < 360 && Math.abs(r.dec) <= 90 && Number.isFinite(r.pmra) && Number.isFinite(r.pmdec) && Number.isFinite(r.vec[0]))) bad++; if (r.src != null) cnt[r.src]++; }
+  line(`  ${n} stars read, ${bad} with an impossible place or motion; by source (0 HYG, 1 Hipparcos-2, 2 Gaia, 3 Gaia matched): ${cnt.join(', ')}`);
+}
+
+line();
+line('== 19. Hosted deep tiles, G 12-17 (tools/build_deep.py, js/deepstars.js) against the ESA archive and GAVO ==');
+await (await import('./check-deep.mjs')).checkDeep({ line, f2, X, netFetch: process.argv.includes('--net') ? netFetch : null });      // --net: also ask the ESA archive and GAVO (about 3 minutes)
