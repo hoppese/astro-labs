@@ -109,7 +109,7 @@ line("== 6. Jupiter's moons, 2026-11-24 09:00 UTC: offsets east(+)/west(-) and n
 {
   const fr = makeFrame(utc('2026-11-24T09:00:00Z'), RICHMOND), b = E.compute(fr, true), J = b.byId.Jupiter;
   const jr = X.toSph(J.u);
-  const rows = J.moons.map((m) => {
+  const rows = J.moons.filter((m) => m.id !== 'Amalthea').map((m) => {      // the four that astronomy-engine has
     const s = X.toSph(m.u);
     return { id: m.id, dx: (X.mod(s.lon - jr.lon + 180, 360) - 180) * Math.cos(jr.lat * X.DEG) * 3600, dy: (s.lat - jr.lat) * 3600, behind: m.behind };
   });
@@ -420,3 +420,6 @@ await (await import('./check-links.mjs')).checkLinks({ line });
 line();
 line('== 19. Hosted deep tiles, G 12-17 (tools/build_deep.py, js/deepstars.js) against the ESA archive and GAVO ==');
 await (await import('./check-deep.mjs')).checkDeep({ line, f2, X, netFetch: process.argv.includes('--net') ? netFetch : null });      // --net: also ask the ESA archive and GAVO (about 3 minutes)
+line(); line('== 24. Solar-system bodies: places, orientations, Great Red Spot (tools/check-bodies.mjs; a failure throws) ==');
+globalThis.__catFetch = true;
+await (await import('./check-bodies.mjs')).checkBodies(line);

@@ -6,7 +6,7 @@
 //                    of the Sun then shows as two dots on one disc (transits, solar eclipses)
 
 import { RAD, unit, dot, horToAzAlt, refractHor, fmtLat, fmtLon } from '../astro.js';
-import { state, on, emit } from '../state.js';
+import { state, on, emit, eff } from '../state.js';
 import { makeFrame } from '../skyframe.js';
 import { compute } from '../ephem.js';
 import { cities } from '../catalog.js';
@@ -96,7 +96,7 @@ function updateAlt() {
   const box = card && card.isOpen() ? card.body.querySelector('#cmpAlt') : null;
   if (!box || !cmp.obs2) return;
   const b2 = bodies2(makeFrameNow());
-  const alt = (id) => horToAzAlt(state.show.refraction ? refractHor(b2.bodies.byId[id].hor) : b2.bodies.byId[id].hor).alt;
+  const alt = (id) => horToAzAlt(eff.refraction ? refractHor(b2.bodies.byId[id].hor) : b2.bodies.byId[id].hor).alt;
   const ids = ['Sun', 'Moon'];
   const sel = state.selected && state.selected.kind === 'body' && b2.bodies.byId[state.selected.id] && !ids.includes(state.selected.id) ? state.selected.id : null;
   if (sel && IDS.includes(sel)) ids.push(sel);

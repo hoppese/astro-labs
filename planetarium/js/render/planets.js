@@ -1,13 +1,18 @@
-// render/planets.js: Sun, Moon, planets and their moons. Far from the eyepiece they are points
-// sized by magnitude; once the disc is a few pixels across it is drawn to scale with its phase,
-// Saturn's rings (tilt and orientation from Saturn's real pole) and Jupiter's flattening.
+// render/planets.js: Sun, Moon, planets, their moons and the small bodies. Far from the eyepiece they are points sized by magnitude; once the
+// disc is a few pixels across it is drawn to scale from its published map on its true figure (render/globe.js), turned and lit as it really is.
+// Where no picture exists, or WebGL is missing, a plain disc with the right phase stands in (and the object panel says so).
 
-import { DEG, RAD, AU_KM, refractHor, mulMV, unit, dot, airmass, clamp } from '../astro.js';
-import { state } from '../state.js';
+import { DEG, RAD, AU_KM, refractHor, mulMV, unit, dot, cross, airmass, clamp, smooth, scale as vscale, len } from '../astro.js';
+import { state, eff } from '../state.js';
 import { cam, projectHor } from '../camera.js';
 import { addPick } from '../picks.js';
 import { R } from './proj.js';
-import { drawStarPoint, starSize } from './stars.js';
+import { repaintSky } from './sky.js';
+import { drawStarPoint, starSize, starSprite } from './stars.js';
+import { BODY_ART } from '../bodydata.js';
+import { bodyAxes, toBody, figure, spinRate, grsEast, GRS_MAP_EAST } from '../orient.js';
+import { drawGlobe, pickMap, getTex, photo, globesWork, pumpTextures } from './globe.js';
+import { running } from '../labs/hidden.js';
 
 const POINT_BV = { Mercury: 0.9, Venus: 0.65, Mars: 1.5, Jupiter: 0.8, Saturn: 1.0, Uranus: 0.25, Neptune: 0.1 };
 // Saturn's ring radii in km (inner C, inner B, outer B, inner A, outer A)
@@ -51,20 +56,76 @@ export function drawPhaseDisc(ctx, x, y, r, sunAng, phaseAngle, lit, dark, darkA
   ctx.restore();
 }
 
-function litGradient(ctx, r, base, edge) {
-  const g = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
-  g.addColorStop(0, base); g.addColorStop(1, edge);
-  return g;
+// ---- drawing a body from its map -----------------------------------------------------------------
+let dpr = 1;
+const sRate = { t: 0, ms: 16 };                 // real milliseconds per frame, smoothed
+/** Colour left by the air at this altitude (display units): 1, 1, 1 without atmosphere. */
+function airTint(alt) {
+  if (!R.atmo) return [1, 1, 1];
+  const X = Math.min(airmass(Math.max(alt, 0)), 38) - 1, f = (k) => Math.max(0.12, Math.pow(10, -0.4 * k * X * 0.4545 * 0.3));
+  return [f(0.07), f(0.13), f(0.24)];
+}
+/** The body's axes as seen on the screen, in its own frame. */
+function viewAxes(b, ax, x, y) {
+  const u = b.u, E = unit(cross([0, 0, 1], u)), N = cross(u, E);
+  const al = screenAngleToward(b, [0, 0, 1], x, y), c = Math.cos(al), s = Math.sin(al);
+  const right = [c * N[0] + s * E[0], c * N[1] + s * E[1], c * N[2] + s * E[2]], up = [-s * N[0] + c * E[0], -s * N[1] + c * E[1], -s * N[2] + c * E[2]];
+  const back = [-u[0], -u[1], -u[2]];
+  if (!ax) return { R: [1, 0, 0], U: [0, 0, 1], V: [0, -1, 0], map: (v) => [dot(v, right), -dot(v, back), dot(v, up)] };
+  return { R: toBody(ax, right), U: toBody(ax, up), V: toBody(ax, back), map: (v) => toBody(ax, v) };
+}
+const hex = (c) => [1, 3, 5].map((k) => Math.pow(parseInt(c.slice(k, k + 2), 16) / 255, 2.2));
+export const artFor = (id) => BODY_ART[id] || null;
+/** Draw body b (a list entry of ephem.js) with equatorial radius r px from its map or photograph. Returns the drawn radius, or 0 if it cannot be. */
+function drawFromMap(ctx, b, pl, r, extra = {}) {
+  const art = BODY_ART[b.id];
+  if (art && art.kind === 'photo') {
+    const p = photo(art.tex); if (!p) return 0;
+    const f = figure(b.id), k = art.scale || (f ? f[0] / b.radiusKm : 1), d = 2 * r * k;
+    ctx.save(); ctx.globalAlpha = Math.max(0.05, b.light ?? 1) * (1 - 0.7 * R.sky.day); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(p, pl.x - d / 2, pl.y - d / 2, d, d); ctx.restore();
+    return r * k;
+  }
+  if (!globesWork()) return 0;
+  const map = art ? pickMap(extra.tex ? { ...art, tex: extra.tex } : art, r * dpr) : null;
+  if (art && !map && extra.needMap) return 0;
+  const tt = b.ttSeen ?? R.frame.time.tt, ax = art && art.kind === 'front' ? null : bodyAxes(b.id, tt), va = viewAxes(b, ax, pl.x, pl.y);
+  const fig = (ax && figure(b.id)) || b.fig || null, ratio = fig ? [1, fig[1] / fig[0], fig[2] / fig[0]] : [1, 1, 1];
+  const rr = fig ? r * fig[0] / b.radiusKm : r;
+  const S = va.map(b.toSun ? unit(b.toSun) : [-b.u[0], -b.u[1], -b.u[2]]);
+  const spin = state.playing ? Math.abs(spinRate(b.id) * state.rate * sRate.ms / 1000) / 360 : 0;       // turns per frame
+  const o = { x: pl.x, y: pl.y, r: rr, R: va.R, U: va.U, V: va.V, S, ax: ratio, map, light: art ? art.light : 'lunar', kind: art ? art.kind : 'map', graphic: art && art.graphic,
+    gain: art ? art.gain : 1, sky: R.sky, body: art ? [0.5, 0.48, 0.45] : hex(b.color || '#8a8580'), tint: airTint(pl.alt), day: R.sky.day, spin: spin > 0.03 ? spin : 0, ...extra };
+  if (b.id === 'Jupiter' && map) o.lonOff = -(grsEast(tt) - GRS_MAP_EAST) / 360;
+  if (b.moons && b.moons.length && b.toSun && r > 3) {
+    const km = b.radiusKm / AU_KM, dSun = len(b.toSun);
+    o.alphaSun = 695700 / AU_KM / dSun;
+    // only moons on the sunward side whose shadow can reach the globe
+    const list = [];
+    for (const m of b.moons) { const p = vscale(va.map(m.rel), 1 / km), h = dot(p, S); if (h <= 0) continue; if (len([p[0] - h * S[0], p[1] - h * S[1], p[2] - h * S[2]]) < 1.1) list.push([p[0], p[1], p[2], m.radiusKm / b.radiusKm]); }
+    o.shadows = list;
+  }
+  if (b.id === 'Saturn') { const ring = getTex('rings.png', { nomip: true, wrap: false }); if (ring) { o.rings = ring; o.reach = RING.a1 / b.radiusKm; } }
+  if (!drawGlobe(ctx, o, dpr, cam.w, cam.h)) return 0;
+  return b.id === 'Saturn' && o.rings ? rr * o.reach : rr;
 }
 
+let glareLast = null;
 function drawSun(ctx, b, pl, rpx) {
   const r = Math.max(rpx, 5);
   const day = R.sky.day;
+  const frac = R.sky.sunFrac;                            // a covered Sun has no glare
   const gr = Math.max(r * 3.2, 34);
-  const g = ctx.createRadialGradient(pl.x, pl.y, r * 0.9, pl.x, pl.y, gr);
-  const soft = clamp(14 / r, 0.3, 1);                   // a big disc needs less halo
-  g.addColorStop(0, `rgba(255,244,214,${(0.55 + 0.2 * day) * soft})`); g.addColorStop(0.35, `rgba(255,226,170,${0.16 * soft})`); g.addColorStop(1, 'rgba(255,220,160,0)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pl.x, pl.y, gr, 0, 2 * Math.PI); ctx.fill();
+  const soft = clamp(14 / r, 0, 1) * Math.sqrt(frac);    // glare at wide fields; none once zoomed in, as through a solar filter
+  // the glare is light scattered in our own air and eye: it lies over everything, the dark Moon included, so it is drawn last
+  glareLast = soft > 0.02 ? () => {
+    const g = ctx.createRadialGradient(pl.x, pl.y, r * 0.9, pl.x, pl.y, gr);
+    g.addColorStop(0, `rgba(255,244,214,${(0.55 + 0.2 * day) * soft})`); g.addColorStop(0.35, `rgba(255,226,170,${0.16 * soft})`); g.addColorStop(1, 'rgba(255,220,160,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pl.x, pl.y, gr, 0, 2 * Math.PI); ctx.fill();
+  } : null;
+  if (frac < 0.004) drawCorona(ctx, b, pl, r, 1 - frac / 0.004);
+  const quiet = !state.show.sunspots || !!running.id;    // labs time the limbs of real planets: no unrelated spots on the disc
+  const air = airTint(pl.alt), glare = 1 + (1.2 + 0.8 * day) * clamp(14 / r, 0, 1);      // reddened, never dimmed below the sky; dazzling when small
+  if (r >= 8 && drawFromMap(ctx, b, pl, r, { tex: quiet ? 'sun-quiet' : 'sun', small: false, day: 0, body: [1.0 * glare, 0.875 * glare, 0.64 * glare], tint: [1, air[1] / air[0], air[2] / air[0]], gain: 1, spin: 0 })) return r;
   // redden toward the horizon when there is an atmosphere
   const low = R.atmo ? clamp(1 - pl.alt / 12, 0, 1) : 0;
   const core = `rgb(255,${Math.round(250 - 70 * low)},${Math.round(232 - 150 * low)})`;
@@ -73,86 +134,42 @@ function drawSun(ctx, b, pl, rpx) {
   ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(pl.x, pl.y, r, 0, 2 * Math.PI); ctx.fill();
   return r;
 }
+/** Total eclipses only: the corona, from one photograph (see NOTES.md); its shape is that of its own date. */
+function drawCorona(ctx, b, pl, r, a) {
+  const p = photo('corona'); if (!p) return;
+  const north = screenAngleToward(b, [0, 0, 1], pl.x, pl.y);
+  const d = r * CORONA_WIDTH;
+  ctx.save(); ctx.translate(pl.x, pl.y); ctx.rotate(north + Math.PI / 2); ctx.globalAlpha = clamp(a, 0, 1); ctx.globalCompositeOperation = 'screen';
+  ctx.imageSmoothingQuality = 'high'; ctx.drawImage(p, -d / 2, -d / 2, d, d); ctx.restore();
+}
+const CORONA_WIDTH = 4.4;                                  // the picture's width in solar radii
 
 function drawMoon(ctx, b, pl, rpx, sunU) {
   const r = Math.max(rpx, 5);
-  const ang = screenAngleToward(b, sunU, pl.x, pl.y);
   // soft glow scaled by how much of the disc is lit
   const gr = r + 10 + 14 * b.phaseFrac;
   const g = ctx.createRadialGradient(pl.x, pl.y, r, pl.x, pl.y, gr);
-  g.addColorStop(0, `rgba(225,230,240,${0.20 * b.phaseFrac * (1 - 0.6 * R.sky.day)})`); g.addColorStop(1, 'rgba(225,230,240,0)');
+  g.addColorStop(0, `rgba(225,230,240,${0.20 * b.phaseFrac * (R.atmo ? 1 - smooth(-9, -2, R.sky.sunAlt) : 1)})`); g.addColorStop(1, 'rgba(225,230,240,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pl.x, pl.y, gr, 0, 2 * Math.PI); ctx.fill();
   // the unlit part: faint earthshine at night, lost in the blue by day
   // ... except in front of the Sun, where the dark Moon is what makes the eclipse
   const sun = R.bodies.sun;
   const onSun = Math.acos(clamp(dot(b.u, sun.u), -1, 1)) * RAD < (sun.angRadius + b.angRadius) * 1.05;
-  drawPhaseDisc(ctx, pl.x, pl.y, r, ang, b.phaseAngle, '#eceae2', onSun ? '#0b0e15' : '#1b212b', onSun ? 1 : 1 - 0.9 * R.sky.day);
-  if (r > 14) {       // gentle limb shading so the big disc does not look flat
-    ctx.save(); ctx.translate(pl.x, pl.y);
-    const sg = ctx.createRadialGradient(0, 0, r * 0.55, 0, 0, r);
-    sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(1, 'rgba(20,24,32,0.22)');
-    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, 0, r, 0, 2 * Math.PI); ctx.fill(); ctx.restore();
-  }
+  // earthshine: the Earth seen from the Moon has the opposite phase
+  const es = 0.022 * Math.pow(1 - b.phaseFrac, 1.5) * (R.atmo ? 1 - smooth(-11, -4, R.sky.sunAlt) : 1);      // lost in any bright sky, an eclipsed one included
+  const relief = r > 24 ? getTex('moon-n.webp') : null;
+  if (drawFromMap(ctx, b, pl, r, { needMap: true, relief, amb: [0.86 * es, 0.95 * es, 1.12 * es], day: R.sky.day, spin: 0 })) return r;
+  const ang = screenAngleToward(b, sunU, pl.x, pl.y);
+  drawPhaseDisc(ctx, pl.x, pl.y, r, ang, b.phaseAngle, '#d6d4cd', onSun ? '#0b0e15' : '#1b212b', onSun ? 1 : 1 - 0.9 * R.sky.day);
   return r;
 }
 
-function ringAnnulus(ctx, aOut, aIn, sinB, style) {
-  const k = Math.max(Math.abs(sinB), 0.004);
-  ctx.fillStyle = style; ctx.beginPath();
-  ctx.ellipse(0, 0, aOut, Math.max(aOut * k, 0.35), 0, 0, 2 * Math.PI);
-  ctx.ellipse(0, 0, aIn, Math.max(aIn * k, 0.2), 0, 0, 2 * Math.PI);
-  ctx.fill('evenodd');
-}
-function drawRings(ctx, kmToPx, sinB) {
-  ringAnnulus(ctx, RING.b0 * kmToPx, RING.c0 * kmToPx, sinB, 'rgba(150,135,110,0.30)');
-  ringAnnulus(ctx, RING.b1 * kmToPx, RING.b0 * kmToPx, sinB, 'rgba(232,214,170,0.95)');
-  ringAnnulus(ctx, RING.a1 * kmToPx, RING.a0 * kmToPx, sinB, 'rgba(200,184,148,0.85)');
-}
-
-/** Jupiter or Saturn as a flattened disc with its pole in the right direction (and Saturn's rings). */
-function drawGiant(ctx, b, pl, rpx) {
-  const poleAng = screenAngleToward(b, b.pole, pl.x, pl.y);
-  const B = b.subEarthLat * DEG, sinB = Math.sin(B);
-  const ratio = b.polarKm / b.radiusKm;
-  const rp = rpx * Math.sqrt(ratio * ratio * Math.cos(B) ** 2 + Math.sin(B) ** 2);    // apparent polar radius
-  ctx.save();
-  ctx.translate(pl.x, pl.y); ctx.rotate(poleAng + Math.PI / 2);                        // -y is now along the north pole
-  const kmToPx = rpx / b.radiusKm;
-  if (b.id === 'Saturn') drawRings(ctx, kmToPx, sinB);
-  // globe
-  ctx.beginPath(); ctx.ellipse(0, 0, rpx, rp, 0, 0, 2 * Math.PI);
-  ctx.fillStyle = b.id === 'Jupiter' ? litGradient(ctx, rpx, '#f6e6cb', '#b99f7c') : litGradient(ctx, rpx, '#f3e2b4', '#b39c69');
-  ctx.fill();
-  if (rpx > 5) {
-    ctx.save(); ctx.clip();
-    const band = (lat0, lat1, style) => {             // a belt between two latitudes, seen at sub-Earth latitude B
-      const yy = (lat) => -rp * Math.sin(clamp(lat * DEG - B, -Math.PI / 2, Math.PI / 2));
-      const y0 = yy(lat0), y1 = yy(lat1);
-      ctx.fillStyle = style; ctx.fillRect(-rpx, Math.min(y0, y1), 2 * rpx, Math.abs(y1 - y0));
-    };
-    if (b.id === 'Jupiter') {
-      band(7, 20, 'rgba(150,96,62,0.55)'); band(-21, -8, 'rgba(150,96,62,0.55)');
-      band(34, 42, 'rgba(160,120,90,0.28)'); band(-43, -35, 'rgba(160,120,90,0.28)');
-      band(62, 90, 'rgba(120,110,105,0.30)'); band(-90, -62, 'rgba(120,110,105,0.30)');
-    } else {
-      band(12, 24, 'rgba(170,140,90,0.25)'); band(-24, -12, 'rgba(170,140,90,0.25)');
-      band(60, 90, 'rgba(120,125,120,0.28)'); band(-90, -60, 'rgba(120,125,120,0.28)');
-    }
-    ctx.restore();
-  }
-  if (b.id === 'Saturn') {
-    // redraw the half of the rings that passes in front of the globe
-    ctx.save(); ctx.beginPath();
-    const big = RING.a1 * kmToPx + 4;
-    if (sinB >= 0) ctx.rect(-big, 0, 2 * big, big); else ctx.rect(-big, -big, 2 * big, big);
-    ctx.clip(); drawRings(ctx, kmToPx, sinB); ctx.restore();
-  }
-  ctx.restore();
-  return b.id === 'Saturn' ? RING.a1 * kmToPx : rpx;
-}
-
 export function drawBodies(ctx) {
+  glareLast = null;
   const { bodies, sky, labels } = R;
+  dpr = ctx.getTransform().a || 1;
+  { const n = performance.now(), d = n - sRate.t; sRate.t = n; if (d > 2 && d < 200) sRate.ms += (d - sRate.ms) * 0.1; }
+  pumpTextures();
   const lim = sky.limMag, sunU = bodies.sun.u;
   const order = bodies.list.slice().sort((a, b) => b.dist - a.dist);
   for (const b of order) {
@@ -160,7 +177,7 @@ export function drawBodies(ctx) {
     if (!pl) continue;
     const rpx = b.angRadius * pl.scale;
     if (R.ground && pl.alt < -b.angRadius - 0.05) continue;
-    const reach = Math.max(rpx * 3, 60) + (b.moons.length ? 0.2 * pl.scale : 0);
+    const reach = Math.max(rpx * 3, 60) + (b.moons.length ? Math.max(...b.moons.map((m) => m.sepDeg)) * 1.05 * pl.scale : 0);
     if (pl.x < -reach || pl.x > cam.w + reach || pl.y < -reach || pl.y > cam.h + reach) continue;
     const ext = R.atmo ? 0.2 * (airmass(pl.alt) - 1) : 0;
     const mag = b.mag + ext;
@@ -179,29 +196,33 @@ export function drawBodies(ctx) {
       const onSun = b.dist < sun.dist && Math.acos(clamp(dot(b.u, sunU), -1, 1)) * RAD < sun.angRadius + b.angRadius;
       if (onSun) {
         drawnR = Math.max(rpx, 0.9);
-        ctx.fillStyle = '#07090d'; ctx.beginPath(); ctx.arc(pl.x, pl.y, drawnR, 0, 2 * Math.PI); ctx.fill();
+        ctx.save(); ctx.beginPath(); ctx.arc(pl.x, pl.y, drawnR, 0, 2 * Math.PI); ctx.clip(); repaintSky(ctx, sky); ctx.restore();      // dark: what we see there is our own sky
       } else if (dm <= 0 && !resolved) visible = false;
       else {
-        if (dm > 0 && rpx < starSize(dm)) drawnR = drawStarPoint(ctx, pl.x, pl.y, dm, POINT_BV[b.id]);
+        // a point of light that shrinks into the disc as the disc outgrows it
+        if (dm > 0) { const ss = starSize(dm), k = resolved ? 1 - smooth(0.45, 1.1, rpx / ss) : 1; if (k > 0.02) drawnR = drawPointFaded(ctx, pl.x, pl.y, dm, POINT_BV[b.id] ?? 0.7, k); }
         if (resolved) {
-          if (b.polarKm) drawnR = Math.max(drawnR, drawGiant(ctx, b, pl, rpx));
-          else {
-            const ang = screenAngleToward(b, sunU, pl.x, pl.y);
-            drawPhaseDisc(ctx, pl.x, pl.y, rpx, ang, b.phaseAngle, b.color, '#14181f', 1);
-            drawnR = Math.max(drawnR, rpx);
-          }
+          const d = drawFromMap(ctx, b, pl, rpx);
+          if (d) drawnR = Math.max(drawnR, d);
+          else { drawPhaseDisc(ctx, pl.x, pl.y, rpx, screenAngleToward(b, b.toSun ? unit(b.toSun) : sunU, pl.x, pl.y), b.phaseAngle, b.color, '#14181f', 1); drawnR = Math.max(drawnR, rpx); }
         }
       }
     }
-    if (b.kind === 'planet') for (const m of moonsFront) drawMoonOf(ctx, b, m, pl, rpx, lim, ext);
+    if (b.moons.length) for (const m of moonsFront) drawMoonOf(ctx, b, m, pl, rpx, lim, ext);
     if (!visible) continue;
     addPick(pl.x, pl.y, Math.max(drawnR, 4), b.mag, { kind: 'body', id: b.id });
     // no star or deep-sky label on the face of the Sun or Moon (the stars behind are hidden; their names were not)
     if ((b.kind === 'sun' || b.kind === 'moon') && drawnR >= 10) labels.blockDisc(pl.x, pl.y, drawnR, ['star', 'starDim', 'dso']);
     if (state.show.planetNames) labels.add(pl.x, pl.y, b.name, 'planet', 120 - b.mag * 0.5, { gap: Math.min(drawnR, 600) + 6 });
   }
+  if (glareLast) glareLast();
 }
 
+function drawPointFaded(ctx, x, y, dm, bv, k) {
+  if (k >= 0.999) return drawStarPoint(ctx, x, y, dm, bv);
+  ctx.save(); ctx.beginPath(); const r = starSize(dm), half = r / 0.34; ctx.globalAlpha = k; ctx.drawImage(starSprite(bv), x - half, y - half, 2 * half, 2 * half); ctx.restore();
+  return r;
+}
 function drawMoonOf(ctx, parent, m, ppl, prpx, lim, ext) {
   if (m.occulted || m.light <= 0.002) return;              // behind the disc, or deep in the planet's shadow
   const pl = place(m.hor);
@@ -212,7 +233,12 @@ function drawMoonOf(ctx, parent, m, ppl, prpx, lim, ext) {
   if (dm <= 0 && rpx < 1.6) return;
   if (sepPx < Math.max(prpx + 1.5, 5) && !(rpx >= 1.2 && (m.transit || m.behind))) return;     // lost in the planet's glare (a resolved moon behind is simply covered by the disc drawn after it)
   let r = 0;
-  if (rpx >= 1.6) { ctx.globalAlpha = Math.max(0.03, m.light ?? 1); ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(pl.x, pl.y, rpx, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1; r = rpx; }
+  if (rpx >= 1.6) {
+    // in the planet's shadow: sunlight goes, a trace of coppery light stays so the disc can still be found when zoomed in
+    const lit = m.light ?? 1;
+    r = drawFromMap(ctx, m, pl, rpx, { eclDim: Math.max(0.02, lit) });
+    if (!r) { ctx.globalAlpha = Math.max(0.03, lit); ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(pl.x, pl.y, rpx, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1; r = rpx; }
+  }
   else {
     // A moon's point is capped in size (dm 6); apply any eclipse dimming AFTER the cap, so a moon sliding into
     // its planet's shadow is seen to fade out over the few minutes that takes, instead of staying at full size.

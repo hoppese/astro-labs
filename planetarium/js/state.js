@@ -33,6 +33,8 @@ export const state = {
     azGrid: false, eqGrid: false,
     meridian: false, ecliptic: false, equator: false,
     dso: true,
+    steady: true,            // when time runs fast: hold the sky's light (and, while following something, ground, refraction, orientation); steady.js
+    sunspots: true,          // the Sun's disc with the spots of one photographed rotation; off = a spotless one (labs always get the spotless disc)
     netStars: true,          // fetch stars fainter than the bundled catalogue (G > 12) for the field on screen from the online Gaia service
   },
   lightTime: true,         // true = positions as seen (light-time corrected); false = geometric
@@ -43,6 +45,15 @@ export const state = {
   tracking: false,
   keepTracked: false,      // notebook labs: selecting something else does not end tracking of trackRef (nav.js)
   trackRef: null,
+};
+
+/** What is in force NOW: the user's switches, less what steady.js holds off while time runs fast. Read these, not state.show, when drawing or projecting. */
+export const eff = {
+  steady: '',              // '' | 'sky' | 'full'
+  get atmosphere() { return state.show.atmosphere && !this.steady; },
+  get refraction() { return state.show.refraction && this.steady !== 'full'; },
+  get ground() { return state.show.ground && this.steady !== 'full'; },
+  get mount() { return this.steady === 'full' ? 'eq' : state.mount; },
 };
 
 /** Toggle one of the state.show flags. */

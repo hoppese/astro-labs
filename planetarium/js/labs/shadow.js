@@ -9,6 +9,7 @@
 import { A, AU_KM, RAD, C_AU_PER_DAY, vecOf, unit, dot, sub, scale, len } from '../astro.js';
 import { state } from '../state.js';
 import { R } from '../render/proj.js';
+import { repaintSky } from '../render/sky.js';
 import { placeEqj } from './util.js';
 import { setTargets, registerResolver } from './targets.js';
 
@@ -81,13 +82,17 @@ export function drawShadow(ctx) {
     ctx.save();
     ctx.beginPath(); ctx.arc(m.x, m.y, rm + 0.3, 0, 2 * Math.PI); ctx.clip();
     // penumbra: a soft grey that deepens toward the umbra (to the eye only its inner part is noticeable)
-    const g = ctx.createRadialGradient(cx, cy, ru * k, cx, cy, rp * k);
-    g.addColorStop(0, 'rgba(8,8,10,0.34)'); g.addColorStop(0.45, 'rgba(8,8,10,0.13)'); g.addColorStop(1, 'rgba(8,8,10,0)');
+    const dk = 1 - R.sky.day, g = ctx.createRadialGradient(cx, cy, ru * k, cx, cy, rp * k);
+    g.addColorStop(0, `rgba(8,8,10,${0.34 * dk})`); g.addColorStop(0.45, `rgba(8,8,10,${0.13 * dk})`); g.addColorStop(1, 'rgba(8,8,10,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rp * k, 0, 2 * Math.PI); ctx.fill();
     // umbra: dark, coppery (sunlight bent through the Earth's atmosphere), a little brighter toward its edge
     const ug = ctx.createRadialGradient(cx, cy, 0, cx, cy, ru * k);
-    ug.addColorStop(0, 'rgba(46,10,6,0.965)'); ug.addColorStop(0.7, 'rgba(70,20,10,0.95)'); ug.addColorStop(1, 'rgba(96,34,14,0.93)');
+    // multiplied onto the Moon's own picture, so that its seas still show through the copper
+    ug.addColorStop(0, '#5c180c'); ug.addColorStop(0.7, '#832a16'); ug.addColorStop(1, '#a34826');
+    ctx.globalCompositeOperation = 'multiply';
     ctx.fillStyle = ug; ctx.beginPath(); ctx.arc(cx, cy, ru * k, 0, 2 * Math.PI); ctx.fill();
+    // the shadow darkens the Moon, not the sky in front of it: put back the sky's light that the multiplication took away
+    ctx.beginPath(); ctx.arc(cx, cy, ru * k, 0, 2 * Math.PI); ctx.clip(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.72; repaintSky(ctx, R.sky); ctx.globalAlpha = 1;
     ctx.restore();
   }
 

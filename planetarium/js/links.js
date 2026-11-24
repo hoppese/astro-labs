@@ -23,7 +23,9 @@ const simCoo = (ra, dec, r, unit) => simbad(`sim-coo?Coord=${enc(`${ra.toFixed(5
 const ned = (name) => ({ label: 'NED', url: 'https://ned.ipac.caltech.edu/byname?objname=' + enc(name), title: 'NASA/IPAC Extragalactic Database' });
 const wiki = (t) => ({ label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(t.replace(/ /g, '_')), title: 'Wikipedia: ' + t });
 const HORIZONS = { Sun: 10, Moon: 301, Mercury: 199, Venus: 299, Mars: 499, Jupiter: 599, Saturn: 699, Uranus: 799, Neptune: 899, Io: 501, Europa: 502, Ganymede: 503, Callisto: 504,
-  Mimas: 601, Enceladus: 602, Tethys: 603, Dione: 604, Rhea: 605, Titan: 606, Iapetus: 608 };
+  Mimas: 601, Enceladus: 602, Tethys: 603, Dione: 604, Rhea: 605, Titan: 606, Hyperion: 607, Iapetus: 608, Phoebe: 609, Phobos: 401, Deimos: 402, Amalthea: 505, Ariel: 701, Umbriel: 702, Titania: 703, Oberon: 704, Miranda: 705, Triton: 801, Proteus: 808, Pluto: 999, Charon: 901 };
+const SBDB = { Ceres: 1, Pallas: 2, Juno: 3, Vesta: 4, Hygiea: 10, Eris: 136199, Haumea: 136108, Makemake: 136472, Gonggong: 225088, Quaoar: 50000, Sedna: 90377, Orcus: 90482, Halley: '1P' };
+const NASA_PAGE = { Phobos: 'mars/moons/phobos/', Deimos: 'mars/moons/deimos/', Pluto: 'dwarf-planets/pluto/', Ceres: 'dwarf-planets/ceres/', Eris: 'dwarf-planets/eris/', Haumea: 'dwarf-planets/haumea/', Makemake: 'dwarf-planets/makemake/', Vesta: 'solar-system/asteroids/4-vesta/', Halley: 'solar-system/comets/1p-halley/', Triton: 'neptune/moons/triton/', Charon: 'dwarf-planets/pluto/moons/' };
 const GALAXY = new Set(['G', 'GPair', 'GTrpl', 'GGroup']);
 
 /** [{label, url, title}] for an object reference; Wikipedia first. */
@@ -48,7 +50,9 @@ export function linksFor(ref) {
   } else if (ref.kind === 'body') {
     const id = ref.id, p = MOON_PARENT[id], lc = id.toLowerCase();
     W('body', id);
-    out.push({ label: 'NASA', title: 'NASA Science: ' + id, url: 'https://science.nasa.gov/' + (p === 'Jupiter' ? `jupiter/jupiter-moons/${lc}/` : p === 'Saturn' ? `saturn/moons/${lc}/` : lc + '/') });
+    const known = p === 'Jupiter' && id !== 'Amalthea' ? `jupiter/jupiter-moons/${lc}/` : p === 'Saturn' && id !== 'Hyperion' && id !== 'Phoebe' ? `saturn/moons/${lc}/` : p === 'Uranus' ? `uranus/moons/${lc}/` : NASA_PAGE[id] || (!p && !SBDB[id] ? lc + '/' : null);
+    if (known) out.push({ label: 'NASA', title: 'NASA Science: ' + id, url: 'https://science.nasa.gov/' + known });
+    if (SBDB[id]) out.push({ label: 'JPL', title: 'JPL Small-Body Database', url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=' + SBDB[id] });
     if (HORIZONS[id]) out.push({ label: 'JPL', title: 'JPL Horizons: physical data sheet', url: `https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND=%27${HORIZONS[id]}%27&OBJ_DATA=%27YES%27&MAKE_EPHEM=%27NO%27` });
   } else if (ref.kind === 'con') {
     if (constellations.some((c) => c.id === ref.id)) { W('con', ref.id); out.push({ label: 'IAU', title: 'The International Astronomical Union’s page on the 88 constellations', url: 'https://www.iau.org/Iau/Science/What-we-do/The-Constellations.aspx' }); }

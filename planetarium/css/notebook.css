@@ -21,7 +21,7 @@ html.nb-split body { right: var(--nb-w); }
 html.nb-tight .brand .beta, html.nb-tight .iconbtn.xact { display: none; }
 html.nb-tight .labsdock { width: 290px; }
 html.nb-tight .infopanel { width: 262px; }
-@media (min-width: 561px) { body:has(.measurepanel:not([hidden])) .infopanel { max-height: calc(100% - 58px - var(--bar-h) - 150px); } }          /* object panel above the angle tool's, not under it */
+/* (the object panel stops above the angle tool's: --mp-h, set by measure.js) */
 html.nb-split .chip.place { overflow: hidden; } html.nb-split .chip.place .sub { display: none; }
 /* dragged wide for analysis: only a strip of sky is left, with no room for cards beside each other */
 html.nb-slim .labsdock, html.nb-slim .infopanel, html.nb-slim .readout, html.nb-slim .chip.place, html.nb-slim .measurepanel .mp-hint { display: none; }

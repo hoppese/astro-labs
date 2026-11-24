@@ -4,7 +4,7 @@
 //   {kind: 'gaia', t: tile, i}          a faint star of the Gaia DR3 layers, bundled or online (js/deepstars.js)
 
 import { mulMV, unit, refractHor } from './astro.js';
-import { state } from './state.js';
+import { state, eff } from './state.js';
 import { stars, starRecord, starLabel, dso, constellations, starApparentEqj } from './catalog.js';
 import { deepName, deepKey, deepParallax } from './deepstars.js';
 
@@ -43,7 +43,7 @@ export function refHorTrue(ref, frame, bodies) {
 /** HOR direction as drawn (refracted when the atmosphere is on). */
 export function refHorApparent(ref, frame, bodies) {
   const h = refHorTrue(ref, frame, bodies);
-  return h && state.show.refraction ? refractHor(h) : h;
+  return h && eff.refraction ? refractHor(h) : h;
 }
 export function refName(ref, bodies) {
   if (!ref) return '';

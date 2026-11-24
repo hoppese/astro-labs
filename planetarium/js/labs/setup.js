@@ -13,7 +13,7 @@
 //   trail: {body, step, before, after, frame}       events: category id
 
 import { DEG, RAD, sph, mulMV, azAltToHor, horToAzAlt, toSph, refractHor } from '../astro.js';
-import { state, emit } from '../state.js';
+import { state, emit, eff } from '../state.js';
 import { cam, update, lookAtHor, centerHor, setMount } from '../camera.js';
 import { getFrame } from '../skyframe.js';
 import { getBodies } from '../ephem.js';
@@ -88,7 +88,7 @@ export async function applySetup(s, { ephemeral = true } = {}) {
   if (s.look) {
     const f2 = getFrame(); update(f2);
     if (s.look.az != null) lookAtHor(azAltToHor(+s.look.az, +s.look.alt));
-    else if (s.look.ra != null) { const h = mulMV(f2.Mjh, sph(+s.look.ra, +s.look.dec)); lookAtHor(state.show.refraction ? refractHor(h) : h); }
+    else if (s.look.ra != null) { const h = mulMV(f2.Mjh, sph(+s.look.ra, +s.look.dec)); lookAtHor(eff.refraction ? refractHor(h) : h); }
   }
   if ('trail' in s) { if (s.trail) startTrail({ ...s.trail, t0: s.trail.t0 != null ? (typeof s.trail.t0 === 'number' ? s.trail.t0 : Date.parse(s.trail.t0)) : state.timeMs }); else stopTrail(); }
   emit('render');

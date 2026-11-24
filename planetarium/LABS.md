@@ -85,7 +85,7 @@ Preset: 2026-11-24 22:40 UTC, Berlin, second observer Cape Town, ghosts lined up
   (8,350 km, given in the prompt) gives 356,900 km.
 
 ### `eclipse-two-sites` Total here, partial there (Hipparchus)
-Preset: 2024-04-08 19:09:50 UTC, Richmond (total), second observer Atlanta (partial).
+Preset: 2024-04-08 19:09:50 UTC, Richmond (total), second observer Atlanta (partial), atmosphere off.
 - Moon centre to Atlanta's Moon: **5.959′**; Sun's diameter **31.9′**: the shift is 0.19 of the Sun's width
   (Hipparchus had "a fifth").
 - 677 km / 0.001733 rad = **390,700 km**; with the square-on baseline (614 km) **354,400 km**. True 359,900 km.
@@ -121,7 +121,7 @@ Preset: 2026-12-17 02:00 UTC, Tokyo, Moon tracked.
 - The phase shown is as seen from the site (not geocentric), so it is consistent with the measured angle.
 
 ### `sun-moon-size` Sun and Moon the same size in the sky
-Preset: 2024-04-08 18:25 UTC, Richmond (partial phase). Limb to limb: Sun **31.927′**, Moon **33.698′**
+Preset: 2024-04-08 18:25 UTC, Richmond (partial phase), atmosphere off since 2026-11-24 (with it on, the Moon's limb outside the Sun is sky-coloured and cannot be seen, as in reality). Limb to limb: Sun **31.927′**, Moon **33.698′**
 (true 31.93′ and 33.70′). The Moon is 5.5% larger, hence total.
 
 ### `eratosthenes` Size of the Earth from the noon Sun

@@ -95,7 +95,7 @@ export const LABS = [
     about: `This is ordinary surveying with the Earth as the baseline. Hipparchus used the same idea with the solar eclipse of 129 BC. See ${tao}.` },
   { id: 'eclipse-two-sites', group: 'Earth and Moon', title: 'Total here, partial there', who: 'Hipparchus (eclipse of 129 BC), with the eclipse of 8 April 2024',
     blurb: 'A solar eclipse that is total in one town is only partial a few hundred km away.',
-    setup: { t: '2024-04-08T19:09:50Z', loc: P.richmond, obs2: P.atlanta, align: 'stars', target: 'Sun', track: true, fov: 1.6, show: { refraction: false }, tools: ['compare', 'measure'] },
+    setup: { t: '2024-04-08T19:09:50Z', loc: P.richmond, obs2: P.atlanta, align: 'stars', target: 'Sun', track: true, fov: 1.6, show: { refraction: false, atmosphere: false }, tools: ['compare', 'measure'] },
     steps: [
       'In Richmond the eclipse is total. The dashed circles are the Sun and Moon as seen from Atlanta at the same instant. Is the Sun covered there?',
       'Measure how far the Moon is shifted between the two towns (Moon centre to dashed Moon centre), and the Sun’s diameter (limb to limb).',
@@ -136,9 +136,9 @@ export const LABS = [
     about: `The angle is so close to 90° that a tiny error changes the answer enormously, and judging the instant of exact half phase by eye is hopeless: that, not the geometry, is why Aristarchus was out by a factor of 20. See ${tao}.` },
   { id: 'sun-moon-size', group: 'The Sun', title: 'Sun and Moon: the same size in the sky', who: 'Aristarchus',
     blurb: 'Compare their angular diameters during a solar eclipse.',
-    setup: { t: '2024-04-08T18:25:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.5, show: { refraction: false }, tools: ['measure'] },
+    setup: { t: '2024-04-08T18:25:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.5, show: { refraction: false, atmosphere: false }, tools: ['measure'] },
     steps: [
-      'Measure the Sun’s diameter and the Moon’s diameter limb to limb with the angle tool (click near each edge).',
+      'The atmosphere is switched off, so that the dark Moon can be seen outside the Sun (in a real sky it has the colour of the sky there). Measure the Sun’s diameter and the Moon’s diameter limb to limb with the angle tool (click near each edge).',
       'Their distances are in the ratio you found with the half Moon. What is the ratio of their true diameters?',
       'Run the clock on to totality. Which is slightly bigger today? Use the Events finder to find an annular eclipse and compare.',
     ],

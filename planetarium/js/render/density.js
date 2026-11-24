@@ -6,7 +6,7 @@
 // screen scale from the projection. sky.js then caps this by what the sky physically allows.
 // Everything is in CSS pixels (38 px to the centimetre), so a retina screen gives the same picture.
 
-import { state, emit } from '../state.js';
+import { state, emit, eff } from '../state.js';
 import { cam, unproject } from '../camera.js';
 import { getFrame } from '../skyframe.js';
 import { stars } from '../catalog.js';
@@ -190,7 +190,7 @@ export function fieldFeedback(nDrawn, sky) {
   const target = sky.perCm2 * cam.w * cam.h / (PX_PER_CM * PX_PER_CM);
   if (target < 150 || nDrawn < 15) return;
   // all sky, and high enough that extinction dims nothing (40 degrees) when the atmosphere is on
-  const minZ = state.show.atmosphere ? 0.643 : state.show.ground ? 0.02 : -2;
+  const minZ = eff.atmosphere ? 0.643 : eff.ground ? 0.02 : -2;
   if (minZ > -1) for (const [fx, fy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) if (unproject(fx * cam.w, fy * cam.h)[2] < minZ) return;
   let e = Math.log10(nDrawn / target);
   if (Math.abs(e) < 0.05) return;                                              // within 12 %: leave it

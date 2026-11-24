@@ -94,7 +94,7 @@ function buildActions() {
 }
 let lastSync = '';
 function syncActions() {
-  const key = ACTIONS.map((a) => (a && a.on ? +a.on() : 0)).join('') + (xs.milkyWay ? 1 : 0) + (xs.images ? 1 : 0) + (xs.survey ? 1 : 0);
+  const key = ACTIONS.map((a) => (a && a.on ? +a.on() : 0)).join('') + (xs.milkyWay ? 1 : 0) + (xs.images ? 1 : 0) + (xs.skySurvey ? 1 : 0);
   if (key === lastSync) return;
   lastSync = key;
   for (const a of ACTIONS) {
@@ -105,7 +105,7 @@ function syncActions() {
   }
   const mwBtn = document.querySelector('.tool[data-key="milkyWay"]'); if (mwBtn) mwBtn.setAttribute('aria-pressed', String(xs.milkyWay));
   const mwChk = $('xMwChk'); if (mwChk) mwChk.checked = xs.milkyWay;
-  if ($('xImgChk')) { $('xImgChk').checked = xs.images; $('xSurvChk').checked = xs.survey; }
+  if ($('xImgChk')) { $('xImgChk').checked = xs.images; $('xSurvChk').checked = xs.skySurvey; }
 }
 
 // ---- Milky Way toggle: toolbar button next to Atmosphere, and a drawer checkbox -------------
@@ -122,8 +122,9 @@ export function setMilkyWay(v) {
 }
 /** Deep-sky pictures and the survey layer (js/skyimages.js). */
 export function setPictures(v) { xs.images = v === undefined ? !xs.images : !!v; saveXs(); toast('Deep-sky pictures ' + (xs.images ? 'on. They appear as you zoom in.' : 'off.'), { ms: 2200 }); emit('render'); syncActions(); }
-export function setSurvey(v) { xs.survey = v === undefined ? !xs.survey : !!v; saveXs();
-  toast(!xs.survey ? 'Sky survey images off.' : cam.fov > 60 ? 'Sky survey images on. Zoom in to a field below about 60° to see them.' : 'Sky survey images on, fetched from ESA as you look around.', { ms: 3200 }); emit('render'); syncActions(); }
+on('survey-off', () => setSurvey(false));
+export function setSurvey(v) { xs.skySurvey = v === undefined ? !xs.skySurvey : !!v; saveXs();
+  toast(!xs.skySurvey ? 'Sky survey images off.' : cam.fov > 60 ? 'Sky survey images on. Zoom in to a field below about 60° to see them.' : 'Sky survey images on, fetched from ESA as you look around.', { ms: 3200 }); emit('render'); syncActions(); }
 function buildToolbarExtras() {
   const bar = $('toolbar');
   const b = el('button', 'tool', XICON.milkyWay); b.type = 'button'; b.dataset.key = 'milkyWay';
@@ -138,7 +139,7 @@ function buildDrawerExtras() {
   const l = el('label', 'check', `<input type="checkbox" id="xMwChk"> Milky Way <span class="k">W</span>`);
   box.appendChild(l);
   l.querySelector('input').addEventListener('change', (e) => setMilkyWay(e.target.checked));
-  for (const [id, label, k, fn] of [['xImgChk', 'Deep-sky pictures', 'I', setPictures], ['xSurvChk', 'Sky survey images (online)', 'U', setSurvey]]) {
+  for (const [id, label, k, fn] of [['xImgChk', 'Deep-sky pictures', 'I', setPictures], ['xSurvChk', 'Sky survey images (online)', '', setSurvey]]) {
     const c = el('label', 'check', `<input type="checkbox" id="${id}"> ${label} <span class="k">${k}</span>`);
     box.appendChild(c);
     c.querySelector('input').addEventListener('change', (e) => fn(e.target.checked));
@@ -245,7 +246,6 @@ function onKey(e) {
   const used = () => { e.preventDefault(); e.stopPropagation(); };
   if (k === 'w') { setMilkyWay(); used(); }
   else if (k === 'i') { setPictures(); used(); }
-  else if (k === 'u') { setSurvey(); used(); }
   else if (k === 'n') { setNight(!xs.night); used(); }
   else if (k === 'o') { dsoList.panel.toggle(); used(); }
   else if (k === 'h') { hubble.panel.toggle(); used(); }

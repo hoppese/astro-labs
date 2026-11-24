@@ -8,7 +8,7 @@
 
 import { keyReached } from './focus.js';
 import { A, DEG, RAD, mod, mulMV, toSph, angleBetween, unrefractHor } from './astro.js';
-import { state, on, emit, save as saveState } from './state.js';
+import { state, on, emit, save as saveState, eff } from './state.js';
 import { cam, unproject, update, centerHor } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
@@ -61,7 +61,7 @@ function figureUp(c, frame) {
 function eqjAt(x, y) {
   const frame = getFrame(); update(frame);
   let h = unproject(x, y);
-  if (state.show.refraction) h = unrefractHor(h);
+  if (eff.refraction) h = unrefractHor(h);
   return mulMV(frame.Mhj, h);
 }
 function constellationAt(v) {
@@ -118,7 +118,7 @@ function start() {
   // a deep-sky "go to"), open it out to a wide field at a comfortable height first
   if (opt.mode !== 'name') {
     const c = centerHor(), alt = Math.asin(Math.max(-1, Math.min(1, c[2]))) * RAD;
-    if (cam.fov < 60 || (state.show.ground && alt < 15)) {
+    if (cam.fov < 60 || (eff.ground && alt < 15)) {
       const a2 = Math.max(alt, 35) / RAD, h = Math.hypot(c[0], c[1]) || 1;
       flyTo([c[0] / h * Math.cos(a2), c[1] / h * Math.cos(a2), Math.sin(a2)], { fov: Math.max(cam.fov, 100), dur: 700 });
     }

@@ -5,7 +5,7 @@
 
 import { state, on } from './state.js';
 import { getFrame } from './skyframe.js';
-import { getBodies, BODIES, MOON_PARENT } from './ephem.js';
+import { getBodies, BODIES, SMALL, MOON_PARENT } from './ephem.js';
 import { stars, starRecord, constellations, dso, loadAllTiers, loadDeepDso, DSO_TYPES, F, FAINT_NAMES } from './catalog.js';
 import { refHorApparent } from './objects.js';
 import { select, centerOn } from './nav.js';
@@ -24,7 +24,8 @@ let index = null;        // [{key, label, sub, mag, ref, w}]
 function build() {
   index = [];
   const add = (key, label, sub, mag, ref, w) => index.push({ key: norm(key), label, sub, mag, ref, w });
-  for (const b of BODIES) add(b.name, b.name, b.kind === 'planet' ? 'Planet' : b.kind === 'sun' ? 'Star' : "Earth's moon", null, { kind: 'body', id: b.id }, 100);
+  for (const b of BODIES) add(b.name, b.name, b.kind === 'planet' ? 'Planet' : b.kind === 'sun' ? 'Star' : b.kind === 'dwarf' ? 'Dwarf planet' : "Earth's moon", null, { kind: 'body', id: b.id }, 100);
+  for (const b of SMALL) { add(b.name, b.name, b.kind === 'dwarf' ? 'Dwarf planet' : b.kind === 'comet' ? 'Comet' : 'Asteroid', null, { kind: 'body', id: b.id }, 58); if (b.id === 'Halley') add('1P', b.name, 'Comet', null, { kind: 'body', id: b.id }, 40); }
   for (const id of Object.keys(MOON_PARENT)) add(id, id, 'Moon of ' + MOON_PARENT[id], null, { kind: 'body', id }, 60);
   const conById = {};
   for (const c of constellations) {
@@ -149,7 +150,7 @@ export function initSearch(root) {
     const q = input.value.trim();
     let html = '';
     if (!q) {
-      const sol = BODIES.map((b) => ({ label: b.name, sub: b.kind === 'planet' ? 'Planet' : '', mag: getBodies(getFrame()).byId[b.id].mag, ref: { kind: 'body', id: b.id } }));
+      const sol = BODIES.map((b) => ({ label: b.name, sub: b.kind === 'planet' ? 'Planet' : b.kind === 'dwarf' ? 'Dwarf planet' : '', mag: getBodies(getFrame()).byId[b.id].mag, ref: { kind: 'body', id: b.id } }));
       const br = brightestStars(30);
       items = sol.concat(br);
       html = '<div class="grp">Solar system</div>' + sol.map(optHtml).join('') +

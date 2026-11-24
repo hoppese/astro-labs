@@ -7,7 +7,7 @@
 // pointer moves or the sky does.
 
 import { A, RAD, mod, mulMV, toSph, horToAzAlt, unrefractHor } from './astro.js';
-import { state, on, emit } from './state.js';
+import { state, on, emit, eff } from './state.js';
 import { cam, unproject, update } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { constellations } from './catalog.js';
@@ -47,7 +47,7 @@ const degText = (v, fov, signed) => {
 export function skyAt(x, y, frame = getFrame()) {
   update(frame);
   const app = unproject(x, y);                                   // apparent direction as drawn
-  const hor = state.show.refraction ? unrefractHor(app) : app;   // true direction
+  const hor = eff.refraction ? unrefractHor(app) : app;   // true direction
   const eqj = mulMV(frame.Mhj, hor);
   // take the aberration back out, so the J2000 read-out matches catalogue positions
   const b = frame.beta, n = Math.hypot(eqj[0] - b[0], eqj[1] - b[1], eqj[2] - b[2]);

@@ -67,7 +67,16 @@ export function drawGroundShade(ctx, sky, bodies) {
   // 3. darker toward your feet
   const deep = [lerp(5 + 6 * lp, 37, d), lerp(7 + 6 * lp, 51, d), lerp(7 + 5 * lp, 30, d)].map(Math.round);
   const stepA = lerp(0.042, 0.056, d);
-  for (const dep of STEPS) fillCap(ctx, dep, `rgba(${deep[0]},${deep[1]},${deep[2]},${stepA})`);
+  // zoomed in on the ground most of these steps cover the whole window: lay those down as one fill of the combined opacity (50 full-window fills cost 8 ms)
+  let full = 0;
+  for (const dep of STEPS) { const c = capCover(dep); if (c === 1) full++; else if (c < 0) fillCap(ctx, dep, `rgba(${deep[0]},${deep[1]},${deep[2]},${stepA})`); }
+  if (full) { ctx.fillStyle = `rgba(${deep[0]},${deep[1]},${deep[2]},${1 - Math.pow(1 - stepA, full)})`; ctx.fillRect(0, 0, cam.w, cam.h); }
+}
+
+/** 1: the region more than `dep` degrees below the horizon covers the whole window, 0: none of it, -1: some. */
+function capCover(dep) {
+  const V = cam.V, th = Math.acos(clamp(-V[8], -1, 1)) / DEG, rho = 90 - dep, view = Math.acos(clamp(cam.zMin, -1, 1)) / DEG + 0.01;
+  return th + view < rho ? 1 : th - view > rho ? 0 : -1;
 }
 
 /** Clip to the part of the screen that is sky (above the horizon). For overlays drawn after the ground. */

@@ -1,6 +1,6 @@
 // renderer.js: owns the canvas and draws one frame by calling each layer in order.
 
-import { state, on, emit } from './state.js';
+import { state, eff, on, emit } from './state.js';
 import { cam, resize, update } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
@@ -25,6 +25,7 @@ import { drawDeepStars, deep } from './deepstars.js';
 import { fieldFeedback } from './render/density.js';
 import { see } from './notebook/seeing.js';
 import { allPicks } from './picks.js';
+import { stepSteady, drawSteadyFade } from './steady.js';
 import { sameRef } from './objects.js';
 
 let canvas, ctx, dpr = 1, dirty = true, lastDraw = 0;
@@ -56,8 +57,9 @@ function loop(now) {
   const slow = Math.abs(state.rate) <= 1 && cam.fov > 1;
   if (ticking && (!slow || now - lastDraw > 250)) dirty = true;
   const frame = getFrame();
+  if (stepSteady(now, frame, canvas)) dirty = true;      // before stepNav: it can change which mount the view is held in
   if (stepNav(now, frame)) dirty = true;
-  if (dirty) { dirty = false; lastDraw = now; draw(frame); }
+  if (dirty) { dirty = false; lastDraw = now; draw(frame, now); }
   requestAnimationFrame(loop);
 }
 
@@ -68,7 +70,7 @@ function uiBlocks() {
   if (blockCache && now - blockAt < 400) return blockCache;
   blockAt = now; blockCache = [];
   const c = canvas.getBoundingClientRect();
-  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.imgcredit']) {
+  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.steady-note', '.imgcredit']) {
     const el = document.querySelector(sel);
     if (!el || el.hidden) continue;
     const r = el.getBoundingClientRect();
@@ -77,16 +79,17 @@ function uiBlocks() {
   return blockCache;
 }
 const sp = [0, 0];
-function draw(frame) {
+function draw(frame, now) {
   const t0 = performance.now();
-  stars.epochTol = epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
+  // time running fast past a body: re-place the 120,000 stars every 18 h of sky time, not every frame (7 ms each; the fastest moves 0.02 arcsec meanwhile)
+  stars.epochTol = eff.steady && state.selected && state.selected.kind === 'body' ? Math.max(0.002, epochTolFor(cam.fov)) : epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
   setStarEpoch(frame.years);
   const bodies = getBodies(frame);
   update(frame);
   const sky = skyConditions(bodies);
   wantMagnitude(sky.limMag);
   R.ctx = ctx; R.frame = frame; R.bodies = bodies; R.sky = sky; R.labels = labels;
-  R.atmo = state.show.atmosphere; R.refr = state.show.refraction; R.ground = state.show.ground;
+  R.atmo = eff.atmosphere; R.refr = eff.refraction; R.ground = eff.ground;
   labels.begin(); beginPicks();
   for (const b of uiBlocks()) labels.block(b[0], b[1], b[2], b[3]);
 
@@ -109,6 +112,7 @@ function draw(frame) {
   for (const fn of overlays) fn(ctx, R);
   lap('overlays');
   labels.flush(ctx, cam.w, cam.h, sky.day > 0.4 ? `rgba(16,38,82,${0.35 + 0.2 * (1 - sky.day)})` : 'rgba(2,6,14,0.85)');
+  drawSteadyFade(ctx, now);
   lap('labels');
 
   perf.frameMs = performance.now() - t0;

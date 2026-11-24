@@ -142,7 +142,7 @@ export function fmtFov(deg) {
   if (deg >= 10) return deg.toFixed(0) + '°';
   if (deg >= 1) return deg.toFixed(1) + '°';
   if (deg >= 1 / 60) return (deg * 60).toFixed(deg * 60 < 10 ? 1 : 0) + '′';
-  return (deg * 3600).toFixed(0) + '″';
+  return (deg * 3600).toFixed(deg * 3600 < 3 ? 2 : deg * 3600 < 10 ? 1 : 0) + '″';
 }
 export function fmtLat(lat) { return Math.abs(lat).toFixed(2) + '° ' + (lat >= 0 ? 'N' : 'S'); }
 export function fmtLon(lon) { return Math.abs(lon).toFixed(2) + '° ' + (lon >= 0 ? 'E' : 'W'); }

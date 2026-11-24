@@ -5,7 +5,7 @@
 // The trail is centred on the instant at which it was started and stays put until restarted.
 
 import { A, vecOf, unit, mulMV, refractHor, unrefractHor } from '../astro.js';
-import { state, on, emit } from '../state.js';
+import { state, on, emit, eff } from '../state.js';
 import { projectHor, cam } from '../camera.js';
 import { makeFrame } from '../skyframe.js';
 import { wallParts, fmtDate } from '../timeutil.js';
@@ -26,7 +26,7 @@ function dirOf(id, frame) {
   return unit(vecOf(A.Equator(id, frame.time, frame.obs, false, frame.aberration !== false).vec));
 }
 function build() {
-  const key = [trail.body, trail.step, trail.before, trail.after, trail.frame, trail.t0, state.loc.lat, state.loc.lon, state.show.refraction, state.fx.aberration].join('|');
+  const key = [trail.body, trail.step, trail.before, trail.after, trail.frame, trail.t0, state.loc.lat, state.loc.lon, eff.refraction, state.fx.aberration].join('|');
   if (key === trail.key) return;
   trail.key = key; trail.pts = [];
   for (let i = -trail.before; i <= trail.after; i++) {
@@ -36,7 +36,7 @@ function build() {
     if (!state.fx.aberration) f.aberration = false;
     const u = dirOf(trail.body, f);
     let hor = null;
-    if (trail.frame === 'horizon') { hor = mulMV(f.Mjh, u); if (state.show.refraction) hor = refractHor(hor); }
+    if (trail.frame === 'horizon') { hor = mulMV(f.Mjh, u); if (eff.refraction) hor = refractHor(hor); }
     trail.pts.push({ i, t, u, hor });
   }
 }
@@ -106,7 +106,7 @@ export function initTrails() {
     const q = trail.pts.find((x) => x.i === id); if (!q) return null;
     // a tick of an "in the sky here" trail is a fixed altitude and azimuth: express it in today's J2000 frame
     // (angles between two such ticks do not depend on the instant chosen)
-    const u = q.hor ? mulMV(frame.Mhj, state.show.refraction ? unrefractHor(q.hor) : q.hor) : q.u;
+    const u = q.hor ? mulMV(frame.Mhj, eff.refraction ? unrefractHor(q.hor) : q.hor) : q.u;
     return { u, angRadius: 0, name: `${trail.body} ${fmtDate(wallParts(q.t, state.loc.tz))}` };
   });
   card.body.addEventListener('click', (e) => {

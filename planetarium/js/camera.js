@@ -7,9 +7,9 @@
 // `fov` is the vertical field of view in degrees.
 
 import { DEG, RAD, clamp, mod, mulMM, mulMV, transpose, IDENTITY, toSph } from './astro.js';
-import { state } from './state.js';
+import { state, eff } from './state.js';
 
-export const FOV_MIN = 0.0005, FOV_MAX = 180;      // 1.8 arcsec to all-sky
+export const FOV_MIN = 0.00004, FOV_MAX = 180;      // 0.14 arcsec to all-sky
 
 export const cam = {
   lon: -180, lat: 28, fov: 90,
@@ -33,7 +33,7 @@ export function update(frame) {
   const f = [cb * cl, cb * sl, sb], r = [sl, -cl, 0];
   const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
   const Vm = [r[0], r[1], r[2], u[0], u[1], u[2], f[0], f[1], f[2]];     // mount -> view
-  cam.M = state.mount === 'eq' ? frame.Mdh : IDENTITY;
+  cam.M = eff.mount === 'eq' ? frame.Mdh : IDENTITY;
   cam.Mt = transpose(cam.M);
   cam.V = mulMM(Vm, cam.Mt);
   cam.Vt = transpose(cam.V);

@@ -1,20 +1,51 @@
 // ephem.js: Sun, Moon, planets and their moons for the current frame.
-// Positions come from astronomy-engine. Saturn's moons are NOT in astronomy-engine: they are
-// propagated from JPL's published mean orbital elements (see SATURN_MOONS) and are approximate.
+// Sun, Moon, planets, Pluto and the Galilean moons come from astronomy-engine; the other moons, the asteroids, dwarf planets and Halley
+// from fits and tables made from JPL Horizons (js/moons.js), each with its stated error and span of dates.
 
 import { A, DEG, RAD, AU_KM, C_AU_PER_DAY, vecOf, unit, len, sub, add, scale, dot, cross, sph, mulMV, mod } from './astro.js';
 import { state } from './state.js';
+import { moonVector, smallVector, smallHelio, small, smallCovers, MOON_SPAN } from './moons.js';
+import { bodyAxes } from './orient.js';
 
 export const BODIES = [
   { id: 'Sun', name: 'Sun', kind: 'sun', radiusKm: 695700, color: '#fff3c4' },
   { id: 'Moon', name: 'Moon', kind: 'moon', radiusKm: 1737.4, color: '#e8e6df' },
   { id: 'Mercury', name: 'Mercury', kind: 'planet', radiusKm: 2439.7, color: '#c9b8a0' },
   { id: 'Venus', name: 'Venus', kind: 'planet', radiusKm: 6051.8, color: '#fff6d8' },
-  { id: 'Mars', name: 'Mars', kind: 'planet', radiusKm: 3396.2, color: '#ff9a6a' },
+  { id: 'Mars', name: 'Mars', kind: 'planet', radiusKm: 3396.2, polarKm: 3376.2, color: '#ff9a6a' },
   { id: 'Jupiter', name: 'Jupiter', kind: 'planet', radiusKm: 71492, polarKm: 66854, color: '#f3dfc0' },
   { id: 'Saturn', name: 'Saturn', kind: 'planet', radiusKm: 60268, polarKm: 54364, color: '#f0dca8' },
-  { id: 'Uranus', name: 'Uranus', kind: 'planet', radiusKm: 25559, color: '#b5ecf0' },
-  { id: 'Neptune', name: 'Neptune', kind: 'planet', radiusKm: 24764, color: '#8fb0ff' },
+  { id: 'Uranus', name: 'Uranus', kind: 'planet', radiusKm: 25559, polarKm: 24973, color: '#b5ecf0' },
+  { id: 'Neptune', name: 'Neptune', kind: 'planet', radiusKm: 24764, polarKm: 24341, color: '#8fb0ff' },
+  { id: 'Pluto', name: 'Pluto', kind: 'dwarf', radiusKm: 1188.3, color: '#d8c0a4' },
+];
+// Asteroids, dwarf planets, a comet (data/smallbodies.json). H, G: JPL Small-Body Database; radii: Ceres, Vesta, Pallas and Juno JPL SBDB, Hygiea SBDB, Eris
+// Sicardy 2011, Haumea's ellipsoid Ortiz 2017, Makemake Ortiz 2012, Gonggong Kiss 2019, Quaoar Pereira 2023, Orcus Fornasier 2013; Sedna Pal 2012.
+export const SMALL = [
+  { id: 'Ceres', name: 'Ceres', kind: 'dwarf', radiusKm: 487.3, H: 3.34, G: 0.12, color: '#8f8a82' },
+  { id: 'Pallas', name: 'Pallas', kind: 'asteroid', radiusKm: 256.5, H: 4.12, G: 0.11, color: '#8d9092' },
+  { id: 'Juno', name: 'Juno', kind: 'asteroid', radiusKm: 123.3, H: 5.19, G: 0.32, color: '#a0917e' },
+  { id: 'Vesta', name: 'Vesta', kind: 'asteroid', radiusKm: 289, H: 3.25, G: 0.32, color: '#b8ada0' },
+  { id: 'Hygiea', name: 'Hygiea', kind: 'asteroid', radiusKm: 203.6, H: 5.65, G: 0.15, color: '#7d7a76' },
+  { id: 'Eris', name: 'Eris', kind: 'dwarf', radiusKm: 1163, H: -1.26, G: 0.15, color: '#d9d6cf' },
+  { id: 'Haumea', name: 'Haumea', kind: 'dwarf', radiusKm: 1161, H: 0.14, G: 0.15, color: '#d8d8d6' },
+  { id: 'Makemake', name: 'Makemake', kind: 'dwarf', radiusKm: 715, H: -0.25, G: 0.15, color: '#d2b29a' },
+  { id: 'Gonggong', name: 'Gonggong', kind: 'dwarf', radiusKm: 615, H: 1.82, G: 0.15, color: '#b08070' },
+  { id: 'Quaoar', name: 'Quaoar', kind: 'dwarf', radiusKm: 545, H: 2.41, G: 0.15, color: '#a88a76' },
+  { id: 'Sedna', name: 'Sedna', kind: 'dwarf', radiusKm: 500, H: 1.50, G: 0.15, color: '#b5745c' },
+  { id: 'Orcus', name: 'Orcus', kind: 'dwarf', radiusKm: 455, H: 2.13, G: 0.15, color: '#a0a0a0' },
+  { id: 'Halley', name: 'Halley’s Comet', kind: 'comet', radiusKm: 5.5, M1: 5.5, K1: 8, color: '#b8c4c8' },
+];
+// Moons fitted to JPL Horizons (js/moon-data.js). V(1,0) from the mean opposition magnitudes in JPL's satellite physical parameters.
+const OTHER_MOONS = [
+  { id: 'Phobos', parent: 'Mars', radiusKm: 11.08, v10: 11.9, color: '#8c7f74' }, { id: 'Deimos', parent: 'Mars', radiusKm: 6.2, v10: 12.9, color: '#988a7c' },
+  { id: 'Amalthea', parent: 'Jupiter', radiusKm: 83.5, v10: 7.4, color: '#a06a50' },
+  { id: 'Mimas', parent: 'Saturn' }, { id: 'Enceladus', parent: 'Saturn' }, { id: 'Tethys', parent: 'Saturn' }, { id: 'Dione', parent: 'Saturn' }, { id: 'Rhea', parent: 'Saturn' }, { id: 'Titan', parent: 'Saturn' },
+  { id: 'Hyperion', parent: 'Saturn', radiusKm: 135, v10: 4.8, color: '#b0a58e' }, { id: 'Iapetus', parent: 'Saturn' }, { id: 'Phoebe', parent: 'Saturn', radiusKm: 106.5, v10: 6.9, color: '#77736e' },
+  { id: 'Miranda', parent: 'Uranus', radiusKm: 235.8, v10: 3.1, color: '#b8b8b8' }, { id: 'Ariel', parent: 'Uranus', radiusKm: 578.9, v10: 1.0, color: '#c8c8c6' }, { id: 'Umbriel', parent: 'Uranus', radiusKm: 584.7, v10: 1.75, color: '#8c8c8a' },
+  { id: 'Titania', parent: 'Uranus', radiusKm: 788.9, v10: 0.8, color: '#b8b4b0' }, { id: 'Oberon', parent: 'Uranus', radiusKm: 761.4, v10: 1.0, color: '#b0aaa4' },
+  { id: 'Triton', parent: 'Neptune', radiusKm: 1352.6, v10: -1.2, color: '#d8cfc8' }, { id: 'Proteus', parent: 'Neptune', radiusKm: 210, v10: 5.0, color: '#808080' },
+  { id: 'Charon', parent: 'Pluto', radiusKm: 606, v10: 0.9, color: '#b0aca8' },
 ];
 
 // Galilean moons: positions from astronomy-engine's JupiterMoons(). V(1,0) magnitudes and radii
@@ -26,62 +57,22 @@ const JUPITER_MOONS = [
   { id: 'Callisto', key: 'callisto', radiusKm: 2410.3, v10: -1.05, color: '#b0a596' },
 ];
 
-// Saturn's moons are not in astronomy-engine. Each orbit is anchored to the moon's Saturn-centred
-// position on 2026-11-24 (JPL Horizons, SAT441) and advanced at the mean sidereal rate 360/P from
-// JPL's "Planetary Satellite Mean Elements" table. The inner five move on circles in Saturn's
-// equatorial plane; Titan and Iapetus on ellipses in the plane of their 2026 orbit, with the
-// periapsis advancing at the published rate. tools/fit_saturn_moons.mjs derives this table and
-// prints its error against Horizons 9 years either side (about 1 degree of orbital longitude or
-// better, except Mimas, whose 70-year libration is not modelled).
-//   a km, P days (sidereal), L = mean longitude at T0 (deg, from the ascending node of the orbit
-//   plane on the ICRF equator), e, peri = longitude of periapsis at T0, Pw = apsidal period (yr),
-//   normal = orbit-plane pole in EQJ (absent = Saturn's pole).
-const SAT_T0 = 9823.5;          // 2026-11-24 00:00 TDB, days from J2000
-export const SATURN_MOON_ELEMENTS = [
-  { id: 'Mimas', a: 186000, P: 0.942422, e: 0, L: 3.19 },
-  { id: 'Enceladus', a: 238400, P: 1.370218, e: 0, L: 289.03 },
-  { id: 'Tethys', a: 295000, P: 1.887802, e: 0, L: 71.37 },
-  { id: 'Dione', a: 377700, P: 2.736916, e: 0, L: 270.16 },
-  { id: 'Rhea', a: 527200, P: 4.517503, e: 0, L: 247.43 },
-  { id: 'Titan', a: 1221900, P: 15.945448, e: 0.0287, peri: 221.5, L: 35.93, Pw: 346.68, normal: [0.088064, 0.066658, 0.993882] },
-  { id: 'Iapetus', a: 3561700, P: 79.331002, e: 0.0281, peri: 327.27, L: 111.15, Pw: 1662.9, normal: [0.192077, -0.178668, 0.964979] },
-];
 const SAT_PHYS = {
   Mimas: { radiusKm: 198.2, v10: 3.3, color: '#d8d8d8' }, Enceladus: { radiusKm: 252.1, v10: 2.1, color: '#ffffff' },
   Tethys: { radiusKm: 531.1, v10: 0.6, color: '#e8e8e8' }, Dione: { radiusKm: 561.4, v10: 0.8, color: '#e0e0e0' },
   Rhea: { radiusKm: 763.8, v10: 0.1, color: '#dcdcdc' }, Titan: { radiusKm: 2574.7, v10: -1.28, color: '#f0c070' },
   Iapetus: { radiusKm: 734.5, v10: 1.5, color: '#c8b8a0' },
 };
-const SATURN_MOONS = SATURN_MOON_ELEMENTS.map((m) => ({ ...m, ...SAT_PHYS[m.id] }));
 export const MOON_PARENT = {};
+for (const m of OTHER_MOONS) Object.assign(m, SAT_PHYS[m.id]);
 JUPITER_MOONS.forEach((m) => { MOON_PARENT[m.id] = 'Jupiter'; });
-SATURN_MOONS.forEach((m) => { MOON_PARENT[m.id] = 'Saturn'; });
-
-/** Saturn-centred EQJ position (au) of one of Saturn's moons at TT days since J2000. */
-export function saturnMoonVector(m, tt, saturnPole) {
-  const Z = m.normal || saturnPole;
-  const X = unit(cross([0, 0, 1], Z));            // ascending node of the orbit plane on the ICRF equator
-  const Y = cross(Z, X);
-  const dt = tt - SAT_T0;
-  const L = m.L + 360 / m.P * dt;                 // mean longitude
-  let lon = L, r = m.a;
-  if (m.e) {
-    const peri = m.peri + (m.Pw ? 360 / (m.Pw * 365.25) * dt : 0);
-    const Mr = mod(L - peri, 360) * DEG;
-    let E = Mr;
-    for (let k = 0; k < 6; k++) E = Mr + m.e * Math.sin(E);
-    const nu = 2 * Math.atan2(Math.sqrt(1 + m.e) * Math.sin(E / 2), Math.sqrt(1 - m.e) * Math.cos(E / 2));
-    lon = peri + nu * RAD; r = m.a * (1 - m.e * Math.cos(E));
-  }
-  const c = Math.cos(lon * DEG) * r / AU_KM, s = Math.sin(lon * DEG) * r / AU_KM;
-  return [c * X[0] + s * Y[0], c * X[1] + s * Y[1], c * X[2] + s * Y[2]];
-}
+OTHER_MOONS.forEach((m) => { MOON_PARENT[m.id] = m.parent; });
 
 let cache = null, cacheKey = '';
 
 /** All solar-system bodies for this frame: {list, byId}. Cached per instant, site and light-time setting. */
 export function getBodies(frame) {
-  const key = frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime + '|' + frame.aberration;
+  const key = frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = compute(frame, state.lightTime, frame.aberration !== false);
@@ -140,6 +131,7 @@ export function compute(frame, lightTime, aberration = true) {
       const ill = A.Illumination(def.id, time);
       b.mag = ill.mag; b.phaseAngle = ill.phase_angle; b.phaseFrac = ill.phase_fraction; b.helioDist = ill.helio_dist;
     }
+    b.ttSeen = time.tt - (lightTime ? b.lightMin / 1440 : 0);
     list.push(b); byId[b.id] = b;
   }
   const sun = byId.Sun;
@@ -152,14 +144,17 @@ export function compute(frame, lightTime, aberration = true) {
     m.phaseFrac = (1 + Math.cos(m.phaseAngle * DEG)) / 2;
   }
 
+  // --- direction of the sunlight on each body ---
+  for (const b of list) b.toSun = b === sun ? null : b.id === 'Moon' ? sub(sun.vec, b.vec) : scale(vecOf(A.HelioVector(b.id, lightTime ? time.AddDays(-b.lightMin / 1440) : time)), -1);
+
   // --- pole directions (for ring tilt, disc flattening, moon planes) ---
-  for (const id of ['Jupiter', 'Saturn']) {
+  for (const id of ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']) {
     const b = byId[id];
     const tSeen = lightTime ? time.AddDays(-b.lightMin / 1440) : time;
-    b.pole = vecOf(A.RotationAxis(id, tSeen).north);
+    b.pole = bodyAxes(id, tSeen.tt).z;
     b.subEarthLat = Math.asin(-dot(b.pole, b.u)) * RAD;      // > 0: north face tilted toward us
     b.tSeen = tSeen;
-    b.helioVec = vecOf(A.HelioVector(id, tSeen));            // Sun -> planet at the instant the light left it
+    b.helioVec = scale(b.toSun, -1);                         // Sun -> planet at the instant the light left it
   }
   byId.Saturn.ringTilt = byId.Saturn.subEarthLat;
 
@@ -177,6 +172,7 @@ export function compute(frame, lightTime, aberration = true) {
       lightMin: d / C_AU_PER_DAY * 1440, phaseAngle: parent.phaseAngle, phaseFrac: parent.phaseFrac,
       orbitKm: len(rel) * AU_KM,
     };
+    m.ttSeen = parent.ttSeen; m.toSun = sub(parent.toSun, rel);
     const pole = parent.pole || [0, 0, 1];
     // behind the (flattened) disc: the moon's centre is covered / how much of its disc still shows
     const occ = hiddenFraction(rel, parent.u, pole, parent, def.radiusKm);
@@ -194,7 +190,41 @@ export function compute(frame, lightTime, aberration = true) {
   const jup = byId.Jupiter;
   const jm = A.JupiterMoons(jup.tSeen);
   for (const def of JUPITER_MOONS) addMoon(jup, def, vecOf(jm[def.key]));
-  const sat = byId.Saturn;
-  for (const def of SATURN_MOONS) addMoon(sat, def, saturnMoonVector(def, sat.tSeen.tt, sat.pole));
+  for (const def of OTHER_MOONS) {
+    const parent = byId[def.parent], tt = parent.tSeen.tt;
+    // Phoebe is tabulated; the rest are fitted to 1950-2100 and are not drawn far outside that span, where their place is unknown
+    if (tt < MOON_SPAN[0] - 36525 || tt > MOON_SPAN[1] + 36525) continue;
+    const rel = def.id === 'Phoebe' ? smallVector('Phoebe', tt) : moonVector(def.id, tt);
+    if (!rel) continue;
+    addMoon(parent, def, rel);
+    byId[def.id].inSpan = tt >= MOON_SPAN[0] && tt <= MOON_SPAN[1];
+  }
+
+  // --- asteroids, dwarf planets, Halley: light-time corrected (two passes), aberration as for everything else ---
+  const ssb = small.data ? vecOf(A.HelioVector('SSB', time)) : null;      // Sun -> barycentre (its change over the light time is under 0.01 arcsec for all of these)
+  if (small.data) for (const def of SMALL) {
+    if (!smallCovers(def.id, time.tt)) continue;
+    const at = (t) => smallHelio(def.id, t, ssb);
+    const obsHel = add(earth, obsVec);
+    const geo = sub(at(time), obsHel);
+    let tau = len(geo) / C_AU_PER_DAY, hel = null, seen = geo;
+    for (let k = 0; k < 2; k++) {
+      const tr = time.AddDays(-tau);
+      hel = at(tr); if (!hel) break;
+      seen = sub(hel, obsHel); tau = len(seen) / C_AU_PER_DAY;
+    }
+    if (!hel) continue;
+    if (aberration) { const d = len(seen), v = add(scale(seen, 1 / d), frame.betaTrue); seen = scale(unit(v), d); }
+    const v = lightTime ? seen : geo, d = len(v), rs = len(hel);
+    const b = { ...def, moons: [], vecSeen: seen, vecGeo: geo, vec: v, dist: d, u: unit(v), lightMin: len(seen) / C_AU_PER_DAY * 1440, shiftDeg: Math.atan2(len(cross(seen, geo)), dot(seen, geo)) * RAD, helioDist: rs };
+    b.hor = mulMV(frame.Mjh, b.u); b.angRadius = Math.asin(Math.min(1, def.radiusKm / AU_KM / d)) * RAD;
+    b.toSun = scale(hel, -1); b.ttSeen = time.tt - (lightTime ? b.lightMin / 1440 : 0);
+    const c = dot(unit(hel), unit(v)); b.phaseAngle = Math.acos(Math.max(-1, Math.min(1, c))) * RAD; b.phaseFrac = (1 + c) / 2;
+    if (def.kind === 'comet') b.mag = def.M1 + 5 * Math.log10(d) + def.K1 * Math.log10(rs);
+    else { const tp = Math.tan(b.phaseAngle * DEG / 2), p1 = Math.exp(-3.33 * Math.pow(tp, 0.63)), p2 = Math.exp(-1.87 * Math.pow(tp, 1.22)); b.mag = def.H + 5 * Math.log10(rs * d) - 2.5 * Math.log10(Math.max(1e-6, (1 - def.G) * p1 + def.G * p2)); }
+    b.elong = Math.acos(Math.max(-1, Math.min(1, dot(b.u, sun.u)))) * RAD;
+    if (def.id === 'Haumea') b.fig = [1161, 852, 513];
+    list.push(b); byId[b.id] = b;
+  }
   return { list, byId, sun, moon: byId.Moon };
 }

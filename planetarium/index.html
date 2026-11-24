@@ -102,6 +102,8 @@
       <label class="check"><input type="checkbox" data-show="atmosphere"> Atmosphere <span class="k">A</span></label>
       <label class="check"><input type="checkbox" data-show="refraction"> Refraction <span class="k">F</span></label>
       <label class="check"><input type="checkbox" data-show="ground"> Ground <span class="k">G</span></label>
+      <label class="check"><input type="checkbox" data-show="steady"> Steady sky when time runs fast</label>
+      <div class="hint">On: while you follow something and time runs faster than about a day every 17 seconds, day and night, the ground and refraction are not drawn and the view does not spin with the sky. Off: everything is drawn, and flickers as days go by.</div>
       <div class="slider-row">
         <label for="bortle">Light pollution</label>
         <input id="bortle" type="range" min="1" max="9" step="1">
@@ -125,11 +127,12 @@
       <h3>Solar system</h3>
       <label class="check"><input type="checkbox" id="lightTimeChk"> Light-travel time</label>
       <div class="hint">On: bodies are drawn where we see them (light that left them minutes ago). Off: where they are at this instant.</div>
+      <label class="check"><input type="checkbox" data-show="sunspots"> Sunspots (as photographed, October and November 2026)</label>
     </section>
     <section>
       <h3>Faint stars</h3>
       <label class="check"><input type="checkbox" data-show="netStars"> Fetch faint stars online (Gaia DR3)</label>
-      <div class="hint">On: when you zoom in past magnitude 12, the stars of the field on screen are fetched from the GAVO Data Center in Heidelberg. Only the sky position of the field is sent. Off, or offline: stars to magnitude 12 from the built-in catalogue.</div>
+      <div class="hint">On: when you zoom in past magnitude 12, the stars of the field on screen are fetched: to magnitude 17 from this site’s star tiles (stars.sethhopper.com), beyond that from the GAVO Data Center in Heidelberg, which also stands in if the tiles cannot be reached. Only the sky position of the field is sent. Off, or offline: stars to magnitude 12 from the built-in catalogue.</div>
     </section>
   </div>
 </aside>

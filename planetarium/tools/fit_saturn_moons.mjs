@@ -1,3 +1,4 @@
+// SUPERSEDED 2026-11-24 by tools/fit_bodies.py (its table is no longer in js/ephem.js): kept for the record, does not run.
 // Derive the Saturn-moon orbit table used in js/ephem.js, and measure how good it is.
 //   node tools/fit_saturn_moons.mjs
 //

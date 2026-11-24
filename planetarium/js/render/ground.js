@@ -3,7 +3,7 @@
 // screen, so the ground is filled analytically rather than from sampled points.
 
 import { DEG, azAltToHor } from '../astro.js';
-import { state } from '../state.js';
+import { state, eff } from '../state.js';
 import { cam, projectHor } from '../camera.js';
 import { R } from './proj.js';
 import { groundColour } from './sky.js';
@@ -58,10 +58,11 @@ function screenVsCircle(hc) {
 }
 
 export function drawGround(ctx) {
+  if (eff.steady === 'full') return;      // steady.js: no ground, horizon line or compass points sweeping past
   const hc = horizonCircle();
   const sky = R.sky;
   const rel = hc.line ? 'cross' : screenVsCircle(hc);
-  if (state.show.ground) {
+  if (eff.ground) {
     ctx.fillStyle = groundColour(sky);
     ctx.beginPath();
     if (hc.line) {
@@ -80,7 +81,7 @@ export function drawGround(ctx) {
       traceInside(ctx, hc, false); ctx.fill('evenodd');
     }
   }
-  if (state.show.ground) drawGroundShade(ctx, sky, R.bodies);
+  if (eff.ground) drawGroundShade(ctx, sky, R.bodies);
   // horizon: a soft haze band plus a thin line
   const stroke = (w, style) => {
     ctx.lineWidth = w; ctx.strokeStyle = style; ctx.beginPath();
@@ -89,7 +90,7 @@ export function drawGround(ctx) {
     ctx.stroke();
   };
   if (rel === 'cross') {
-    if (state.show.ground) {
+    if (eff.ground) {
       const hz = sky.atmo ? 0.5 + 0.5 * sky.day : 0.25;
       const tint = sky.atmo ? (sky.day > 0.5 ? '190,205,220' : '120,135,160') : '90,100,120';
       stroke(16, `rgba(${tint},${0.035 * hz})`); stroke(8, `rgba(${tint},${0.06 * hz})`); stroke(3, `rgba(${tint},${0.10 * hz})`);

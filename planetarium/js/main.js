@@ -16,6 +16,8 @@ import { allPicks } from './picks.js';
 import { setLabelInset } from './render/grids.js';
 import { initMeasure, drawMeasures, measureClick } from './measure.js';
 import { initExtras, extrasClick } from './extras.js';
+import { loadSmallBodies } from './moons.js';
+import { initSteady } from './steady.js';
 import { initLabsSuite } from './labs/index.js';
 import { initDeepStars, deep } from './deepstars.js';
 import { fieldAdjust } from './render/density.js';
@@ -32,6 +34,7 @@ async function start() {
     loading.classList.add('err');
     return;
   }
+  loadSmallBodies();            // asteroids, dwarf planets, Phoebe, Halley: the app runs without them
   initDeepStars();              // faint stars (Gaia DR3): manifest and count map now, tiles on demand; the app runs without them
   const canvas = document.getElementById('sky');
   const search = initSearch(document.getElementById('search'));
@@ -54,6 +57,7 @@ async function start() {
   // handle for the console and for automated checks
   window.planetarium = { state, cam, perf, stars, deep, dso, constellations, getFrame, getBodies, allPicks, emit, A, fieldAdjust };
   initExtras({ canvas });       // teaching panels, pointer read-out, right-click menu, Milky Way, night mode (js/extras.js)
+  initSteady();
   initLabsSuite();              // measuring tools, labs menu, URL parameters (js/labs/index.js)
 }
 start();

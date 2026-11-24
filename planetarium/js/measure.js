@@ -7,7 +7,7 @@
 // Angles are between true directions (no refraction), so they match catalogue separations.
 
 import { DEG, RAD, mod, mulMV, unit, cross, angleBetween, unrefractHor, toSph, fmtDMS } from './astro.js';
-import { state, on, emit } from './state.js';
+import { state, on, emit, eff } from './state.js';
 import { cam, unproject, projectHor } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
@@ -27,7 +27,7 @@ let panel = null;
 function skyVec(x, y) {
   const frame = getFrame();
   let h = unproject(x, y);
-  if (state.show.refraction) h = unrefractHor(h);
+  if (eff.refraction) h = unrefractHor(h);
   return unit(mulMV(frame.Mhj, h));
 }
 /** Position angle (deg, north through east, J2000) of direction v as seen from centre c. */
@@ -178,6 +178,8 @@ export function lastMeasure() {
 
 export function initMeasure(canvas, panelEl) {
   panel = panelEl;
+  // the object panel above keeps clear of this one (css: --mp-h)
+  new ResizeObserver(() => { document.documentElement.style.setProperty('--mp-h', (panel.hidden || !panel.offsetHeight || innerWidth <= 560 ? 0 : panel.offsetHeight + 4) + 'px'); }).observe(panel);
   canvas.addEventListener('pointermove', (e) => {
     if (!measure.active || !measure.pending) return;
     const r = canvas.getBoundingClientRect();

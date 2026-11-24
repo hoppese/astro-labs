@@ -4,16 +4,19 @@
 
 import { A, DEG, RAD, AU_KM, LY_PER_PC, mod, mulMV, toSph, horToAzAlt, fmtRA, fmtDMS, fmtHA, fmtAngle, fmtMag } from './astro.js';
 import { see } from './notebook/seeing.js';
-import { state, on, emit } from './state.js';
+import { state, on, emit, eff } from './state.js';
 import { getFrame } from './skyframe.js';
-import { getBodies, MOON_PARENT } from './ephem.js';
+import { getBodies, MOON_PARENT, SMALL } from './ephem.js';
 import { starRecord, dso, constellations, DSO_TYPES, ASTROMETRY } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
 import { deepRecord, PROVIDER } from './deepstars.js';
 import { fmtClock } from './timeutil.js';
 import { linksFor, loadLinks } from './links.js';
-import { rowHidden } from './labs/hidden.js';
+import { BODY_ART } from './bodydata.js';
+import { bodyAxes, subPoint, figure, jupiterSystems, grsLongitude, nextGrsTransit } from './orient.js';
+import { moonError } from './moons.js';
+import { rowHidden, running } from './labs/hidden.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
 let trailing = null;
@@ -43,6 +46,32 @@ export function initInfo(el) {
   });
 }
 
+/** Rows about which side of a body we see, from its rotation (orient.js). */
+function faceRows(b, row, frame) {
+  const ax = bodyAxes(b.id, b.ttSeen ?? frame.time.tt); if (!ax) return;
+  const toUs = [-b.u[0], -b.u[1], -b.u[2]], fig = figure(b.id), e = subPoint(ax, toUs, fig);
+  const sgn = (v, n = 1) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(n) + '°';
+  const j = toSph(b.u), E = [-Math.sin(j.lon * DEG), Math.cos(j.lon * DEG), 0], N = [-Math.sin(j.lat * DEG) * Math.cos(j.lon * DEG), -Math.sin(j.lat * DEG) * Math.sin(j.lon * DEG), Math.cos(j.lat * DEG)];
+  const pa = mod(Math.atan2(ax.z[0] * E[0] + ax.z[1] * E[1], ax.z[0] * N[0] + ax.z[1] * N[1] + ax.z[2] * N[2]) * RAD, 360);
+  if (b.id === 'Sun') {
+    // the Sun's axis is given against the true north of date
+    row('Centre of the disc', 'L<sub>0</sub> ' + e.lon.toFixed(1) + '°, B<sub>0</sub> ' + sgn(e.lat)); row('Axis', 'P ' + sgn(pa > 180 ? pa - 360 : pa));
+    return;
+  }
+  if (b.id === 'Moon') row('Libration', 'longitude ' + sgn(e.lon > 180 ? e.lon - 360 : e.lon) + ', latitude ' + sgn(e.lat));
+  else if (b.id === 'Jupiter') { const s = jupiterSystems(e.lon, b.ttSeen); row('Central meridian', `I ${s.I.toFixed(1)}°&ensp;II ${s.II.toFixed(1)}°&ensp;III ${s.III.toFixed(1)}°`); }
+  else row('Central meridian', e.lon.toFixed(1) + '° E (' + mod(360 - e.lon, 360).toFixed(1) + '° W)');
+  if (b.id !== 'Moon' && b.id !== 'Saturn') row('Tilt toward us', sgn(e.lat) + (e.lat >= 0 ? ' (north' : ' (south') + ' side toward us)');
+  if (b.toSun) { const s = subPoint(ax, b.toSun, fig); if (b.kind !== 'satellite' && b.id !== 'Moon') row('Sun overhead', 'latitude ' + sgn(s.lat) + (b.polarKm ? ' (planetocentric)' : '')); }
+  row('Axis', 'position angle ' + pa.toFixed(1) + '°');
+  if (b.id === 'Jupiter') {
+    const g = grsLongitude(b.ttSeen), tau = b.lightMin / 1440, now = jupiterSystems(e.lon, b.ttSeen).II, tt = frame.time.tt;
+    const t = nextGrsTransit(tt, (x) => now + 870.27 * (x - tt), state.lightTime ? tau : 0);
+    const min = Math.round(g.sigma * 1.66);
+    row('Great Red Spot', `System II ${g.lon.toFixed(0)}° ± ${g.sigma.toFixed(0)}°` + (g.ok ? '' : ' <span class="nodata">(unreliable for this date)</span>'));
+    row('Spot crosses centre', g.ok ? fmtClock(frame.timeMs + (t - tt) * 86400000, state.loc.tz) + ` ± ${min} min` : '<span class="nodata">no reliable drift for this date</span>');
+  }
+}
 /** Rise, transit and set of the pass that contains (or is nearest to) the current instant. */
 function riseTransitSet(ref, frame, eqjUnit) {
   const key = refKey(ref) + '|' + Math.round(frame.timeMs / 300000) + '|' + frame.loc.lat + '|' + frame.loc.lon;
@@ -90,7 +119,7 @@ function render(force) {
   const eqj = refEqj(ref, frame, bodies);
   if (!eqj) return;
   const tz = state.loc.tz;
-  let title = '', aka = '', type = '', note = '';
+  let title = '', aka = '', type = '', note = '', pic = '';
   const rows = [];
   const row = (k, v) => rows.push(`<tr><td>${k}</td><td>${rowHidden(k) ? '<span class="nodata">hidden during this lab</span>' : v}</td></tr>`);      // labs/hidden.js: what the lab asks for
   const sep = () => rows.push('<tr class="sep"><td></td><td></td></tr>');
@@ -132,7 +161,7 @@ function render(force) {
     if (b.kind === 'sun') type = 'Star';
     else if (b.kind === 'moon') type = "Earth's moon";
     else if (b.kind === 'satellite') type = `Moon of <button class="btn" style="padding:1px 7px;font-size:11.5px" data-act="parent" data-id="${b.parent}">${b.parent}</button>`;
-    else type = 'Planet';
+    else type = b.kind === 'dwarf' ? 'Dwarf planet' : b.kind === 'asteroid' ? 'Asteroid' : b.kind === 'comet' ? 'Comet' : 'Planet';
     row('Magnitude', fmtMag(b.mag));
     if (b.kind === 'moon') row('Distance', Math.round(b.dist * AU_KM).toLocaleString('en-US') + ' km');
     else row('Distance', b.dist.toFixed(b.dist < 2 ? 4 : 3) + ' au');
@@ -142,11 +171,23 @@ function render(force) {
       row('Illuminated', (b.phaseFrac * 100).toFixed(b.kind === 'moon' ? 2 : 1) + '%' + (b.kind === 'moon' ? ' · ' + moonPhaseName(A.MoonPhase(frame.time)) : ''));
       if (b.kind !== 'satellite') row('Elongation', b.elong.toFixed(1) + '° from the Sun');
     }
-    if (b.id === 'Saturn') row('Ring tilt', (b.ringTilt >= 0 ? '+' : '−') + Math.abs(b.ringTilt).toFixed(1) + '° (' + (b.ringTilt >= 0 ? 'north' : 'south') + ' face)');
+    if (b.id === 'Saturn') row('Ring tilt', (b.ringTilt >= 0 ? '+' : '−') + Math.abs(b.ringTilt).toFixed(1) + '° (' + (b.ringTilt >= 0 ? 'north' : 'south') + ' face toward us)');
     const lt = b.lightMin;
     row('Light time', lt >= 1 ? lt.toFixed(1) + ' min' : (lt * 60).toFixed(2) + ' s');
     row('Seen vs. actual', fmtAngle(b.shiftDeg) + (state.lightTime ? '' : ' (showing actual)'));
-    if (b.kind === 'satellite' && b.parent === 'Saturn') note = b.id === 'Mimas' ? 'Approximate position: Mimas can be 10\u00b0 or more of orbital longitude from its true place (several arcseconds on the sky).' : 'Approximate position: within about 1\u00b0 of orbital longitude (roughly 1\u2033 on the sky) for dates within a decade of 2026, drifting slowly beyond that.';
+    faceRows(b, row, frame);
+    if (b.kind === 'satellite') {
+      const km = moonError(b.id);
+      if (km != null) {
+        const as = km / AU_KM / b.dist * 206265;
+        if (b.inSpan === false) note = 'Outside 1950 to 2100 this moon’s place is an extrapolation and not reliable.';
+        else if (as > 0.3) note = `Position from a fit to JPL Horizons for 1950 to 2100: can be ${as < 2 ? as.toFixed(1) : Math.round(as)}″ (${Math.round(km).toLocaleString('en-US')} km) from its true place.`;
+      }
+    }
+    const art = BODY_ART[b.id];
+    if (art) { if (art.note && !(b.id === 'Sun' && (!state.show.sunspots || running.id))) note += (note ? ' ' : '') + art.note; pic = art.credit; }
+    else if (b.kind === 'comet') note += 'Magnitude: the whole comet, from JPL’s parameters, very uncertain. Its nucleus (about 15 × 8 km, photographed by Giotto in 1986) is far too small to see, and no tail is drawn.';
+    else if (SMALL.some((x) => x.id === b.id) && b.kind === 'dwarf') note += 'Never imaged as more than a point or a few blurred pixels: drawn as a plain disc of its measured size' + (b.id === 'Haumea' ? ' (an ellipsoid 2,322 × 1,704 × 1,026 km; which way it is turned is not modelled).' : '.');
     if (b.kind === 'satellite') note += (note ? ' ' : '') + 'Magnitude ignores the phase and any eclipse by the planet’s shadow.';
   } else if (ref.kind === 'dso') {
     const o = dso.rows[ref.idx];
@@ -178,7 +219,7 @@ function render(force) {
   row('<span title="J2000 axes, as seen now: proper motion, aberration and parallax are included when switched on (Labs, Corrections), so it can differ from a catalogue by up to about 20 arcseconds">RA / Dec (J2000)</span>', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
   row('RA / Dec (of date)', fmtRA(d.lon, raDp) + '&ensp;' + fmtDMS(d.lat, { dp: decDp }));
   { const ecl = toSph(mulMV(frame.Mjt, eqj)); row('Ecliptic lon / lat', ecl.lon.toFixed(fine ? 4 : 2) + '°&ensp;' + (ecl.lat >= 0 ? '+' : '−') + Math.abs(ecl.lat).toFixed(fine ? 4 : 2) + '° (of date)'); }
-  row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (state.show.refraction ? '' : ' (no refraction)'));
+  row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (eff.refraction ? '' : ' (no refraction)'));
   row('Hour angle', fmtHA(mod(frame.lst - d.lon / 15 + 12, 24) - 12));
   if (ref.kind !== 'con') {
     const ev = riseTransitSet(ref, frame, eqj);
@@ -199,7 +240,7 @@ function render(force) {
     `<button class="btn" data-act="zoom" title="Centre and zoom in">Zoom to</button></div>`;
   const ls = rowHidden('Parallax') ? [] : linksFor(ref);      // a lab that hides the parallax does not link to it either
   const look = ls.length ? `<div class="look"><span>Look it up</span>${ls.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.title)}">${esc(l.label)}</a>`).join('')}</div>` : '';
-  const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '');
+  const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + (pic ? `<div class="note">Picture: ${pic}.</div>` : '');
   // The numbers change several times a second, the buttons and links hardly ever: they live in boxes of their own, each touched
   // only when it changes. (A button replaced between press and release never gets its click.)
   if (!panel.querySelector('.ip-main')) { panel.innerHTML = '<button class="close" data-act="close" aria-label="Deselect">&times;</button><div class="ip-main"></div><div class="ip-look"></div><div class="ip-acts"></div>'; partHtml = {}; }

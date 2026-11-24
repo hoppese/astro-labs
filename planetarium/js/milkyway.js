@@ -48,7 +48,7 @@ export function loadMilkyWay() {
 export function milkyWayVisibility(sky) {
   // sky.base = naked-eye limiting magnitude now (Bortle, Moon, twilight). The band needs about mag 5.5 to
   // be noticed at all and is at its best past mag 7.
-  const v = sky.atmo ? smooth(4.7, 7.3, sky.base) : 1;
+  const v = sky.atmo || sky.held ? smooth(4.7, 7.3, sky.base) : 1;
   return v * smooth(1.5, 9, cam.fov);          // zoomed far in it is only a flat veil: let it go
 }
 

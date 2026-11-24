@@ -45,7 +45,7 @@ function loadPic(it) {
 
 /** How much of a faint glow this sky lets through: 0 in daylight, weak over a city, 1 with no atmosphere. */
 export function glowVisibility(sky) {
-  if (!sky.atmo) return 1;
+  if (!sky.atmo && !sky.held) return 1;
   return smooth(0.5, 3.5, sky.base) * (0.22 + 0.78 * smooth(3.6, 6.6, sky.base));
 }
 function extinction(h, sky) {
@@ -138,7 +138,7 @@ function tangentMesh(it) {
   it.mesh = { n, vecs: out };
 }
 
-let surveyAl = 1;
+let surveyAl = 1, wholeSince = 0;
 let sharp = 0;                // best resolution on screen: picture pixels per screen pixel of the finest picture near the middle
 function drawPics(ctx) {
   if (!pics.items) { loadIndex(); return; }
@@ -231,31 +231,37 @@ function drawSurvey(ctx, vis) {
   const h = unproject(cam.cx, cam.cy), al = strength * extinction(h, R.sky) * (1 - smooth(14, 40, cam.pxPerDeg * 58.63 / 512 / 512));
   if (al < 0.02) return false;
   const want = [...tilesInView(order)], lower = Math.max(3, order - 2);
-  let missing = false, any = false;
-  const sharp = [];
-  for (const p of want) { const t = wantTile(order, p); if (t.state === 2) sharp.push(t); else missing = true; }
-  const put = [];
-  // until the sharp tiles have arrived, the coarse ones stand in
-  if (missing && lower < order) for (const p of new Set(want.map((q) => Math.floor(q / 4 ** (order - lower))))) { const t = wantTile(lower, p); if (t.state === 2) put.push(t); }
-  put.push(...sharp); any = put.length > 0;
-  ctx.globalAlpha = 1; surveyAl = al;
+  // a level is shown only when every tile of the window has arrived, so the picture comes in whole and no diamond shows; until then a coarser level that is whole
+  // (order 3 is asked for first: a handful of tiles), else nothing
+  const levels = [...new Set([order, Math.max(3, order - 2), 3])];
+  let put = null;
+  for (const o of levels.slice().reverse()) {
+    const ts = [...new Set(want.map((q) => Math.floor(q / 4 ** (order - o))))].map((p) => wantTile(o, p));
+    if (ts.length && ts.every((t) => t.state === 2)) put = ts;
+  }
+  const now = performance.now();
+  if (!put) { wholeSince = 0; return false; }
+  if (!wholeSince) wholeSince = now;
+  const fade = smooth(0, 700, now - wholeSince);
+  if (fade < 1) emit('render');
+  ctx.globalAlpha = 1; surveyAl = al * fade;
   for (const t of put) { used = true; drawMesh(ctx, t.img, t.img.width, t.mesh.vecs, t.mesh.n); }
   if (tiles.size > MAXTILES) for (const [k, t] of [...tiles].sort((a, b) => a[1].used - b[1].used).slice(0, tiles.size - MAXTILES)) if (t.used < useNo && t.state !== 1) tiles.delete(k);
-  return any;
+  return true;
 }
 
 // ---- called by the renderer, after the Milky Way and before the grids -------------------------------
-let credit = null, creditText = '';
+let credit = null, creditText = '', note = null;
 /** The credit line now on screen ('' when no imagery is), for screenshots. */
 export const imageryCredit = () => creditText;
 export function drawSkyImages(ctx) {
   pics.shown.clear(); pics.by = '';
   let survey = false;
-  if ((xs.images || xs.survey) && !see.enabled) {          // never under the lab notebook's simulated exposures: a photograph shows the stars where they were decades ago
+  if ((xs.images || xs.skySurvey) && !see.enabled) {          // never under the lab notebook's simulated exposures: a photograph shows the stars where they were decades ago
     const vis = glowVisibility(R.sky);
     if (vis > 0.02) {
       const g = layer(ctx);
-      if (xs.survey) survey = drawSurvey(g, vis);
+      if (xs.skySurvey) survey = drawSurvey(g, vis);
       sharp = 0;
       if (xs.images && !survey) drawPics(g);
       const mid = unproject(cam.cx, cam.cy), over = sharp ? 1 / sharp : 0;      // screen pixels per picture pixel
@@ -264,8 +270,12 @@ export function drawSkyImages(ctx) {
       ctx.restore();
     }
   }
+  if (note || xs.skySurvey) {          // a reminder, with the way out beside it
+    if (!note) { note = document.createElement('div'); note.className = 'steady-note survey-note'; note.innerHTML = '<span>Sky survey on</span><button class="btn" type="button">Turn off</button>'; note.querySelector('button').addEventListener('click', () => emit('survey-off')); document.body.appendChild(note); }
+    note.hidden = !xs.skySurvey;
+  }
   // say whose picture it is whenever one is on screen
-  const txt = survey ? 'Imagery: Digitized Sky Survey (STScI), colour CDS, via ESASky' : pics.shown.size ? 'Imagery: Digitized Sky Survey (STScI), colour CDS' + (pics.by ? '; ' + pics.by + ' (CC BY 4.0)' : '') : xs.survey && pics.survey ? 'Sky survey images: the server is not answering' : '';
+  const txt = survey ? 'Imagery: Digitized Sky Survey (STScI), colour CDS, via ESASky' : pics.shown.size ? 'Imagery: Digitized Sky Survey (STScI), colour CDS' + (pics.by ? '; ' + pics.by + ' (CC BY 4.0)' : '') : xs.skySurvey && pics.survey ? 'Sky survey images: the server is not answering' : '';
   if (txt !== creditText) {
     creditText = txt;
     if (!credit) { credit = document.createElement('div'); credit.className = 'imgcredit'; document.body.appendChild(credit); }

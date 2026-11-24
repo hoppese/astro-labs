@@ -2,7 +2,7 @@
 
 import { mulMV, unit, clamp, toSph } from './astro.js';
 import { state, emit } from './state.js';
-import { cam, update, centerHor, lookAtHor } from './camera.js';
+import { cam, update, centerHor, lookAtHor, FOV_MIN } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
 import { refHorApparent, sameRef } from './objects.js';
@@ -22,7 +22,7 @@ export function cancelAnim() { anim = null; }
 /** A zoom step asked for while a glide is under way changes where the glide ends (it used to be thrown away). */
 export function zoomAnim(factor) {
   if (!anim) return false;
-  anim.toFov = clamp(anim.toFov * factor, 0.0005, 180);
+  anim.toFov = clamp(anim.toFov * factor, FOV_MIN, 180);
   return true;
 }
 
@@ -76,7 +76,8 @@ export function niceFov(ref) {
     const b = bodies.byId[ref.id];
     if (!b) return 10;
     if (b.kind === 'sun' || b.kind === 'moon') return 2.2;
-    if (b.kind === 'satellite') return clamp(b.sepDeg * 5, 0.02, 0.5);
+    if (b.kind === 'satellite') return clamp(b.angRadius * 9, 0.00004, 0.5);
+    if (b.kind === 'asteroid' || b.kind === 'dwarf' || b.kind === 'comet') return clamp(b.angRadius * 9, 0.00004, 0.5);
     if (b.moons && b.moons.length) return clamp(b.angRadius * 2 * 14, 0.08, 0.4);
     return clamp(b.angRadius * 2 * 30, 0.02, 0.3);
   }

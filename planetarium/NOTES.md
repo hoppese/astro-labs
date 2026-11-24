@@ -708,7 +708,7 @@ Stars drawn per cm². Cygnus = RA 305.5° Dec +41° (l 79, b +2; 2026-08-12 05:3
 
 Seth's decision: the stars from G = 12 to 17 are served as static files from a Cloudflare R2 bucket of their own; GAVO stays for
 G > 17 and as the fallback. This pass built the tile set, the loader and the checks. **The tiles are NOT in the repo**: they are in
-`~/Documents/GitHub/astro-labs-stars/gaia/v1/` (a plain folder, no git). Nothing was uploaded: no Cloudflare command was run.
+`~/Documents/GitHub/astro-labs-stars/gaia/v1/` (a plain folder, no git). Nothing was uploaded by that pass. **Status 2026-11-24 (later): the whole set is uploaded and live at https://stars.sethhopper.com/gaia/v1/ with its manifest (verified by the lead on the live site: a field fills in about 0.4 s); the About, Credits and Settings wording now says so. Statements below that the address answers 404, that the bucket is empty, or that the text is unchanged are history.**
 
 ## What is where
 - `tools/build_deep.py`: download + tiles in one resumable job (its header holds the full format). New.
@@ -1046,8 +1046,88 @@ modals and the notebook are left alone. Letters work while a slider or tick-box 
 - Source: colour DSS2, MAST: "these data and derived products may be used freely for all scientific, educational, and non-profit purposes",
   CC BY-NC-SA 4.0. Tiles from ESA's public HiPS mirror `https://skies.esac.esa.int/DSSColor/` (CORS `*`; CDS's own servers were down). ESO and
   ESA/Hubble: CC BY 4.0, credit must be visible (bottom left whenever one is on screen, and on saved screenshots).
-- Survey layer `U` (off by default): the unprocessed survey, HiPS orders 3-9 from ESA. It shows its own stars and plate joints, so it does not meet
+- Survey layer (Settings only, off by default, no key since 2026-11-24; saved as `skySurvey`, so older saved values are ignored; a level is drawn only when every tile of the window has arrived, fading in over 0.7 s; "Sky survey on / Turn off" note): the unprocessed survey, HiPS orders 3-9 from ESA. It shows its own stars and plate joints, so it does not meet
   the standard above and is for looking around only. Six requests at a time, 320 tiles kept, backs off 30 s after four failures.
 - `labs/hidden.js` `latitudeHidden()`: the polaris-latitude lab hides the latitude on the place chip, in Settings and in the screenshot caption.
   Labs that hide the parallax also hide the Look it up links.
-- Free letters now: `Y`.
+- Free letters now: `U` `Y`.
+
+---
+
+# Solar-system bodies and the steady sky (2026-11-24)
+
+Overrides: "Saturn's moons" (fit_saturn_moons.mjs is superseded and does not run), "Jupiter's belts", "no surface detail", "shadows of moons not done", FOV floor (now 0.14″).
+
+## Flashing and jitter at high rates (`js/steady.js`)
+- Measured per frame: the tracked target never left the centre (0.000 px at every rate). What flashed was real but unwatchable: the target set behind the
+  ground, day and night, moonlight and the star limit cycling many times a second, and the alt-az view spinning with the sky. Two real bugs beside it: the
+  120,000 stars were re-placed every frame when zoomed in (7 ms a frame: `epochTol`), and a view into the ground filled the window 50 times (8 ms).
+- Steady sky: following something at ≥ ×5,000 → night sky of the chosen Bortle class, no ground / refraction / extinction, celestial north up, 0.45 s cross-fade,
+  a notice with "Show them"; ≥ ×50,000 without following → only the sky's light is held. Stays after a pause until the clock is slowed, tracking ends, or it is
+  switched off. Setting `state.show.steady` (Settings, Sky). Never while a lab or the notebook's observing conditions run.
+- **Modules ask `eff` (state.js) for atmosphere / refraction / ground / mount; `state.show` and `state.mount` are only the user's switches.**
+- Jupiter, before → after (largest frame-to-frame change of mean brightness, 0-255; times the target vanished or came back in 2.5 s; JS ms median): ×10⁴ 3.2 → 0.5, 0 → 0, 2.7 → 2.6;
+  ×10⁵ 126 → 0.7, 5 → 0, 9.7 → 2.5; ×10⁶ 153 → 0.8, 58 → 0, 9.6 → 2.5. The limiting magnitude jumped up to 18.4 → 0.004. Others after: Saturn 0.6, Mars 1.0, Sun 1.1, Venus 1.2,
+  Moon 3.7 at ×10⁶ (its real phases and size, and diurnal parallax against the stars). What remains: at ×10⁶ a frame is 2-4 hours, so the moons step; a surface turning
+  more than 3 % of a turn a frame is drawn motion-blurred in longitude (globe.js `uSpin`).
+
+## Modules
+- `render/globe.js` WebGL2, one draw per body, per pixel on the triaxial figure, exact anti-aliased outline, copied to the 2D canvas; textures in strips, one a frame
+  (0.1-0.3 ms JS a body; GPU time not measured). `orient.js` + `orient-data.js` (from NAIF pck00011.tpc, `tools/build_orient.py`). `bodydata.js` what is drawn, gain, credit, note.
+  `moons.js` + `moon-data.js` + `data/smallbodies.json` (559 kB, 172 kB gzipped). `render/planets.js` `drawFromMap`.
+- Without WebGL2 the old plain discs are drawn.
+- Light: Lommel-Seeliger (rock), Minnaert 0.94 (clouds), mixes for ice and Mars; Sun I = 0.30 + 0.93μ − 0.23μ². Relief of the Moon from LOLA slopes. Moons' shadows with
+  penumbra, ring shadow on the globe, globe shadow on the rings, lit and unlit ring faces.
+- Labs always get the spotless Sun. `earthShadow` now multiplies the Moon's picture.
+
+## Pictures (`data/bodies/`, 8.0 MB, loaded by body and size; `tools/build_bodies.py RAW data/bodies`; nothing invented; gaps left plain)
+| Body | Picture | Kind | Date | Source | Terms |
+|---|---|---|---|---|---|
+| Moon | LRO WAC colour 4096 px + LOLA slopes | ready map | 2009-2011 | svs.gsfc.nasa.gov/4720 | public domain |
+| Sun | 30 daily SDO/HMI HMIIF photographs, **assembled here** to a 4096 px Carrington map (weights within 17° of the meridian); second set spotless | assembled | 2026-10-25…11-23; 2019-11-18…12-17 | sdo.gsfc.nasa.gov/assets/img/browse | "not copyrighted unless explicitly noted" |
+| Mercury | MESSENGER MDIS | ready | 2011-15 | USGS WMS planetarymaps.usgs.gov, layer MESSENGER | USGS public domain |
+| Venus | Mariner 10 PIA23791, shading divided out, always the same face | photograph | 1974 | NASA Photojournal | JPL: "may be used for any purpose without prior permission" |
+| Mars | Viking MDIM 2.1 colour, chroma moved 35 % toward PIA00407, softened | ready | 1976-80 | USGS WMS MDIM21_color | public domain |
+| Phobos, Deimos | Stooke maps | ready | Viking…MRO | sbnarchive.psi.edu MULTI_SA_MULTI_6_STOOKEMAPS_V3_0 | PDS |
+| Jupiter | OPAL 2025b f631n/f502n/f395n, 18 % less saturated, poles past 70° zonal | ready | 2025-12-11 | archive.stsci.edu/hlsp/opal (doi:10.17909/T9G593) | CC BY 4.0 |
+| Io, Europa, Ganymede, Callisto | Galileo + Voyager; grey ones tinted to PIA00502 / 00716 / 03456; Ganymede and Callisto seams softened | ready | 1979-2003 | USGS WMS | public domain |
+| Amalthea, Hyperion, Proteus | PIA02532, PIA07740, PIA00062 | fixed photograph | 1999, 2005, 1989 | Photojournal | JPL policy |
+| Saturn | OPAL 2025b; colour toward PIA11141; ring-shadow strip interpolated; exposures' steps removed | ready | 2025-08 | OPAL | CC BY 4.0 |
+| Rings | PIA11142 (lit), PIA08389 (unlit), opacity Voyager 2 PPS | assembled profile | 2007-08 / 1981 | Photojournal; PDS VG_2801 PS1P01 | JPL policy; PDS |
+| Mimas … Rhea, Iapetus | Schenk maps PIA18437/435/439/434/438/436 (enhanced colour cut to 8 %) | ready | 2004-14 | Photojournal | JPL policy |
+| Titan | PIA11603, shading divided out | photograph | 2009 | Photojournal | JPL policy |
+| Phoebe | Cassini | ready, gaps plain | 2004 | USGS WMS | public domain |
+| Uranus, Neptune | OPAL 2025a, 2026a; colour PIA00032 / Irwin et al. 2024 | ready, unseen side filled | 2025-10, 2026 | OPAL | CC BY 4.0 |
+| Miranda … Oberon | Voyager 2 / USGS | ready, north plain | 1986 | space.jpl.nasa.gov/tmaps | JPL policy |
+| Triton, Charon | USGS; Pluto PIA11707 | ready, unseen plain | 1989, 2015 | USGS WMS, Photojournal | public domain / JPL |
+| Ceres PIA20354, Vesta HAMO | ready | | 2011-16 | Photojournal, trek.nasa.gov | JPL policy |
+| Pallas, Juno, Hygiea | VLT/SPHERE eso2114a | fixed photograph | 2017-19 | eso.org | CC BY 4.0, visible credit |
+| Corona | NHQ201708210100 | photograph, totality only | 2017-08-21 | images.nasa.gov | NASA |
+| Eris, Haumea, Makemake, Gonggong, Quaoar, Sedna, Orcus, Halley | none exists: plain disc of measured size (Haumea its ellipsoid, orientation not modelled) | | | | |
+
+## Accuracy (`tools/check-bodies.mjs`, check.mjs section 24; Horizons values in `tools/orient-truth.json`, 4 dates 2000-2031)
+- Face (sub-observer longitude, latitude, pole PA): all within 0.09° / 0.006° / 0.013° except Phobos 0.12°, Phoebe 0.39°, Ceres 0.32°, Vesta 1.2° in longitude (Horizons uses newer
+  rotation models there). Horizons' planetographic latitude on triaxial Amalthea, Deimos, Phobos is not comparable.
+- Moons beside their planet, worst of the 4 dates: ≤ 0.12″ (Hyperion 0.47, Iapetus 0.50). Over 1950-2100: Hyperion 1.4″, Iapetus 0.6″, Mimas 0.2″, others under 0.15″.
+  Asteroids ≤ 0.9″, dwarf planets ≤ 0.2″, Halley 0.06″ (16″ at its 2061 perihelion).
+- **Planets themselves are up to 19″ (Neptune), 17″ (Saturn), 9″ (Jupiter, Mars) from Horizons: astronomy-engine's truncated series (as before this pass; not changed).**
+- Great Red Spot: longitudes measured here on 21 OPAL maps 2015-2025 (two rotations a year agree to 0.4°); `grsLongitude()`. Independent: BAA 2025-09-01 L2 = 77°, app 75.4°.
+  Sky & Telescope's calculator (91° on 2026-06-01, 1.75°/month) read 2026-11-24: 2026-06-01 00:05 UT, app 00:04. Its other dates agree only to 8-18 min because its output keeps
+  91.4° all year and does not apply the drift its text states (2026-11-24: it says 06:10, app 06:26 ± 8; with the drift it would be 06:26). A Granada table uses 135°: not credible beside Hubble.
+
+## Left / approximate
+- Jupiter's clouds turn as one piece with the spot (no separate System I). Seasons of Mars' caps, dust, frost: no. Uranus' rings: no. Opposition surge of rings: no. Titan, Venus: no turning.
+- Uranian moons' longitudes not checked against named features (they show their unphotographed north until about 2049). Vesta's zero meridian (Dawn vs IAU) not reconciled. Vesta/Ceres relief is baked in.
+- Comet tails, other comets: no. Trails exist only for Sun, Moon, planets. Moons more than 100 years outside 1950-2100 are not drawn.
+- No Wikipedia links for the new bodies (links.json is checked by Wikidata: re-run build_links.mjs with them).
+- Not tested: Safari, Firefox, phones, machines without WebGL2, a slow laptop; GPU time.
+
+## Sky light in front of the bodies (2026-11-24, later)
+- Every body hides what is behind it by having the sky background painted again inside its outline (`sky.js repaintSky`, `globe.js`), then its own light is ADDED
+  ('lighter'); only the Sun's disc is laid over. So the dark Moon by day is exactly the sky's colour and shows only where it covers the Sun; a planet in transit has the
+  sky's colour too. The Sun's glare is drawn last, over everything; its aureole is weaker below 8° (solar-filter look). Earthshine and the Moon's halo fade with
+  the Sun's altitude (−11° to −4°). In an eclipse the umbra multiplies the Moon and the sky's share is put back.
+- `sun-moon-size` and `eclipse-two-sites` now have the atmosphere off (the Moon's limb is invisible by day). By mouse: Sun 31.927′, Moon 33.698′ as in LABS.md;
+  by dispatched pointer events Venus 57.81″, Mercury 9.95″, Jupiter 38.38″, Saturn 18.88″, Mars 7.58″, each equal to its true diameter.
+- Panel tilts are planetocentric everywhere (Saturn has only "Ring tilt"). The object panel stops above the angle tool (`--mp-h`, measure.js): all 35 labs checked at
+  1512 × 772, 1440 × 800 and 800 × 560 (iframes): no panel overlaps another.

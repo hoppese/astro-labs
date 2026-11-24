@@ -6,7 +6,7 @@
 // This is a visual model tuned to look right, not a radiative-transfer calculation.
 
 import { DEG, RAD, clamp, lerp, smooth, angleBetween } from '../astro.js';
-import { state, emit } from '../state.js';
+import { state, eff, emit } from '../state.js';
 import { cam, unproject } from '../camera.js';
 import { densityLimit } from './density.js';
 import { depthNow, shownLimit } from '../deepstars.js';
@@ -51,11 +51,11 @@ export function discOverlap(r1, r2, d) {
 
 /** Sky conditions for this frame. */
 export function skyConditions(bodies) {
-  const atmo = state.show.atmosphere;
+  const atmo = eff.atmosphere, held = !!eff.steady && state.show.atmosphere;      // held: steady.js keeps this sky at night, without Moon
   const sunAlt = Math.asin(bodies.sun.hor[2]) * RAD;
   const moon = bodies.moon, moonAlt = Math.asin(moon.hor[2]) * RAD;
   // without an atmosphere there is no scattered light at all: no daylight, no light pollution
-  const nelm = atmo ? BORTLE_NELM[state.bortle] : BORTLE_NELM[1];
+  const nelm = atmo || held ? BORTLE_NELM[state.bortle] : BORTLE_NELM[1];
   // a solar eclipse dims the daylight: sunFrac = fraction of the Sun's disc left uncovered by the Moon
   const sunFrac = 1 - discOverlap(bodies.sun.angRadius, moon.angRadius, angleBetween(bodies.sun.u, moon.u));
   const eclipseGain = Math.min(6.5, -2.5 * Math.log10(sunFrac + 0.0025));          // magnitudes regained
@@ -74,7 +74,7 @@ export function skyConditions(bodies) {
   const crowd = densityLimit(perCm2);
   const limWant = Math.min(physical, crowd, depthCap(), glare);      // the limit this view should reach; limMag is what is drawn now
   return {
-    atmo, sunAlt, moonAlt, nelm, dayLoss, moonLoss, sunFrac,
+    atmo, held, sunAlt, moonAlt, nelm, dayLoss, moonLoss, sunFrac,
     sunDim: 0.1 + 0.9 * Math.sqrt(sunFrac),         // how much of the daylight colour survives an eclipse
     base,                                           // naked-eye limit under this sky
     physical, crowd, perCm2, glare,
@@ -128,7 +128,7 @@ const GW = 96, GH = 54;
 let off = null, octx = null, img = null;
 
 export function drawSkyBackground(ctx, sky, bodies) {
-  if (!sky.atmo) { ctx.fillStyle = '#01030a'; ctx.fillRect(0, 0, cam.w, cam.h); return; }
+  if (!sky.atmo) { const l = sky.held ? (state.bortle - 1) / 8 : -1; ctx.fillStyle = l < 0 ? '#01030a' : `rgb(${3 + 16 * l},${5 + 16 * l},${12 + 18 * l})`; ctx.fillRect(0, 0, cam.w, cam.h); return; }
   if (!off) {
     off = document.createElement('canvas'); off.width = GW; off.height = GH;
     octx = off.getContext('2d'); img = octx.createImageData(GW, GH);
@@ -143,6 +143,7 @@ export function drawSkyBackground(ctx, sky, bodies) {
   const zD = [38, 96, 190], hD = [158, 196, 236];
   const zT = [14, 28, 68], hT = [46, 62, 104];         // deep twilight
   const tw = smooth(-18, -5, sunAlt) * (1 - day);
+  const aurCap = 0.14 + 0.41 * smooth(1.5, 8, cam.fov);      // zoomed in, as through a solar filter: the Moon and planets in front of the Sun have the sky's colour and must stand out
   for (let j = 0; j < GH; j++) {
     for (let i = 0; i < GW; i++) {
       const h = unproject((i + 0.5) / GW * cam.w, (j + 0.5) / GH * cam.h);
@@ -163,7 +164,7 @@ export function drawSkyBackground(ctx, sky, bodies) {
       // aureole round the Sun when it is up (or nearly)
       const glow = (Math.exp(-gamma / 7) * 0.9 + Math.exp(-gamma / 28) * 0.35) * smooth(-4, 3, sunAlt) * sky.sunDim;
       // capped so that the Sun's disc (and a planet in transit) still stands out against it when zoomed in
-      const gl = Math.min(glow, 0.55);
+      const gl = Math.min(glow, aurCap);
       d[o] = Math.min(d[o] + 150 * gl, 214); d[o + 1] = Math.min(d[o + 1] + 140 * gl, 226); d[o + 2] = Math.min(d[o + 2] + 110 * gl, 244);
       d[o + 3] = 255;
     }
@@ -173,6 +174,12 @@ export function drawSkyBackground(ctx, sky, bodies) {
   ctx.drawImage(off, 0, 0, GW, GH, 0, 0, cam.w, cam.h);
 }
 
+/** The sky between us and a body: painted again inside the body's outline (the current clip), so that the body hides what is behind it and its own light can then be
+ *  ADDED on top. The unlit part of the Moon by day is thus exactly the colour of the sky beside it. Same pixels as the background, no stars. */
+export function repaintSky(ctx, sky) {
+  if (!sky.atmo || !off) { const l = sky.held ? (state.bortle - 1) / 8 : -1; ctx.fillStyle = l < 0 ? '#01030a' : `rgb(${3 + 16 * l},${5 + 16 * l},${12 + 18 * l})`; ctx.fillRect(0, 0, cam.w, cam.h); return; }
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'low'; ctx.drawImage(off, 0, 0, GW, GH, 0, 0, cam.w, cam.h);
+}
 /** Ground colour for the current light. */
 export function groundColour(sky) {
   const d = sky.day, lp = sky.atmo ? (state.bortle - 1) / 8 : 0;
