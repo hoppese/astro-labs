@@ -178,6 +178,8 @@
           <div class="lbl"><span>date</span><span class="val" id="dVal"></span></div>
           <input type="range" id="dSlider" min="0" max="1825" step="1" value="325" aria-label="date">
         </div>
+        <div class="slider-row"><div class="lbl" style="align-items:center;"><label for="spSel">play speed</label>
+          <select id="spSel" style="font:600 12px 'Source Sans 3',sans-serif;color:#44521a;background:#fff;border:1px solid #dfe3e7;border-radius:7px;padding:3px 6px;"></select></div></div>
         <div class="slider-row" id="dRow">
           <div class="lbl"><span>Ptolemy: epicycle centre</span><span class="val" id="pVal"></span></div>
           <input type="range" id="pSlider" min="0.2" max="0.57" step="0.01" value="0.5" aria-label="Ptolemaic epicycle centre distance as a fraction of the Sun's distance">
@@ -602,11 +604,14 @@ function render() {
 
 // ---------- animation & controls ----------
 let playing = false, rafId = null, lastTs = null;
+// play speeds in days per second, slowest first; the last one is the original speed
+const RATES = { Ve: [3, 8, 20, 40], Me: [1, 2.5, 6, 12] }; let spIdx = 1;
+function fillSpeeds() { $('spSel').innerHTML = RATES[PL].map((r, i) => '<option value="' + i + '"' + (i === spIdx ? ' selected' : '') + '>' + ['slow', 'normal', 'fast', 'fastest'][i] + ': ' + r + ' days/s</option>').join(''); }
 function tick(ts) {
   if (!playing) return;
   if (lastTs == null) lastTs = ts;
-  const dt = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
-  frac += dt * (PL === 'Ve' ? 40 : 12);   // days per second: one Venus cycle ≈ 15 s, one Mercury cycle ≈ 10 s
+  const dt = Math.min(1.5, (ts - lastTs) / 1000); lastTs = ts;
+  frac += dt * RATES[PL][spIdx];
   const sl = $('dSlider'); let v = +sl.value;
   while (frac >= 1) { frac -= 1; v += 1; }
   if (v > +sl.max) v = 0;
@@ -619,10 +624,12 @@ function setPlaying(p) {
   if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (rafId) cancelAnimationFrame(rafId);
 }
 function setPlanet(k) {
-  PL = k; document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', b.dataset.p === k));
+  PL = k; fillSpeeds(); document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', b.dataset.p === k));
   const m = maxD(k), sl = $('pSlider'); sl.max = m; if (+sl.value > m) sl.value = m;
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
+$('spSel').addEventListener('change', () => { spIdx = +$('spSel').value; });
+fillSpeeds();
 window.addEventListener('resize', () => render());
 $('resetBtn').addEventListener('click', () => { setPlaying(false); frac = 0; rpText = null; $('dSlider').value = 325; render(); });
 ['dSlider', 'pSlider'].forEach(id => $(id).addEventListener('input', () => { frac = 0; rpText = null; render(); }));

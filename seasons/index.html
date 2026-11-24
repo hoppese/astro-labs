@@ -186,6 +186,12 @@
           <button data-n="264">Sep equinox</button>
           <button data-n="354">Dec solstice</button>
         </div>
+        <div class="slider-row" style="gap:4px;">
+          <div class="lbl"><span id="spLbl">Play speed</span><span class="val" id="spVal">10 days/s</span></div>
+          <div class="chips" id="speedChips" role="group" aria-labelledby="spLbl">
+            <button data-s="5">slower</button><button data-s="10" class="on">normal</button><button data-s="20">faster</button><button data-s="40">fastest</button>
+          </div>
+        </div>
         <div class="section-label" style="margin-top:4px;">Your latitude</div>
         <div class="slider-row">
           <div class="lbl"><span id="latLbl">40&deg; N</span><span class="val" id="latVal">40&deg;</span></div>
@@ -262,11 +268,12 @@ let playing = false, rafId = null, lastTs = null, dayF = null;
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MDAYS = [31,28,31,30,31,30,31,31,30,31,30,31];
 
-function dayN() { return +$('daySlider').value; }
+function dayN() { return playing && dayF != null ? dayF : +$('daySlider').value; }   // exact date while playing, so slow speeds move smoothly
+let daysPerSec = 10;
 function lat() { return +$('latSlider').value; }
 
 function dateStr(n) {
-  let d = n; for (let m = 0; m < 12; m++) { if (d < MDAYS[m]) return MONTHS[m] + ' ' + (d + 1); d -= MDAYS[m]; }
+  let d = Math.max(0, Math.round(n)); for (let m = 0; m < 12; m++) { if (d < MDAYS[m]) return MONTHS[m] + ' ' + (d + 1); d -= MDAYS[m]; }
   return 'Dec 31';
 }
 function declination(n) {
@@ -751,8 +758,8 @@ function tick(ts) {
   if (!playing) return;
   if (lastTs == null) lastTs = ts;
   const dt = (ts - lastTs) / 1000; lastTs = ts;
-  dayF = (dayF == null ? dayN() : dayF) + dt * 40; if (dayF > 364.5) dayF -= 365;
-  $('daySlider').value = Math.round(dayF);
+  dayF = (dayF == null ? dayN() : dayF) + Math.min(dt, 1.5) * daysPerSec; if (dayF >= 364.5) dayF -= 365;
+  $('daySlider').value = Math.max(0, Math.round(dayF));
   render();
   rafId = requestAnimationFrame(tick);
 }
@@ -769,6 +776,12 @@ document.querySelectorAll('#lowerTabs button').forEach(b => b.addEventListener('
   lowerTab = b.dataset.t; document.querySelectorAll('#lowerTabs button').forEach(x => x.classList.toggle('on', x === b)); render();
 }));
 window.addEventListener('resize', () => render());
+function setSpeed(v) {
+  daysPerSec = v; $('spVal').textContent = v + ' days/s';
+  document.querySelectorAll('#speedChips button').forEach(b => { const on = +b.dataset.s === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.title = v && 'one year in about ' + Math.round(365 / b.dataset.s) + ' s'; });
+}
+document.querySelectorAll('#speedChips button').forEach(b => b.addEventListener('click', () => setSpeed(+b.dataset.s)));
+setSpeed(10);
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { setPlaying(false); $('daySlider').value = b.dataset.n; render(); }));
 
 function katexAll() {

@@ -48,8 +48,8 @@
   .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 3px; font:600 9.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; line-height:1.15; }
   .chips button:hover { border-color:#5b6bb0; }
   .chips button.on { background:#e9ebf5; border-color:#5b6bb0; color:#3a4179; }
-  .results { display:flex; flex-direction:column; gap:7px; }
-  .resrow { display:flex; align-items:center; justify-content:space-between; background:#edeef6; border-radius:8px; padding:7px 11px; gap:8px; }
+  .results { display:flex; flex-direction:column; gap:4px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#edeef6; border-radius:8px; padding:4px 11px; gap:8px; }
   .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#33375a; }
   .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#3a4179; text-align:right; }
   .resrow.big .v { font-family:'Source Sans 3',sans-serif; font-size:12.5px; }
@@ -174,19 +174,19 @@
         </div>
         <div class="section-label">Pick a star</div>
         <div class="chips" id="chips">
-          <button data-d="89.3" data-name="Polaris">Polaris</button>
-          <button data-d="38.8" data-name="Vega" class="on">Vega</button>
-          <button data-d="7.4" data-name="Betelgeuse">Betelgeuse</button>
-          <button data-d="-0.3" data-name="Mintaka" title="On the celestial equator (belt of Orion)">Mintaka (equator)</button>
-          <button data-d="-16.7" data-name="Sirius">Sirius</button>
-          <button data-d="-63.1" data-name="Acrux">Acrux</button>
+          <button data-d="89.3" data-ra="2.53" data-name="Polaris">Polaris</button>
+          <button data-d="38.8" data-ra="18.6156" data-name="Vega" class="on">Vega</button>
+          <button data-d="7.4" data-ra="5.9195" data-name="Betelgeuse">Betelgeuse</button>
+          <button data-d="-0.3" data-ra="5.5334" data-name="Mintaka" title="On the celestial equator (belt of Orion)">Mintaka (equator)</button>
+          <button data-d="-16.7" data-ra="6.7525" data-name="Sirius">Sirius</button>
+          <button data-d="-63.1" data-ra="12.4433" data-name="Acrux">Acrux</button>
         </div>
         <div class="slider-row">
           <div class="lbl"><span>declination &delta;</span><span class="val" id="decVal">+38.8&deg;</span></div>
           <input type="range" id="decSlider" min="-90" max="90" step="0.1" value="38.8">
         </div>
         <div class="slider-row">
-          <div class="lbl"><span>time (hour angle)</span><span class="val" id="haVal">0.0 h</span></div>
+          <div class="lbl"><span>hour angle <i>H</i> <span style="font-weight:400;color:#7b848d;">(west +)</span></span><span class="val" id="haVal">0h 00m</span></div>
           <input type="range" id="haSlider" min="-12" max="12" step="0.1" value="-3">
         </div>
         <div class="toggleRow" id="viewRow" title="How the top panel is drawn">
@@ -211,12 +211,13 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Set your latitude, pick a star (or dial its declination), and drag the time slider or hit <b>Turn the sky</b>. The 3D view shows you at the centre of the sphere, standing on the green horizon plane; drag it to look from any side. The star&rsquo;s whole daily circle is drawn in blue: solid and bright where it is above your horizon and on the near side, faint or dashed elsewhere. The gold axis points at the celestial pole, whose altitude equals your latitude. The lower strip is the star&rsquo;s altitude over one turn of the sky; above the green band it is up.</p>
+        <p>Set your latitude, pick a star (or dial its declination), and drag the hour angle or hit <b>Turn the sky</b>. The 3D view shows you at the centre of the sphere, standing on the green horizon plane; drag it to look from any side. The star&rsquo;s whole daily circle is drawn in blue: solid and bright where it is above your horizon and on the near side, faint or dashed elsewhere. The gold axis points at the celestial pole, whose altitude equals your latitude. The lower strip is the star&rsquo;s altitude over one turn of the sky; above the green band it is up.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;">
           <div><span class="formula" id="f1"></span><div style="font-size:11.5px;color:#b7c2cd;">altitude of a star from your latitude &phi;, its declination &delta;, and the hour angle H (0 at transit, 15&deg; per hour).</div></div>
+          <div><span class="formula" id="f4"></span><div style="font-size:11.5px;color:#b7c2cd;">the hour angle H is how far west of your meridian the star is, in the same hours as right ascension &alpha; (24h = 360&deg;). The right ascension on your meridian right now is the local sidereal time, LST. In the 3D view the pink arc is H and the hour marks on the equator are right ascension.</div></div>
           <div><span class="formula" id="f2"></span><div style="font-size:11.5px;color:#b7c2cd;">a star is circumpolar (never sets) if this holds; flip the sign and it never rises.</div></div>
           <div><span class="formula" id="f3"></span><div style="font-size:11.5px;color:#b7c2cd;">how high the star gets at its best &mdash; its altitude when it crosses the meridian.</div></div>
         </div>
@@ -443,7 +444,11 @@ const DOME_W = 520, DOME_H = 300, ALT_W = 520, ALT_H = 150;
 let playing = false, rafId = null, lastTs = null;
 let domeView = '3d';                    // '3d' | 'map'
 let camYaw = -28 * D, camPitch = 16 * D;
-let starName = 'Vega';
+let starName = 'Vega', starRA = 18.6156;   // right ascension in hours (J2000)
+// hours as h m, the way right ascension is written; sgn adds + or a true minus for hour angles
+function hms(h, sgn) { const m = Math.round(Math.abs(h) * 60); return (sgn ? (m === 0 ? '' : h < 0 ? '−' : '+') : '') + Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; }
+const wrap24 = h => { h = ((h % 24) + 24) % 24; return Math.round(h * 60) >= 1440 ? 0 : h; };
+function lst() { return wrap24(starRA + ha()); }   // the right ascension on the meridian = local sidereal time
 
 function lat() { return +$('latSlider').value; }
 function dec() { return +$('decSlider').value; }
@@ -565,6 +570,18 @@ function draw3D(ctx, W, H) {
     ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1.2;
     ctx.beginPath(); seg.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke(); ctx.setLineDash([]);
   }
+  // hour angle: the arc of the celestial equator from the meridian to the star's hour circle
+  const Hd = ha() * 15, haArc = [], hourC = [];
+  for (let i = 0; i <= 60; i++) haArc.push(starVec(phi, 0, Hd * i / 60));
+  for (let i = 0; i <= 60; i++) hourC.push(starVec(phi, -90 + 3 * i, Hd));
+  const haPass = sphereCurve(ctx, cam, haArc, (up, f) => ({ col: 'rgba(255,125,190,' + (up ? (f ? 1 : 0.6) : 0.4) + ')', w: f ? 3.4 : 2.4 }));
+  const hcPass = sphereCurve(ctx, cam, hourC, (up, f) => ({ col: 'rgba(255,125,190,' + (up ? (f ? 0.5 : 0.28) : 0.18) + ')', w: 1.1, dash: [4, 3] }));
+  [[false, false], [false, true], [true, false], [true, true]].forEach(a => { hcPass(...a); haPass(...a); });
+  // right-ascension hours marked on the equator: they turn with the sky
+  const raTicks = [];
+  for (let h = 0; h < 24; h += 1) { const v = starVec(phi, 0, (lst() - h) * 15), f = A3.dot(v, cam.b) >= 0, up = v.z >= -1e-9, q = P(v);
+    ctx.fillStyle = 'rgba(255,200,110,' + (up ? (f ? 0.95 : 0.45) : (f ? 0.35 : 0.18)) + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, h % 3 ? 1.3 : 2.3, 0, 7); ctx.fill();
+    if (h % 3 === 0 && f) raTicks.push([h, v, q, up]); }
   // 4. sky in front
   passes.forEach(p => p(true, true));
 
@@ -587,16 +604,19 @@ function draw3D(ctx, W, H) {
   L.put('zenith', Z.x, Z.y, [[0, -9], [24, 0], [-24, 0]], { col: 'rgba(220,230,240,0.7)', font: '10.5px "Source Sans 3",sans-serif' });
   L.put(phi >= 0 ? 'NCP' : 'SCP', abovePole.x, abovePole.y, [[0, -10], [14, -4], [-14, -4], [0, 11]], { col: '#ffd66b', font: '700 10.5px "Source Sans 3",sans-serif' });
   if (Math.abs(phi) > 2) { const mid = arc[15]; L.put('pole altitude ' + Math.abs(phi) + '°', mid.x, mid.y, [[8, -8], [-8, -8], [8, 8]], { col: '#ffd66b', font: '10.5px "Source Sans 3",sans-serif' }); }
+  const hm = haArc[Math.round(haArc.length / 2)], hq = P(hm);
+  if (Math.abs(ha()) > 0.4) L.put('H = ' + hms(ha(), true), hq.x, hq.y, [[0, 13], [0, -13], [30, 10], [-30, 10], [34, -10], [-34, -10]], { col: '#ff9ccb', font: '700 11px "Source Sans 3",sans-serif' });
+  raTicks.forEach(([h, v, q, up]) => { const o = P(A3.mul(v, 1.07)); L.put(h + 'h', o.x, o.y, [[0, 0], [0, 9], [0, -9]], { col: 'rgba(255,214,140,' + (up ? 0.95 : 0.5) + ')', font: '600 10px "Source Sans 3",sans-serif' }); });
   // equator label at its highest front point
   const eqFront = equator.map(p => ({ p, q: P(p) })).filter(o => o.p.z > 0.05 && A3.dot(o.p, cam.b) > 0.2);
   if (eqFront.length) { const top = eqFront.reduce((a, b) => (b.q.x > a.q.x ? b : a)); L.put('celestial equator', top.q.x, top.q.y, [[-6, -9], [-6, 9], [0, -12]], { col: 'rgba(255,205,120,0.9)', font: '10.5px "Source Sans 3",sans-serif' }); }
   if (now.alt > 3) { const fp = P(A3.add(A3.mul(A3.norm(A3.V(sv.x, sv.y, 0)), Math.cos(now.alt * D / 2)), A3.V(0, 0, Math.sin(now.alt * D / 2))));
     L.put('alt ' + now.alt.toFixed(0) + '°', fp.x, fp.y, [[22, 0], [-22, 0], [0, -10]], { col: 'rgba(255,255,255,0.75)', font: '10.5px "Source Sans 3",sans-serif' }); }
   // legend
-  const lg = [['#7db9ff', "star's daily circle"], ['#ffc86e', 'celestial equator'], ['#8cc88c', 'horizon']];
+  const lg = [['#7db9ff', "star's daily circle"], ['#ffc86e', 'celestial equator, marked in hours of RA'], ['#ff7dbe', 'hour angle H'], ['#8cc88c', 'horizon']];
   const lgS = 15 * Math.max(1, 0.85 * ctx.fontGrow(10.5));   // line spacing grows with phone-enlarged text
   lg.forEach(([c, t], i) => { const y = 16 + i * lgS; ctx.fillStyle = c; ctx.fillRect(10, y - 1, 14, 2.4); L.put(t, 30, y, [[0, 0]], { align: 'left', col: 'rgba(225,232,240,0.8)', font: '10.5px "Source Sans 3",sans-serif' }); });
-  L.put('solid = above horizon, front', 10, 16 + 3 * lgS, [[0, 0]], { align: 'left', col: 'rgba(225,232,240,0.55)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put('solid = above horizon, front', 10, 16 + 4 * lgS, [[0, 0]], { align: 'left', col: 'rgba(225,232,240,0.55)', font: '10.5px "Source Sans 3",sans-serif' });
 }
 
 // ---------- flat sky map (the old view) ----------
@@ -604,7 +624,7 @@ function proj(cx, cy, R, alt, az) {
   let r = (90 - alt) / 90 * R;
   if (r > R * 1.16) r = R * 1.16;
   const a = az * D;
-  return { x: cx + r * Math.sin(a), y: cy - r * Math.cos(a) };
+  return { x: cx - r * Math.sin(a), y: cy - r * Math.cos(a) };   // looking UP: with north at the top, east is on the left
 }
 function drawMap(ctx, W, H) {
   const cx = W / 2, cy = H / 2, R = H / 2 - 22, L = A3.placer(ctx, W, H);
@@ -628,12 +648,12 @@ function drawMap(ctx, W, H) {
   if (now.alt >= -0.5) { sp = proj(cx, cy, R, Math.max(now.alt, 0), now.az);
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sp.x, sp.y, 5, 0, 7); ctx.fill(); ctx.strokeStyle = '#7bb4ff'; ctx.stroke(); }
   L.blockCircle(cx, cy, 3); if (sp) L.blockCircle(sp.x, sp.y, 6);
-  [['N', 0, -R - 9], ['S', 0, R + 10], ['E', R + 10, 0], ['W', -R - 10, 0]].forEach(([t, dx, dy]) => L.put(t, cx + dx, cy + dy, [[0, 0]], { col: '#bfe3bf', font: '700 11.5px "Source Sans 3",sans-serif' }));
+  [['N', 0, -R - 9], ['S', 0, R + 10], ['E', -R - 10, 0], ['W', R + 10, 0]].forEach(([t, dx, dy]) => L.put(t, cx + dx, cy + dy, [[0, 0]], { col: '#bfe3bf', font: '700 11.5px "Source Sans 3",sans-serif' }));
   L.put('zenith', cx, cy, [[0, -10], [0, 10]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
   L.put(phi >= 0 ? 'NCP' : 'SCP', pp.x, pp.y, [[0, -10], [12, 0], [-12, 0], [0, 10]], { col: '#ffd66b', font: '700 10.5px "Source Sans 3",sans-serif' });
   if (sp) L.put(starName, sp.x, sp.y, [[0, -13], [12, 0], [-12, 0], [0, 13]], { col: '#fff', font: '600 11px "Source Sans 3",sans-serif' });
   L.put('centre = straight up', 10, H - 24, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
-  L.put('edge = horizon (E on the right, as on a map)', 10, H - 10, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
+  L.put('edge = horizon; looking up, so E is on the left', 10, H - 10, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
   L.put('solid = above the horizon', 10, 14, [[2, 0]], { col: 'rgba(255,255,255,0.45)', font: '10.5px "Source Sans 3",sans-serif' });
 }
 
@@ -645,7 +665,7 @@ function drawDome() {
   c.style.cursor = domeView === '3d' ? 'grab' : 'default';
 }
 
-// ---------- altitude vs time ----------
+// ---------- altitude vs hour angle ----------
 function drawAlt() {
   const c = $('alt'), ctx = A3.hidpi(c, ALT_W, ALT_H), W = ALT_W, H = ALT_H;
   ctx.fillStyle = '#0d1420'; ctx.fillRect(0, 0, W, H);
@@ -659,7 +679,7 @@ function drawAlt() {
   [-60, -30, 30, 60].forEach(a => { ctx.beginPath(); ctx.moveTo(x0, Y(a)); ctx.lineTo(x1, Y(a)); ctx.stroke(); });
   const f = '10px "Source Sans 3",sans-serif';
   [[90, '+90°'], [0, '0°'], [-90, '−90°']].forEach(([a, t]) => A3.label(ctx, t, x0 - 5, Y(a), { align: 'right', col: 'rgba(255,255,255,0.55)', font: f, halo: 0 }));
-  for (const h of [-12, -6, 0, 6, 12]) A3.label(ctx, h === 0 ? 'transit' : (h > 0 ? '+' + h + ' h' : '−' + (-h) + ' h'), X(h), y0 + 13 + 6 * (g - 1), { col: 'rgba(255,255,255,0.55)', font: f, halo: 0 });
+  for (const h of [-12, -6, 0, 6, 12]) A3.label(ctx, h === 0 ? 'H = 0h (transit)' : (h > 0 ? '+' + h + 'h' : '−' + (-h) + 'h'), X(h), y0 + 13 + 6 * (g - 1), { col: 'rgba(255,255,255,0.55)', font: f, halo: 0 });
   A3.label(ctx, 'below the horizon', x1 - 4, Y(-78), { align: 'right', col: 'rgba(160,210,150,0.75)', font: f, halo: 0 });
   const phi = lat(), d = dec();
   ctx.beginPath();
@@ -669,14 +689,14 @@ function drawAlt() {
   ctx.strokeStyle = 'rgba(255,214,107,0.7)'; ctx.setLineDash([3, 2]);
   ctx.beginPath(); ctx.moveTo(X(ha()), y1 - 4); ctx.lineTo(X(ha()), y0); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = a >= 0 ? '#fff' : '#8d9bb0'; ctx.beginPath(); ctx.arc(X(ha()), Y(a), 4, 0, 7); ctx.fill();
-  A3.label(ctx, 'altitude of ' + starName + ' over one full turn of the sky (23 h 56 min)', 10, 11, { align: 'left', col: 'rgba(255,255,255,0.55)', font: '10.5px "Source Sans 3",sans-serif', halo: 0 });
+  A3.label(ctx, 'altitude of ' + starName + ' against its hour angle H (one turn of the sky: 23 h 56 min)', 10, 11, { align: 'left', col: 'rgba(255,255,255,0.55)', font: '10.5px "Source Sans 3",sans-serif', halo: 0 });
 }
 
 function render() {
   $('latVal').innerHTML = Math.abs(lat()) + '&deg;';
   $('latLbl').innerHTML = lat() === 0 ? 'Equator' : Math.abs(lat()) + '&deg; ' + (lat() > 0 ? 'N' : 'S');
   $('decVal').textContent = (dec() >= 0 ? '+' : '') + dec().toFixed(1) + '°';
-  $('haVal').textContent = (ha() >= 0 ? '+' : '') + ha().toFixed(1) + ' h';
+  $('haVal').textContent = hms(ha(), true);
   document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.d - dec()) < 0.05));
 
   const phi = lat(), d = dec();
@@ -687,6 +707,8 @@ function render() {
   $('results').innerHTML =
     rowB('right now', now.alt >= 0 ? ('alt ' + now.alt.toFixed(0) + '°, az ' + now.az.toFixed(0) + '° (' + compass(now.az) + ')') : 'below the horizon') +
     rowB('this star', st) +
+    row('its right ascension', hms(starRA)) +
+    row('RA on your meridian', hms(lst())) +
     row('highest it gets', (tA > 0 ? tA.toFixed(0) + '° at transit' : 'stays down')) +
     row('celestial pole altitude', Math.abs(phi).toFixed(0) + '°') +
     row(phi >= 0 ? 'circumpolar if δ >' : 'circumpolar if δ <', (phi >= 0 ? '+' : '−') + (90 - Math.abs(phi)).toFixed(0) + '°');
@@ -721,7 +743,7 @@ $('decSlider').addEventListener('input', () => {
   const chip = [...document.querySelectorAll('#chips button')].find(b => Math.abs(+b.dataset.d - dec()) < 0.05);
   starName = chip ? chip.dataset.name : 'star'; render(); });
 $('haSlider').addEventListener('input', () => { if (playing) setPlaying(false); render(); });
-document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('decSlider').value = b.dataset.d; starName = b.dataset.name; render(); }));
+document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => { $('decSlider').value = b.dataset.d; starName = b.dataset.name; starRA = +b.dataset.ra; render(); }));
 document.querySelectorAll('#viewRow button').forEach(btn => btn.addEventListener('click', () => {
   document.querySelectorAll('#viewRow button').forEach(x => x.classList.toggle('on', x === btn)); domeView = btn.dataset.v; render();
 }));
@@ -738,6 +760,7 @@ window.addEventListener('resize', () => render());
 function katexAll() {
   const specs = [
     ['f1', "\\sin a = \\sin\\varphi\\sin\\delta + \\cos\\varphi\\cos\\delta\\cos H"],
+    ['f4', "H = \\text{LST} - \\alpha"],
     ['f2', "|\\delta| > 90^\\circ - |\\varphi|\\ \\text{(same hemisphere)} \\;\\Rightarrow\\; \\text{circumpolar}"],
     ['f3', "a_{\\text{transit}} = 90^\\circ - |\\varphi - \\delta|"],
     ['ex1', "90^\\circ - 42^\\circ = 48^\\circ"],
