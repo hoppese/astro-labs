@@ -9,7 +9,7 @@ import { getBodies, MOON_PARENT } from './ephem.js';
 import { starRecord, dso, constellations, DSO_TYPES } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
-import { tycRecord } from './deepstars.js';
+import { deepRecord, PROVIDER } from './deepstars.js';
 import { fmtClock } from './timeutil.js';
 
 let panel, lastHtmlKey = '', lastUpdate = 0, events = null, eventsKey = '';
@@ -18,10 +18,13 @@ const perfFov = () => (window.planetarium && window.planetarium.cam ? window.pla
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ND = '<span class="nodata">no data</span>';
 const num = (v, dp, unit = '') => (v == null || !isFinite(v) ? ND : v.toFixed(dp) + unit);
+/** A number to n significant figures, written out (3,480 rather than 3.48e+3). */
+const sig = (v, n) => Number(v.toPrecision(n)).toLocaleString('en-US', { maximumSignificantDigits: n });
 
 export function initInfo(el) {
   panel = el;
   on('selection', () => { lastHtmlKey = ''; render(true); });
+  on('gaia-info', () => render(true));          // the online look-up of a clicked Gaia star has answered
   on('frame', () => render(false));
   panel.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
@@ -95,14 +98,27 @@ function render(force) {
     type = 'Star';
     row('Magnitude', fmtMag(s.mag) + ' (V)');
     row('Colour index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
-    row('Distance', s.dist ? `${(s.dist * LY_PER_PC).toPrecision(3)} ly (${s.dist.toPrecision(3)} pc)` : ND);
-  } else if (ref.kind === 'tyc') {
-    const s = tycRecord(ref);
-    title = s.tyc; type = 'Star';
-    row('Magnitude', s.mag.toFixed(2) + ' (V, from Tycho V<sub>T</sub>' + (s.bv == null ? '' : ' and B<sub>T</sub>') + ')');
-    row('Colour index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
-    row('Distance', ND);
-    note = 'Tycho-2 catalogue star, drawn at its J2000 place (no proper motion or parallax applied). Tycho-2 gives no distance.';
+    row('Distance', s.dist ? `${sig(s.dist * LY_PER_PC, 3)} ly (${sig(s.dist, 3)} pc)` : ND);
+  } else if (ref.kind === 'gaia') {
+    // a star of the Gaia DR3 layers: every number is Gaia's own (the tile's rounded copy until the full record arrives)
+    const s = deepRecord(ref);
+    title = s.id ? 'Gaia DR3 ' + s.id : 'Gaia DR3 star'; type = 'Star';
+    const r = s.rounded;
+    row('Magnitude', s.mag.toFixed(r ? 2 : 3) + ' (Gaia G)');
+    row('Colour index', s.col == null ? ND : s.col.toFixed(r ? 2 : 3) + ' (G<sub>BP</sub>−G<sub>RP</sub>)');
+    if (s.plx == null) { row('Parallax', ND); row('Distance', ND); } else {
+      row('Parallax', s.plx.toFixed(r ? 1 : 3) + (s.plxErr != null ? ' ± ' + s.plxErr.toFixed(3) : '') + ' mas');
+      // a distance only where the parallax is worth inverting: at least 5 times its error (or, from the rounded tile value, at least 1 mas)
+      const good = s.plx > 0 && (s.plxErr != null ? s.plx >= 5 * s.plxErr : s.plx >= 1);
+      const pc = 1000 / s.plx;
+      row('Distance', good ? `${sig(pc * LY_PER_PC, r ? 2 : 3)} ly (${sig(pc, r ? 2 : 3)} pc), from 1 / parallax` : '<span class="nodata">parallax too uncertain</span>');
+    }
+    row('Proper motion', s.pmra == null || s.pmdec == null ? ND : `${Math.hypot(s.pmra, s.pmdec).toFixed(r ? 0 : 2)} mas/yr (RA ${s.pmra.toFixed(r ? 0 : 2)}, Dec ${s.pmdec.toFixed(r ? 0 : 2)})`);
+    if (s.rv != null) row('Radial velocity', s.rv.toFixed(1) + ' km/s');
+    note = 'Gaia DR3 (ESA/Gaia/DPAC), ' + (s.src === 'online' ? `fetched from ${PROVIDER.short} for this field. ` : 'from the bundled catalogue. ') +
+      (s.exact ? `Full record from ${PROVIDER.short}.` : s.lookup === 'pending' ? 'Looking up the full record…' :
+        s.lookup === 'none' ? 'The online look-up found no matching source; values are the catalogue tile’s, rounded.' :
+        s.src === 'online' ? '' : 'Values rounded as stored in the tile; the source number and exact values need the online look-up' + (s.lookup === 'failed' ? ', which did not answer.' : s.lookup === 'off' ? ', which is off or unavailable.' : '.'));
   } else if (ref.kind === 'body') {
     const b = bodies.byId[ref.id];
     title = b.name;

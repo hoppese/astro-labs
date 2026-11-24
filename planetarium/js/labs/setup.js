@@ -104,7 +104,7 @@ export function describeView() {
   if (l.name) q.set('place', l.name);
   if (l.tz) q.set('tz', l.tz);
   q.set('fov', String(+cam.fov.toPrecision(4)));
-  const tyc = state.selected && state.selected.kind === 'tyc';     // a faint tile star cannot be looked up by name: the link carries the direction only
+  const tyc = state.selected && state.selected.kind === 'gaia';     // a faint tile star cannot be looked up by name: the link carries the direction only
   if (state.selected && state.selected.kind !== 'con' && !tyc) {
     const s = state.selected;
     let nm = refName(s);

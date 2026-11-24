@@ -110,6 +110,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .readout { position: absolute; right: 12px; bottom: calc(var(--bar-h) + 10px); font: 400 11px var(--mono); color: #a9b7c8; text-align: right; pointer-events: none; z-index: 5;
   text-shadow: 0 0 4px #000, 0 0 2px #000; line-height: 1.5; }
 .readout b { color: #dfe8f2; font-weight: 600; }
+.readout .ro-note { color: #d9b36c; }
 
 /* ---------- bottom bar ---------- */
 .bottombar { position: absolute; left: 0; right: 0; bottom: 0; min-height: var(--bar-h); display: flex; align-items: center; gap: 10px; padding: 7px 12px calc(7px + env(safe-area-inset-bottom));

@@ -21,6 +21,7 @@ import { drawDso } from './render/dso.js';
 import { drawGround } from './render/ground.js';
 import { drawMilkyWay } from './milkyway.js';
 import { drawDeepStars, deep } from './deepstars.js';
+import { fieldFeedback } from './render/density.js';
 
 let canvas, ctx, dpr = 1, dirty = true, lastDraw = 0;
 const labels = new LabelLayer();
@@ -94,7 +95,7 @@ function draw(frame) {
   drawGrids(ctx); lap('grids');
   drawConstellations(ctx); lap('constellations');
   drawStars(ctx); lap('stars');
-  drawDeepStars(ctx); lap('deep');         // Tycho-2 tiles: the stars fainter than the base catalogue holds (js/deepstars.js)
+  drawDeepStars(ctx); lap('deep');         // Gaia DR3, bundled tiles + online: the stars fainter than the base catalogue holds (js/deepstars.js)
   drawDso(ctx); lap('dso');
   drawBodies(ctx); lap('bodies');
   drawGround(ctx); lap('ground');
@@ -107,6 +108,7 @@ function draw(frame) {
   perf.frameMs = performance.now() - t0;
   perf.avgMs = perf.avgMs ? perf.avgMs * 0.9 + perf.frameMs * 0.1 : perf.frameMs;
   perf.stars = starStats.drawn + deep.stats.drawn; perf.limMag = sky.limMag; perf.fov = cam.fov; perf.sky = sky;
+  fieldFeedback(perf.stars, sky);          // render/density.js: was this field as rich as the star-count map said?
   emit('frame', perf);
 }
 

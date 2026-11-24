@@ -271,3 +271,42 @@ line('== 16. Half Moon as seen from the site; ecliptic of date ==');
   const lam = (yr) => { const f = y(yr); C.setStarEpoch(f.years); return X.toSph(X.mulMV(f.Mjt, C.starRecord(sp.k, sp.i).vec)).lon; };
   line(`  Spica's ecliptic longitude of date: ${f2(lam(-293), 2)} (294 BC), ${f2(lam(-128), 2)} (129 BC), ${f2(lam(2026), 2)} (2026): ${f2((lam(2026) - lam(-128)) / 21.54 * 36, 1)}"/yr`);
 }
+
+line();
+line('== 17. Gaia layers: HEALPix numbering, tile requests, the bundled tiles (js/healpix.js, js/deepstars.js) ==');
+{
+  const { existsSync } = await import('node:fs');
+  const HP = await import('../js/healpix.js');
+  const D = await import('../js/deepstars.js');
+  // real Gaia DR3 rows (ESA archive, 2026-11-23): source_id, ra, dec. source_id >> 35 is the source's nested pixel at order 12.
+  const rows = [['2306216916182228224', 358.66306047507965, -40.2999246476269], ['1737404401122124672', 314.2988695457744, 6.604775509124999],
+    ['2074262603186614912', 299.98492062881826, 40.046327462166374], ['137339074009308288', 45.078942785206046, 35.32353215535138],
+    ['377480758635720320', 12.760573068437326, 44.58674487716579], ['1018776176872261248', 143.20753978122536, 51.67490604097004]];
+  let ok = 0;
+  for (const [id, ra, dec] of rows) { const v = X.sph(ra, dec); if (HP.vec2pix(12, v[0], v[1], v[2]) === Number(BigInt(id) >> 35n)) ok++; }
+  line(`  vec2pix(order 12) equals source_id >> 35 for ${ok} of ${rows.length} real Gaia sources`);
+  const v = [0, 0, 0]; let bad = 0, n = 0;
+  for (const o of [0, 3, 6, 9, 12]) for (let p = 0; p < 12 * 4 ** o; p += Math.max(1, Math.floor(12 * 4 ** o / 5000))) { HP.pix2vec(o, p, v); n++; if (HP.vec2pix(o, v[0], v[1], v[2]) !== p) bad++; }
+  line(`  pix2vec -> vec2pix round trip: ${bad} failures in ${n} pixels (orders 0, 3, 6, 9, 12)`);
+  // a tile's request must be the id range of its pixel: the first row above, G = 5.89, is not in a G 12-12.5 tile, but its pixel's range must hold its id
+  const id = BigInt(rows[1][0]), order = 7, ipix = Number(id >> BigInt(35 + 2 * (12 - order)));
+  const q = D.tileQuery({ L: 2, order, ipix }), m = /BETWEEN (\d+) AND (\d+)/.exec(q);
+  line(`  tile request for order ${order}, pixel ${ipix}, level ${D.NET_LEVELS[2].join('-')}: id range holds the source: ${BigInt(m[1]) <= id && id <= BigInt(m[2])}; ${q.length} characters`);
+  line(`  colour for the disc: BP-RP 0.0 -> B-V ${f2(D.bprpToBv(0))}, 0.82 (Sun) -> ${f2(D.bprpToBv(0.82))}, 2.0 -> ${f2(D.bprpToBv(2))}  (Gaia DR3 documentation, table 5.9)`);
+  const root = new URL('../data/gaia/', import.meta.url);
+  if (!existsSync(new URL('index.json', root))) line('  data/gaia/ is not present: bundled-tile checks skipped');
+  else {
+    const man = JSON.parse(readFileSync(new URL('index.json', root), 'utf8'));
+    const counts = new Uint16Array(readFileSync(new URL('counts.bin', root)).buffer.slice(0));
+    let mono = true; for (let b = 1; b < man.map.n; b++) if (man.map.allsky[b] < man.map.allsky[b - 1]) mono = false;
+    line(`  bundle: ${man.levels.map((l) => l.id + ' ' + l.n).join(', ')} stars; ${man.special.length} in the manifest; ends at G ${man.magEnd}`);
+    line(`  count map: ${counts.length / man.map.n} cells x ${man.map.n} magnitudes; all-sky N(<12) ${man.map.allsky[8]}, N(<21.5) ${man.map.allsky[man.map.n - 1]}; rising: ${mono}`);
+    // one tile of each record size: sorted by G, inside its magnitude range, record count as the manifest says
+    for (const lv of [man.levels[0], man.levels[3]]) {
+      const j = Math.floor(lv.counts.length / 2), c = 3, buf = readFileSync(new URL(`${lv.id}/${j}_${c}.bin`, root)), dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+      const nrec = buf.byteLength / lv.rec; let sorted = true, inRange = true, prev = -9;
+      for (let i = 0; i < nrec; i++) { const g = dv.getUint16(i * lv.rec + 4, true) / 1000 - 2; if (g < prev) sorted = false; if (g < lv.magMin - 0.0006 || g >= lv.magMax + 0.0006) inRange = false; prev = g; }
+      line(`  tile ${lv.id}/${j}_${c}: ${nrec} records of ${lv.rec} bytes (manifest ${lv.counts[j][c]}), sorted by G: ${sorted}, all within ${lv.magMin}-${lv.magMax}: ${inRange}`);
+    }
+  }
+}

@@ -75,7 +75,7 @@ export function niceFov(ref) {
   }
   if (ref.kind === 'con') return 50;
   if (ref.kind === 'star') return 20;
-  if (ref.kind === 'tyc') return 2;
+  if (ref.kind === 'gaia') { const m = ref.t.mag[ref.i]; return m <= 12 ? 2 : m <= 15 ? 0.6 : m <= 18 ? 0.2 : 0.08; }      // a field in which the star is well above the limit
   return 6;
 }
 export function centerOn(ref, zoom = false) {
