@@ -17,7 +17,7 @@
 .lcard-body label.chk small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
 .lcard-body select, .lcard-body input[type=number], .lcard-body input[type=text], .lcard-body input[type=search] { font: 400 12.5px var(--font); color: #eef2f6; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.16);
   border-radius: 7px; padding: 5px 7px; min-width: 0; color-scheme: dark; }
-.lcard-body input[type=number] { width: 78px; font-family: var(--mono); }
+.lcard-body input[type=number] { width: 88px; font-family: var(--mono); }
 .lcard-body .btn { padding: 5px 9px; font-size: 12px; }
 .lcard-body .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .lcard-body .btn.primary:hover { filter: brightness(1.08); }
@@ -87,6 +87,25 @@
 .labsbtn svg { width: 16px; height: 16px; }
 
 @media (max-width: 560px) {
-  .labsdock { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(var(--bar-h) + 8px); max-height: 46%; }
+  .labsdock { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(var(--bar-h) + 8px); max-height: 36%; }
+  /* the object-info sheet stacks above the open cards (it used to lie underneath them), and both stay short enough to leave some sky */
+  .infopanel { bottom: calc(var(--bar-h) + 6px + var(--dock-h, 0px)); }
+  body:has(.labsdock .lcard:not([hidden])) .infopanel { max-height: 30%; }
+  body:has(.xpanel.peek:not([hidden])) .labsdock { bottom: calc(var(--bar-h) + 60px); }
+  body:has(.xpanel.peek:not([hidden])) .infopanel { bottom: calc(var(--bar-h) + 60px + var(--dock-h, 0px)); }
   .labsbtn .txt { display: none; } .labsbtn { padding: 0 !important; width: 36px !important; }
+}
+
+/* A teaching panel (deep-sky list, Hubble lab, quiz) docks at the right too: the cards move over beside it
+   instead of disappearing underneath (integration pass). On a phone both are bottom strips; see above. */
+@media (min-width: 561px) {
+  body:has(.xpanel:not([hidden])) .labsdock { right: calc(min(404px, 100vw - 24px) + 20px); max-width: calc(100vw - min(404px, 100vw - 24px) - 32px); }
+  body:has(.xpanel.wide:not([hidden])) .labsdock { right: calc(min(600px, 62vw) + 20px); max-width: calc(100vw - min(600px, 62vw) - 32px); }
+  body:has(.xpanel.card:not([hidden])) .labsdock { right: 392px; max-width: calc(100vw - 404px); }
+}
+
+/* small embeds (a Moodle iframe of about 800 x 560): narrower info panel and cards, so the object stays visible between them */
+@media (min-width: 561px) and (max-width: 900px) {
+  .infopanel { width: 262px; }
+  .labsdock { width: 290px; }
 }

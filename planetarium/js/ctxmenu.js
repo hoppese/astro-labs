@@ -7,10 +7,12 @@
 // Moon and planets; for anything else the item is shown disabled and says why.
 
 import { state, emit } from './state.js';
-import { fmtRA, fmtDMS } from './astro.js';
+import { fmtRA, fmtDMS, toSph, horToAzAlt } from './astro.js';
+import { getFrame } from './skyframe.js';
+import { getBodies } from './ephem.js';
 import { pickAt } from './picks.js';
 import { dso } from './catalog.js';
-import { refName, sameRef } from './objects.js';
+import { refName, sameRef, refEqj, refHorApparent } from './objects.js';
 import { select, centerOn, toggleTracking, flyTo } from './nav.js';
 import { toggleMeasure, measureClick } from './measure.js';
 import { el, esc, toast } from './xui.js';
@@ -120,10 +122,20 @@ function openAt(x, y, clientX, clientY) {
   // trails are the labs module's (Sun, Moon and planets only); the menu just starts or stops one
   if (obj && obj.kind === 'body' && canTrail(obj.id)) {
     const running = trail.on && trail.body === obj.id;
-    add(running ? `Stop the trail of ${name}` : `Start trail of ${name}`, () => (running ? stopTrail() : startTrail({ body: obj.id })));
+    add(running ? `Stop the trail of ${name}` : `Start trail of ${name}`, () => {
+      if (running) { stopTrail(); return; }
+      // through the labs handle when it exists, so the "Path of an object" card opens with the trail's controls
+      const L = window.planetarium && window.planetarium.labs;
+      if (!(L && L.startTrailFor && L.startTrailFor(obj.id))) startTrail({ body: obj.id });
+    });
   } else add(obj ? `Start trail of ${name}` : 'Start trail here', () => {}, { disabled: true, note: 'Sun, Moon and planets only' });
   sep();
-  add('Copy coordinates', () => copy((name ? name + ': ' : '') + coordText(s), 'coordinates'));
+  add('Copy coordinates', () => {
+    // on an object: the object's own coordinates (as in its info panel), not those of the pixel that was clicked
+    let c = s;
+    if (obj) { const f = getFrame(), b = getBodies(f), u = refEqj(obj, f, b), h = refHorApparent(obj, f, b); if (u && h) { const j = toSph(u), a = horToAzAlt(h); c = { raJ: j.lon, decJ: j.lat, az: a.az, alt: a.alt }; } }
+    copy((name ? name + ': ' : '') + coordText(c), 'coordinates');
+  });
   if (d) {
     sep();
     add('Show in Deep-sky list', () => deps.dsoList.reveal(ref.idx));

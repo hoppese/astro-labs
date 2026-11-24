@@ -17,7 +17,9 @@ const GAL = [-0.0548755604, -0.8734370902, -0.4838350155,
   0.4941094279, -0.4448296300, 0.7469822445,
   -0.8676661490, -0.1980763734, 0.4559837762];
 const BASE = new URL('../data/', import.meta.url);
-const CELL = 8;                       // screen px per sample
+const CELL = 10;                      // screen px per sample (the map itself is only 0.5 degrees a pixel)
+const CURVE = new Float32Array(256);  // (t / 255) ^ 0.72: the faint outer band stays visible, the bright clouds do not burn out
+for (let i = 0; i < 256; i++) CURVE[i] = Math.pow(i / 255, 0.72);
 
 export const milkyWay = { status: 'idle', error: '' };     // idle | loading | ready | error
 let tex = null, TW = 0, TH = 0, bMin = -30, bMax = 30, retryAt = 0;
@@ -88,8 +90,7 @@ export function drawMilkyWay(ctx) {
         t = (tex[a + u0 % TW] * (1 - fu) + tex[a + u1] * fu) * (1 - fv) + (tex[b + u0 % TW] * (1 - fu) + tex[b + u1] * fu) * fv;
       }
       if (t > 0) {
-        // gentle curve: the faint outer band stays visible, the bright clouds do not burn out
-        const c = Math.pow(t / 255, 0.72) * gain * f;
+        const ti = t | 0, c = (CURVE[ti] + (CURVE[ti < 255 ? ti + 1 : 255] - CURVE[ti]) * (t - ti)) * gain * f;
         d[o] = c * 0.80; d[o + 1] = c * 0.87; d[o + 2] = c;
         any = true;
       } else { d[o] = d[o + 1] = d[o + 2] = 0; }

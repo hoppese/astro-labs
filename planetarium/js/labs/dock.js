@@ -6,7 +6,14 @@ import { el } from './util.js';
 let dock = null;
 const cards = {};
 export function getDock() {
-  if (!dock) { dock = el('div', { class: 'labsdock', id: 'labsDock' }); document.body.appendChild(dock); }
+  if (!dock) {
+    dock = el('div', { class: 'labsdock', id: 'labsDock' }); document.body.appendChild(dock);
+    // --dock-h = the height the open cards take (0 when none): on a phone the object-info sheet sits above the
+    // cards instead of underneath them (css/labs.css)
+    const sync = () => document.documentElement.style.setProperty('--dock-h', (dock.querySelector('.lcard:not([hidden])') ? dock.offsetHeight + 6 : 0) + 'px');
+    new ResizeObserver(sync).observe(dock);
+    document.addEventListener('labs-cards', () => requestAnimationFrame(sync));
+  }
   return dock;
 }
 /** Create a card. Returns {root, body, open(), close(), toggle(), isOpen()}. */

@@ -5,7 +5,7 @@ import { state, emit } from './state.js';
 import { cam, update, centerHor, lookAtHor } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
-import { refHorApparent } from './objects.js';
+import { refHorApparent, sameRef } from './objects.js';
 
 let anim = null;       // {t0, dur, fromFov, toFov, fromHor, target: ref | null, toHor}
 
@@ -19,6 +19,12 @@ export function flyTo(target, { fov = null, dur = 700 } = {}) {
 }
 export const isAnimating = () => !!anim;
 export function cancelAnim() { anim = null; }
+/** A zoom step asked for while a glide is under way changes where the glide ends (it used to be thrown away). */
+export function zoomAnim(factor) {
+  if (!anim) return false;
+  anim.toFov = clamp(anim.toFov * factor, 0.0005, 180);
+  return true;
+}
 
 /** Called once per frame before drawing: applies an animation step or tracking. Returns true while moving. */
 export function stepNav(now, frame) {
@@ -50,8 +56,10 @@ export { mulMV, toSph };
 
 // ---- selection ---------------------------------------------------------------
 export function select(ref) {
+  // tracking belongs to one object: choosing another (or none) ends it, so that "select it, then press T" always starts
+  // following the new object (it used to carry over silently, and T then switched it off)
+  if (!ref || !sameRef(ref, state.selected)) state.tracking = false;
   state.selected = ref || null;
-  if (!ref) state.tracking = false;
   emit('selection');
 }
 /** A field of view that frames the object nicely. */
@@ -67,6 +75,7 @@ export function niceFov(ref) {
   }
   if (ref.kind === 'con') return 50;
   if (ref.kind === 'star') return 20;
+  if (ref.kind === 'tyc') return 2;
   return 6;
 }
 export function centerOn(ref, zoom = false) {

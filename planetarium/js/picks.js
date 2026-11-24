@@ -9,8 +9,11 @@ export function addPick(x, y, r, mag, ref) { items.push({ x, y, r, mag, ref }); 
 /** Nearest registered object to (x, y), or null. Bright objects win over faint neighbours. */
 export function pickAt(x, y, slop = 12) {
   let best = null, bestScore = Infinity;
+  // a star or deep-sky object behind the disc of the Sun, the Moon or a resolved planet cannot be seen, so it cannot be picked
+  const discs = items.filter((it) => it.ref && it.ref.kind === 'body' && it.r >= 9);
   for (const it of items) {
     const d = Math.hypot(it.x - x, it.y - y);
+    if (discs.length && it.ref.kind !== 'body') { let hidden = false; for (const b of discs) if (Math.hypot(it.x - b.x, it.y - b.y) < b.r - 0.5) { hidden = true; break; } if (hidden) continue; }
     const reach = Math.max(slop, it.r + 4);
     if (d > reach) continue;
     // distance in units of reach, nudged so that of two overlapping candidates the brighter wins

@@ -12,9 +12,13 @@
 <script>
   const q = new URLSearchParams(location.search);
   const sizes = (q.get('sizes') || '390x760,1440x800,640x420').split(',').map((s) => s.split('x').map(Number));
+  // app=<url-encoded query> is passed on to the planetarium (e.g. app=lab%3Dmoonrise); bare=1 drops the captions and the
+  // padding so that a 1440 x 800 frame fits a 1512 x 828 window
+  const app = q.get('app') ? '&' + q.get('app') : '', bare = q.get('bare') === '1';
+  if (bare) document.body.style.padding = '0';
   for (const [w, h] of sizes) {
     const f = document.createElement('figure');
-    f.innerHTML = `<figcaption>${w} × ${h}</figcaption><iframe width="${w}" height="${h}" src="../?frame=${w}x${h}&v=${Date.now()}" allow="geolocation"></iframe>`;
+    f.innerHTML = `${bare ? '' : `<figcaption>${w} × ${h}</figcaption>`}<iframe width="${w}" height="${h}" src="../?frame=${w}x${h}&v=${Date.now()}${app}" allow="geolocation"></iframe>`;
     document.body.appendChild(f);
   }
 </script>

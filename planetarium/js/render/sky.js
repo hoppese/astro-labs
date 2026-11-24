@@ -19,9 +19,13 @@ export const BORTLE_NAMES = ['', 'Excellent dark site', 'Truly dark site', 'Rura
 export const STARS_PER_CM2 = 1.3;
 
 /** How many magnitudes zooming gains (a narrower field acts like a telescope). */
-export function zoomGain(fov) {
+export function zoomGain(fov, night = 0) {
   if (fov >= 60) return -0.6 * (fov - 60) / 120;
-  return Math.min(8, 2.5 * Math.log10(60 / fov));
+  // Against a bright sky (day, twilight) a narrower field gains 2.5 log10 as before. Under a dark sky the gain is
+  // twice that, which is steeper than the star counts need, so at night the crowding limit below is the one
+  // that sets how many stars are drawn: the same number per square centimetre of screen at every zoom.
+  const g = 2.5 * Math.log10(60 / fov);
+  return Math.min(8, g) * (1 - night) + Math.min(16, 2 * g) * night;
 }
 
 /** Magnitudes lost to a bright sky, from the Sun's altitude in degrees. */
@@ -62,7 +66,7 @@ export function skyConditions(bodies) {
   //            view shows only the bright stars and does not turn into a carpet. A darker sky is allowed a
   //            richer screen (x1.5 per magnitude of naked-eye limit, up to x1.22), so light pollution still shows at any zoom.
   // a short window (phone, small iframe) packs the same sky into fewer pixels: treat it as a wider field
-  const physical = base + zoomGain(Math.min(180, cam.fov * clamp(Math.sqrt(760 / cam.h), 1, 1.8)));
+  const physical = base + zoomGain(Math.min(180, cam.fov * clamp(Math.sqrt(760 / cam.h), 1, 1.8)), 1 - smooth(0.5, 3, dayLoss));
   const perCm2 = STARS_PER_CM2 * (state.starScale || 1) * Math.pow(1.5, clamp(base - 6.3, -4, 0.5));
   const crowd = densityLimit(perCm2);
   return {
@@ -70,7 +74,10 @@ export function skyConditions(bodies) {
     sunDim: 0.1 + 0.9 * Math.sqrt(sunFrac),         // how much of the daylight colour survives an eclipse
     base,                                           // naked-eye limit under this sky
     physical, crowd, perCm2,
-    limMag: Math.min(physical, crowd),
+    // 13.5 = a magnitude and a half past the end of the star catalogue: beyond that no fainter star can appear, and letting
+    // the limit run on only made every field star swell (they are sized by how far they are above the limit) until a
+    // magnitude-11 star outshone Jupiter's moons at high zoom
+    limMag: Math.min(physical, crowd, 13.5),
     day: atmo ? smooth(-8, 4, sunAlt) * (0.1 + 0.9 * Math.sqrt(sunFrac)) : 0,          // 0 night .. 1 day (used for colours)
     twilight: atmo ? smooth(-18, -4, sunAlt) * (1 - smooth(0, 12, sunAlt)) : 0,
   };

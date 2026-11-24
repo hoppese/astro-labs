@@ -4,7 +4,7 @@ A Stellarium-inspired web planetarium for astro-labs. Static files, no build ste
 Spec: the lead's `SPEC.md` (Tiers 1-3) and `SPEC-LABS.md` (Tier 4, classic measurements). This file is the
 hand-over: architecture, data provenance, what is done, what is left, known issues. Keep it current.
 
-Last updated 2026-11-23 by the first build agent (Tier 1 + Tier 2 items 8-10, 12, 13, part of 11).
+Last updated 2026-11-23: four sections, one per agent; the last ("Integration pass") is the most recent and overrides earlier statements about star limits and known issues.
 
 ## Run / test
 - Served at `http://127.0.0.1:8111/planetarium/` (repo root is served). Relative URLs only, so it also
@@ -398,3 +398,131 @@ is untouched). Instructor key with measured-vs-true values: `LABS.md`. `main.js`
 - Parallax recovers the HYG catalogue distance by construction; proper motion is linear in RA/Dec; no radial velocity.
 - Chrome throttles a background window's animation frames: when scripting tests, wait about 1 s after a time step
   before reading the info panel.
+
+---
+
+# Integration pass: faint-star tiles and hands-on QA (fourth agent, 2026-11-23)
+
+## Faint stars: Tycho-2 in sky tiles (`js/deepstars.js`, `tools/build_tycho.py`, `data/tycho/`)
+- **Source.** The Tycho-2 Catalogue (Høg et al. 2000, A&A 355, L27), CDS catalogue I/259: `tyc2.dat.00.gz` … `.19.gz` and
+  `suppl_1.dat.gz`, downloaded 2026-11-23 from `https://vizier.cfa.harvard.edu/ftp/cats/I/259/` (the CDS VizieR mirror at
+  CfA; `cdsarc.cds.unistra.fr` itself answered "page unavailable" that day). **Licence as stated in the catalogue's ReadMe:
+  CC BY-NC 3.0 IGO** (non-commercial, attribution). This is NOT the "free with acknowledgement" the brief assumed: see
+  "For Seth". The tiles are a separate data set in their own folder; the app runs without them (HYG only).
+- **What is in the tiles.** 2,433,138 stars = Tycho-2 (2,539,913) + supplement-1 "T" rows, minus everything already in HYG:
+  119,739 entries carrying a Hipparcos number that HYG has, and 94 more within 6″ and 1.5 mag of an HYG star. So nothing is
+  drawn twice; the fainter member of a pair that Tycho-2 resolves under one HIP number is not drawn. 24 stars with no V_T are
+  left out; 349 with V_T only are stored with V = V_T and no colour. V = V_T − 0.090 (B_T − V_T), B−V = 0.850 (B_T − V_T)
+  (the ReadMe's formulae). Positions: mean J2000 position (for 109,445 entries without one, and supplement-1, the observed
+  position, epoch about 1991). No proper motion or parallax for tile stars.
+- **Layout.** `index.json` (214 kB, fetched at start, non-blocking): manifest, all-sky and per-galactic-latitude star counts,
+  and the 4,513 stars brighter than V = 8 that HYG lacks (Hipparcos is not complete; e.g. γ¹ Vel), at full precision.
+  `a/<band>_<cell>.bin`: 8 ≤ V < 10 in 15° declination bands (184 tiles, 242,610 stars, 2.7 MB). `b/…`: V ≥ 10 in 5° bands
+  (1,654 tiles, 2,186,015 stars, 24.0 MB; largest tile 75 kB). Cells are RA slices of about equal width on the sky.
+  Record = 11 bytes: u16 RA and u16 Dec within the cell (0.27″ steps in level b), u16 V in millimag, u8 B−V in 0.02 steps,
+  u32 TYC id. Sorted by V so the draw loop stops early. Total 26.9 MB in 1,839 files (zones rather than HEALPix: no library,
+  trivially reproducible; 11 bytes rather than 6 so a clicked star shows its real TYC number and V to 0.001).
+- **Run time.** Level a is asked for when the limit passes 8.0 (field about 25°), level b when it passes 10 (about 7°); only
+  tiles that intersect the view cone, nearest the centre first, 6 requests at a time, at most 90 wanted per view; requests for
+  tiles that scrolled away are dropped. A failed tile is retried after 2, 4, 8 … 60 s while it is still on screen (tested by
+  making `fetch` reject: 12 tiles × 3 tries in 7.5 s, all loaded once fetch worked again; no console spam). Cache: 450,000
+  stars (about 9 MB), least-recently-seen first; **the eviction branch was never reached in my tests** (peak 233,000 stars).
+  A tile's stars fade in over 450 ms, on top of the existing fade within 1.5 mag of the limit.
+- **Selecting one.** Reference `{kind: 'tyc', t: tile, i}` (holds the tile, so it survives eviction). Info panel: TYC number,
+  V, B−V, "no distance". Not searchable by TYC number (no index from number to tile), and "Copy link to this view" carries
+  the direction, not the star.
+
+## Limiting magnitude (changed again: `render/sky.js`, `render/density.js`)
+- `limMag = min(physical, crowd, 13.5)`. At night `physical` now gains 5 log10(60° / fov) (it was 2.5), so the crowding
+  limit is the one that binds and the screen density holds; against a bright sky (day, twilight) the old 2.5 slope stays.
+  13.5 = just past the end of the catalogue: without it every field star kept swelling as the limit ran on (a mag-11 star
+  outshone Io at FOV 0.07°).
+- `crowd` uses the manifest's counts of HYG + Tycho-2 (up to the turnover at V = 11.75, then × 2.5 per mag), and is now
+  solved from 0.65 log N(local) + 0.35 log N(all sky), N(local) from 8 bands of |sin b| sampled over the screen. With the
+  all-sky mean alone a 5° field in Cygnus held 8× the stars of one at the galactic pole; now 3×, and the limit differs by
+  about 1 mag between the two.
+- Read-out: past mag 12 it says "stars to mag 12.0 / the star catalogue ends here" instead of a magnitude nothing has.
+
+Stars drawn per cm² of screen (1512 × 828 window, Bortle 4, no Moon, all tiles loaded):
+| FOV | Cygnus (l 79, b +2): limit, stars, per cm² | Galactic pole (Coma): limit, stars, per cm² | before (Cyg / pole) |
+|---|---|---|---|
+| 180° | 5.07, 593, **0.68** | 4.95, 414, **0.47** | 0.64 / 0.54 |
+| 90° | 5.78, 1001, **1.14** | 5.93, 863, **0.98** | 1.12 / 0.88 |
+| 30° | 7.38, 1454, **1.66** | 7.81, 897, **1.02** | 1.18 / 0.56 |
+| 10° | 9.31, 1978, **2.26** | 10.16, 816, **0.93** | |
+| 5° | 10.63, 2237, **2.55** | 11.70, 729, **0.83** | 0.26 / 0.10 |
+| 2° | 12.60, 1331, **1.52** | 13.5, 183, **0.21** | |
+| 1° | 13.5, 330, **0.38** | 13.5, 60, **0.07** | 0.02 / 0.01 |
+| 30′ | 13.5, 77, **0.09** | 13.5, 15, **0.02** | 0 / 0 |
+The density now holds from 180° to about 3° (it was 20°); below that Tycho-2 has no more stars to give (25–150 per square
+degree). Holding it to 1° needs about mag 15 (Gaia, roughly 30 million stars), to 30′ about mag 16.5: far outside 40 MB.
+
+## Performance (same machine, 3024 × 1656 backing store)
+- Stars are drawn from one sprite atlas (14 colours × 10 opacities) with no `globalAlpha` changes; Milky Way sampled every
+  10 px with a lookup table instead of `pow` (6.8 → 3.5 ms). `perf.stage` has per-stage milliseconds.
+- Under continuous scripted panning (worst case, every frame redrawn): 11 ms (90°) to 18 ms (3–8°, 1,700 stars) of JS a frame;
+  the base-catalogue loop still walks all 120,000 HYG stars at narrow fields (about 4.5 ms: a sky-cell index would remove it).
+- Real use: zooming by wheel/keys 90° → 2″ → 180° through tile loads: JS median 4.8 ms, p95 6.3, max 9.6 ms, no NaN.
+  Tracking the Moon at FOV 4° with time at ×3000 for 20 s (2,370 frames, 21 tile loads): frame interval median 8.5 ms,
+  p99 10.4, max 10.9 ms. 95 s at ×10,000, FOV 60°, grids on: 11,107 frames, max interval 17 ms, heap 94 → 72 MB (no growth).
+
+## Bugs found by hand and fixed
+Snapping and picking (all made worse, or exposed, by having a faint star behind everything):
+- Angle tool: a star hidden BEHIND the Moon's disc stole a limb snap ("TYC … → Moon limb", 34.39′ for 33.9′). Stars inside the
+  disc of the Sun, Moon or a resolved planet are no longer targets (`measure.js`), nor pickable (`picks.js`); beside a limb or
+  outline a neighbouring star wins only when the click is right on it; a click on a bright star's disc means that star
+  (clicking Alpheratz 4 px off gave "HIP 544").
+- Star and DSO labels were drawn on the face of the Sun and Moon (`labels.blockDisc`).
+- Right-click → Copy coordinates gave the clicked pixel's coordinates under the object's name (12′ off for Alpheratz).
+- Right-click → Start trail did not open the Path card, so there was no visible way to stop the trail.
+Navigation and time:
+- Selecting another object silently kept tracking on, so the lab text "click Venus, press T" switched tracking OFF.
+  Tracking now ends when a different object is selected (`nav.select`).
+- `+` / `−` pressed during a glide (e.g. straight after a search) were thrown away; they now move the glide's end FOV.
+- Bottom toolbar: with a long zone label ("UTC+11:39:04 (local mean time)", any date before standard time) the centred
+  toolbar overflowed and its first button was unreachable. `safe center`, and the bar shows "… LMT".
+- Date editor: "08:10:22 AM" and a two-digit day were clipped.
+- Events finder "Earlier" jumped back 6.6 years in the Mercury + Venus list; it now goes back one page.
+Panels:
+- A teaching panel (deep-sky list, Hubble lab, quiz) covered the lab cards; the cards now sit beside it. Toasts no longer
+  cover the panel's title.
+- Phone: the object-info sheet lay UNDER the lab cards; it now stacks above them (`--dock-h`). Small embeds (≤ 900 px wide):
+  narrower info panel and cards, so the tracked object shows between them.
+- Hubble lab: opening "Estimate distances from angular size" squeezed the student's table to one row.
+- Quiz "Find it" started from wherever the view was (I got a blank patch of ground at FOV 43′ after a Hubble go-to); it now
+  opens out to 100° above the horizon first. Menu said "Constellation quiz", panel "Sky quiz".
+- Settings: light-travel-time box did not follow Labs → Corrections; Enter in the lat/long boxes did nothing; the city
+  filter stayed filled after a choice. Second-observer longitude box clipped "-157.86".
+Text: Info said refraction depends on the atmosphere switch (it has its own, F); faint-star paragraphs and the Tycho-2
+credit with its licence added; quiz and ⌘S keys listed.
+
+## Keyboard shortcuts (complete; checked by pressing each one)
+No two modules claim the same key. Core (`ui.js`): `C` lines · `V` constellation names · `B` boundaries · `S` star names ·
+`P` planet names · `D` deep sky · `E` equatorial grid · `Z` alt-az grid · `;` meridian · `.` equator · `,` ecliptic ·
+`A` atmosphere · `F` refraction · `G` ground · `Q` cardinal points · `M` mount · `R` angle tool · `Space` centre · `T` track ·
+`J` / `K` / `L` slower / ×1 / faster · `7` pause · `8` now · `[` `]` ±1 day · `{` `}` ±1 sidereal day · `<` `>` ±1 hour ·
+`/` or `F3` search · `Esc` close / deselect · arrows pan · `+` `=` `PageUp` zoom in · `−` `_` `PageDown` zoom out.
+Extras (`extras.js`): `W` Milky Way · `N` night mode · `O` deep-sky list · `H` Hubble lab · `Ctrl/⌘ S` screenshot.
+Labs (`labs/index.js`): `X` mark time · `Shift ←/→` ±1 s · `Shift ↓/↑` ±1 min.
+Quiz (only while one runs): `1`–`4` answer · `Enter` / `Space` next; `C V B S D P` are swallowed.
+Menus: `↑ ↓ Home End Esc` in the right-click menu; `↑ ↓ Enter Esc` in search. Free letters: `I U Y`.
+
+## Not tested, or not done
+- Sydney's third contact (2012) was not judged by eye; only one Sydney contact was. Sub-labs not re-run: the 28 others.
+- "Use my location" (browser permission prompt), long-press on a real touch screen, a real phone, Safari, Firefox.
+- Clipboard contents (the toasts "copied" appeared; the text was compared through `viewLink()` / `hubble.csv()`).
+- Cache eviction (see above). Memory was watched for 95 s, not several minutes.
+- Deep-sky list: opened, "Show in Deep-sky list" works; its filters and sort were not exercised. Constellation-boundary hover
+  highlight: boundaries toggled, hover not looked at. Grid labels were looked at 180° → 2″ in passing, not scale by scale.
+- One unexplained miss: in "Find the star" a click on Capella, taken from a screenshot a moment earlier, was scored "no bright
+  star there"; the next question (Aldebaran, position read from the page) was scored correctly. Could not reproduce.
+- Known and left: grid labels show faintly under the pointer read-out; a DSO label can sit just below the horizon line; on a
+  phone a tracked object is hidden behind the info sheet until it is closed; the Events finder sets the clock to the exact
+  instant of an event even when it lists dates only.
+- Downloads: the CSV and one screenshot were saved to ~/Downloads by the tests and deleted afterwards.
+
+## Shared-file edits in this pass
+New: `js/deepstars.js`, `tools/build_tycho.py`, `data/tycho/`. Edited: renderer.js (deep stars, `perf.stage`), main.js,
+objects.js, info.js, nav.js, input.js, picks.js, measure.js, ctxmenu.js, quiz.js, ui.js, extras.js, about.js, milkyway.js,
+render/{sky,density,stars,labels,planets}.js, labs/{setup,dock,events}.js, css/{app,extras,labs}.css,
+tools/frame-test.html (`app=` passes parameters to the frames, `bare=1`), LABS.md.

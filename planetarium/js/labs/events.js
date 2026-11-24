@@ -180,7 +180,12 @@ export function initEvents() {
     const cat = CATEGORIES.find((c) => c.id === ev.cat);
     if (b.dataset.act === 'now') { ev.anchor = state.timeMs; refresh(); }
     else if (b.dataset.act === 'later') { if (ev.rows.length) { ev.anchor = ev.rows[ev.rows.length - 1].t + DAY; refresh(); } }
-    else if (b.dataset.act === 'earlier') { ev.anchor -= cat.span * N * DAY; refresh(); }
+    else if (b.dataset.act === 'earlier') {
+      // back by as much time as the page on show covers (the fixed "typical interval x 8" overshot by years in mixed
+      // lists such as Mercury + Venus elongations); searches only run forward, so this is the previous page, near enough
+      const span = ev.rows.length ? ev.rows[ev.rows.length - 1].t - ev.anchor + DAY : cat.span * N * DAY;
+      ev.anchor -= Math.max(span, 2 * DAY); refresh();
+    }
     else if (b.dataset.i != null) jumpTo(ev.rows[+b.dataset.i]);
   });
   on('loc', refresh);

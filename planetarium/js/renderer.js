@@ -20,11 +20,12 @@ import { drawBodies } from './render/planets.js';
 import { drawDso } from './render/dso.js';
 import { drawGround } from './render/ground.js';
 import { drawMilkyWay } from './milkyway.js';
+import { drawDeepStars, deep } from './deepstars.js';
 
 let canvas, ctx, dpr = 1, dirty = true, lastDraw = 0;
 const labels = new LabelLayer();
 const overlays = [];          // extra draw callbacks (measure tool, quiz, ...): fn(ctx, R)
-export const perf = { frameMs: 0, avgMs: 0, stars: 0, limMag: 0, fov: 0 };
+export const perf = { frameMs: 0, avgMs: 0, stars: 0, limMag: 0, fov: 0, stage: {} };
 
 export function addOverlay(fn) { overlays.push(fn); }
 export function requestRender() { dirty = true; }
@@ -84,21 +85,28 @@ function draw(frame) {
   for (const b of uiBlocks()) labels.block(b[0], b[1], b[2], b[3]);
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawSkyBackground(ctx, sky, bodies);
-  drawMilkyWay(ctx);
-  drawGrids(ctx);
-  drawConstellations(ctx);
-  drawStars(ctx);
-  drawDso(ctx);
-  drawBodies(ctx);
-  drawGround(ctx);
+  // per-stage times (ms) in perf.stage, for `planetarium.perf` in the console
+  const st = perf.stage; let tl = performance.now();
+  const lap = (k) => { const n = performance.now(); st[k] = n - tl; tl = n; };
+  st.setup = tl - t0;
+  drawSkyBackground(ctx, sky, bodies); lap('sky');
+  drawMilkyWay(ctx); lap('milkyway');
+  drawGrids(ctx); lap('grids');
+  drawConstellations(ctx); lap('constellations');
+  drawStars(ctx); lap('stars');
+  drawDeepStars(ctx); lap('deep');         // Tycho-2 tiles: the stars fainter than the base catalogue holds (js/deepstars.js)
+  drawDso(ctx); lap('dso');
+  drawBodies(ctx); lap('bodies');
+  drawGround(ctx); lap('ground');
   drawSelection(frame, bodies);
   for (const fn of overlays) fn(ctx, R);
+  lap('overlays');
   labels.flush(ctx, cam.w, cam.h, sky.day > 0.4 ? `rgba(16,38,82,${0.35 + 0.2 * (1 - sky.day)})` : 'rgba(2,6,14,0.85)');
+  lap('labels');
 
   perf.frameMs = performance.now() - t0;
   perf.avgMs = perf.avgMs ? perf.avgMs * 0.9 + perf.frameMs * 0.1 : perf.frameMs;
-  perf.stars = starStats.drawn; perf.limMag = sky.limMag; perf.fov = cam.fov; perf.sky = sky;
+  perf.stars = starStats.drawn + deep.stats.drawn; perf.limMag = sky.limMag; perf.fov = cam.fov; perf.sky = sky;
   emit('frame', perf);
 }
 

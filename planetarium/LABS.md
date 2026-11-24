@@ -6,7 +6,10 @@ app under **Labs → Labs: classic measurements…**. Add `&instructor=1` to a l
 show times and contact times.
 
 This file gives, for each lab, what the student does, **the value measured in the app** (by the build agent,
-in Chrome, on 2026-11-23), the result derived from it, and the true value.
+in Chrome, on 2026-11-23), the result derived from it, and the true value. Entries marked "integration pass" were
+measured the same day by the fourth agent, after the faint-star tiles and the snapping fixes went in; that pass also
+re-ran `moonrise` (23:06:18 and 23:08:21 again, 123 s), `lunar-parallax` (1.3402° again), `half-moon` (50.00% at 04:35,
+Moon → Sun 89.847°), `romer` (Io gone between 15:05:40 and 15:05:50) and `analemma` from their links.
 
 How the measurements were made, honestly stated:
 - **Clicks**: angle-tool end points, the Mark button / `X` key, Swap observers, the Events list, the
@@ -56,9 +59,13 @@ Student marks the four umbral contacts.
 - Other central eclipses: 2000-07-16, 2029-06-26 (umbra/Moon 2.66 and 2.74).
 
 ### `eclipse-shape` The Earth's round shadow (Aristotle)
-Preset: 2019-01-21 04:05 UTC, Richmond, partial phase. The edge of the umbra on the Moon is visibly a circular
-arc (checked by eye). Turning on the outline shows the full circle; umbra/Moon for this eclipse is 2.75.
-Not measured further.
+Preset: 2019-01-21 04:05 UTC, Richmond, partial phase. Done in full in the integration pass (real clicks and keys):
+- Stepped 04:05 → 04:30 UTC a minute at a time (`Shift + ↑`): the edge on the Moon is a circular arc throughout, never
+  straight, always curved the same way.
+- Outline on (Labs menu), zoomed out to 3.7°, angle tool: umbra limb to limb **1.5563°** (93.38′); Moon limb to limb
+  **33.910′** (info panel 33.9′). Umbra / Moon = **2.754** (model 2.75).
+- Take the Moon's limbs where the shadow's edge does not cross them (top and bottom here): a click where the two
+  outlines meet snaps to the umbra ("Umbra limb → Moon limb" in the list tells you it did).
 
 ### `moonrise` Angular size of the Moon from its rising time (Aristarchus)
 Preset: 2027-09-15 23:04:30 UTC, Quito (on the equator), looking east, full Moon at declination +0.4°,
@@ -136,15 +143,34 @@ Preset: 2026-06-20, Richmond, refraction off.
 ## The planets
 
 ### `zodiac` The planets keep to one band
-Preset: 2026-11-24 02:00 UTC, whole sky, ecliptic on. Ecliptic latitudes read from the info panel that night:
-Moon +4.52°, Mercury +2.20°, Venus +0.39°, Mars +2.13°, Jupiter +0.77°, Saturn −2.61°. (Only one date was read;
-over a year students should find Mercury up to about 7°, the Moon 5°.)
+Preset: 2026-11-24 02:00 UTC, whole sky, ecliptic on. Ecliptic latitude (of date) from the info panel on the 24th of
+each month for a year (13 dates; read by script, selecting each body in turn as a student would):
+
+| | Moon | Mercury | Venus | Mars | Jupiter | Saturn |
+|---|---|---|---|---|---|---|
+| 2026-11-24 | +4.52° | +2.20° | +0.39° | +2.13° | +0.77° | −2.61° |
+| largest north | +4.52° | +3.34° (Feb) | +3.24° (Dec) | +4.42° (Feb) | +1.07° (Feb) | −2.24° (Mar–Apr) |
+| largest south | −5.00° (Apr) | −4.12° (Jun) | −1.59° (Apr) | −0.52° (Sep) | +0.77° | −2.76° (Sep) |
+
+Largest |latitude| in the year: Moon **5.0°**, Mercury **4.1°**, Venus **3.2°**, Mars **4.4°**, Jupiter **1.1°**, Saturn
+**2.8°**. Everything stays within about 5° of the ecliptic. (Monthly sampling misses the extremes of the fast movers:
+Mercury can reach about 7° and the Moon 5.3°; these are topocentric, as seen from Richmond.)
 
 ### `elongation` Sizes of the orbits of Venus and Mercury (Copernicus)
 Preset: 2026-12-20, Richmond, angle tool, Events finder on greatest elongations.
 - Sun → Venus, stepping a day at a time: maximum **46.950°** on **2027-01-03** (astronomy-engine: 46.95°, 2027-01-03).
 - sin 46.950° = **0.731 au** (Venus's distance from the Sun that day 0.72 au; mean 0.723).
-- Mercury was not measured; its greatest elongations are in the same Events list.
+- Mercury (integration pass; each date reached by clicking it in the Events finder, angle tool Sun → Mercury, the row
+  follows the two bodies as the date changes):
+
+  | Greatest elongation | Angle | sin = distance from the Sun |
+  |---|---|---|
+  | 2027-02-03 evening | **18.315°** | 0.314 au |
+  | 2027-03-17 morning | **27.629°** | 0.464 au |
+  | 2027-05-28 evening | **22.918°** | 0.389 au |
+
+  Mercury's distance from the Sun runs from 0.307 au (perihelion) to 0.467 au (aphelion), which is why the three
+  differ: the lab's last question. Clicking an event sets the clock to the instant of greatest elongation.
 
 ### `synodic` Periods of the planets (Copernicus)
 Preset: Events finder on "Oppositions and conjunctions", starting 2020. Dates listed by the app:
@@ -176,16 +202,23 @@ Preset: 2026-11-24 09:00 UTC, Jupiter tracked, angle tool. Measured for Ganymede
 - M = 4π²a³ / (G T²) = **1.896 × 10²⁷ kg** (true 1.898 × 10²⁷).
 
 ### `venus-phases` The phases of Venus
-Preset: 2026-06-01, Venus tracked. Info panel, monthly:
+Preset: 2026-06-01 01:30 UTC, Venus tracked, FOV 1.8′. Integration pass: one limb-to-limb measurement with the angle
+tool (two clicks on the limb), then the date box's **+1 month** button six times; the measured row follows Venus, so
+the diameter can be read each month. Lit fraction and distance from the info panel.
 
-| Date | Lit | Diameter | Distance |
-|---|---|---|---|
-| 2026-06-01 | 79.5% | 13.3″ | 1.256 au |
-| 2026-07-01 | 69.1% | 16.0″ | 1.043 au |
-| 2026-08-01 | 55.9% | 20.9″ | 0.800 au |
-| 2026-09-01 | 38.7% | 30.1″ | 0.554 au |
-| 2026-10-01 | 15.0% | 48.1″ | 0.347 au |
-| 2026-11-01 | 2.6% | 59.6″ | 0.280 au |
+| Date (UTC) | Lit | Diameter, angle tool | Diameter, info panel | Distance |
+|---|---|---|---|---|
+| 2026-06-01 | 79.5% | **13.29″** | 13.3″ | 1.2557 au |
+| 2026-07-02 | 68.7% | **16.12″** | 16.1″ | 1.0350 au |
+| 2026-08-02 | 55.4% | **21.08″** | 21.1″ | 0.7917 au |
+| 2026-09-02 | 38.1% | **30.55″** | 30.6″ | 0.5462 au |
+| 2026-10-02 | 14.1% | **48.81″** | 48.8″ | 0.3418 au |
+| 2026-11-02 | 3.1% | **59.13″** | 59.1″ | 0.2822 au |
+| 2026-12-02 | 28.7% | **38.44″** | 38.4″ | 0.4340 au |
+
+Diameter × distance is constant (16.69″ au on every row): small and nearly full when far, large and a thin crescent when
+near. Inferior conjunction falls between the November and December rows (the crescent flips sides).
+("+1 month" from 31 May lands on 1 July local time, hence the dates.)
 
 ## The astronomical unit
 
@@ -208,13 +241,38 @@ Contacts judged with Venus tracked at FOV 0.06°.
 
 ### `venus-transit-2012`
 Preset: 2012-06-05 22:00 UTC, Honolulu and Sydney. At 01:28 UTC: Venus to Sydney's Venus **25.59″**, Venus's diameter
-**57.81″**. AU = 7,490 km × 2.478 / 25.59″ = **149.6 million km** (full chord 7,620 km: 152.2). Contacts were not
-re-timed here (same mechanism as 1769; model: Honolulu I 22:10:40, Sydney I 22:16:30).
+**57.81″**. AU = 7,490 km × 2.478 / 25.59″ = **149.6 million km** (full chord 7,620 km: 152.2).
+
+Contacts (integration pass): Venus selected and tracked (`T`), FOV 0.0225° (Venus fills most of the screen), clock stepped
+with `Shift + ←/→/↑/↓`, the thread of sunlight between Venus and the limb judged by eye on screenshots 8–10 s either
+side of each instant. Venus takes 17.5 minutes to cross the limb, so the eye is good to about ±8 s here.
+
+| | II (just inside) | III (touches limb again) | II → III |
+|---|---|---|---|
+| Honolulu, by eye | **22:28:05** ± 8 s | **04:27:00** ± 8 s | 5 h 58 min 55 s |
+| Honolulu, model | 22:28:03 | 04:27:00 | 5 h 58 min 57 s |
+| Sydney (after Swap observers), by eye | **22:34:25** ± 8 s | not judged by eye | |
+| Sydney, model | 22:34:25 | 04:26:39 | 5 h 52 min 14 s |
+
+Model first and last contacts: Honolulu I 22:10:32, IV 04:44:51; Sydney I 22:16:29, IV 04:44:31. The durations differ
+by **6 min 43 s** (model). "Model" = the instant the app's own topocentric Sun–Venus separation equals R_Sun ∓ R_Venus.
 
 ### `mercury-transit`
 Preset: 2019-11-11 12:30 UTC, Richmond. At 15:19:48 UTC: Mercury to Sun's centre **76.9″** (geocentric least distance
-79.2″; Richmond sees Mercury about 2″ closer to the centre), diameter **9.95″**. Contacts not timed
-(geocentric I 12:34:41, IV 18:03:11).
+79.2″; Richmond sees Mercury about 2″ closer to the centre), diameter **9.95″**.
+
+Contacts (integration pass): Mercury selected and tracked, FOV 0.0225°, clock stepped with `Shift + arrows`; each contact
+bracketed by eye on three screenshots 10 s apart (gap, touching, overlapping).
+
+| Contact | By eye (UTC) | Model, Richmond | Geocentric (astronomy-engine) |
+|---|---|---|---|
+| I first touch | **12:35:19** ± 5 s | 12:35:19 | 12:34:41 |
+| II fully inside | **12:37:00** ± 5 s | 12:37:00 | |
+| III touches limb again | **18:01:43** ± 5 s | 18:01:43 | |
+| IV last touch | **18:03:24** ± 5 s | 18:03:24 | 18:03:11 |
+
+Mercury crosses the limb in 101 s (Venus in 2012: 17.5 min) and is 9.95″ across against Venus's 57.8″. Richmond's first
+contact is 38 s later than the geocentric one because the Sun was only 2° above its horizon: parallax in action.
 
 ### `mars-parallax` Parallax of Mars, 1672 (Cassini and Richer)
 Preset: 1672-09-05 01:00 UTC, Paris, second observer Cayenne. Mars to Cayenne's Mars: **23.90″**.

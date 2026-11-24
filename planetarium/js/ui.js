@@ -14,6 +14,7 @@ import { navKey } from './input.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
 import { INFO_HTML, CREDITS_HTML } from './about.js';
+import { deep } from './deepstars.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -148,7 +149,9 @@ function updateClock(force) {
   lastClockText = text;
   $('clockDate').innerHTML = `<span class="wd">${p.weekday} </span>${fmtDate(p)}`;
   $('clockTime').textContent = fmtTime(p);
-  $('clockTz').textContent = zoneLabel(state.timeMs, tz);
+  // the bar has little room: "UTC+2:05:09 LMT" there, the words in the editor and the tooltip
+  const zl = zoneLabel(state.timeMs, tz);
+  $('clockTz').textContent = zl.replace(' (local mean time)', ' LMT'); $('clockTz').title = zl;
   if (!$('timePop').hidden) fillEditor(false);
 }
 function fillEditor(force) {
@@ -189,6 +192,7 @@ function buildDrawer() {
   for (const [label, v] of PRESETS) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.dataset.v = v; b.addEventListener('click', () => set('bortle', v)); pr.appendChild(b); }
   on('bortle', syncBortle);
   $('lightTimeChk').addEventListener('change', (e) => set('lightTime', e.target.checked));
+  on('lightTime', () => { $('lightTimeChk').checked = state.lightTime; });      // also switched from Labs > Corrections
 
   // location
   const cs = $('citySearch');
@@ -198,7 +202,11 @@ function buildDrawer() {
     const b = e.target.closest('button'); if (!b) return;
     const c = cities[+b.dataset.i];
     setLocation({ name: c.name, region: c.region, lat: c.lat, lon: c.lon, elev: 0, tz: c.tz });
+    if (cs.value) { cs.value = ''; fillCities(); }          // the choice is made: show the whole list again
+    locMsg('');
   });
+  // Enter in a coordinate box applies the coordinates
+  for (const id of ['latIn', 'lonIn']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('locApply').click(); } });
   $('locApply').addEventListener('click', () => {
     const lat = parseFloat($('latIn').value), lon = parseFloat($('lonIn').value);
     if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) return locMsg('Latitude must be between −90 and 90, longitude between −180 and 180.', true);
@@ -335,7 +343,10 @@ function buildShortcuts(search) {
 // ---------- read-out ----------
 let lastRead = '';
 function updateReadout(perf) {
-  const txt = `FOV <b>${fmtFov(cam.fov)}</b> · stars to mag <b>${perf.limMag.toFixed(1)}</b>` + (perf.limMag > 9.5 ? '<br>catalogue thins out past mag 9' : '') +
+  // past the end of the catalogue the internal limit keeps rising (it sets how large the stars are drawn), but no fainter
+  // stars exist to show: the read-out then gives the catalogue's limit, not a magnitude nothing on screen has
+  const catEnd = deep.ready ? 12 : 9.5, past = perf.limMag > catEnd + 0.2;
+  const txt = `FOV <b>${fmtFov(cam.fov)}</b> · stars to mag <b>${(past ? catEnd : perf.limMag).toFixed(1)}</b>` + (past ? '<br>the star catalogue ends here' : '') +
     (state.mount === 'eq' ? '<br>equatorial mount' : '') + (state.tracking ? '<br>tracking' : '');
   if (txt !== lastRead) { $('readout').innerHTML = txt; lastRead = txt; }
 }

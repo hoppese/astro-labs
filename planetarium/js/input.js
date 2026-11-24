@@ -6,7 +6,7 @@ import { state, emit } from './state.js';
 import { cam, mountAt, bringUnder, zoomAt, update } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { pickAt } from './picks.js';
-import { select, centerOn, cancelAnim } from './nav.js';
+import { select, centerOn, cancelAnim, zoomAnim } from './nav.js';
 
 const CLICK_SLOP = 5;
 
@@ -114,8 +114,8 @@ export function navKey(e) {
     case 'ArrowRight': pan(-step, 0); return true;
     case 'ArrowUp': pan(0, step); return true;
     case 'ArrowDown': pan(0, -step); return true;
-    case '+': case '=': case 'PageUp': zoomAt(1 / 1.25, cam.cx, cam.cy, frame, true); emit('render'); return true;
-    case '-': case '_': case 'PageDown': zoomAt(1.25, cam.cx, cam.cy, frame, true); emit('render'); return true;
+    case '+': case '=': case 'PageUp': if (!zoomAnim(1 / 1.25)) zoomAt(1 / 1.25, cam.cx, cam.cy, frame, true); emit('render'); return true;
+    case '-': case '_': case 'PageDown': if (!zoomAnim(1.25)) zoomAt(1.25, cam.cx, cam.cy, frame, true); emit('render'); return true;
   }
   return false;
 }

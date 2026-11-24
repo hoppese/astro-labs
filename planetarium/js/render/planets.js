@@ -196,6 +196,8 @@ export function drawBodies(ctx) {
     if (b.kind === 'planet') for (const m of moonsFront) drawMoonOf(ctx, b, m, pl, rpx, lim, ext);
     if (!visible) continue;
     addPick(pl.x, pl.y, Math.max(drawnR, 4), b.mag, { kind: 'body', id: b.id });
+    // no star or deep-sky label on the face of the Sun or Moon (the stars behind are hidden; their names were not)
+    if ((b.kind === 'sun' || b.kind === 'moon') && drawnR >= 10) labels.blockDisc(pl.x, pl.y, drawnR, ['star', 'starDim', 'dso']);
     if (state.show.planetNames) labels.add(pl.x, pl.y, b.name, 'planet', 120 - b.mag * 0.5, { gap: Math.min(drawnR, 600) + 6 });
   }
 }

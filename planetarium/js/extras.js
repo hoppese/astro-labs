@@ -66,7 +66,7 @@ export function extrasClick(x, y, ref) {
 const ACTIONS = [
   { id: 'xList', icon: 'list', label: 'Deep-sky list', k: 'O', run: () => dsoList.panel.toggle(), on: () => dsoList.panel.isOpen() },
   { id: 'xHubble', icon: 'hubble', label: 'Hubble’s-law lab', k: 'H', run: () => hubble.panel.toggle(), on: () => hubble.panel.isOpen() },
-  { id: 'xQuiz', icon: 'quiz', label: 'Constellation quiz', k: '', run: () => quiz.panel.toggle(), on: () => quiz.panel.isOpen() },
+  { id: 'xQuiz', icon: 'quiz', label: 'Sky quiz', k: '', run: () => quiz.panel.toggle(), on: () => quiz.panel.isOpen() },
   null,
   { id: 'xNight', icon: 'night', label: 'Night mode (red)', k: 'N', run: () => setNight(!xs.night), on: () => xs.night },
   { id: 'xShot', icon: 'camera', label: 'Save a screenshot', k: 'Ctrl S', run: screenshot },

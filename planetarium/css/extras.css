@@ -88,7 +88,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 26px; 
 .hb-count span:first-child { color: #c8d3e0; white-space: nowrap; }
 .hb-count span:last-child { text-align: right; }
 .hb-scroll { flex: 1; min-height: 120px; overflow: auto; border-top: 1px solid var(--line); }
-.hb-scroll.short { flex: 0 1 auto; min-height: 0; max-height: 38%; border-bottom: 1px solid var(--line); }
+.hb-scroll.short { flex: 0 0 auto; min-height: 0; max-height: 38%; border-bottom: 1px solid var(--line); }   /* does not shrink: the pane scrolls instead (the table was squeezed to one row when the size section opened) */
 .hb-table { width: 100%; border-collapse: collapse; font-size: 12.500px; }
 .hb-table th { position: sticky; top: 0; z-index: 1; background: #131c2a; text-align: left; font: 700 10px var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; white-space: nowrap; border-bottom: 1px solid var(--line); }
 .hb-table th button { all: unset; cursor: pointer; font: inherit; letter-spacing: inherit; color: inherit; }
@@ -317,4 +317,10 @@ kbd { white-space: nowrap; }
   #hubblePanel .xp-body { overflow: auto; display: block; }
   #hubblePanel .hb-scroll { max-height: none; overflow-x: auto; }
   #hubblePanel .hb-scroll.short { max-height: none; }
+}
+
+/* a toast is centred over the sky that is left beside an open side panel, not over the panel's title (integration pass) */
+@media (min-width: 561px) {
+  body:has(.xpanel:not([hidden])) .xtoast { left: calc((100vw - min(404px, 100vw - 24px)) / 2); max-width: min(560px, calc(100vw - min(404px, 100vw - 24px) - 36px)); }
+  body:has(.xpanel.wide:not([hidden])) .xtoast { left: calc((100vw - min(600px, 62vw)) / 2); max-width: min(560px, calc(100vw - min(600px, 62vw) - 36px)); }
 }

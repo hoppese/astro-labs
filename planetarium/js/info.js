@@ -9,6 +9,7 @@ import { getBodies, MOON_PARENT } from './ephem.js';
 import { starRecord, dso, constellations, DSO_TYPES } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
+import { tycRecord } from './deepstars.js';
 import { fmtClock } from './timeutil.js';
 
 let panel, lastHtmlKey = '', lastUpdate = 0, events = null, eventsKey = '';
@@ -95,6 +96,13 @@ function render(force) {
     row('Magnitude', fmtMag(s.mag) + ' (V)');
     row('Colour index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
     row('Distance', s.dist ? `${(s.dist * LY_PER_PC).toPrecision(3)} ly (${s.dist.toPrecision(3)} pc)` : ND);
+  } else if (ref.kind === 'tyc') {
+    const s = tycRecord(ref);
+    title = s.tyc; type = 'Star';
+    row('Magnitude', s.mag.toFixed(2) + ' (V, from Tycho V<sub>T</sub>' + (s.bv == null ? '' : ' and B<sub>T</sub>') + ')');
+    row('Colour index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
+    row('Distance', ND);
+    note = 'Tycho-2 catalogue star, drawn at its J2000 place (no proper motion or parallax applied). Tycho-2 gives no distance.';
   } else if (ref.kind === 'body') {
     const b = bodies.byId[ref.id];
     title = b.name;

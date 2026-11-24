@@ -40,6 +40,20 @@ function makeSprites() {
     sprites.push(c);
   }
 }
+// One atlas holding every colour at ALPHA_N opacities (row l = opacity (l + 1) / ALPHA_N). The star loops draw
+// from it without touching globalAlpha, so the browser can batch thousands of stars into a few GPU calls
+// (separate sprite canvases plus per-star alpha changes cost about 4 microseconds a star; this is about 1).
+export const ALPHA_N = 10;
+let atlasCanvas = null;
+export function starAtlas() {
+  if (atlasCanvas) return atlasCanvas;
+  if (!sprites) makeSprites();
+  const c = document.createElement('canvas'); c.width = NB * SPR; c.height = ALPHA_N * SPR;
+  const x = c.getContext('2d');
+  for (let l = 0; l < ALPHA_N; l++) { x.globalAlpha = (l + 1) / ALPHA_N; for (let i = 0; i < NB; i++) x.drawImage(sprites[i], i * SPR, l * SPR); }
+  atlasCanvas = c;
+  return c;
+}
 export function starSprite(bv) {
   if (!sprites) makeSprites();
   const i = bv > 50 ? 5 : clamp(Math.round((bv - BV0) / BV_STEP), 0, NB - 1);
@@ -63,7 +77,7 @@ export function drawStarPoint(ctx, x, y, d, bv) {
 export const stats = { drawn: 0, considered: 0 };
 
 export function drawStars(ctx) {
-  if (!sprites) makeSprites();
+  const atlas = starAtlas();
   const { frame, sky, atmo, refr, ground, labels } = R;
   const lim = sky.limMag;
   const M = frame.Mjh, V = cam.V, bx = frame.beta[0], by = frame.beta[1], bz = frame.beta[2];
@@ -131,8 +145,8 @@ export function drawStars(ctx) {
       const bv = d[o + 3];
       const si = bv > 50 ? 5 : bv < BV0 ? 0 : bv > 2.1 ? NB - 1 : Math.round((bv - BV0) / BV_STEP);
       // within 1.5 mag of the limit a star fades in from nothing, so nothing pops while zooming
-      if (dm < 1.5) { ctx.globalAlpha = 0.08 + 0.92 * Math.pow(dm / 1.5, 0.6); ctx.drawImage(sprites[si], sx - half, sy - half, 2 * half, 2 * half); ctx.globalAlpha = 1; }
-      else ctx.drawImage(sprites[si], sx - half, sy - half, 2 * half, 2 * half);
+      const al = dm < 1.5 ? Math.round((0.08 + 0.92 * Math.pow(dm / 1.5, 0.6)) * ALPHA_N) - 1 : ALPHA_N - 1;
+      if (al >= 0) ctx.drawImage(atlas, si * SPR, al * SPR, SPR, SPR, sx - half, sy - half, 2 * half, 2 * half);
       drawn++;
       addPick(sx, sy, r, mag, { kind: 'star', k: t.k, i });
       if (showNames) {

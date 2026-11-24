@@ -8,7 +8,7 @@
 
 import { A, DEG, RAD, mod, mulMV, toSph, angleBetween, unrefractHor } from './astro.js';
 import { state, on, emit, save as saveState } from './state.js';
-import { cam, unproject, update } from './camera.js';
+import { cam, unproject, update, centerHor } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
 import { constellations, stars, starRecord } from './catalog.js';
@@ -113,6 +113,15 @@ function start() {
   select(null);
   document.documentElement.classList.add('quizzing');      // the pointer read-out stops naming constellations
   emit('show');
+  // "find" quizzes need room to look around: if the view is zoomed in or pointed at the ground (e.g. left there by
+  // a deep-sky "go to"), open it out to a wide field at a comfortable height first
+  if (opt.mode !== 'name') {
+    const c = centerHor(), alt = Math.asin(Math.max(-1, Math.min(1, c[2]))) * RAD;
+    if (cam.fov < 60 || (state.show.ground && alt < 15)) {
+      const a2 = Math.max(alt, 35) / RAD, h = Math.hypot(c[0], c[1]) || 1;
+      flyTo([c[0] / h * Math.cos(a2), c[1] / h * Math.cos(a2), Math.sin(a2)], { fov: Math.max(cam.fov, 100), dur: 700 });
+    }
+  }
   ask();
 }
 function end(summary = false) {

@@ -60,8 +60,12 @@ function pointAt(x, y, ref) {
   for (const t of allTargets()) cands.push({ x: t.x, y: t.y, r: t.r, mag: 0, p: { custom: { type: t.type, id: t.id } }, disc: !t.centreOnly, custom: true });
   const LIMB_MIN = 9;                                   // discs smaller than this on screen snap to the centre only
   let best = null, bestScore = Infinity;
+  // the Sun, Moon and resolved planets hide what is behind them: a star inside such a disc is not a target
+  // (with the faint-star tiles there is nearly always one behind the Moon's limb, and it used to steal the snap)
+  const solid = cands.filter((c) => c.disc && !c.custom && c.r >= LIMB_MIN);
   for (const c of cands) {
     const d = Math.hypot(c.x - x, c.y - y);
+    if (!c.disc && !c.custom && solid.some((s) => Math.hypot(c.x - s.x, c.y - s.y) < s.r - 0.5)) continue;
     const big = c.disc && c.r >= LIMB_MIN;
     if (big) {
       const tol = Math.max(6, Math.min(14, 0.1 * c.r));
@@ -72,7 +76,10 @@ function pointAt(x, y, ref) {
       else if (d < 9 && c.custom) { const s = d / 9; if (s < bestScore) { bestScore = s; best = { c, limb: false }; } }
     } else {
       const reach = Math.max(10, c.r + 4);
-      if (d <= reach) { const s = d / reach + 0.01 * (c.mag ?? 10); if (s < bestScore) { bestScore = s; best = { c, limb: false }; } }
+      // same preference as a plain click (picks.js): a click on a bright star's disc means that star, not a faint neighbour a pixel nearer
+      // ... and beside a limb or an outline, a neighbouring star wins only when the click is right on it
+      //     (limb snaps score 1-2, so "+ 2" puts a merely nearby star behind them)
+      if (d <= reach) { const s = d / reach + 0.04 * (c.mag ?? 10) + (d <= c.r ? -0.5 : 0) + (d > Math.max(4, c.r) ? 2 : 0); if (s < bestScore) { bestScore = s; best = { c, limb: false }; } }
     }
   }
   if (!best) return { vec: skyVec(x, y) };

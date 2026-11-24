@@ -104,14 +104,15 @@ export function describeView() {
   if (l.name) q.set('place', l.name);
   if (l.tz) q.set('tz', l.tz);
   q.set('fov', String(+cam.fov.toPrecision(4)));
-  if (state.selected && state.selected.kind !== 'con') {
+  const tyc = state.selected && state.selected.kind === 'tyc';     // a faint tile star cannot be looked up by name: the link carries the direction only
+  if (state.selected && state.selected.kind !== 'con' && !tyc) {
     const s = state.selected;
     let nm = refName(s);
     if (s.kind === 'star') { const r = starRecord(s.k, s.i); nm = r.hip ? 'HIP ' + r.hip : nm; }
     q.set('target', nm);
     if (state.tracking) q.set('track', '1');
   }
-  if (!state.tracking) { const a = horToAzAlt(centerHor()); q.set('az', a.az.toFixed(3)); q.set('alt', a.alt.toFixed(3)); }
+  if (!state.tracking || tyc) { const a = horToAzAlt(centerHor()); q.set('az', a.az.toFixed(3)); q.set('alt', a.alt.toFixed(3)); }
   if (state.mount === 'eq') q.set('mount', 'eq');
   const onL = [], offL = [];
   for (const k of Object.keys(SHOW_DEFAULTS)) if (state.show[k] !== SHOW_DEFAULTS[k]) (state.show[k] ? onL : offL).push(k);

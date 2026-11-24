@@ -25,13 +25,15 @@ export class LabelLayer {
   }
   /** Reserve a rectangle so no label is drawn over it (bright discs, UI panels). */
   block(x0, y0, x1, y1) { this.items.push({ block: [x0, y0, x1, y1], prio: Infinity }); }
+  /** Keep labels of the given styles (e.g. 'star', 'starDim', 'dso') off a disc; other labels may still use it. */
+  blockDisc(x, y, r, styles) { this.items.push({ block: [x, y, r], only: styles, prio: Infinity }); }
 
   flush(ctx, w, h, haloColor = 'rgba(2,6,14,0.85)') {
-    const placed = [];
+    const placed = [], soft = [];
     this.items.sort((a, b) => b.prio - a.prio);
     ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
     for (const it of this.items) {
-      if (it.block) { placed.push(it.block); continue; }
+      if (it.block) { if (it.only) soft.push(it); else placed.push(it.block); continue; }
       const st = STYLES[it.style];
       const text = st.upper ? it.text.toUpperCase() : it.text;
       const key = it.style + '|' + text;
@@ -52,6 +54,11 @@ export class LabelLayer {
       if (r[2] < 0 || r[0] > w || r[3] < 0 || r[1] > h) continue;
       let hit = false;
       for (const p of placed) { if (r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]) { hit = true; break; } }
+      if (!hit) for (const sb of soft) {
+        if (!sb.only.includes(it.style)) continue;
+        const [cx, cy, cr] = sb.block, nx = Math.max(r[0], Math.min(cx, r[2])), ny = Math.max(r[1], Math.min(cy, r[3]));
+        if ((nx - cx) * (nx - cx) + (ny - cy) * (ny - cy) < cr * cr) { hit = true; break; }
+      }
       if (hit) continue;
       placed.push(r);
       ctx.font = st.font;
