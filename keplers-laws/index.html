@@ -39,13 +39,17 @@
   .chips button { border:1px solid #dfe3e7; background:#fff; border-radius:7px; padding:6px 2px; font:600 9.5px 'Source Sans 3',sans-serif; color:#5a636c; cursor:pointer; }
   .chips button:hover { border-color:#7d5ba6; }
   .chips button.on { background:#efe9f4; border-color:#7d5ba6; color:#4c3a6b; }
+  .nrow { display:flex; align-items:center; gap:10px; font-size:12px; font-weight:600; color:#4b535b; }
+  .nrow .chips { flex:1; }
+  .nrow .chips button { font-size:11px; padding:4px 2px; }
+  .ctlCol { gap:9px; padding-top:12px; padding-bottom:12px; }
   .checkrow { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#4b535b; cursor:pointer; }
-  .results { display:flex; flex-direction:column; gap:7px; }
-  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f0ecf5; border-radius:8px; padding:7px 11px; gap:8px; }
+  .results { display:flex; flex-direction:column; gap:5px; }
+  .resrow { display:flex; align-items:center; justify-content:space-between; background:#f0ecf5; border-radius:8px; padding:6px 11px; gap:8px; }
   .resrow .k { font-family:'Source Serif 4',serif; font-style:italic; font-size:12.5px; color:#3d3350; }
   .resrow .v { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:#4c3a6b; text-align:right; }
   .note { font-size:11.5px; line-height:1.5; color:#6b747c; background:#f0ecf5; border-radius:8px; padding:9px 11px; }
-  .footer-note { text-align:center; padding:12px; font-size:11.5px; color:#8b949d; }
+  .footer-note { text-align:center; padding:5px 12px; font-size:11.5px; color:#8b949d; }
   .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,34,0.86); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:30px; z-index:50; }
   .modal-backdrop.show { display:flex; }
   .modal { max-width:780px; width:100%; max-height:90vh; overflow:auto; background:rgba(17,26,38,0.96); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:22px 26px; color:#eef2f6; }
@@ -171,8 +175,12 @@
           <div class="lbl"><span>eccentricity <i>e</i></span><span class="val" id="eVal">0.02</span></div>
           <input type="range" id="eSlider" min="0" max="0.97" step="0.001" value="0.017">
         </div>
-        <label class="checkrow"><input type="checkbox" id="wedgeChk" checked> equal-area wedges (Law 2)</label>
+        <label class="checkrow"><input type="checkbox" id="wedgeChk" checked> equal-time wedges (Law 2)</label>
+        <div class="nrow"><span>wedges per orbit</span><div class="chips" id="nChips">
+          <button data-n="6">6</button><button data-n="8">8</button><button data-n="12" class="on">12</button><button data-n="24">24</button>
+        </div></div>
         <label class="checkrow"><input type="checkbox" id="focusChk" checked> show both foci</label>
+        <label class="checkrow"><input type="checkbox" id="refChk" checked> planet orbits for scale</label>
         <div class="section-label" style="margin-top:4px;">Results</div>
         <div class="results" id="results"></div>
       </div>
@@ -191,7 +199,7 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Stretch the orbit with the eccentricity slider and hit Play. The shaded wedges each cover the same slice of time &mdash; watch them stay equal in area even as their shape changes. The green arrow is the planet&rsquo;s velocity (longer = faster), and the lower strip is its speed over one orbit. Load a comet like Halley to see the effect at the extreme.</p>
+        <p>Stretch the orbit with the eccentricity slider and hit Play. The orbit is cut into wedges at equal steps of time (choose 6, 8, 12 or 24 per orbit). Every wedge, shaded or not, takes the same time, <i>P</i>/<i>N</i>, and has the same area; the shading only alternates so you can tell neighbours apart. The Results list gives the time and area of the wedge the planet is in. The background grid is in AU, centred on the Sun, with a scale bar and the planets&rsquo; orbits as yardsticks: as you raise the semi-major axis the orbit grows across the grid, and when it no longer fits the view zooms out a step (watch the grid numbers and scale bar change). The green arrow is the planet&rsquo;s velocity (longer = faster), and the lower strip is its speed over one orbit. Load a comet like Halley to see the effect at the extreme.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
@@ -241,18 +249,20 @@
 const $ = id => document.getElementById(id);
 let playing = false, rafId = null, lastTs = null;
 let simT = 0;            // years
-const wedges = [];       // {t0, t1, pts:[]}
+const wedges = [];       // {k, t0, t1, pts:[], area}: the whole orbit cut into NW equal spans of time
+let NW = 12;             // wedges per orbit (even, so shaded and unshaded alternate all the way round)
 
 function A() { return +$('aSlider').value; }
 function E() { return +$('eSlider').value; }
 function period() { return Math.pow(A(), 1.5); }   // years
 
 // solve Kepler's equation M = Ecc - e sin Ecc
+// (M in 0..2π; starting from π, Newton's method closes in on the root from one side at any eccentricity)
 function eccAnomaly(M, e) {
-  let Ecc = M;
-  for (let i = 0; i < 40; i++) {
+  let Ecc = e < 0.6 ? M : Math.PI;
+  for (let i = 0; i < 80; i++) {
     const d = (Ecc - e * Math.sin(Ecc) - M) / (1 - e * Math.cos(Ecc));
-    Ecc -= d; if (Math.abs(d) < 1e-9) break;
+    Ecc -= d; if (Math.abs(d) < 1e-12) break;
   }
   return Ecc;
 }
@@ -280,7 +290,23 @@ function prep(id, W, H) {
 function label(ctx, t, x, y, col, font, align) {
   ctx.save(); ctx.font = font || '10px "Source Sans 3",sans-serif'; ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,11,18,0.9)'; ctx.strokeText(t, x, y);
-  ctx.fillStyle = col || '#dbe4ee'; ctx.fillText(t, x, y); ctx.restore();
+  ctx.fillStyle = col || '#dbe4ee'; ctx.fillText(t, x, y);
+  if (LB) LB.push(textBox(ctx, t, x, y, align));
+  ctx.restore();
+}
+// boxes of the labels drawn so far in the orbit view, so later (less important) text can keep clear of them
+let LB = null;
+function textBox(ctx, t, x, y, align) {
+  const w = ctx.measureText(t).width, h = 7 * ctx.fontGrow(10);
+  const x0 = align === 'left' ? x : align === 'right' ? x - w : x - w / 2;
+  return [x0 - 3, y - h, x0 + w + 3, y + h];
+}
+// draw a label only where it is inside the canvas and clear of every earlier label; true if drawn
+function tryLabel(ctx, t, x, y, col, font, align) {
+  ctx.save(); ctx.font = font; const b = textBox(ctx, t, x, y, align); ctx.restore();
+  if (b[0] < 1 || b[2] > OW - 1 || b[1] < 0 || b[3] > OH) return false;
+  if (LB.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) return false;
+  label(ctx, t, x, y, col, font, align); return true;
 }
 function arrow(ctx, x0, y0, x1, y1, col, lw, head) {
   const L = Math.hypot(x1 - x0, y1 - y0); if (L < 0.5) return;
@@ -304,6 +330,34 @@ const KMS_PER_AUYR = 4.7406;
 
 // ---------- orbit view ----------
 const OW = 520, OH = 340;
+// The frame does not follow the orbit continuously (that would hide any change in a). It shows a half-width of
+// VIEW.L astronomical units, taken from a ladder of fixed steps: as a grows the orbit visibly grows across the
+// AU grid until it no longer fits, and only then does the frame zoom out (animated) to the next step.
+const HX = OW / 2 - 62, HY = OH / 2 - 30;                       // px available for a (across) and b (up)
+const LADDER = [1.5, 2, 3, 5, 7.5, 10, 15, 20, 30];             // 1.5 keeps Earth's orbit in view for small orbits
+const GRID = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20];
+const PLANETS = [['Mercury', 0.387], ['Venus', 0.723], ['Earth', 1], ['Mars', 1.524], ['Jupiter', 5.203], ['Saturn', 9.537], ['Uranus', 19.19], ['Neptune', 30.07]];
+const VIEW = { L: null, from: 1.5, to: 1.5, t0: 0, dur: 0 };
+let zoomRaf = null;
+function viewTarget() {
+  const a = A(), b = a * Math.sqrt(1 - E() * E()), need = Math.max(a, b * HX / HY) * 0.9999;
+  return LADDER.find(L => L >= need) || LADDER[LADDER.length - 1];
+}
+function viewNow() {
+  const target = viewTarget(), now = performance.now();
+  const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (VIEW.L == null || still) VIEW.L = VIEW.from = VIEW.to = target;
+  else if (target !== VIEW.to) { VIEW.from = VIEW.L; VIEW.to = target; VIEW.t0 = now; VIEW.dur = Math.min(900, 380 + 220 * Math.abs(Math.log2(target / VIEW.from))); }
+  if (VIEW.L !== VIEW.to) {
+    const u = Math.min(1, (now - VIEW.t0) / VIEW.dur), sm = u * u * (3 - 2 * u);
+    VIEW.L = u >= 1 ? VIEW.to : VIEW.from * Math.pow(VIEW.to / VIEW.from, sm);
+    if (u < 1 && !playing && !zoomRaf) zoomRaf = requestAnimationFrame(() => { zoomRaf = null; drawOrbit(); });
+  }
+  return VIEW.L;
+}
+function fmtAU(v) { return String(+v.toFixed(2)); }
+function fmtYr(t) { return (t >= 100 ? t.toFixed(0) : t.toPrecision(3)) + ' yr'; }
+function wedgeNow() { const P = period(); return Math.min(NW - 1, Math.floor(((simT % P) / P) * NW)); }
 function drawOrbit() {
   const ctx = prep('orbit', OW, OH), W = OW, H = OH;
   ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
@@ -313,9 +367,33 @@ function drawOrbit() {
 
   const a = A(), e = E(), b = a * Math.sqrt(1 - e * e), ae = a * e;
   // the ellipse is centred in the canvas, so the Sun (a focus) sits right of centre by a·e
-  const scale = Math.min((W / 2 - 62) / a, (H / 2 - 30) / b);
+  const scale = HX / viewNow();
   const cx = W / 2, cy = H / 2 + 2;
   const sunX = cx + ae * scale, sunY = cy;
+  LB = [];
+  const small = ctx.fontGrow(10) > 1;   // phone: enlarged text
+
+  // grid in AU, centred on the Sun; spacing steps 0.1 / 0.2 / 0.5 / 1 / 2 / 5 / 10 AU as the view changes
+  const gAU = GRID.find(g => g * scale >= 36) || 20, gpx = gAU * scale;
+  ctx.lineWidth = 1;
+  for (let i = Math.ceil(-sunX / gpx); sunX + i * gpx <= W; i++) {
+    const x = Math.round(sunX + i * gpx) + 0.5;
+    ctx.strokeStyle = i ? 'rgba(150,175,215,0.11)' : 'rgba(150,175,215,0.22)'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let j = Math.ceil(-sunY / gpx); sunY + j * gpx <= H; j++) {
+    const y = Math.round(sunY + j * gpx) + 0.5;
+    ctx.strokeStyle = j ? 'rgba(150,175,215,0.11)' : 'rgba(150,175,215,0.22)'; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  // yardsticks: the planets' orbits drawn as circles round the Sun (Earth's, 1 AU, always)
+  const refs = [];
+  for (const [nm, r] of PLANETS) {
+    const rp = r * scale, earth = nm === 'Earth';
+    if (!earth && (!$('refChk').checked || rp < 9)) continue;
+    if (rp > 700) continue;
+    ctx.strokeStyle = earth ? 'rgba(120,190,255,0.5)' : 'rgba(170,190,220,0.2)'; ctx.setLineDash(earth ? [5, 4] : [2, 4]);
+    ctx.beginPath(); ctx.arc(sunX, sunY, rp, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    refs.push([nm, rp, earth]);
+  }
 
   // major axis (faint) + orbit
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.setLineDash([2, 4]);
@@ -323,13 +401,16 @@ function drawOrbit() {
   ctx.strokeStyle = 'rgba(180,150,220,0.7)'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.ellipse(cx, cy, a * scale, b * scale, 0, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
 
-  // equal-area wedges (each = the same span of time)
+  // equal-area wedges: the whole orbit cut into NW equal spans of time
   if ($('wedgeChk').checked) {
-    for (const wg of wedges) {
-      ctx.fillStyle = 'rgba(255,210,120,0.18)'; ctx.strokeStyle = 'rgba(255,210,120,0.45)';
+    const cur = wedgeNow();
+    for (const wg of wedges) {   // every wedge is outlined; every other one is filled; the one the planet is in is brighter
+      const shaded = wg.k % 2 === 0, on = wg.k === cur;
       ctx.beginPath(); ctx.moveTo(sunX, sunY);
       wg.pts.forEach(p => ctx.lineTo(sunX + p.x * scale, sunY - p.y * scale));
-      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.closePath();
+      ctx.fillStyle = shaded ? 'rgba(255,210,120,' + (on ? 0.42 : 0.2) + ')' : 'rgba(170,205,255,' + (on ? 0.2 : 0) + ')'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,210,120,0.5)'; ctx.lineWidth = 0.8; ctx.lineJoin = 'round'; ctx.stroke(); ctx.lineWidth = 1;
     }
   }
 
@@ -337,23 +418,15 @@ function drawOrbit() {
   const periX = sunX + a * (1 - e) * scale, aphX = sunX - a * (1 + e) * scale;
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.beginPath(); ctx.arc(periX, cy, 2.2, 0, 7); ctx.arc(aphX, cy, 2.2, 0, 7); ctx.fill();
-  label(ctx, 'perihelion', periX + 8, cy + 12, 'rgba(255,255,255,0.6)', '9.5px "Source Sans 3",sans-serif', 'left');
-  label(ctx, 'aphelion', aphX - 6, cy + 12, 'rgba(255,255,255,0.6)', '9.5px "Source Sans 3",sans-serif', 'right');
 
   // Sun + empty focus
   ctx.save(); ctx.shadowColor = 'rgba(255,200,80,0.9)'; ctx.shadowBlur = 16;
   const sg = ctx.createRadialGradient(sunX - 2, sunY - 2, 1, sunX, sunY, 8);
   sg.addColorStop(0, '#fff6d6'); sg.addColorStop(1, '#ffc94a');
   ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sunX, sunY, 8, 0, 7); ctx.fill(); ctx.restore();
-  { // put the Sun's name on the side away from the planet
-    const s0 = stateAt(simT), dx = -s0.x, dy = s0.y, dl = Math.hypot(dx, dy) || 1;
-    const far = Math.hypot(s0.x, s0.y) * scale > 70;
-    label(ctx, 'Sun', far ? sunX : sunX + dx / dl * 20, far ? sunY - 17 : sunY + dy / dl * 20, '#ffe9a8', '600 10px "Source Sans 3",sans-serif');
-  }
   if ($('focusChk').checked && e > 0.003) {
     const f2x = cx - ae * scale;
     ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(f2x, sunY, 3, 0, 7); ctx.stroke();
-    label(ctx, 'empty focus', f2x, sunY + (Math.abs(f2x - aphX) < 60 ? -14 : 15), 'rgba(255,255,255,0.6)', '9.5px "Source Sans 3",sans-serif');
   }
 
   // planet: Sun–planet line, velocity arrow (length ∝ speed), lit side toward the Sun
@@ -366,10 +439,51 @@ function drawOrbit() {
   const vx = s.vx / s.v, vy = -s.vy / s.v;
   arrow(ctx, px, py, px + vx * vl, py + vy * vl, '#7fe0a0', 2, 8);
   litPlanet(ctx, px, py, 6.5, sunX - px, sunY - py);
+  LB.push([px - 7, py - 7, px + 7, py + 7], [sunX - 8, sunY - 8, sunX + 8, sunY + 8]);
   label(ctx, (s.v * KMS_PER_AUYR).toFixed(1) + ' km/s', px + vx * vl + vx * 8 + (vx >= 0 ? 4 : -4), py + vy * vl + vy * 8, '#9fe8b8', '600 10px "Source Sans 3",sans-serif', vx >= 0 ? 'left' : 'right');
 
-  label(ctx, $('wedgeChk').checked ? (ctx.fontGrow(10) > 1 ? 'each gold wedge: the same time (1/24 period)' : 'each gold wedge is swept in the same time (1/24 of a period)') : 'Sun at one focus of the ellipse', 10, H - 11, 'rgba(255,255,255,0.55)', '10px "Source Sans 3",sans-serif', 'left');
-  if (ctx.fontGrow(10) === 1 || !$('wedgeChk').checked) label(ctx, 'green arrow: velocity', W - 10, H - 11, 'rgba(159,232,184,0.75)', '10px "Source Sans 3",sans-serif', 'right');
+  const P = period(), nTxt = 'P/' + NW + ' = ' + fmtYr(P / NW);
+  label(ctx, $('wedgeChk').checked ? (small ? 'every wedge: the same time, ' + nTxt : 'each wedge, shaded or not, takes the same time: ' + nTxt) : 'Sun at one focus of the ellipse', 10, H - 11, 'rgba(255,255,255,0.7)', '10px "Source Sans 3",sans-serif', 'left');
+
+  // scale bar: one grid square
+  { const x1 = W - 12, x0 = x1 - gpx, y = H - 9;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.moveTo(x0, y - 3.5); ctx.lineTo(x0, y + 3.5); ctx.moveTo(x1, y - 3.5); ctx.lineTo(x1, y + 3.5); ctx.stroke(); ctx.lineWidth = 1;
+    label(ctx, fmtAU(gAU) + ' AU', (x0 + x1) / 2, y - 9 * ctx.fontGrow(10), 'rgba(255,255,255,0.9)', '600 10px "JetBrains Mono",monospace');
+    LB.push([x0 - 4, y - 5, x1 + 4, y + 5]); }
+
+  // names of the points: each takes the first spot that is clear of the bodies and of the labels already drawn
+  { const put = (txt, col, font, spots) => spots.some(([x, y, al]) => tryLabel(ctx, txt, x, y, col, font, al));
+    const g = ctx.fontGrow(10), k = 10 + 7 * g, wc = 'rgba(255,255,255,0.7)', wf = '9.5px "Source Sans 3",sans-serif';
+    const dx = -s.x, dy = s.y, dl = Math.hypot(dx, dy) || 1, f2x = cx - ae * scale;
+    const away = [sunX + dx / dl * (k + 4), sunY + dy / dl * (k + 4)];
+    const sun = [[sunX, sunY - k], [sunX, sunY + k], [sunX + 14, sunY, 'left'], [sunX - 14, sunY, 'right'], [sunX + 12, sunY - k, 'left'], [sunX + 12, sunY + k, 'left']];
+    put('Sun', '#ffe9a8', '600 10px "Source Sans 3",sans-serif', dl * scale > 70 ? sun : [away, ...sun]);
+    put('aphelion', wc, wf, [12, -12, 24, -24].map(d => [aphX - 6, cy + d * g, 'right']).concat([[aphX, cy + 36 * g], [aphX, cy - 36 * g]]));
+    put('perihelion', wc, wf, [12, -12, 24, -24, 36, -36].map(d => [periX + 8, cy + d * g, 'left']));
+    if ($('focusChk').checked && e > 0.003) put('empty focus', wc, wf, [15, -14, 27, -27, 40, -40, 53].map(d => [f2x, sunY + d * g])); }
+
+  // names on the yardstick orbits, wherever there is room on the circle
+  for (const [nm, rp, earth] of refs) {
+    if (!earth && !$('refChk').checked) continue;
+    if (earth && Math.abs(a - 1) < 0.04 && e < 0.06) continue;      // the orbit itself is Earth's
+    for (const deg of [58, 122, 238, 302, 90, 270, 30, 150, 210, 330]) {
+      const th = deg * Math.PI / 180, x = sunX + Math.cos(th) * rp, y = sunY - Math.sin(th) * rp;
+      if (y < 24 || y > H - 28) continue;
+      const go = txt => tryLabel(ctx, txt, x, y, earth ? 'rgba(150,205,255,0.95)' : 'rgba(185,200,225,0.7)', '9.5px "Source Sans 3",sans-serif');
+      // Earth's circle is sometimes tiny (a zoomed-out view): the short name will do
+      if (go(!earth ? nm : small || rp < 45 ? 'Earth' : 'Earth’s orbit, 1 AU')) break;
+      if (earth && go('Earth')) break;
+    }
+  }
+  // grid numbers: distance from the Sun, along the top and left edges; a number is left out where it would sit on a label
+  const gf = '9px "JetBrains Mono",monospace', gc = 'rgba(175,195,230,0.8)';
+  ctx.save(); ctx.font = gf; const every = Math.max(1, Math.ceil((ctx.measureText(fmtAU(gAU * 3) + ' AU').width + 8) / gpx)); ctx.restore();
+  for (let i = Math.ceil(-sunX / gpx); sunX + i * gpx <= W; i++)
+    if (i % every === 0) tryLabel(ctx, fmtAU(Math.abs(i) * gAU) + (i ? '' : ' AU'), sunX + i * gpx, 9 * ctx.fontGrow(9), gc, gf);
+  for (let j = Math.ceil(-sunY / gpx); sunY + j * gpx <= H; j++)
+    if (j && sunY + j * gpx > 24 && sunY + j * gpx < H - 26) tryLabel(ctx, fmtAU(Math.abs(j) * gAU), 5, sunY + j * gpx, gc, gf, 'left');
+  LB = null;
 }
 
 // ---------- speed strip ----------
@@ -408,13 +522,20 @@ function drawSpeed() {
   ctx.textAlign = 'center'; ctx.fillText((g > 0 ? 'time  (one orbit = ' : 'time since perihelion  (one orbit = ') + P.toFixed(2) + ' yr)', g > 0 ? (x0 + X(0.5)) / 2 + 8 : (x0 + x1) / 2, H - 4);
 }
 
+// Kepler's second law. The orbit is cut at NW equal steps of TIME (equal steps of mean anomaly M = 2πt/P, turned
+// into positions with Kepler's equation), so every wedge, shaded or not, lasts P/NW and has the area πab/NW.
+// Each outline follows the ellipse in small steps of eccentric anomaly; its area is measured from that outline.
 function rebuildWedges() {
   wedges.length = 0;
-  const P = period(), n = 6, span = P / 24;   // each wedge covers 1/24 of the period
-  for (let k = 0; k < n; k++) {
-    const t0 = k / n * P, pts = [];
-    for (let j = 0; j <= 12; j++) { const s = stateAt(t0 + j / 12 * span); pts.push({ x: s.x, y: s.y }); }
-    wedges.push({ t0, pts });
+  const a = A(), e = E(), b = a * Math.sqrt(1 - e * e), P = period();
+  const at = Ecc => ({ x: a * (Math.cos(Ecc) - e), y: b * Math.sin(Ecc) });
+  for (let k = 0; k < NW; k++) {
+    const E0 = eccAnomaly(2 * Math.PI * k / NW, e), E1 = eccAnomaly(2 * Math.PI * (k + 1) / NW, e);
+    const n = Math.max(6, Math.ceil((E1 - E0) / 0.02)), pts = [];
+    for (let j = 0; j <= n; j++) pts.push(at(E0 + (E1 - E0) * j / n));
+    let area = 0;
+    for (let j = 0; j < n; j++) area += (pts[j].x * pts[j + 1].y - pts[j + 1].x * pts[j].y) / 2;   // triangles from the Sun
+    wedges.push({ k, t0: k / NW * P, t1: (k + 1) / NW * P, pts, area });
   }
 }
 
@@ -432,11 +553,12 @@ function render() {
     row('perihelion distance', (a * (1 - e)).toFixed(2) + ' AU') +
     row('aphelion distance', (a * (1 + e)).toFixed(2) + ' AU') +
     row('speed now', (s.v * KMS_PER_AUYR).toFixed(1) + ' km/s') +
+    (wedges.length ? (w => row('wedge ' + (w.k + 1) + ' of ' + NW + ': time', fmtYr(w.t1 - w.t0)) + row('wedge ' + (w.k + 1) + ' of ' + NW + ': area', w.area.toPrecision(3) + ' AU²'))(wedges[wedgeNow()]) : '') +
     row('perihelion ÷ aphelion speed', (r => r.toFixed(r < 1.1 ? 3 : r < 10 ? 2 : 0))((1 + e) / (1 - e)) + '×');
 
   $('note').textContent = e < 0.02
-    ? 'A nearly circular orbit: the Sun sits almost at the centre and the speed barely changes.'
-    : 'The planet is moving fastest near perihelion (closest) and slowest near aphelion (farthest) — the wedges swept in equal times stay equal in area.';
+    ? 'A nearly circular orbit: the Sun sits almost at the centre, the speed barely changes, and the equal-time wedges are all nearly the same shape.'
+    : 'Every wedge, shaded or not, is swept in the same time (P/' + NW + ') and has the same area: short and fat near perihelion, where the planet is fast, long and thin near aphelion, where it is slow.';
 
   drawOrbit(); drawSpeed();
 }
@@ -457,10 +579,13 @@ function setPlaying(p) {
   if (p) { lastTs = null; rafId = requestAnimationFrame(tick); }
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { setPlaying(false); simT = 0; $('aSlider').value = 1; $('eSlider').value = 0.017; $('wedgeChk').checked = true; $('focusChk').checked = true; rebuildWedges(); render(); });
+$('resetBtn').addEventListener('click', () => { setPlaying(false); simT = 0; $('aSlider').value = 1; $('eSlider').value = 0.017; $('wedgeChk').checked = true; $('focusChk').checked = true; $('refChk').checked = true; setNW(12); });
 $('aSlider').addEventListener('input', () => { rebuildWedges(); render(); });
 $('eSlider').addEventListener('input', () => { rebuildWedges(); render(); });
-['wedgeChk', 'focusChk'].forEach(id => $(id).addEventListener('change', render));
+['wedgeChk', 'focusChk', 'refChk'].forEach(id => $(id).addEventListener('change', render));
+function setNW(n) { NW = n; document.querySelectorAll('#nChips button').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); rebuildWedges(); render(); }
+document.querySelectorAll('#nChips button').forEach(b => b.addEventListener('click', () => setNW(+b.dataset.n)));
+window.addEventListener('resize', render);
 document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
   $('aSlider').value = b.dataset.a; $('eSlider').value = b.dataset.e; simT = 0; rebuildWedges(); render();
 }));

@@ -25,7 +25,15 @@
   .canvasCol { padding:14px; display:flex; flex-direction:column; gap:10px; flex:1 1 520px; min-width:0; }
   .ctlCol { width:298px; flex:none; border-left:1px solid #e8ebee; padding:15px 17px; display:flex; flex-direction:column; gap:13px; }
   canvas { display:block; width:100%; height:auto; border-radius:10px; background:#080b12; }
-  #geom { aspect-ratio:520/280; }
+  #geom { aspect-ratio:520/280; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none; }
+  #geom.grabbing { cursor:grabbing; }
+  .geomWrap { position:relative; }
+  .viewbar { position:absolute; left:8px; bottom:7px; display:flex; gap:4px; flex-wrap:wrap; }
+  .viewbar button { font:600 10.5px 'Source Sans 3',sans-serif; color:#cfdbe8; background:rgba(20,30,44,0.78); border:1px solid rgba(160,185,220,0.32); border-radius:7px; padding:4px 8px; cursor:pointer; }
+  .viewbar button:hover { border-color:#5fbccb; color:#fff; }
+  .viewbar button.on { background:rgba(58,154,168,0.4); border-color:#5fbccb; color:#fff; }
+  @media (max-width:680px){ .viewbar { position:static; margin-top:7px; } .viewbar button { color:#3c4750; background:#fff; border-color:#d3d8dd; padding:6px 9px; } .viewbar button:hover, .viewbar button.on { color:#1f6470; background:#e2f2f4; } .viewbar button:disabled { color:#8b949d !important; } }
+  .viewbar button:disabled { opacity:0.4; cursor:default; border-color:rgba(160,185,220,0.32); color:#cfdbe8; }
   #sky { aspect-ratio:520/170; }
   .btnrow { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
   .playbtn { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:9px; cursor:pointer; border:1px solid #2f7f8b; background:#2f7f8b; color:#fff; }
@@ -148,7 +156,15 @@
     </div>
     <div class="body">
       <div class="canvasCol">
-        <canvas id="geom" width="520" height="280"></canvas>
+        <div class="geomWrap">
+          <canvas id="geom" width="520" height="280" aria-label="Space view: drag to rotate, scroll or pinch to zoom, double-click to reset"></canvas>
+          <div class="viewbar" id="viewbar">
+            <button data-v="above" title="Look straight down on Earth&rsquo;s orbit">from above</button>
+            <button data-v="edge" title="See Earth&rsquo;s orbit edge-on">edge-on</button>
+            <button data-v="star" title="Look past the Sun toward the star: the figure on the screen is the path seen from Earth (lower panel)">toward the star</button>
+            <button data-v="auto" title="Back to the automatic view (or double-click the picture)" disabled>&#8634; reset view</button>
+          </div>
+        </div>
         <canvas id="sky" width="520" height="170"></canvas>
         <div class="btnrow">
           <button class="playbtn" id="playBtn">&#9654; Run a year</button>
@@ -199,7 +215,7 @@
       </div>
       <div style="padding:0 22px;border-left:1px solid rgba(255,255,255,0.12);">
         <div class="yellow">How to use</div>
-        <p>Pick a star or set a distance, then run the year. <b>In space</b> (top, not to scale) the star never moves: Earth goes round the Sun, so the sight line from Earth through the star pivots about the star and its far end sweeps over the far-away background stars. The two dashed sight lines, six months apart, are the extremes; the angle between them at the star is 2<i>p</i>, and the triangle Sun, Earth, star (right angle at the Sun, base 1&nbsp;AU) defines <i>p</i>. <b>From Earth</b> (bottom; north up, east left, as on the sky) the same thing is seen as the star shifting against the fixed background stars, always toward the side of the sky the Sun is on. With <i>auto-zoom</i> the view magnifies in steps as the path shrinks (watch the scale bar); untick it to see how small the shift of a distant star really is. The angle &beta; is the star&rsquo;s ecliptic latitude (negative = south of Earth&rsquo;s orbit plane) and sets the path&rsquo;s shape: a circle at the pole of the orbit (&beta; = &plusmn;90&deg;), a back-and-forth line in its plane (&beta; = 0), and an ellipse <i>p</i> by <i>p</i>&nbsp;sin&nbsp;&beta; in between. The dates are real for the named stars. For a star north of the orbit plane the space view shows the background screen from its far side, so east and west are mirrored compared with the view from Earth: follow the E and N arrows.</p>
+        <p>Pick a star or set a distance, then run the year. <b>In space</b> (top, not to scale) the star never moves: Earth goes round the Sun, so the sight line from Earth through the star pivots about the star and its far end sweeps over the far-away background stars. The two dashed sight lines, six months apart, are the extremes; the angle between them at the star is 2<i>p</i>, and the triangle Sun, Earth, star (right angle at the Sun, base 1&nbsp;AU) defines <i>p</i>. <b>From Earth</b> (bottom; north up, east left, as on the sky) the same thing is seen as the star shifting against the fixed background stars, always toward the side of the sky the Sun is on. With <i>auto-zoom</i> the view magnifies in steps as the path shrinks (watch the scale bar); untick it to see how small the shift of a distant star really is. The angle &beta; is the star&rsquo;s ecliptic latitude (negative = south of Earth&rsquo;s orbit plane) and sets the path&rsquo;s shape: a circle at the pole of the orbit (&beta; = &plusmn;90&deg;), a back-and-forth line in its plane (&beta; = 0), and an ellipse <i>p</i> by <i>p</i>&nbsp;sin&nbsp;&beta; in between. The dates are real for the named stars. <b>Turn the space view:</b> drag it to look from any direction (scroll or pinch to zoom; double-click or <i>reset view</i> to go back). <i>From above</i> looks straight down on Earth&rsquo;s orbit, <i>edge-on</i> looks along its plane, and <i>toward the star</i> looks past the Sun at the star, so the figure on the screen is the very path drawn in the lower panel. Wherever you look from, the star stays put; only Earth moves. In the automatic view of a star north of the orbit plane you see the background screen from its far side (it says so), so east and west are mirrored compared with the view from Earth: follow the E and N arrows.</p>
       </div>
       <div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.12);margin-top:15px;padding-top:15px;">
         <div class="yellow">Relevant relationships</div>
@@ -325,17 +341,43 @@ const SANS = '"Source Sans 3",sans-serif', SERIF = '"Source Serif 4",serif';
 // A screen of far background stars stands beyond the star, perpendicular to the Sun-star line; on it "east"
 // (increasing longitude) is +y and "north" is (−sin beta, 0, cos beta).
 const WALL = 3.6, WALL_HALF = 1.08;
-// The camera always looks down on the orbit from the north (elevation CAM.el), so Earth is seen going
-// counterclockwise. Its azimuth turns with the star's latitude so that two things are never seen edge-on: the
-// background screen (normal s) and the defining triangle Sun-Earth-star (normal m). s and m are perpendicular and
-// both lie in the star's meridian plane, so the camera direction projected into that plane is kept midway between
-// them, at beta + 45 degrees: tan(beta + 45°) = tan(el) / (−sin az). A star north of the orbit plane therefore
-// shows the far (outer) face of the screen, a southern star the face turned to the Sun; the two cases are mirror
-// images, and the view switches sides as beta passes through zero.
-const CAM = { az: -0.6, el: 0.5, F: 60 };
-function setCam(bdeg) {
-  const sa = -Math.tan(CAM.el) / Math.tan((Math.abs(bdeg) + 45) * DEG);
-  CAM.az = Math.asin(Math.max(-1, Math.min(1, sa))) * (bdeg >= 0 ? 1 : -1);
+// The view is an orbit camera: azimuth CAM.az round the pole of Earth's orbit, elevation CAM.el above the orbit
+// plane (negative = looking up from the south), zoom CAM.zoom. Until the user drags, it is set automatically
+// (VIEWS.auto): looking down from the north at elevation 0.5 rad, so Earth is seen going counterclockwise, with an
+// azimuth that turns with the star's latitude so that two things are never seen edge-on: the background screen
+// (normal s) and the defining triangle Sun-Earth-star (normal m). s and m are perpendicular and both lie in the
+// star's meridian plane, so the camera direction projected into that plane is kept midway between them, at
+// beta + 45 degrees: tan(beta + 45°) = tan(el) / (−sin az). The automatic view of a star north of the orbit plane
+// therefore shows the far (outer) face of the screen, a southern star the face turned to the Sun.
+const CAM = { az: -0.6, el: 0.5, zoom: 1, F: 60 };
+const EL_MAX = 89 * DEG, ZMIN = 0.6, ZMAX = 2.6;
+function autoAz(bdeg) {
+  const sa = -Math.tan(0.5) / Math.tan((Math.abs(bdeg) + 45) * DEG);
+  return Math.asin(Math.max(-1, Math.min(1, sa))) * (bdeg >= 0 ? 1 : -1);
+}
+// named views, each a function of the star's latitude (so they follow the beta slider); 'free' is wherever the
+// user has dragged to, and no longer follows anything
+const VIEWS = {
+  auto: b => ({ az: autoAz(b), el: 0.5 }),
+  above: () => ({ az: 0, el: EL_MAX }),                                  // straight down on the orbit, star to the right
+  edge: b => ({ az: autoAz(b), el: 0.035 }),                            // the orbit seen (almost exactly) edge-on
+  // from behind the Sun toward the star, 8° off the line so that the Sun does not hide the star: north on the
+  // screen is up and east is left, as in the view from Earth
+  star: b => ({ az: Math.PI / 2, el: Math.max(-EL_MAX, Math.min(EL_MAX, -(b - (b >= 0 ? 8 : -8)) * DEG)) }),
+};
+const VW = { mode: 'auto', az: 0, el: 0.5, zoom: 1, tw: null };
+const HINT = { used: false, t0: 0 };
+function applyCam(now) {
+  let t = VW.mode === 'free' ? { az: VW.az, el: VW.el } : VIEWS[VW.mode](BETA), z = VW.zoom;
+  if (VW.tw) {
+    const u = (now - VW.tw.t0) / VW.tw.dur;
+    if (u >= 1) VW.tw = null;
+    else {
+      const k = u * u * (3 - 2 * u), da = Math.atan2(Math.sin(t.az - VW.tw.az), Math.cos(t.az - VW.tw.az));
+      t = { az: VW.tw.az + da * k, el: VW.tw.el + (t.el - VW.tw.el) * k }; z = VW.tw.zoom + (z - VW.tw.zoom) * k;
+    }
+  }
+  CAM.az = t.az; CAM.el = t.el; CAM.zoom = z;
 }
 function starDist() { return 2.0 + Math.log10(Dpc) * 0.8 / 3; }   // schematic: 2 (1 pc) to 2.8 (1000 pc) orbit radii
 function sHat() { const b = BETA * DEG; return { x: Math.cos(b), y: 0, z: Math.sin(b) }; }
@@ -358,7 +400,6 @@ function cam0(p) {
   return { x: x1 * f, y: -up * f, d: dep, f };
 }
 function sceneBox(bdeg) {
-  setCam(bdeg);
   let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
   const add = p => { const q = cam0(p); x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); };
   for (let k = 0; k < 24; k++) { const a = k / 24 * 2 * Math.PI; add({ x: 1.25 * Math.cos(a), y: 1.25 * Math.sin(a), z: 0 }); }
@@ -367,13 +408,17 @@ function sceneBox(bdeg) {
 }
 // drawing scale (px per orbit radius): as large as fits at this latitude, but never more than SMAX, so the picture
 // changes size only a little as beta changes; it is slid to stay centred
-const GW = 520, GH = 280, GM = { l: 20, r: 20, t: 26, b: 22 }, SMAX = 62;
+const GW = 520, GH = 280, GM = { l: 20, r: 20, t: 26, b: 30 }, SMAX = 62;
 let SCALE = SMAX;
 let FIT = { ox: 0, oy: 0 };
 function fitScene() {
-  const B = sceneBox(BETA); setCam(BETA);
+  applyCam(performance.now());
+  const B = sceneBox(BETA);
   SCALE = Math.min(SMAX, (GW - GM.l - GM.r) / (B.x1 - B.x0), (GH - GM.t - GM.b) / (B.y1 - B.y0));
   FIT = { ox: GM.l + ((GW - GM.l - GM.r) - SCALE * (B.x1 - B.x0)) / 2 - SCALE * B.x0, oy: GM.t + ((GH - GM.t - GM.b) - SCALE * (B.y1 - B.y0)) / 2 - SCALE * B.y0 };
+  // the user's zoom, about the middle of the picture
+  const z = CAM.zoom, mx = GW / 2, my = (GM.t + GH - GM.b) / 2;
+  SCALE *= z; FIT.ox = mx + (FIT.ox - mx) * z; FIT.oy = my + (FIT.oy - my) * z;
 }
 function P(p) { const q = cam0(p); return { x: FIT.ox + q.x * SCALE, y: FIT.oy + q.y * SCALE, d: q.d, f: q.f }; }
 
@@ -393,6 +438,16 @@ function angleArc(ctx, c, a, b, r, col, txt, tr) {   // arc at c between the scr
   const am = a1 + da / 2; if (txt) label(ctx, txt, c.x + Math.cos(am) * tr, c.y + Math.sin(am) * tr + 4, col, 'italic 600 12px ' + SERIF);
 }
 
+// which of Earth's two quarter positions carries the 1 AU baseline: the automatic view keeps its fixed choice; once
+// the view is turned it is the one nearer the viewer (it changes over only when the other is clearly nearer)
+let SGN = -1;
+function pickSgn() {
+  if (VW.mode === 'auto' && !VW.tw) return SGN = BETA >= 0 ? -1 : 1;
+  if (cam0(earthAt(-SGN * Math.PI / 2)).d < cam0(earthAt(SGN * Math.PI / 2)).d - 0.6) SGN = -SGN;
+  return SGN;
+}
+let LBLSTAT = { n: 0, forced: 0 };   // labels drawn in the last frame, and how many had to overlap another
+
 function drawGeom() {
   const W = GW, H = GH, ctx = prep($('geom'), W, H);
   ctx.fillStyle = '#080b12'; ctx.fillRect(0, 0, W, H);
@@ -402,33 +457,48 @@ function drawGeom() {
   // Earth's two quarter positions, where the Sun-Earth line is square to the Sun-star line (the textbook triangle).
   // QA is the one drawn with the 1 AU baseline.
   const sP = P({ x: 0, y: 0, z: 0 }), stP = P(S), eP = P(E);
-  const sgn = BETA >= 0 ? -1 : 1;
+  const sgn = pickSgn();
   const QA = earthAt(sgn * Math.PI / 2), QB = earthAt(-sgn * Math.PI / 2), qaP = P(QA), qbP = P(QB);
   const wE = P(onWall(E)), wA = P(onWall(QA)), wB = P(onWall(QB)), wC = P(wallPt(0, 0));
   const dash = (a, b, col, pat, lw) => { ctx.strokeStyle = col; ctx.setLineDash(pat || []); ctx.lineWidth = lw || 1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1; };
+  const sep = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-  // background screen of far stars (a fixed pattern)
+  // Painter's order for any viewpoint. The camera sits CAM.F from the Sun along −nv. If it is beyond the plane of
+  // the background screen, the screen is the nearest thing and is painted last, over the rest (it is translucent,
+  // so the scene shows through it and we see its far face); otherwise it is the backdrop and is painted first.
+  const nv = { x: Math.sin(CAM.az) * Math.cos(CAM.el), y: Math.cos(CAM.az) * Math.cos(CAM.el), z: -Math.sin(CAM.el) };
+  const wallFront = -CAM.F * (nv.x * s.x + nv.z * s.z) > WALL;
+
+  // background screen of far stars (a fixed pattern), with the path the sight line's far end sweeps in a year
   const cs = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => P(wallPt(a * WALL_HALF, b * WALL_HALF)));
-  ctx.beginPath(); cs.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.closePath();
-  ctx.fillStyle = 'rgba(70,90,130,0.16)'; ctx.fill(); ctx.strokeStyle = 'rgba(140,170,220,0.4)'; ctx.lineWidth = 1; ctx.stroke();
-  for (const [u, v, r, a, c] of WALLSTARS) { const q = P(wallPt(u, v)); ctx.fillStyle = 'rgba(' + c + ',' + a + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, 7); ctx.fill(); }
-  // east and north on the screen (the same E and N as in the view from Earth below)
-  { let best = null, bd = -1;
-    for (const su of [-1, 1]) for (const sv of [-1, 1]) { const u0 = su * WALL_HALF * 0.84 - (su > 0 ? 0.42 : 0), v0 = sv * WALL_HALF * 0.84 - (sv > 0 ? 0.42 : 0), q = P(wallPt(u0 + 0.21, v0 + 0.21)), dd = Math.hypot(q.x - stP.x, q.y - stP.y); if (dd > bd) { bd = dd; best = [u0, v0]; } }
-    const oP = P(wallPt(best[0], best[1])), eT = P(wallPt(best[0] + 0.42, best[1])), nT = P(wallPt(best[0], best[1] + 0.42));
-    ctx.strokeStyle = 'rgba(190,205,230,0.75)'; ctx.beginPath(); ctx.moveTo(eT.x, eT.y); ctx.lineTo(oP.x, oP.y); ctx.lineTo(nT.x, nT.y); ctx.stroke();
-    const tip = q => ({ x: q.x + (q.x - oP.x) * 0.4, y: q.y + (q.y - oP.y) * 0.4 + 3 });
-    label(ctx, 'E', tip(eT).x, tip(eT).y, 'rgba(200,215,240,0.9)', '9px ' + SANS); label(ctx, 'N', tip(nT).x, tip(nT).y, 'rgba(200,215,240,0.9)', '9px ' + SANS); }
+  const drawWall = () => {
+    ctx.beginPath(); cs.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.closePath();
+    ctx.fillStyle = wallFront ? 'rgba(70,90,130,0.2)' : 'rgba(70,90,130,0.16)'; ctx.fill(); ctx.strokeStyle = 'rgba(140,170,220,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+    for (const [u, v, r, a, c] of WALLSTARS) { const q = P(wallPt(u, v)); ctx.fillStyle = 'rgba(' + c + ',' + a + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, 7); ctx.fill(); }
+    // east and north on the screen (the same E and N as in the view from Earth below)
+    { let best = null, bd = -1;
+      for (const su of [-1, 1]) for (const sv of [-1, 1]) { const u0 = su * WALL_HALF * 0.84 - (su > 0 ? 0.42 : 0), v0 = sv * WALL_HALF * 0.84 - (sv > 0 ? 0.42 : 0), q = P(wallPt(u0 + 0.21, v0 + 0.21)), dd = Math.hypot(q.x - stP.x, q.y - stP.y); if (dd > bd) { bd = dd; best = [u0, v0]; } }
+      const oP = P(wallPt(best[0], best[1])), eT = P(wallPt(best[0] + 0.42, best[1])), nT = P(wallPt(best[0], best[1] + 0.42));
+      ctx.strokeStyle = 'rgba(190,205,230,0.75)'; ctx.beginPath(); ctx.moveTo(eT.x, eT.y); ctx.lineTo(oP.x, oP.y); ctx.lineTo(nT.x, nT.y); ctx.stroke();
+      const tip = q => ({ x: q.x + (q.x - oP.x) * 0.4, y: q.y + (q.y - oP.y) * 0.4 + 3 });
+      if (sep(eT, oP) > 7 && tip(eT).y > 30) label(ctx, 'E', tip(eT).x, tip(eT).y, 'rgba(200,215,240,0.9)', '9px ' + SANS);
+      if (sep(nT, oP) > 7 && tip(nT).y > 30) label(ctx, 'N', tip(nT).x, tip(nT).y, 'rgba(200,215,240,0.9)', '9px ' + SANS); }
+    ctx.strokeStyle = 'rgba(255,224,138,0.5)'; ctx.setLineDash([3, 3]); ctx.beginPath();
+    for (let k = 0; k <= 96; k++) { const q = P(onWall(earthAt(k / 96 * 2 * Math.PI))); k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  // where the three sight lines land on the screen
+  const drawMarks = () => {
+    for (const q of [wA, wB]) { ctx.strokeStyle = 'rgba(255,224,138,0.8)'; ctx.beginPath(); ctx.arc(q.x, q.y, 2.6, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = '#9fe6f0'; ctx.beginPath(); ctx.arc(wE.x, wE.y, 3.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(wE.x, wE.y, 5.2, 0, 7); ctx.stroke();
+  };
   // caption beside the screen, on its right
   let rc = cs[0]; for (const q of cs) if (q.x > rc.x) rc = q;
-  const capX = Math.min(rc.x + 8, W - 84), capY = Math.max(40, Math.min(H - 22, (cs[0].y + cs[1].y + cs[2].y + cs[3].y) / 4 - 4));
-  label(ctx, 'far-away', capX, capY, 'rgba(190,205,230,0.85)', '10px ' + SANS, 'left');
-  label(ctx, 'background stars', capX, capY + 12, 'rgba(190,205,230,0.85)', '10px ' + SANS, 'left');
+  const cg = ctx.fontGrow(10);   // phone: enlarged text
+  const capX = Math.max(8, Math.min(rc.x + 8, W - 84 * cg)), capY = Math.max(40, Math.min(H - 52, (cs[0].y + cs[1].y + cs[2].y + cs[3].y) / 4 - 4));
 
-  // the path the sight line's far end sweeps over the background in a year
-  ctx.strokeStyle = 'rgba(255,224,138,0.5)'; ctx.setLineDash([3, 3]); ctx.beginPath();
-  for (let k = 0; k <= 96; k++) { const q = P(onWall(earthAt(k / 96 * 2 * Math.PI))); k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
-  ctx.stroke(); ctx.setLineDash([]);
+  if (!wallFront) drawWall();
 
   // Sun-star line (the distance d), carried on to the background
   dash(stP, wC, 'rgba(255,255,255,0.16)', [2, 4]);
@@ -449,64 +519,85 @@ function drawGeom() {
   half(false);
   ctx.fillStyle = 'rgba(90,140,210,0.09)'; ctx.beginPath(); orbitPts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.fill();
 
-  // the 1 AU baseline (Sun to Earth at the quarter position nearest us) and its right angle with the Sun-star line
+  // the 1 AU baseline (Sun to Earth at a quarter position) and its right angle with the Sun-star line
   dash(sP, qaP, 'rgba(255,255,255,0.5)', [], 1.1);
   const k = 0.17, r1 = P({ x: k * s.x, y: 0, z: k * s.z }), r2 = P({ x: k * s.x, y: sgn * k, z: k * s.z }), r3 = P({ x: 0, y: sgn * k, z: 0 });
   ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.moveTo(r1.x, r1.y); ctx.lineTo(r2.x, r2.y); ctx.lineTo(r3.x, r3.y); ctx.stroke();
 
-  // Sun
-  const sg = ctx.createRadialGradient(sP.x, sP.y, 2, sP.x, sP.y, 17);
-  sg.addColorStop(0, 'rgba(255,240,190,0.85)'); sg.addColorStop(1, 'rgba(255,200,80,0)');
-  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sP.x, sP.y, 17, 0, 7); ctx.fill();
-  ctx.fillStyle = '#ffd353'; ctx.beginPath(); ctx.arc(sP.x, sP.y, 5.5, 0, 7); ctx.fill();
-  half(true);
+  // Sight lines, each straight from Earth through the star to the background: the two reference ones, six months
+  // apart, where the shift is greatest, and today's, which pivots about the fixed star as Earth moves. A line that
+  // crosses the Sun's disc on the near side of the Sun is painted after the Sun, any other before it.
+  const lines = [[qaP, wA, 'rgba(255,224,138,0.5)', [4, 3], 1], [qbP, wB, 'rgba(255,224,138,0.5)', [4, 3], 1], [eP, wE, 'rgba(150,230,240,0.95)', [], 1.5]];
+  const overSun = ([a, b]) => {
+    const dx = b.x - a.x, dy = b.y - a.y, t = Math.max(0, Math.min(1, ((sP.x - a.x) * dx + (sP.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(a.x + dx * t - sP.x, a.y + dy * t - sP.y) < 17 && a.d + (b.d - a.d) * t < sP.d - 0.02;
+  };
+  for (const L of lines) if (!overSun(L)) dash(...L);
+  if (!wallFront) drawMarks();
+  // angles at the star: p between the Sun and Earth directions, 2p between the two reference lines (left out in a
+  // view where the lines that make them are seen nearly end-on)
+  const showP = sep(stP, sP) > 48 && sep(stP, qaP) > 48, show2P = sep(stP, wA) > 32 && sep(stP, wB) > 32;
+  if (showP) angleArc(ctx, stP, sP, qaP, 34, '#ffe08a', '', 0);
+  if (show2P) angleArc(ctx, stP, wA, wB, 24, '#ffe08a', '', 0);
 
-  // the two reference sight lines, six months apart, where the shift is greatest: each runs straight from Earth
-  // through the star to the background
-  dash(qaP, wA, 'rgba(255,224,138,0.5)', [4, 3]); dash(qbP, wB, 'rgba(255,224,138,0.5)', [4, 3]);
-  for (const q of [wA, wB]) { ctx.strokeStyle = 'rgba(255,224,138,0.8)'; ctx.beginPath(); ctx.arc(q.x, q.y, 2.6, 0, 7); ctx.stroke(); }
-  // angles at the star: p between the Sun and Earth directions, 2p between the two reference lines
-  angleArc(ctx, stP, sP, qaP, 34, '#ffe08a', '', 0);
-  angleArc(ctx, stP, wA, wB, 24, '#ffe08a', '', 0);
-
-  // today's sight line: Earth → star → background. It pivots about the fixed star as Earth moves.
-  dash(eP, wE, 'rgba(150,230,240,0.95)', [], 1.5);
-  ctx.fillStyle = '#9fe6f0'; ctx.beginPath(); ctx.arc(wE.x, wE.y, 3.2, 0, 7); ctx.fill();
-  ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(wE.x, wE.y, 5.2, 0, 7); ctx.stroke();
-
-  // the nearby star (fixed)
-  const stg = ctx.createRadialGradient(stP.x, stP.y, 1, stP.x, stP.y, 11);
-  stg.addColorStop(0, 'rgba(255,240,190,1)'); stg.addColorStop(1, 'rgba(255,220,120,0)');
-  ctx.fillStyle = stg; ctx.beginPath(); ctx.arc(stP.x, stP.y, 11, 0, 7); ctx.fill();
-  ctx.fillStyle = '#fff4cf'; ctx.beginPath(); ctx.arc(stP.x, stP.y, 3.6, 0, 7); ctx.fill();
-
-  // Earth at the two reference dates (ghosts) and today
+  // the bodies, farthest first: Sun, the nearby star (fixed), Earth at the two reference dates (ghosts) and today
   const dA = fmtDate(dayOfPhi(sgn * 90)), dB = fmtDate(dayOfPhi(-sgn * 90));
-  for (const q of [qaP, qbP]) { ctx.globalAlpha = 0.55; shadedSphere(ctx, q.x, q.y, 3.4, '#4f93d6', 0, -0.6); ctx.globalAlpha = 1; }
-  const lx = sP.x - eP.x, ly = sP.y - eP.y, ll = Math.hypot(lx, ly) || 1;
-  shadedSphere(ctx, eP.x, eP.y, 5.2, '#4f93d6', lx / ll, ly / ll);
+  const bodies = [
+    [sP.d, () => {
+      const sg = ctx.createRadialGradient(sP.x, sP.y, 2, sP.x, sP.y, 17);
+      sg.addColorStop(0, 'rgba(255,240,190,0.85)'); sg.addColorStop(1, 'rgba(255,200,80,0)');
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sP.x, sP.y, 17, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffd353'; ctx.beginPath(); ctx.arc(sP.x, sP.y, 5.5, 0, 7); ctx.fill();
+      half(true);
+      for (const L of lines) if (overSun(L)) dash(...L);
+    }],
+    [stP.d, () => {
+      const stg = ctx.createRadialGradient(stP.x, stP.y, 1, stP.x, stP.y, 11);
+      stg.addColorStop(0, 'rgba(255,240,190,1)'); stg.addColorStop(1, 'rgba(255,220,120,0)');
+      ctx.fillStyle = stg; ctx.beginPath(); ctx.arc(stP.x, stP.y, 11, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff4cf'; ctx.beginPath(); ctx.arc(stP.x, stP.y, 3.6, 0, 7); ctx.fill();
+    }],
+    ...[qaP, qbP].map(q => [q.d + 1e-4, () => { ctx.globalAlpha = 0.55; shadedSphere(ctx, q.x, q.y, 3.4, '#4f93d6', 0, -0.6); ctx.globalAlpha = 1; }]),
+    [eP.d, () => { const lx = sP.x - eP.x, ly = sP.y - eP.y, ll = Math.hypot(lx, ly) || 1; shadedSphere(ctx, eP.x, eP.y, 5.2, '#4f93d6', lx / ll, ly / ll); }],
+  ];
+  bodies.sort((a, b) => b[0] - a[0]).forEach(b => b[1]());
+
+  if (wallFront) { drawWall(); drawMarks(); }
 
   // ---- labels ----
-  const clx = x => Math.max(8, Math.min(W - 8, x)), cly = y => Math.max(32, Math.min(H - 6, y));
+  const yMax = H - 30;   // the view buttons sit along the bottom edge
+  label(ctx, 'far-away', capX, capY, 'rgba(190,205,230,0.85)', '10px ' + SANS, 'left');
+  label(ctx, 'background stars', capX, capY + 12 * cg, 'rgba(190,205,230,0.85)', '10px ' + SANS, 'left');
+  if (wallFront) label(ctx, '(seen from behind)', capX, capY + 24 * cg, 'rgba(190,205,230,0.6)', '9.5px ' + SANS, 'left');
   const unit = (a, b) => { const dx = b.x - a.x, dy = b.y - a.y, n = Math.hypot(dx, dy) || 1; return { x: dx / n, y: dy / n }; };
   // text pushed from a point along a direction and anchored by that direction; if that spot is taken by an earlier
-  // label it tries the opposite side and the two sideways ones (optional labels are dropped instead)
-  const boxes = [[capX - 2, capY - 10, capX + 80, capY + 15]];
+  // label it tries the opposite side, the two sideways ones, the diagonals, and farther out. Optional labels are
+  // dropped when nothing is free; the others then take the first spot.
+  const boxes = [[capX - 2, capY - 10, capX + 84 * cg, capY + (wallFront ? 27 : 15) * cg]];
+  const hintA = HINT.used ? Math.max(0, 1 - (performance.now() - HINT.t0) / 900) : 1;
+  if (hintA > 0.02) boxes.push([W - 190 * cg, 20, W, 30 + 6 * cg]);
+  LBLSTAT = { n: 0, forced: 0 };
   const put = (txt, at, dir, dist, col, font, optional) => {
     ctx.font = font; const tw = ctx.measureText(txt).width, th = 11;
+    const q = Math.SQRT1_2, dg = [{ x: (dir.x - dir.y) * q, y: (dir.y + dir.x) * q }, { x: (dir.x + dir.y) * q, y: (dir.y - dir.x) * q }];
+    const d4 = [dir, { x: -dir.x, y: -dir.y }, { x: -dir.y, y: dir.x }, { x: dir.y, y: -dir.x }], d8 = d4.concat(dg, dg.map(d => ({ x: -d.x, y: -d.y })));
+    const tries = [];
+    for (const far of [0, 13]) for (const d of d4) tries.push([far, d]);
+    for (const far of [0, 13]) for (const d of d8.slice(4)) tries.push([far, d]);
+    for (const far of [26, 40]) for (const d of d8) tries.push([far, d]);
     let pick = null;
-    for (const far of [0, 13]) for (const d of [dir, { x: -dir.x, y: -dir.y }, { x: -dir.y, y: dir.x }, { x: dir.y, y: -dir.x }]) {
-      if (pick && !pick.hit) break;
+    for (const [far, d] of tries) {
       const al = d.x > 0.45 ? 'left' : d.x < -0.45 ? 'right' : 'center';
       let x = at.x + d.x * (dist + far), y = at.y + d.y * (dist + far + (al === 'center' ? 2 : -2)) + 3.5;
       let x0 = al === 'left' ? x : al === 'right' ? x - tw : x - tw / 2;
-      x0 = Math.max(6, Math.min(W - 6 - tw, x0)); y = Math.max(32, Math.min(H - 6, y));
+      x0 = Math.max(6, Math.min(W - 6 - tw, x0)); y = Math.max(32, Math.min(yMax, y));
       const bx = [x0 - 2, y - th + 1, x0 + tw + 2, y + 3];
       const hit = boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1]);
-      if (!pick) pick = { x0, y, bx, hit };
-      if (!hit) pick = { x0, y, bx, hit };
+      if (!pick || !hit) pick = { x0, y, bx, hit };
+      if (!hit) break;
     }
     if (pick.hit && optional) return;
+    LBLSTAT.n++; if (pick.hit) LBLSTAT.forced++;
     boxes.push(pick.bx); label(ctx, txt, pick.x0, pick.y, col, font, 'left');
   };
   const uS = unit(sP, stP), uQ = unit(sP, qaP);
@@ -519,17 +610,82 @@ function drawGeom() {
   put('Earth, ' + fmtDate(DAY), eP, unit(sP, eP), 11, '#cfe2f5', '600 10.5px ' + SANS);
   put('star appears here', wE, wl > 2 ? unit(wC, wE) : { x: 0, y: -1 }, 11, '#b9eef5', '600 10px ' + SANS);
   { let ax = -(uS.x + uQ.x), ay = -(uS.y + uQ.y); const n = Math.hypot(ax, ay) || 1; put('Sun', sP, { x: ax / n, y: ay / n }, 10, '#ffd77a', '600 10.5px ' + SANS); }
-  { const m = unit(stP, { x: (wA.x + wB.x) / 2, y: (wA.y + wB.y) / 2 }); put('2p', { x: stP.x + m.x * 30, y: stP.y + m.y * 30 }, m, 3, '#ffe08a', 'italic 600 13px ' + SERIF); }
-  put('d', { x: sP.x + (stP.x - sP.x) * 0.56, y: sP.y + (stP.y - sP.y) * 0.56 }, nS, 9, '#fff', 'italic 600 13px ' + SERIF);
-  put('p', { x: stP.x + uA.x * 36, y: stP.y + uA.y * 36 }, { x: -nS.x, y: -nS.y }, 9, '#ffe08a', 'italic 600 13px ' + SERIF);
-  put('1 AU', { x: (sP.x + qaP.x) / 2, y: (sP.y + qaP.y) / 2 }, nQ, 8, '#fff', '600 10px ' + SANS);
+  if (show2P) { const m = unit(stP, { x: (wA.x + wB.x) / 2, y: (wA.y + wB.y) / 2 }); put('2p', { x: stP.x + m.x * 30, y: stP.y + m.y * 30 }, m, 3, '#ffe08a', 'italic 600 13px ' + SERIF, true); }
+  if (sep(sP, stP) > 40) put('d', { x: sP.x + (stP.x - sP.x) * 0.56, y: sP.y + (stP.y - sP.y) * 0.56 }, nS, 9, '#fff', 'italic 600 13px ' + SERIF, true);
+  if (showP) put('p', { x: stP.x + uA.x * 36, y: stP.y + uA.y * 36 }, { x: -nS.x, y: -nS.y }, 9, '#ffe08a', 'italic 600 13px ' + SERIF, true);
+  if (sep(sP, qaP) > 26) put('1 AU', { x: (sP.x + qaP.x) / 2, y: (sP.y + qaP.y) / 2 }, nQ, 8, '#fff', '600 10px ' + SANS, true);
   const nearE = q => Math.hypot(q.x - eP.x, q.y - eP.y) < 14;
   if (!nearE(qaP)) put(dA, qaP, uQ, 9, 'rgba(169,200,230,0.8)', '9.5px ' + SANS, true);
   if (!nearE(qbP)) put(dB, qbP, { x: -uQ.x, y: -uQ.y }, 9, 'rgba(169,200,230,0.8)', '9.5px ' + SANS, true);
 
   label(ctx, 'In space: the star doesn’t move, Earth does', 10, 16, 'rgba(255,255,255,0.8)', '600 10.5px ' + SANS, 'left');
   label(ctx, 'not to scale', W - 10, 16, 'rgba(255,255,255,0.5)', '10px ' + SANS, 'right');
+  if (hintA > 0.02) {
+    const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    ctx.globalAlpha = hintA; label(ctx, touch ? '⟲ drag to rotate · pinch to zoom' : '⟲ drag to rotate · scroll to zoom', W - 10, 31, 'rgba(159,230,240,0.95)', '600 10px ' + SANS, 'right'); ctx.globalAlpha = 1;
+  }
 }
+
+// ---------- turning the space view ----------
+let gRaf = null;
+function viewBusy() { return !!VW.tw || (HINT.used && performance.now() - HINT.t0 < 950); }
+function syncViewBar() {
+  document.querySelectorAll('#viewbar button').forEach(b => {
+    if (b.dataset.v === 'auto') b.disabled = VW.mode === 'auto' && VW.zoom === 1;
+    else b.classList.toggle('on', b.dataset.v === VW.mode);
+  });
+}
+// redraw the space view on the next frame, and keep going while a view change or the hint's fade is running
+// (while the year is playing, its own loop redraws every frame anyway)
+function kick() {
+  syncViewBar();
+  if (playing || gRaf) return;
+  gRaf = requestAnimationFrame(() => { gRaf = null; drawGeom(); if (viewBusy()) kick(); });
+}
+function hintUsed() { if (!HINT.used) { HINT.used = true; HINT.t0 = performance.now(); } }
+function setView(mode) {   // glide to a named view
+  const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  VW.tw = still ? null : { az: CAM.az, el: CAM.el, zoom: CAM.zoom, t0: performance.now(), dur: 650 };
+  VW.mode = mode; VW.zoom = 1; hintUsed(); kick();
+}
+function freeView() {      // take over the camera where it is now
+  if (VW.mode !== 'free' || VW.tw) { VW.az = CAM.az; VW.el = CAM.el; VW.zoom = CAM.zoom; VW.mode = 'free'; VW.tw = null; }
+}
+function setZoom(z) { if (VW.tw) { VW.tw = null; VW.az = CAM.az; VW.el = CAM.el; if (VW.mode !== 'free') { const m = VW.mode; VW.mode = m; } } VW.zoom = Math.max(ZMIN, Math.min(ZMAX, z)); hintUsed(); kick(); }
+(function () {
+  const c = $('geom'), ptrs = new Map();
+  let turning = false, pinch = null, down = null;
+  const gap = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+  c.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    try { c.setPointerCapture(e.pointerId); } catch (err) {}
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) { down = { x: e.clientX, y: e.clientY }; turning = false; }
+    else if (ptrs.size === 2) { pinch = { d: gap(), z: VW.zoom }; turning = false; }
+  });
+  c.addEventListener('pointermove', e => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size >= 2) { if (pinch) setZoom(pinch.z * gap() / pinch.d); return; }
+    if (!turning) {   // a click that does not move is not a drag: the automatic view stays automatic
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < 3) return;
+      turning = true; freeView(); hintUsed(); c.classList.add('grabbing');
+    }
+    // the scene follows the hand: dragging right turns the near side to the right, dragging down tips the top toward you
+    VW.az += dx * 0.009; VW.el = Math.max(-EL_MAX, Math.min(EL_MAX, VW.el + dy * 0.009));
+    kick();
+  });
+  const up = e => {
+    if (!ptrs.delete(e.pointerId)) return;
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 0) { turning = false; c.classList.remove('grabbing'); }
+  };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+  // the wheel zooms only while the pointer is over the picture (and only then is the page kept from scrolling)
+  c.addEventListener('wheel', e => { e.preventDefault(); setZoom(VW.zoom * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0018))); }, { passive: false });
+  c.addEventListener('dblclick', e => { e.preventDefault(); setView('auto'); });
+  document.querySelectorAll('#viewbar button').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)));
+})();
 
 // ---------- sky panel: what is seen from Earth ----------
 function niceBar(maxArc) {   // a 1-2-5 length in arcsec no longer than maxArc
@@ -667,7 +823,7 @@ function render() {
     : p >= 0.00999 ? 'Tens of parsecs away the shift is hundredths of an arcsecond; a distance good to 10% takes Hipparcos (about 1 mas).'
     : 'Hundreds of parsecs away the shift is a few milliarcseconds; a distance good to 10% takes Gaia (about 0.02 mas).') + dates;
 
-  drawGeom(); drawSky();
+  drawGeom(); drawSky(); syncViewBar();
 }
 function row(k, v) { return '<div class="resrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
 
@@ -683,14 +839,14 @@ function setPlaying(p) {
   playing = p;
   $('playBtn').innerHTML = p ? '&#10073;&#10073; Pause' : '&#9654; Run a year';
   if (rafId) cancelAnimationFrame(rafId), rafId = null;
-  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); }
+  if (p) { lastTs = null; rafId = requestAnimationFrame(tick); } else if (viewBusy()) kick();
 }
 function setPreset(i) {
   const s = PRESETS[i]; PRESET = i; Dpc = s.d; BETA = s.b; LAM = s.l;
   $('dSlider').value = Math.log10(s.d); $('bSlider').value = s.b; render();
 }
 $('playBtn').addEventListener('click', () => setPlaying(!playing));
-$('resetBtn').addEventListener('click', () => { setPlaying(false); DAY = 0; $('mSlider').value = 0; $('zoomChk').checked = true; setPreset(2); });
+$('resetBtn').addEventListener('click', () => { setPlaying(false); VW.mode = 'auto'; VW.zoom = 1; VW.tw = null; DAY = 0; $('mSlider').value = 0; $('zoomChk').checked = true; setPreset(2); });
 $('dSlider').addEventListener('input', () => { Dpc = +Math.pow(10, +$('dSlider').value).toPrecision(3); PRESET = -1; render(); });
 $('bSlider').addEventListener('input', () => { BETA = +$('bSlider').value; PRESET = -1; render(); });
 $('zoomChk').addEventListener('change', render);
