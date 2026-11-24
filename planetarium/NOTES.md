@@ -955,3 +955,99 @@ Cygnus = RA 305.5 Dec +41 (2026-08-12 05:30 UT); pole = north galactic pole (202
   1,104 stars drawn. Not measured on a quiet machine end to end, nor on a slow laptop.
 - Not tested: the real bucket (latency, HTTP/2, Cloudflare caching of `.bin`), Safari, Firefox, a phone, a class of 30 at once,
   Cache-storage trimming (3,000 tiles never reached).
+
+---
+
+# Lab notebook (2026-11-24)
+
+General spreadsheet + graph + hand-fit tool. In the planetarium: Labs menu, "Lab notebook" (or a lab preset with
+`notebook: true`). On its own: `notebook.html` (`?slot=name` keeps separate notebooks). Spec and Seth's rules: general tool first,
+raw readings only, fit by hand, answers that really differ, models explained.
+
+## Modules (js/notebook/)
+- `units.js`, `format.js`, `formula.js`, `store.js`, `models.js`: pure, tested by `tools/check-notebook.mjs` (check.mjs 20, 21).
+- `ui.js` (table, dialogs, graph and model panes), `chart.js` (canvas, PNG), `about.js` ("About this model" + live diagrams).
+- `host.js`: the side panel, Record's raw readings, observing conditions, URL parameters. `standalone.js`: notebook.html.
+- `seeing.js`: seeing disc and simulated noise, used by `render/stars.js` and `deepstars.js`. `loupe.js`: the by-eye magnifier.
+- Models: line (through the origin, or not), quadratic, power law with offsets, sine, sine on a line, sine with tilt, ellipse with
+  drift; any two can be overlaid. No fit button unless `instructor=1`.
+- URL: `notebook=1`, `seeing`, `noise`, `seed`, `predict=0`, `snap=1`, `template=1`, `instructor=1`.
+
+## Observing conditions
+Off everywhere except when a lab, a URL or the student sets them. Parallax labs: seeing 0.8″, noise 0.02″ per star image per axis.
+The noise is a fixed function of (seed, clock second, star): the same date gives the same frame. 0.02″ is below the centring error of a
+careful click at the preset zoom (about 0.035″) and adds real differences without drowning a 0.55″ signal; 0.04″ would take two
+students to 10% apart (check.mjs 21). While measuring by eye, stars have no snap, no selection brackets and no names, and the rubber band is not drawn
+while the magnifier is open.
+
+## Physics behind the labs (check.mjs 21)
+Barnard through the app's own places: a = 0.5486″, b/a = sin β, period 1.0003 yr. Annual aberration changes a 60″ separation by
+0.009-0.011″ over a year (a 300″ one by 0.05″), so both presets switch it off; refraction (removed by the angle tool to 0.0002″) too.
+
+## Shared-file edits
+`measure.js` (byEye, loupe, Record, lastMeasure, small separations in ″), `labs/index.js`, `labs/labs.js` (emits `lab`),
+`labs/presets.js` (two presets, `jupiter-mass` notebook), `labs/corrections.js`, `deepstars.js`, `render/stars.js`, `renderer.js`, and one condition in `skyimages.js`: no sky photographs while
+observing conditions are on (the survey layer, if a viewer had it on, put a decades-old picture of Barnard's star under the drawn one).
+The object panel now stops above the angle-tool panel (`css/notebook.css`).
+
+## Layout, as tested
+1512 × 828 window (the split view; the window was never resized, so 1440 × 800 itself was not tried), 800 × 560 and 390 × 700 iframes.
+Dragged wider than leaves 800 px of sky, the lab cards, object panel and read-out hide (`nb-slim`).
+
+## General-tool test
+Venus size against distance (″ → ° → rad chain, A + B refused, log axes, power law n = −1), Hubble's 1929 distances and
+velocities (Mpc → pc → AU → km), a free-fall table (power law: slider dragged to n = 2.05 on log-log axes; quadratic c = 4.9),
+CSV export and re-import identical (through the page's own functions, not a file picker), reload keeps everything.
+
+## Not tested, or weak
+- The saved PNG and CSV files themselves were not opened; the native menus cannot be driven from the test tool, so a few model choices were made by script.
+- Not tried: touch on a real phone, Safari, Firefox; error bars and second series by hand; the predict prompt after the last edits.
+- A field's faint stars need the hosted or online Gaia tiles; with neither, only the bundled ones (G < 12) can be references.
+
+# Centring, Space, reference links, deep-sky pictures (2026-11-24)
+
+## Centring: what was off
+- **Cause of "Betelgeuse is a few arcseconds off":** centring was a one-off. With the clock running the sky turns 15 arcsec a second, so the view was
+  stale when the 0.7 s glide ended and kept sliding. `nav.centerOn()` (search, Space, double-click, menu, deep-sky list) now *holds* the object:
+  it switches tracking on. Dragging or the arrow keys let go; `T` toggles.
+- **Deep-sky symbols and every other fixed J2000 direction** were not unit vectors after adding the aberration vector (1e-4 off), so refraction moved
+  them by up to about an arcminute against their own marker, and zoomed in they vanished. `skyframe.starHor`, `proj.eqjArrayToHor`, `dso.js` renormalise;
+  `dso.js` uses a loose view-cone test before refraction, as the stars do.
+- **Proper-motion staleness** (`stars.epochTol`) is set before each frame (`catalog.epochTolFor(fov)`), not after it.
+- `tools/check-centre.mjs` (section 22) runs the page's own drawing loops for 18 objects, all 32 switch combinations and three fields: drawn place vs
+  marker 1e-10 arcsec; after "centre" with the clock running, 2e-10 arcsec. A failure throws.
+- The panel's "RA / Dec (J2000)" is the apparent place on J2000 axes (proper motion, aberration, parallax as switched); its tooltip now says so.
+
+## Space and Enter (`js/focus.js`)
+A clicked button, link or tick-box gives up the focus; Space / Enter press only what the keyboard reached (Tab, menu arrows). `keyReached()` and `takesKeys()`
+replace the old "is it an INPUT / BUTTON" tests in `ui.js`, `extras.js`, `labs/index.js`, `quiz.js`. Text boxes, selects, sliders (for their own keys),
+modals and the notebook are left alone. Letters work while a slider or tick-box has the focus.
+
+## Look it up (`js/links.js`, `data/links.json`, `tools/build_links.mjs`)
+- Databases for everything, from identifiers: SIMBAD (CDS, plus its copy at the CfA, because CDS was down all day: it answered "Page unavailable" with 404),
+  NED for NGC/IC/Messier galaxies, NASA Science and JPL Horizons object data for solar-system bodies, the IAU page for constellations.
+- Wikipedia only through `links.json`: 345 of 358 named stars, 271 of 290 Messier / Caldwell / named deep-sky objects, 88 constellations, 20 bodies.
+  Every title is matched through Wikidata (catalogue number and position, item, or class). The builder prints what it left out. No guessing.
+- The info panel's links and buttons live in boxes of their own that are rewritten only when they change: before, a button could be replaced between
+  press and release and lose its click.
+- No VizieR / Gaia archive page: CDS's VizieR could not be verified (down), and ESA's archive has no page per star (its TAP link downloads a file).
+
+## Deep-sky pictures and survey layer (`js/skyimages.js`, `data/img/`, `tools/build_images.py`)
+- Seth's standard: no rectangle, edge, frame or background step at any zoom; the app draws the stars. How it is met:
+  `build_images.py` subtracts a plane fitted to the sky round the edge, blends in an ESO / Hubble middle where the plates are burnt out (M 42, M 8,
+  M 16, M 20, M 27, M 1, M 57, omega Cen; centre, scale and rotation fitted to catalogue stars), cuts the stars out (bright ones from our catalogue, the
+  rest by shape) and fills from around, presses residue to zero, tames highlights and colour, and fades (along the galaxy's own ellipse) to exact 0;
+  every file is read back and its border checked. Globulars keep only an unresolved glow; open clusters without nebulosity have none.
+  `NO_PICTURE` lists what was looked at and left as a symbol, with the reason.
+- Drawing: all pictures go on one black canvas with `lighten` (overlaps do not add, seams do not show), which is laid over the sky once with `screen`,
+  dimmed as a whole by `glowVisibility` (Bortle, Moon, twilight) and extinction. Fades in from 18 to 130 px, softens and goes as a picture pixel
+  grows past 5-70 screen px. Never dim the triangles one by one: half-transparent overlaps show as lines.
+- Outline symbols vanish where a picture (their own or a neighbour's: `pics.shown`) is up; names, brackets and clicking stay. Toggle `I`.
+- Source: colour DSS2, MAST: "these data and derived products may be used freely for all scientific, educational, and non-profit purposes",
+  CC BY-NC-SA 4.0. Tiles from ESA's public HiPS mirror `https://skies.esac.esa.int/DSSColor/` (CORS `*`; CDS's own servers were down). ESO and
+  ESA/Hubble: CC BY 4.0, credit must be visible (bottom left whenever one is on screen, and on saved screenshots).
+- Survey layer `U` (off by default): the unprocessed survey, HiPS orders 3-9 from ESA. It shows its own stars and plate joints, so it does not meet
+  the standard above and is for looking around only. Six requests at a time, 320 tiles kept, backs off 30 s after four failures.
+- `labs/hidden.js` `latitudeHidden()`: the polaris-latitude lab hides the latitude on the place chip, in Settings and in the screenshot caption.
+  Labs that hide the parallax also hide the Look it up links.
+- Free letters now: `Y`.

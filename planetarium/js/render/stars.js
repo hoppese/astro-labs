@@ -2,11 +2,12 @@
 // The loop is the app's hot path: plain arithmetic on typed arrays, no allocation per star.
 
 import { DEG, RAD, clamp } from '../astro.js';
-import { stars } from '../catalog.js';
+import { stars, FAINT_NAMES } from '../catalog.js';
 import { state } from '../state.js';
 import { cam } from '../camera.js';
 import { addPick } from '../picks.js';
 import { R } from './proj.js';
+import { see, seeFrame, seeStar } from '../notebook/seeing.js';
 
 // ---- colour from B-V ---------------------------------------------------------
 const NB = 14, BV0 = -0.4, BV_STEP = 0.2;
@@ -84,7 +85,7 @@ export function drawStars(ctx) {
   const m0 = M[0], m1 = M[1], m2 = M[2], m3 = M[3], m4 = M[4], m5 = M[5], m6 = M[6], m7 = M[7], m8 = M[8];
   const zMin = cam.zMin, s2 = 2 * cam.s, cx = cam.cx, cy = cam.cy, W = cam.w, H = cam.h;
   const NF = stars.NF, names = stars.names;
-  const showNames = state.show.starNames;
+  const showNames = state.show.starNames && !(see.on && see.noMarker);          // (measuring star images by eye: no name printed across them)
   // label thresholds: proper names for the brighter stars, Bayer/Flamsteed once zoomed in
   const nameLim = lim - (cam.fov > 100 ? 4.6 : cam.fov > 50 ? 4.0 : 3.0);
   const bayerLim = cam.fov < 45 ? lim - 3.2 : -99;
@@ -95,6 +96,7 @@ export function drawStars(ctx) {
   const zLoose = Math.cos(Math.min(Math.PI, Math.acos(zMin < -1 ? -1 : zMin) + 0.02));       // refraction never moves a star by more than ~0.6 deg
   const minZ = ground ? -0.03 : -2;        // true altitude below about -1.7 deg can never be lifted above the horizon
   let drawn = 0, considered = 0;
+  const seeOn = seeFrame();                 // lab notebook: seeing discs and simulated measurement noise at high zoom (js/notebook/seeing.js)
   // annual parallax (labs): each star shifts opposite to the Earth's place, by 1 arcsec / distance in pc
   const par = frame.parallax && cam.fov < 5, PW = Math.PI / 648000;
   const ex = par ? frame.epos[0] * PW : 0, ey = par ? frame.epos[1] * PW : 0, ez = par ? frame.epos[2] * PW : 0;
@@ -149,9 +151,12 @@ export function drawStars(ctx) {
       const si = bv > 50 ? 5 : bv < BV0 ? 0 : bv > 2.1 ? NB - 1 : Math.round((bv - BV0) / BV_STEP);
       // within 1.5 mag of the limit a star fades in from nothing, so nothing pops while zooming
       const al = dm < 1.5 ? Math.round((0.08 + 0.92 * Math.pow(dm / 1.5, 0.6)) * ALPHA_N) - 1 : ALPHA_N - 1;
-      if (al >= 0) ctx.drawImage(atlas, si * SPR, al * SPR, SPR, SPR, sx - half, sy - half, 2 * half, 2 * half);
       drawn++;
-      addPick(sx, sy, r, mag, { kind: 'star', k: t.k, i });
+      if (seeOn) seeStar(ctx, atlas, si, al, sx, sy, dm, v[3 * i], v[3 * i + 1], half, mag, { kind: 'star', k: t.k, i });
+      else {
+        if (al >= 0) ctx.drawImage(atlas, si * SPR, al * SPR, SPR, SPR, sx - half, sy - half, 2 * half, 2 * half);
+        addPick(sx, sy, r, mag, { kind: 'star', k: t.k, i });
+      }
       if (showNames) {
         const m = d[o + 2];
         if (t.k === 0) {
@@ -161,7 +166,7 @@ export function drawStars(ctx) {
           else if (m < flamLim && names.flam[i]) labels.add(sx, sy, names.flam[i].split(' ')[0], 'starDim', 30 - m, { gap: r + 4 });
           else if (m < hipLim && d[o + 4]) labels.add(sx, sy, 'HIP ' + d[o + 4], 'starDim', 20 - m, { gap: r + 4 });
         } else if (m < hipLim) {
-          labels.add(sx, sy, d[o + 4] ? 'HIP ' + d[o + 4] : 'HD ' + d[o + 5], 'starDim', 20 - m, { gap: r + 4 });
+          labels.add(sx, sy, FAINT_NAMES[d[o + 4]] || (d[o + 4] ? 'HIP ' + d[o + 4] : 'HD ' + d[o + 5]), 'starDim', 20 - m, { gap: r + 4 });
         }
       }
     }

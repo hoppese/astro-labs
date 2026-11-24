@@ -46,8 +46,9 @@ export function stepNav(now, frame) {
     if (t >= 1) anim = null;
     return true;
   }
-  if (state.tracking && state.selected) {
-    const h = refHorApparent(state.selected, frame, getBodies(frame));
+  const held = state.keepTracked && state.trackRef ? state.trackRef : state.selected;
+  if (state.tracking && held) {
+    const h = refHorApparent(held, frame, getBodies(frame));
     if (h) { update(frame); lookAtHor(h); }
   }
   return false;
@@ -56,6 +57,12 @@ export { mulMV, toSph };
 
 // ---- selection ---------------------------------------------------------------
 export function select(ref) {
+  // a notebook lab (js/notebook/host.js) goes on following its star whatever is clicked: closing the object panel only puts the
+  // panel away, and looking at a field star does not let go of the lab's star
+  if (state.keepTracked && state.tracking) {
+    if (!ref) { emit('dismiss'); return; }
+    state.selected = ref; emit('selection'); return;
+  }
   // tracking belongs to one object: choosing another (or none) ends it, so that "select it, then press T" always starts
   // following the new object (it used to carry over silently, and T then switched it off)
   if (!ref || !sameRef(ref, state.selected)) state.tracking = false;
@@ -80,11 +87,17 @@ export function niceFov(ref) {
 }
 export function centerOn(ref, zoom = false) {
   if (!ref) return;
+  state.trackRef = ref;
+  // Centring HOLDS the object (as Stellarium's Space does): with the clock running the sky turns 15 arcsec a second, so a
+  // one-off centring was already 19 arcsec stale when the glide ended, and the star left a zoomed-in field within a second.
+  // Dragging or the arrow keys let go again (input.js); T toggles.
+  if (sameRef(ref, state.selected) && !state.tracking) { state.tracking = true; emit('selection'); }
   flyTo(ref, { fov: zoom ? Math.min(cam.fov, niceFov(ref)) : null });
 }
 export function toggleTracking(on) {
   if (!state.selected) return;
-  state.tracking = on === undefined ? !state.tracking : on;
-  if (state.tracking) flyTo(state.selected);
+  const other = state.keepTracked && state.tracking && state.trackRef && !sameRef(state.trackRef, state.selected);      // T on another object: follow that one
+  state.tracking = on === undefined ? other || !state.tracking : on;
+  if (state.tracking) { state.trackRef = state.selected; flyTo(state.selected); }
   emit('selection');
 }

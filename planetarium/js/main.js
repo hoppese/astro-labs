@@ -1,5 +1,6 @@
 // main.js: start-up. Loads the catalogues, then wires the modules together.
 
+import './focus.js';           // first: its key listener must run before everyone else's
 import { A } from './astro.js';
 import { state, load, on, emit } from './state.js';
 import { loadCore, stars, dso, constellations } from './catalog.js';

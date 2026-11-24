@@ -33,6 +33,7 @@ import { DEG, RAD, unrefractHor } from './astro.js';
 import { emit, on, state } from './state.js';
 import { cam, unproject } from './camera.js';
 import { addPick } from './picks.js';
+import { see, seeStar } from './notebook/seeing.js';
 import { stars } from './catalog.js';
 import { R } from './render/proj.js';
 import { starAtlas, ALPHA_N } from './render/stars.js';
@@ -890,8 +891,9 @@ export function drawDeepStars(ctx) {
       const half = r / 0.34;
       const al = Math.round((dm < 1.5 ? 0.08 + 0.92 * Math.pow(dm / 1.5, 0.6) : 1) * fade * ALPHA_N) - 1;
       if (al < 0) continue;
-      ctx.drawImage(atlas, sp[i] * SPR, al * SPR, SPR, SPR, sx - half, sy - half, 2 * half, 2 * half);
       drawn++;
+      if (see.on) { seeStar(ctx, atlas, sp[i], al, sx, sy, dm, v[3 * i], v[3 * i + 1], half, mag, { kind: 'gaia', t, i }); continue; }      // lab notebook: seeing disc + simulated noise
+      ctx.drawImage(atlas, sp[i] * SPR, al * SPR, SPR, SPR, sx - half, sy - half, 2 * half, 2 * half);
       addPick(sx, sy, r, mag, { kind: 'gaia', t, i });
     }
     if (t.kind === 'net') netDrawn += drawn - before;

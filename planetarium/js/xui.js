@@ -5,7 +5,7 @@ import { emit } from './state.js';
 
 // ---- per-viewer settings for the extras (kept apart from state.js's own store) ----
 const KEY = 'astro-labs.planetarium.extras.v1';
-export const xs = { milkyWay: true, night: false, hintSeen: false };
+export const xs = { milkyWay: true, night: false, hintSeen: false, images: true, survey: false };
 export function loadXs() {
   try {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');

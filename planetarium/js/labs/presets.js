@@ -30,6 +30,26 @@ const P = PLACES;
 const DARK = { atmosphere: false, ground: false, refraction: false };
 const STEPKEYS = 'Shift + ← / → steps the clock 1 second, Shift + ↓ / ↑ 1 minute; the clock button has more steps.';
 
+// ---- the two notebook astrometry labs share their wording (what to measure; the analysis is the student's) ----
+const ASTROMETRY_STEPS = (what) => [
+  `The star in the middle is ${what}. The sky is shown the way a telescope records it: every star is a small blurred disc, and each exposure (each clock second) comes out slightly different. The ground and the daylight are switched off, so any date and hour will do. Faint stars can take a few seconds to appear.`,
+  'Choose one of the faint stars near it as your <b>reference star</b>: your own choice. It is far in the background and hardly moves. Make a note of which one it is, so that you can find it again.',
+  'With the angle tool (<kbd>R</kbd>) measure <b>from your reference star to the star in the middle</b>: click near each star in turn, and in the magnifier that opens place the cross on the centre of its image. You get a separation and a position angle.',
+  'Set up your notebook: columns of your own, with names and units, and <b>Choose what Record copies</b>. Then press <b>Record</b> (in the notebook, or on the angle tool’s panel).',
+  'Change the date with the clock button (it steps by days, weeks and months) and measure again. Follow the star for at least a year and a half, on dates of your own choosing. More dates, better answer.',
+  'From your table and a graph of your own: how does the star move against the background? Separate the steady part from the part that repeats every year. How far away is the star, and how fast does it cross the sky?',
+];
+const ASTROMETRY_ABOUT = (name) => `${name} is one of the Sun’s nearest neighbours, so it does two things a distant star does not. It drifts steadily across the sky (its <b>proper motion</b>, because it really is moving through space relative to the Sun), and once a year it swings round a small ellipse (its <b>parallax</b>, because we look at it from a moving Earth). The half-length of that ellipse’s long axis is the parallax <i>p</i>, and the distance in parsecs is 1 ÷ <i>p</i> in arcseconds. The ellipse, and why it is not a line, is explained in the notebook under <b>About this model</b> for “Ellipse with a steady drift”. `
+  + 'The angle tool gives a separation ρ and a position angle θ (from north, through east). On the sky that is an offset of ρ · sin θ toward the east and ρ · cos θ toward the north. '
+  + 'A real astrometrist measures against several background stars, because each one has a small parallax and proper motion of its own; two people who choose different reference stars and different dates will not get exactly the same answer, and should not. '
+  + 'Two things are switched off here, as they are removed in real astrometry before anything is measured: atmospheric refraction, and annual aberration (which would stretch and shrink the whole field by one part in ten thousand over the year). '
+  + 'The small random shift of each star image from one exposure to the next is <b>simulated measurement error</b>, not data: it stands in for the photon noise and seeing of a real detector, and it comes from the seed shown in your notebook.';
+const ASTROMETRY_TEMPLATE = { cols: [
+  { key: 'yr', kind: 'data', name: 'date', unit: 'yr', sig: 0, raw: 'year', rawLabel: 'Date as a decimal year' },
+  { key: 'sep', kind: 'data', name: 'separation', unit: 'arcsec', sig: 0, raw: 'sep', rawLabel: 'Separation' },
+  { key: 'pa', kind: 'data', name: 'position angle', unit: 'deg', sig: 0, raw: 'pa', rawLabel: 'Position angle (north through east)' },
+  { key: 'ref', kind: 'text', name: 'reference star', raw: 'from', rawLabel: 'Measured from (name)' }] };
+
 export const GROUPS = ['Earth and Moon', 'The Sun', 'The planets', 'The astronomical unit', 'Light', 'The stars', 'Time and the calendar'];
 
 export const LABS = [
@@ -201,8 +221,10 @@ export const LABS = [
   { id: 'jupiter-mass', group: 'The planets', title: 'Weighing Jupiter', who: 'Galileo, 1610; Newton, 1687',
     blurb: 'Periods and orbit sizes of the four big moons.',
     setup: { t: '2026-11-24T09:00:00Z', loc: P.richmond, target: 'Jupiter', track: true, fov: 0.3, show: DARK, tools: ['measure', 'stopwatch'] },
+    notebook: true, obs: { seeing: 0.8, noise: 0 },
+    template: { cols: [{ key: 'jd', kind: 'data', name: 'Julian Date', unit: 'd', sig: 0, raw: 'jd', rawLabel: 'Julian Date' }, { key: 'sep', kind: 'data', name: 'separation', unit: 'arcsec', sig: 0, raw: 'sep', rawLabel: 'Separation' }, { key: 'pa', kind: 'data', name: 'position angle', unit: 'deg', sig: 0, raw: 'pa', rawLabel: 'Position angle (north through east)' }] },
     steps: [
-      'Pick a moon. Step the clock by hours and measure its angle from Jupiter (centre to centre) each time, until you have its greatest distance on one side.',
+      'Pick a moon. Step the clock by hours and measure its angle from Jupiter (centre to centre) each time, until you have its greatest distance on one side. (With the lab notebook open, a click on Jupiter’s disc snaps to its centre; a moon is placed by eye in the magnifier. <b>Record</b> copies each reading into your table.)',
       'Mark that time, carry on until it is back at greatest distance on the same side, and mark again: that is its period T.',
       'Orbit radius a = (greatest angle in radians) × (distance to Jupiter, from the info panel).',
       'Kepler’s third law: M = 4π² a³ / (G T²). Do all four moons: is a³/T² the same for each?',
@@ -295,13 +317,27 @@ export const LABS = [
       'Turn proper motion and aberration back on: what would Bessel actually have had to untangle?',
     ],
     about: `The parallax here comes from the distance in the HYG star catalogue, so this recovers a catalogue value; it is the size and timing of the loop that the lab shows. The Greeks’ failure to see any parallax was their best argument against a moving Earth. See ${tao}.` },
+  { id: 'barnard-parallax', group: 'The stars', title: 'Barnard’s star: parallax and proper motion', who: 'Barnard, 1916; a notebook lab',
+    blurb: 'Follow the fastest star in the sky against faint background stars for a year or two.',
+    setup: { t: '2026-03-01T04:00:00Z', loc: P.richmond, target: { hip: 87937 }, track: true, fov: 0.03, mount: 'eq',
+      show: { ...DARK, conLines: false, conNames: false, dso: false }, fx: { aberration: false, parallax: true, properMotion: true }, tools: ['measure'] },
+    notebook: true, obs: { seeing: 0.8, noise: 0.02 }, template: ASTROMETRY_TEMPLATE,
+    steps: ASTROMETRY_STEPS('Barnard’s star, a faint red dwarf'),
+    about: ASTROMETRY_ABOUT('Barnard’s star') },
+  { id: 'proxima-parallax', group: 'The stars', title: 'Proxima Centauri: the nearest star', who: 'Innes, 1915; a notebook lab',
+    blurb: 'Measure the parallax of the Sun’s nearest neighbour from the southern sky.',
+    setup: { t: '2026-01-15T02:00:00Z', loc: P.capetown, target: { hip: 70890 }, track: true, fov: 0.03, mount: 'eq',
+      show: { ...DARK, conLines: false, conNames: false, dso: false }, fx: { aberration: false, parallax: true, properMotion: true }, tools: ['measure'] },
+    notebook: true, obs: { seeing: 0.8, noise: 0.02 }, template: ASTROMETRY_TEMPLATE,
+    steps: ASTROMETRY_STEPS('Proxima Centauri, a dim red dwarf that never rises for most of Europe and North America (you are at Cape Town)'),
+    about: ASTROMETRY_ABOUT('Proxima Centauri') },
   { id: 'proper-motion', group: 'The stars', title: 'A star that moves', who: 'Halley, 1718; Barnard, 1916',
     blurb: 'Barnard’s star crosses the sky faster than any other.',
     setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 87937 }, track: false, fov: 0.12, show: DARK, fx: { aberration: false, parallax: false, properMotion: true }, tools: ['measure', 'corrections'] },
     steps: [
       'This is Barnard’s star. Open the angle tool, switch <b>Snap</b> off, and click on the star, then (Snap on again) step the clock forward 10 years and click on the star once more.',
       'How far did it move, and so how many arcseconds per year?',
-      'It is 1.83 parsecs away. What speed across the line of sight is that, in km/s? (1″ per year at 1 pc is 4.74 km/s.)',
+      'What speed across the line of sight is that, in km/s? Use the distance you measured in the Barnard’s star parallax lab, or the one your instructor gives you. (1″ per year at 1 pc is 4.74 km/s.)',
     ],
     about: 'Proper motions are from the HYG catalogue and are applied as straight-line drifts.' },
   { id: 'canopus', group: 'The stars', title: 'A star you cannot see from Greece', who: 'Aristotle; Posidonius, about 100 BC',

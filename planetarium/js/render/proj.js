@@ -77,7 +77,8 @@ export function strokeStrips(ctx, strips) {
 export function eqjArrayToHor(src, dst) {
   const M = R.frame.Mjh, b = R.frame.beta;
   for (let i = 0; i < src.length; i += 3) {
-    const x = src[i] + b[0], y = src[i + 1] + b[1], z = src[i + 2] + b[2];
+    let x = src[i] + b[0], y = src[i + 1] + b[1], z = src[i + 2] + b[2];
+    const f = 1 / Math.sqrt(x * x + y * y + z * z); x *= f; y *= f; z *= f;      // unit length again (see skyframe.js starHor)
     dst[i] = M[0] * x + M[1] * y + M[2] * z;
     dst[i + 1] = M[3] * x + M[4] * y + M[5] * z;
     dst[i + 2] = M[6] * x + M[7] * y + M[8] * z;

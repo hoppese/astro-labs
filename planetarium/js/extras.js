@@ -3,6 +3,7 @@
 // read-out, the right-click menu, the phone "More" sheet, the first-run hint and load-error toasts.
 // main.js calls initExtras() once and routes sky clicks through extrasClick().
 
+import { takesKeys } from './focus.js';
 import { state, on, emit } from './state.js';
 import { cam } from './camera.js';
 import { addOverlay, perf } from './renderer.js';
@@ -11,6 +12,8 @@ import { wallParts, fmtDate, fmtTime, zoneLabel } from './timeutil.js';
 import { fmtFov, fmtLat, fmtLon } from './astro.js';
 import { xs, loadXs, saveXs, el, esc, toast, addTip, openPanel, download, isNarrow } from './xui.js';
 import { milkyWay, loadMilkyWay } from './milkyway.js';
+import { latitudeHidden } from './labs/hidden.js';
+import { imageryCredit } from './skyimages.js';
 import { initDsoList } from './dsolist.js';
 import { initHubble } from './hubble.js';
 import { initQuiz } from './quiz.js';
@@ -91,7 +94,7 @@ function buildActions() {
 }
 let lastSync = '';
 function syncActions() {
-  const key = ACTIONS.map((a) => (a && a.on ? +a.on() : 0)).join('') + (xs.milkyWay ? 1 : 0);
+  const key = ACTIONS.map((a) => (a && a.on ? +a.on() : 0)).join('') + (xs.milkyWay ? 1 : 0) + (xs.images ? 1 : 0) + (xs.survey ? 1 : 0);
   if (key === lastSync) return;
   lastSync = key;
   for (const a of ACTIONS) {
@@ -102,6 +105,7 @@ function syncActions() {
   }
   const mwBtn = document.querySelector('.tool[data-key="milkyWay"]'); if (mwBtn) mwBtn.setAttribute('aria-pressed', String(xs.milkyWay));
   const mwChk = $('xMwChk'); if (mwChk) mwChk.checked = xs.milkyWay;
+  if ($('xImgChk')) { $('xImgChk').checked = xs.images; $('xSurvChk').checked = xs.survey; }
 }
 
 // ---- Milky Way toggle: toolbar button next to Atmosphere, and a drawer checkbox -------------
@@ -116,6 +120,10 @@ export function setMilkyWay(v) {
   }
   emit('render'); syncActions();
 }
+/** Deep-sky pictures and the survey layer (js/skyimages.js). */
+export function setPictures(v) { xs.images = v === undefined ? !xs.images : !!v; saveXs(); toast('Deep-sky pictures ' + (xs.images ? 'on. They appear as you zoom in.' : 'off.'), { ms: 2200 }); emit('render'); syncActions(); }
+export function setSurvey(v) { xs.survey = v === undefined ? !xs.survey : !!v; saveXs();
+  toast(!xs.survey ? 'Sky survey images off.' : cam.fov > 60 ? 'Sky survey images on. Zoom in to a field below about 60° to see them.' : 'Sky survey images on, fetched from ESA as you look around.', { ms: 3200 }); emit('render'); syncActions(); }
 function buildToolbarExtras() {
   const bar = $('toolbar');
   const b = el('button', 'tool', XICON.milkyWay); b.type = 'button'; b.dataset.key = 'milkyWay';
@@ -130,6 +138,11 @@ function buildDrawerExtras() {
   const l = el('label', 'check', `<input type="checkbox" id="xMwChk"> Milky Way <span class="k">W</span>`);
   box.appendChild(l);
   l.querySelector('input').addEventListener('change', (e) => setMilkyWay(e.target.checked));
+  for (const [id, label, k, fn] of [['xImgChk', 'Deep-sky pictures', 'I', setPictures], ['xSurvChk', 'Sky survey images (online)', 'U', setSurvey]]) {
+    const c = el('label', 'check', `<input type="checkbox" id="${id}"> ${label} <span class="k">${k}</span>`);
+    box.appendChild(c);
+    c.querySelector('input').addEventListener('change', (e) => fn(e.target.checked));
+  }
 }
 
 // ---- night mode ----------------------------------------------------------------------------
@@ -155,7 +168,7 @@ function screenshot() {
     g.drawImage(sky, 0, 0);
     // caption: where, when, how wide. Drawn on the copy only.
     const l = state.loc, p = wallParts(state.timeMs, l.tz);
-    const text = `${l.name}  ${fmtLat(l.lat)} ${fmtLon(l.lon)}   ${fmtDate(p)} ${fmtTime(p)} ${zoneLabel(state.timeMs, l.tz)}   field ${fmtFov(cam.fov)}`;
+    const text = `${l.name}  ${latitudeHidden() ? '' : fmtLat(l.lat) + ' ' + fmtLon(l.lon)}   ${fmtDate(p)} ${fmtTime(p)} ${zoneLabel(state.timeMs, l.tz)}   field ${fmtFov(cam.fov)}` + (imageryCredit() ? '   ' + imageryCredit() : '');
     const fs = Math.max(11, Math.min(14, sky.clientWidth / 60)) * k, pad = 9 * k;
     g.font = `500 ${fs}px 'JetBrains Mono', ui-monospace, monospace`; g.textBaseline = 'alphabetic';
     const mark = 'Astro Labs planetarium', tw = g.measureText(text).width, mw = g.measureText(mark).width;
@@ -213,7 +226,7 @@ function polishTips() {
 // ---- keyboard (capture phase, so it runs before the core handler) ---------------------------
 function onKey(e) {
   const t = e.target;
-  const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  const typing = takesKeys(t, e);
   if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); e.stopPropagation(); screenshot(); return; }
   if (e.key === 'Escape') {
     // the core closes its own modal / menu / drawer / popover first; then an open panel of ours
@@ -231,6 +244,8 @@ function onKey(e) {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const used = () => { e.preventDefault(); e.stopPropagation(); };
   if (k === 'w') { setMilkyWay(); used(); }
+  else if (k === 'i') { setPictures(); used(); }
+  else if (k === 'u') { setSurvey(); used(); }
   else if (k === 'n') { setNight(!xs.night); used(); }
   else if (k === 'o') { dsoList.panel.toggle(); used(); }
   else if (k === 'h') { hubble.panel.toggle(); used(); }

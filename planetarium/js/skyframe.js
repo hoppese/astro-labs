@@ -42,7 +42,12 @@ export function makeFrame(timeMs, loc) {
     Mtj: fromRot(A.Rotation_ECT_EQJ(time)),                // true ecliptic OF DATE -> EQJ
     Mjt: fromRot(A.Rotation_EQJ_ECT(time)),                // EQJ -> true ecliptic of date
     /** Apparent HOR direction (no refraction) of a J2000 unit vector that has no aberration applied yet. */
-    starHor(v) { return mulMV(Mjh, [v[0] + beta[0], v[1] + beta[1], v[2] + beta[2]]); },
+    starHor(v) {
+      // back to unit length: v + beta is up to 1e-4 short or long, and everything downstream (refraction's asin, the view-cone
+      // test) assumes a unit vector: a deep-sky symbol sat up to an arcminute from its own marker and vanished when zoomed in
+      const x = v[0] + beta[0], y = v[1] + beta[1], z = v[2] + beta[2], f = 1 / Math.sqrt(x * x + y * y + z * z);
+      return mulMV(Mjh, [x * f, y * f, z * f]);
+    },
   };
 }
 export { vecOf };

@@ -1,5 +1,5 @@
 /* labs.css: the measurement tools and labs (js/labs/). Loaded by js/labs/index.js. */
-.labsdock { position: absolute; right: 12px; top: 58px; width: 326px; max-width: calc(100vw - 24px); max-height: calc(100% - 58px - var(--bar-h) - 44px);
+.labsdock { position: absolute; right: 12px; top: 58px; width: 326px; max-width: calc(100vw - 24px); max-height: calc(100% - 58px - var(--bar-h) - 100px);
   overflow: auto; z-index: 18; display: flex; flex-direction: column; gap: 8px; pointer-events: none; scrollbar-width: thin; }
 .labsdock > * { pointer-events: auto; }
 .lcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); flex: none; }

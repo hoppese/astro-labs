@@ -1,21 +1,22 @@
 // labs/labs.js: the Labs list (a dialog with every preset, grouped) and the lab card that stays on
 // screen with the prompt: what to measure, never the answer.
 
-import { state } from '../state.js';
+import { state, emit } from '../state.js';
 import { LABS, GROUPS, labById } from './presets.js';
 import { applySetup } from './setup.js';
 import { makeCard, getCard } from './dock.js';
 import { clearMarks } from './stopwatch.js';
 import { el, esc } from './util.js';
+import { running } from './hidden.js';
 import { fmtLat, fmtLon } from '../astro.js';
 
 export const lab = { current: null };
-let card = null, modal = null;
+let card = null, modal = null, step = 0;
 
 export async function startLab(id, { extra = null } = {}) {
   const L = labById(id);
   if (!L) return false;
-  lab.current = L;
+  lab.current = L; running.id = L.id; state.keepTracked = false;
   clearMarks();
   // start clean: no leftovers from another lab
   const base = { closeOthers: true, tools: [], obs2: null, trail: null, clearMeasures: true, lightTime: true, play: false, rate: 1, mount: 'altaz',
@@ -25,10 +26,11 @@ export async function startLab(id, { extra = null } = {}) {
   if (L.setup.rate) { s.rate = L.setup.rate; }
   await applySetup(s);
   if (extra) await applySetup(extra);
-  renderCard();
+  emit('lab', L);                 // js/notebook/host.js opens the lab's notebook and sets its observing conditions
+  step = 0; renderCard();
   card.open();
   // on a phone or in a small embed the prompt would hide the sky: start it folded (its title bar still names the lab)
-  if (window.innerWidth <= 560 || window.innerHeight < 560) card.root.classList.add('min');
+  if (window.innerWidth <= 560 || window.innerHeight < (L.notebook ? 640 : 560)) card.root.classList.add('min');
   if (modal) modal.classList.remove('show');
   document.getElementById('sky').focus({ preventScroll: true });
   return true;
@@ -36,11 +38,14 @@ export async function startLab(id, { extra = null } = {}) {
 function renderCard() {
   const L = lab.current; if (!L) return;
   const l = state.loc;
-  card.title.textContent = 'Lab · ' + L.title;
+  card.root.classList.toggle('stepwise', !!L.notebook);
+  card.title.textContent = (L.notebook ? '' : 'Lab · ') + L.title;
   card.body.innerHTML = `<h3>${esc(L.title)}</h3><div class="who">${esc(L.who)}</div>` +
-    `<ol>${L.steps.map((s) => `<li>${s}</li>`).join('')}</ol>` +
-    `<details><summary>About this measurement</summary><p>${L.about}</p></details>` +
-    `<div class="row"><button class="btn" data-act="restart" title="Put the date, place and view back to the start of this lab">Restart lab</button><button class="btn" data-act="list">All labs</button><button class="btn" data-act="link" title="Copy a link that opens this lab">Copy lab link</button></div>`;
+    // a lab with the notebook beside it: one step at a time, so that the prompt leaves the sky free
+    (L.notebook ? `<div class="lab-step">${L.steps[step]}</div><div class="lab-nav"><button class="btn" data-act="prev" aria-label="Previous step"${step ? '' : ' disabled'}>&lsaquo;</button><span>Step ${step + 1} of ${L.steps.length}</span><button class="btn" data-act="next" aria-label="Next step"${step < L.steps.length - 1 ? '' : ' disabled'}>&rsaquo;</button></div>`
+      : `<ol>${L.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`) +
+    (L.notebook ? '<details><summary>About this measurement, restart, links</summary><p>' + L.about + '</p>' : `<details><summary>About this measurement</summary><p>${L.about}</p></details>`) +
+    `<div class="row"><button class="btn" data-act="restart" title="Put the date, place and view back to the start of this lab">Restart lab</button><button class="btn" data-act="list">All labs</button><button class="btn" data-act="link" title="Copy a link that opens this lab">Copy lab link</button></div>` + (L.notebook ? '</details>' : '');
 }
 export function labLink(id) { const u = new URL(location.href); u.search = '?lab=' + encodeURIComponent(id); u.hash = ''; return u.toString(); }
 
@@ -67,10 +72,11 @@ export function openLabsList() {
   const f = modal.querySelector('.close'); if (f) f.focus();
 }
 export function initLabs() {
-  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { lab.current = null; } });
+  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { lab.current = null; running.id = null; emit('lab', null); emit('selection'); } });
   card.body.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.act === 'restart' && lab.current) startLab(lab.current.id);
+    else if (b.dataset.act === 'prev' || b.dataset.act === 'next') { const a = b.dataset.act; step = Math.max(0, Math.min(lab.current.steps.length - 1, step + (a === 'next' ? 1 : -1))); renderCard(); const n = card.body.querySelector(`[data-act="${a}"]:not(:disabled)`); if (n) n.focus({ preventScroll: true }); }
     else if (b.dataset.act === 'list') openLabsList();
     else if (b.dataset.act === 'link' && lab.current && navigator.clipboard) navigator.clipboard.writeText(labLink(lab.current.id)).then(() => { b.textContent = 'Link copied'; setTimeout(() => { b.textContent = 'Copy lab link'; }, 1600); }, () => {});
   });

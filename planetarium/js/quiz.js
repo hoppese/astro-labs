@@ -6,6 +6,7 @@
 // While a quiz runs the name labels are hidden and clicks answer the question instead of selecting.
 // After each answer the right one is shown on the sky. Display settings are put back at the end.
 
+import { keyReached } from './focus.js';
 import { A, DEG, RAD, mod, mulMV, toSph, angleBetween, unrefractHor } from './astro.js';
 import { state, on, emit, save as saveState } from './state.js';
 import { cam, unproject, update, centerHor } from './camera.js';
@@ -201,7 +202,7 @@ function typedAnswer(text) {
 }
 function key(e) {
   if (!q.running) return false;
-  if (q.phase === 'feedback' && (e.key === 'Enter' || e.key === ' ')) { if (e.target && e.target.tagName === 'BUTTON') return false; next(); return true; }
+  if (q.phase === 'feedback' && (e.key === 'Enter' || e.key === ' ')) { if (keyReached(e.target)) return false; next(); return true; }
   if (q.phase === 'ask' && opt.mode === 'name' && opt.answer === 'choice' && /^[1-4]$/.test(e.key)) { const c = q.choices[+e.key - 1]; if (c) answer(c === q.cur.c, c === q.cur.c ? '' : `You chose ${c.name}.`); return true; }
   // the name toggles would give the game away
   if (['c', 'v', 'b', 's', 'd', 'p'].includes(e.key.toLowerCase())) return true;

@@ -2,12 +2,13 @@
 // open cluster, crossed circle = globular, ticked circle = planetary nebula, square = nebula).
 // Faintest magnitude shown follows the star limit, so zooming in brings more of them out.
 
-import { DEG, RAD, clamp, unit } from '../astro.js';
+import { DEG, RAD, clamp, smooth, unit } from '../astro.js';
 import { state } from '../state.js';
 import { cam } from '../camera.js';
 import { dso, loadDeepDso } from '../catalog.js';
 import { addPick } from '../picks.js';
 import { R, projTrueHor, projEqj } from './proj.js';
+import { pics } from '../skyimages.js';
 
 const GAL = new Set(['G', 'GPair', 'GTrpl', 'GGroup']);
 const NEB = new Set(['Neb', 'HII', 'RfN', 'SNR', 'EmN', 'Cl+N', 'DrkN']);
@@ -30,21 +31,29 @@ export function drawDso(ctx) {
   if (lim > 10.5 && cam.fov < 25) loadDeepDso();
   const M = frame.Mjh, b = frame.beta, V = cam.V;
   ctx.lineWidth = 1.1;
+  const zLoose = Math.cos(Math.min(Math.PI, Math.acos(clamp(cam.zMin, -1, 1)) + 0.02));
   const selIdx = state.selected && state.selected.kind === 'dso' ? state.selected.idx : -1;      // the selected one is always drawn
   for (const o of dso.rows) {
     if (o.idx === selIdx) { /* keep */ }
     else if (o.mag == null) { if (cam.fov > 25 || !(o.names || o.m || o.c)) continue; }
     else if (o.mag > lim) continue;
-    const x = o.vec[0] + b[0], y = o.vec[1] + b[1], z = o.vec[2] + b[2];
+    let x = o.vec[0] + b[0], y = o.vec[1] + b[1], z = o.vec[2] + b[2];
+    { const f = 1 / Math.sqrt(x * x + y * y + z * z); x *= f; y *= f; z *= f; }      // unit length again (see skyframe.js starHor)
     const h = [M[0] * x + M[1] * y + M[2] * z, M[3] * x + M[4] * y + M[5] * z, M[6] * x + M[7] * y + M[8] * z];
     if (R.ground && h[2] < -0.02) continue;
-    if (V[6] * h[0] + V[7] * h[1] + V[8] * h[2] < cam.zMin) continue;
+    // loose cone test on the TRUE direction (refraction moves an object by up to 0.6 deg; the exact test is projTrueHor's, after
+    // refraction: testing the true direction against the exact cone hid every symbol at arcminute fields)
+    if (V[6] * h[0] + V[7] * h[1] + V[8] * h[2] < zLoose) continue;
     if (!projTrueHor(h, p)) continue;
     if (p[0] < -30 || p[0] > cam.w + 30 || p[1] < -30 || p[1] > cam.h + 30) continue;
     const cls = dsoClass(o.type);
     const majPx = (o.maj || 0) / 60 * cam.pxPerDeg / 2;            // semi-major axis in px
     const r = clamp(majPx, 4.5, 4000);
     ctx.strokeStyle = COL[cls]; ctx.globalAlpha = o.mag == null ? 0.55 : clamp(0.45 + 0.18 * (lim - o.mag), 0.45, 0.95);
+    // where there is a picture the outline goes (a frame round a nebula is the last thing it needs)
+    // (pics.shown also holds the objects that lie in a neighbour's picture). The name stays, and the object stays clickable.
+    if (pics.shown.has(o.idx)) ctx.globalAlpha *= 1 - smooth(16, 60, 2 * r);
+    else if (cls === 'neb' && pics.shown.size) ctx.globalAlpha *= 1 - smooth(120, 320, 2 * r);      // no huge box round a neighbour's picture (IC 434)
     ctx.beginPath();
     if (cls === 'gal') {
       const ratio = o.maj && o.min ? clamp(o.min / o.maj, 0.25, 1) : 0.55;
@@ -68,7 +77,8 @@ export function drawDso(ctx) {
     } else {
       ctx.moveTo(p[0] - r, p[1]); ctx.lineTo(p[0], p[1] - r); ctx.lineTo(p[0] + r, p[1]); ctx.lineTo(p[0], p[1] + r); ctx.closePath();
     }
-    ctx.stroke(); ctx.setLineDash([]);
+    if (!(pics.shown.has(o.idx) && 2 * r > 60)) ctx.stroke();
+    ctx.setLineDash([]);
     addPick(p[0], p[1], Math.min(r, 14), (o.mag ?? 12) + 3, { kind: 'dso', idx: o.idx });
     const labelLim = o.mag == null ? 99 : lim - (o.m ? 0 : 1.0);
     if ((o.mag ?? 0) < labelLim) labels.add(p[0], p[1], o.label, 'dso', 44 - (o.mag ?? 9) + (o.m ? 3 : 0), { gap: Math.min(r, 30) + 4 });

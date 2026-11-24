@@ -3,6 +3,7 @@
 // has no value the row says "no data".
 
 import { A, DEG, RAD, AU_KM, LY_PER_PC, mod, mulMV, toSph, horToAzAlt, fmtRA, fmtDMS, fmtHA, fmtAngle, fmtMag } from './astro.js';
+import { see } from './notebook/seeing.js';
 import { state, on, emit } from './state.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, MOON_PARENT } from './ephem.js';
@@ -11,8 +12,10 @@ import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
 import { deepRecord, PROVIDER } from './deepstars.js';
 import { fmtClock } from './timeutil.js';
+import { linksFor, loadLinks } from './links.js';
+import { rowHidden } from './labs/hidden.js';
 
-let panel, lastHtmlKey = '', lastUpdate = 0, events = null, eventsKey = '';
+let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
 let trailing = null;
 const perfFov = () => (window.planetarium && window.planetarium.cam ? window.planetarium.cam.fov : 90);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -23,9 +26,11 @@ const sig = (v, n) => Number(v.toPrecision(n)).toLocaleString('en-US', { maximum
 
 export function initInfo(el) {
   panel = el;
-  on('selection', () => { lastHtmlKey = ''; render(true); });
+  on('selection', () => render(true));
   on('gaia-info', () => render(true));          // the online look-up of a clicked Gaia star has answered
   on('frame', () => render(false));
+  on('links', () => render(true));
+  loadLinks();
   panel.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
@@ -87,7 +92,7 @@ function render(force) {
   const tz = state.loc.tz;
   let title = '', aka = '', type = '', note = '';
   const rows = [];
-  const row = (k, v) => rows.push(`<tr><td>${k}</td><td>${v}</td></tr>`);
+  const row = (k, v) => rows.push(`<tr><td>${k}</td><td>${rowHidden(k) ? '<span class="nodata">hidden during this lab</span>' : v}</td></tr>`);      // labs/hidden.js: what the lab asks for
   const sep = () => rows.push('<tr class="sep"><td></td><td></td></tr>');
 
   if (ref.kind === 'star') {
@@ -168,8 +173,9 @@ function render(force) {
   const hApp = refHorApparent(ref, frame, bodies), aa = horToAzAlt(hApp);
   sep();
   // zoomed far in (labs: aberration, parallax, proper motion) the coordinates are given to 0.01 arcsec
-  const fine = perfFov() < 0.5, raDp = fine ? 3 : 1, decDp = fine ? 2 : 0;
-  row('RA / Dec (J2000)', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
+  // (not while a notebook lab simulates measurement noise: the catalogue place to 0.01 arcsec would be an answer key beside the noisy image)
+  const fine = perfFov() < 0.5 && !(see.enabled && see.noise > 0), raDp = fine ? 3 : 1, decDp = fine ? 2 : 0;
+  row('<span title="J2000 axes, as seen now: proper motion, aberration and parallax are included when switched on (Labs, Corrections), so it can differ from a catalogue by up to about 20 arcseconds">RA / Dec (J2000)</span>', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
   row('RA / Dec (of date)', fmtRA(d.lon, raDp) + '&ensp;' + fmtDMS(d.lat, { dp: decDp }));
   { const ecl = toSph(mulMV(frame.Mjt, eqj)); row('Ecliptic lon / lat', ecl.lon.toFixed(fine ? 4 : 2) + '°&ensp;' + (ecl.lat >= 0 ? '+' : '−') + Math.abs(ecl.lat).toFixed(fine ? 4 : 2) + '° (of date)'); }
   row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (state.show.refraction ? '' : ' (no refraction)'));
@@ -185,17 +191,24 @@ function render(force) {
     try { const c = A.Constellation(j.lon / 15, j.lat); if (ref.kind !== 'con') row('Constellation', esc(c.name)); } catch (e) { /* ignore */ }
   }
 
-  const head = `<button class="close" data-act="close" aria-label="Deselect">&times;</button><h2>${esc(title)}</h2>` +
+  const head = `<h2>${esc(title)}</h2>` +
     (aka ? `<div class="aka">${esc(aka)}</div>` : '') + `<div class="type">${type}</div>`;
+  const trk = state.tracking && (!state.keepTracked || refKey(state.trackRef) === refKey(ref));
   const acts = `<div class="acts"><button class="btn" data-act="center" title="Centre the view on it (Space)">Center <kbd>Space</kbd></button>` +
-    `<button class="btn${state.tracking ? ' on' : ''}" data-act="track" aria-pressed="${state.tracking}" title="Keep it centred as time runs (T)">Track <kbd>T</kbd></button>` +
+    `<button class="btn${trk ? ' on' : ''}" data-act="track" aria-pressed="${trk}" title="Keep it centred as time runs (T)">Track <kbd>T</kbd></button>` +
     `<button class="btn" data-act="zoom" title="Centre and zoom in">Zoom to</button></div>`;
-  const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + acts;
-  // only touch the DOM when something changed, so buttons keep focus and hover state
-  if (html !== lastHtmlKey) {
-    const keepFocus = panel.contains(document.activeElement) ? document.activeElement.dataset.act : null;
-    panel.innerHTML = html; lastHtmlKey = html;
-    if (keepFocus) { const b = panel.querySelector(`[data-act="${keepFocus}"]`); if (b) b.focus(); }
+  const ls = rowHidden('Parallax') ? [] : linksFor(ref);      // a lab that hides the parallax does not link to it either
+  const look = ls.length ? `<div class="look"><span>Look it up</span>${ls.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.title)}">${esc(l.label)}</a>`).join('')}</div>` : '';
+  const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '');
+  // The numbers change several times a second, the buttons and links hardly ever: they live in boxes of their own, each touched
+  // only when it changes. (A button replaced between press and release never gets its click.)
+  if (!panel.querySelector('.ip-main')) { panel.innerHTML = '<button class="close" data-act="close" aria-label="Deselect">&times;</button><div class="ip-main"></div><div class="ip-look"></div><div class="ip-acts"></div>'; partHtml = {}; }
+  for (const [k, h] of [['main', html], ['look', look], ['acts', acts]]) {
+    if (partHtml[k] === h) continue;
+    partHtml[k] = h;
+    const box = panel.querySelector('.ip-' + k), keepFocus = box.contains(document.activeElement) ? document.activeElement.dataset.act : null;
+    box.innerHTML = h;
+    if (keepFocus) { const b = box.querySelector(`[data-act="${keepFocus}"]`); if (b) b.focus(); }
   }
   panel.hidden = false;
 }

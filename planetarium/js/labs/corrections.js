@@ -32,6 +32,7 @@ export function initCorrections() {
   });
   on('show', sync); on('lightTime', sync); on('fx', sync);
   // zoomed far in, re-apply proper motion almost continuously so a fast star (Barnard's: 10″ a year) moves smoothly
-  on('frame', () => { stars.epochTol = cam.fov < 3 ? 0.002 : 1; });
+  // (under 0.2 deg, where the notebook labs measure to hundredths of an arcsecond, every 10 minutes: 0.0002 arcsec for Barnard's star)
+  // (the tolerance itself is now set by renderer.js before each frame is drawn: stars.epochTol)
   return card;
 }

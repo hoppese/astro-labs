@@ -41,6 +41,8 @@ export const state = {
   // --- selection ---
   selected: null,          // object reference, see objects.js
   tracking: false,
+  keepTracked: false,      // notebook labs: selecting something else does not end tracking of trackRef (nav.js)
+  trackRef: null,
 };
 
 /** Toggle one of the state.show flags. */

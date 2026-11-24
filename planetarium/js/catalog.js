@@ -125,7 +125,11 @@ function computeVecs(t, years) {
   const d = t.data, v = t.vec;
   for (let i = 0; i < t.n; i++) starPlace(d, i * NF, years, v, 3 * i);
 }
-/** Apply proper motion for the given epoch (years since J2000). Cheap; redone when the date moves by > 1 year. */
+/** How stale (years) the drawing arrays' proper motion may be at a vertical field of `fov` degrees: under a hundredth of a
+ *  pixel for the fastest star. The renderer sets stars.epochTol from this BEFORE each frame (it used to be set after the frame,
+ *  so the first frame after a jump in zoom, and every frame of a paused view, kept the wide-field tolerance of a year). */
+export const epochTolFor = (fov) => (fov < 0.2 ? 2e-5 : fov < 3 ? 0.002 : fov < 30 ? 0.05 : 1);
+/** Apply proper motion for the given epoch (years since J2000). Cheap; redone when the date moves by > stars.epochTol years. */
 export function setStarEpoch(years) {
   if (!state.fx.properMotion) years = 0;                  // labs: freeze the stars at their J2000 places
   // stars.epochTol (years) is tightened by js/labs/corrections.js when zoomed far in, so a fast star moves smoothly
@@ -135,6 +139,8 @@ export function setStarEpoch(years) {
 }
 
 /** Plain-object view of one star. */
+/** Proper names of faint stars, which the name list (bright stars only) does not reach: by Hipparcos number. */
+export const FAINT_NAMES = { 87937: 'Barnard’s Star', 70890: 'Proxima Centauri' };
 export function starRecord(k, i) {
   const t = stars.tiers[k], d = t.data, o = i * NF;
   const ext = NF >= 13;
@@ -142,6 +148,7 @@ export function starRecord(k, i) {
     hd: d[o + 5] || null, dist: d[o + 6] || null, pmra: d[o + 7], pmdec: d[o + 8], rv: ext ? d[o + 11] : 0, src: ext ? d[o + 12] : null,
     vec: [t.vec[3 * i], t.vec[3 * i + 1], t.vec[3 * i + 2]] };
   if (k === 0) { s.name = stars.names.name[i] || null; s.bayer = stars.names.bayer[i] || null; s.flam = stars.names.flam[i] || null; }
+  if (!s.name && FAINT_NAMES[s.hip]) s.name = FAINT_NAMES[s.hip];
   return s;
 }
 /** Best short label for a star. */

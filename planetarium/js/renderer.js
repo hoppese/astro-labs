@@ -4,7 +4,7 @@ import { state, on, emit } from './state.js';
 import { cam, resize, update } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
-import { setStarEpoch, wantMagnitude } from './catalog.js';
+import { setStarEpoch, wantMagnitude, stars, epochTolFor } from './catalog.js';
 import { advance } from './clock.js';
 import { stepNav } from './nav.js';
 import { beginPicks } from './picks.js';
@@ -20,8 +20,12 @@ import { drawBodies } from './render/planets.js';
 import { drawDso } from './render/dso.js';
 import { drawGround } from './render/ground.js';
 import { drawMilkyWay } from './milkyway.js';
+import { drawSkyImages } from './skyimages.js';
 import { drawDeepStars, deep } from './deepstars.js';
 import { fieldFeedback } from './render/density.js';
+import { see } from './notebook/seeing.js';
+import { allPicks } from './picks.js';
+import { sameRef } from './objects.js';
 
 let canvas, ctx, dpr = 1, dirty = true, lastDraw = 0;
 const labels = new LabelLayer();
@@ -64,7 +68,7 @@ function uiBlocks() {
   if (blockCache && now - blockAt < 400) return blockCache;
   blockAt = now; blockCache = [];
   const c = canvas.getBoundingClientRect();
-  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint']) {
+  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.imgcredit']) {
     const el = document.querySelector(sel);
     if (!el || el.hidden) continue;
     const r = el.getBoundingClientRect();
@@ -75,6 +79,7 @@ function uiBlocks() {
 const sp = [0, 0];
 function draw(frame) {
   const t0 = performance.now();
+  stars.epochTol = epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
   setStarEpoch(frame.years);
   const bodies = getBodies(frame);
   update(frame);
@@ -92,6 +97,7 @@ function draw(frame) {
   st.setup = tl - t0;
   drawSkyBackground(ctx, sky, bodies); lap('sky');
   drawMilkyWay(ctx); lap('milkyway');
+  drawSkyImages(ctx); lap('images');       // deep-sky pictures and the survey layer, under everything else (js/skyimages.js)
   drawGrids(ctx); lap('grids');
   drawConstellations(ctx); lap('constellations');
   drawStars(ctx); lap('stars');
@@ -117,6 +123,9 @@ function drawSelection(frame, bodies) {
   if (!ref) return;
   const h = refHorApparent(ref, frame, bodies);
   if (!h || !projectHor(h, sp)) return;
+  // lab notebook: with simulated measurement noise on, the marker sits on the star's IMAGE in this exposure, not on its true place
+  if (see.on && see.noMarker && ref.kind !== 'body') return;          // measuring by eye: brackets round the image would do the centring for the student
+  if (see.on && (ref.kind === 'star' || ref.kind === 'gaia')) { for (const it of allPicks()) if (it.ref && it.ref.kind === ref.kind && sameRef(it.ref, ref)) { sp[0] = it.x; sp[1] = it.y; break; } }
   let r = 13;
   if (ref.kind === 'body') { const b = bodies.byId[ref.id]; if (b) r = Math.max(r, b.angRadius * cam.pxPerDeg * (b.id === 'Saturn' ? 2.4 : 1) + 8); }
   r = Math.min(r, Math.max(cam.w, cam.h));

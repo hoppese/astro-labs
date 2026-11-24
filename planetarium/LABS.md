@@ -201,6 +201,12 @@ Preset: 2026-11-24 09:00 UTC, Jupiter tracked, angle tool. Measured for Ganymede
 - a = 293.6″ × 5.030 au = **1,071,100 km** (true 1,070,400).
 - M = 4π²a³ / (G T²) = **1.896 × 10²⁷ kg** (true 1.898 × 10²⁷).
 
+With the notebook (2026-11-24, real clicks on Jupiter and Ganymede, 13 readings 14 h apart; the model was picked by script, its
+sliders set by hand): "Sine wave with tilt" through separation against Julian Date gives **A = 291″, P = 7.18 d, tilt 0°**, rms
+1.7″. With Jupiter at 5.08 au (the panel's 5.136 au on 24 Nov falling 0.015 au a day), a = 1.07 × 10⁹ m and **M = 1.89 × 10²⁷ kg**
+(true 1.898 × 10²⁷; that close is partly luck, 1% in A is 3% in M). The residuals drift by a few arcseconds because
+Jupiter came 2% nearer during the week.
+
 ### `venus-phases` The phases of Venus
 Preset: 2026-06-01 01:30 UTC, Venus tracked, FOV 1.8′. Integration pass: one limb-to-limb measurement with the angle
 tool (two clicks on the limb), then the date box's **+1 month** button six times; the measured row follows Venus, so
@@ -314,6 +320,45 @@ Preset: 61 Cygni A (HIP 104214), aberration and proper motion off, FOV 0.004°.
   Semi-major axis **0.287″** → **3.48 pc = 11.4 ly** (catalogue 3.49 pc; published parallax 0.286″).
 - This recovers the catalogue distance by construction; what the lab shows is the size and phase of the loop.
 
+### `barnard-parallax` and `proxima-parallax` (notebook labs)
+Presets: Barnard's star from Richmond, 2026-03-01; Proxima Centauri from Cape Town, 2026-01-15. FOV 0.03° (1.8′), star
+tracked, ground / atmosphere / refraction / aberration off, parallax and proper motion on. The lab notebook opens with
+seeing 0.8″ and simulated measurement noise 0.02″ per star image. Student: separation and position angle from a
+background star of their choice, on 12 or so dates over 1.7 years or more; two calculated columns (east = ρ sin θ,
+north = ρ cos θ); the "Ellipse with a steady drift" model by hand with the period held at 1 yr; d = 1/p by the student.
+
+Measured 2026-11-24 in Chrome, each lab done twice as two students (new random seed, other reference star, other dates).
+
+| | Barnard, student 1 | Barnard, student 2 | Proxima, student 1 | Proxima, student 2 |
+|---|---|---|---|---|
+| Seed | 823967 | 860936 | 960894 | 168019 |
+| Reference star (Gaia DR3 …) | …061248 | …176256 | …093952 | …533760 |
+| Dates | 12, every 55 d, 2026.16-2027.82 | 14, every 47 d, 2026.44-2028.12 | 12, every 61 d, 2026.04-2027.88 | 13, every 57 d, 2026.26-2028.13 |
+| **p by hand with the sliders** | **0.54″** | **0.56″** | **0.77″** | **0.78″** |
+| distance 1/p | 1.85 pc | 1.79 pc | 1.30 pc | 1.28 pc |
+| proper motion | 10.43″/yr | 10.42″/yr | 3.85″/yr | 3.84″/yr |
+| rms of residuals (hand fit) | 0.044″ | 0.041″ | 0.033″ | 0.045″ |
+| b/a (sin β: 0.473; 0.704) | 0.52 | 0.46 | 0.71 | 0.72 |
+| least squares on the same points (check only) | 0.539″, 10.42″/yr | 0.555″, 10.42″/yr | 0.773″, 3.84″/yr | 0.787″, 3.86″/yr |
+| truth | 0.547″, 1.83 pc, 10.36″/yr | same | 0.768″, 1.30 pc, 3.86″/yr | same |
+
+The two students differ by **3.6%** (Barnard) and **1.3%** (Proxima) in p by hand; 2.9% and 1.8% by least squares; by 0.1%
+and 0.3% in proper motion. Every answer is within 2.4% of the truth. Monte Carlo (`tools/check.mjs` 21, 12 dates, click
+error 0.035″): p ± 3.7-4.1%, so two students typically differ by 5-6%.
+
+How it was done, honestly: every end point was a real mouse click near the star and a real click in the magnifier, with the
+place of the star's centre judged by eye from a screenshot; Record, the date keys (`]`), the column dialogs, the axis and model
+menus and the typed slider values were real input. **Scripted:** reading the finished table back; copying a finished notebook
+aside and deleting it so that the next "student" started with a fresh random seed; reloading changed source files. Barnard's
+first student (an earlier agent) chose the Record columns in the dialog; the other three used `&template=1` for the four
+columns. The offline least-squares fit was run only after the hand fit, except for Barnard student 1, where an earlier agent had
+run it first (the hand fit then started from the table's own numbers). Proxima student 2 kept a careless second reading (0.1″
+off), as a student would. Proxima's field is crowded: in spring 2027 a faint star runs under its image for two readings. The
+field's stars take up to about 10 s to arrive (Gaia, online or hosted).
+
+Zooming in to a 40″ field, as three of the students did, makes centring easier.
+(These runs were made before the object panel was folded and the Distance row hidden; the panel then showed the distance.)
+
 ### `proper-motion` A star that moves
 Preset: Barnard's star (HIP 87937; shown under that number, HYG has no names below magnitude 6.5).
 - Info panel, 2026-06-01 → 2036-06-01: Dec +4° 46′ 08.97″ → 47′ 52.25″, RA 47.091s → 46.557s: **103.6″ in 10 yr =
@@ -386,3 +431,34 @@ Not reproducible in a planetarium, and why:
 - **Vega as pole star (AD 14000)**: outside the ±3000-year range in which the ephemeris is trusted.
 - **Wendelen's telescopic half-Moon timing**: same as `half-moon`; the app has no way to model the eye's
   difficulty in judging a straight terminator, which was the real limit.
+
+---
+
+## What the object panel does not show during a lab
+
+While a lab runs, rows that are its result read "hidden during this lab" (`js/labs/hidden.js`), and the notebook's Record does not
+offer them. Rows the prompt tells the student to read stay. `&instructor=1` on the link shows everything; closing the lab restores
+it. The "Look it up" links are left. Checked by starting every lab and reading the panel (2026-11-24).
+
+| Lab | Hidden | Why; what stays on purpose |
+|---|---|---|
+| `eclipse-timing`, `eclipse-two-sites` | Distance, Light time, Angular diameter | sizes are measured, the Moon's distance is the result |
+| `eclipse-shape` | Angular diameter | measured limb to limb |
+| `moonrise` | Angular diameter, Rise / Set, Transit | the result; the lunar day is timed |
+| `lunar-parallax`, `moon-apsides`, `sun-apsides`, `sun-moon-size` | Distance, Light time, Angular diameter | the results |
+| `months`, `sidereal-day`, `analemma` | Rise / Set, Transit | crossings are timed; Hour angle stays |
+| `half-moon` | Elongation, Distance, Light time | Illuminated stays: the prompt uses it |
+| `eratosthenes`, `canopus` | Rise / Set, Transit | Transit gives the noon altitude; Az / Alt stays |
+| `obliquity`, `polaris-latitude` | Rise / Set, Transit, both RA / Dec rows | the declination is the tilt, or Polaris's distance from the pole |
+| `elongation` | Elongation | the result |
+| `kepler-mars` | Elongation, Distance, Light time | the angle is measured, Mars's place is the result |
+| `jupiter-mass` | From Jupiter (moons) | the separation; Jupiter's Distance stays: the prompt uses it |
+| `venus-phases` | Angular diameter | measured; Illuminated stays |
+| `venus-transit-*`, `mercury-transit` | Angular diameter, Light time | minutes × c gives the AU; the distances in au are given in the prompt |
+| `mars-parallax` | Light time | the same; Distance in au is given |
+| `romer` | Light time, Seen vs. actual | the delay is the result; Distance stays |
+| `parallax`, `barnard-parallax`, `proxima-parallax` | Distance, Parallax, Proper motion (every star) | the results; RA / Dec to 0.01″ stays for 61 Cygni only |
+| `proper-motion` | Proper motion | the Distance is given in the prompt |
+| `zodiac`, `synodic`, `retrograde`, `aberration`, `precession-pole`, `precession-equinox` | nothing | their rows are the raw readings |
+
+Not hidden: the place's latitude in the bottom bar (`polaris-latitude`) and, in the `proper-motion` prompt, Barnard's distance, 1.83 pc.

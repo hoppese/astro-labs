@@ -16,8 +16,11 @@ import { refEqj, refName } from './objects.js';
 import { projectPolyline, strokeStrips, R } from './render/proj.js';
 import { refractHor } from './astro.js';
 import { allTargets, resolveCustom } from './labs/targets.js';
+import { openLoupe, closeLoupe, loupeOpen } from './notebook/loupe.js';
 
-export const measure = { active: false, list: [], pending: null, hover: null, snap: true };
+// byEye (lab notebook, js/notebook/host.js): stars and other point sources are NOT snapped to; a magnifier opens and the
+// student places the point on the image by eye (discs still snap to centre and limb). onRecord: the notebook's Record.
+export const measure = { active: false, list: [], pending: null, hover: null, snap: true, byEye: false, onRecord: null };
 let panel = null;
 
 /** J2000 direction under a screen point (refraction removed). */
@@ -46,7 +49,7 @@ function offsetPoint(c, rho, pa) {
  *    {vec}                 a fixed J2000 direction
  *  plus, for the first two, an optional `limb: pa` = the point on its limb at that position angle. */
 function pointAt(x, y, ref) {
-  if (!measure.snap) return { vec: skyVec(x, y) };
+  if (!measure.snap) return { vec: skyVec(x, y), byEye: measure.byEye };
   // every disc or point under the cursor: catalogue picks and labs targets
   const cands = [];
   const byId = getBodies(getFrame()).byId;
@@ -82,7 +85,9 @@ function pointAt(x, y, ref) {
       if (d <= reach) { const s = d / reach + 0.04 * (c.mag ?? 10) + (d <= c.r ? -0.5 : 0) + (d > Math.max(4, c.r) ? 2 : 0); if (s < bestScore) { bestScore = s; best = { c, limb: false }; } }
     }
   }
-  if (!best) return { vec: skyVec(x, y) };
+  if (!best) return { vec: skyVec(x, y), byEye: measure.byEye };
+  // lab notebook: a point source is placed by eye, never snapped to its catalogue centre
+  if (measure.byEye && !(best.c.disc && best.c.r >= LIMB_MIN) && !best.c.custom) return { vec: skyVec(x, y), byEye: true };
   const p = { ...best.c.p };
   if (best.limb) {
     const frame = getFrame(), bodies = getBodies(frame);
@@ -108,7 +113,7 @@ function eqjOf(p, frame, bodies) {
   return p.limb == null ? c.u : offsetPoint(c.u, c.angRadius, p.limb);
 }
 function nameOf(p) {
-  if (p.vec) return 'sky point';
+  if (p.vec) return p.near || 'sky point';
   const frame = getFrame(), c = centreOf(p, frame, getBodies(frame));
   const nm = c ? c.name : '?';
   return p.limb == null ? nm : nm + ' limb';
@@ -125,13 +130,15 @@ export function separation(a, b, frame) {
 /** Full precision: 0.0001 deg and 0.1 arcsec above an arcminute, 0.01 arcsec below. */
 export function fmtSep(sep) {
   const dms = fmtDMS(sep, { sign: false, dp: 1 });
-  return sep >= 1 ? `${sep.toFixed(4)}° (${dms})` : sep >= 1 / 60 ? `${(sep * 60).toFixed(3)}′ (${dms.replace(/^0° /, '')})` : `${(sep * 3600).toFixed(2)}″`;
+  // under 5 arcminutes the reading is given in arcseconds to 0.01 (what small-angle astrometry needs), with arcminutes beside it
+  return sep >= 1 ? `${sep.toFixed(4)}° (${dms})` : sep >= 5 / 60 ? `${(sep * 60).toFixed(3)}′ (${dms.replace(/^0° /, '')})` : sep >= 1 / 60 ? `${(sep * 3600).toFixed(2)}″ (${(sep * 60).toFixed(4)}′)` : `${(sep * 3600).toFixed(2)}″`;
 }
 /** Short form for the label drawn on the arc. */
 const fmtArc = (s) => (s >= 1 ? s.toFixed(3) + '°' : s >= 1 / 60 ? (s * 60).toFixed(2) + '′' : (s * 3600).toFixed(1) + '″');
 
 export function toggleMeasure(on) {
   measure.active = on === undefined ? !measure.active : on;
+  closeLoupe();
   measure.pending = null; measure.hover = null;
   document.getElementById('sky').classList.toggle('measuring', measure.active);
   updatePanel(); emit('measure');
@@ -142,10 +149,31 @@ export function clearMeasures() { measure.list.length = 0; measure.pending = nul
 export function measureClick(x, y, ref) {
   if (!measure.active) return false;
   const p = pointAt(x, y, ref);
+  if (p.byEye) {
+    // the magnifier: the second click, inside it, is the measured point (to a tenth of a screen pixel)
+    openLoupe(document.getElementById('sky'), x, y, (fx, fy) => commit({ vec: skyVec(fx, fy), near: nearName(fx, fy) }));
+    return true;
+  }
+  commit(p);
+  return true;
+}
+function commit(p) {
   if (!measure.pending) measure.pending = p;
   else { measure.list.push({ a: measure.pending, b: p }); measure.pending = null; if (measure.list.length > 12) measure.list.shift(); }
   updatePanel(); emit('measure');
-  return true;
+}
+/** Name of the object whose image is under a by-eye point (a label for the record only: the point itself stays free). */
+function nearName(x, y) {
+  let best = null, bd = Infinity;
+  for (const it of allPicks()) { if (!it.ref || it.ref.kind === 'con') continue; const d = Math.hypot(it.x - x, it.y - y); if (d <= Math.max(8, it.r) && d < bd) { bd = d; best = it; } }
+  return best ? refName(best.ref) : '';
+}
+/** The last finished measurement as numbers, for the notebook's Record: {sep (deg), pa (deg), from, to} or null. */
+export function lastMeasure() {
+  const m = measure.list[measure.list.length - 1]; if (!m) return null;
+  const frame = getFrame(), bodies = getBodies(frame), a = eqjOf(m.a, frame, bodies), b = eqjOf(m.b, frame, bodies);
+  if (!a || !b) return null;
+  return { ...separation(a, b, frame), from: nameOf(m.a), to: nameOf(m.b) };
 }
 
 export function initMeasure(canvas, panelEl) {
@@ -161,8 +189,10 @@ export function initMeasure(canvas, panelEl) {
     if (b.dataset.act === 'clear') clearMeasures();
     else if (b.dataset.act === 'done') toggleMeasure(false);
     else if (b.dataset.act === 'snap') { measure.snap = !measure.snap; updatePanel(); }
+    else if (b.dataset.act === 'record' && measure.onRecord) measure.onRecord();
   });
   on('time', updatePanel);
+  on('notebook', updatePanel);          // the lab notebook opened or closed: Record button, by-eye hint
   setInterval(() => { if (measure.list.length && !panel.hidden) updatePanel(); }, 1000);
 }
 
@@ -172,15 +202,15 @@ function updatePanel() {
   const frame = getFrame(), bodies = getBodies(frame);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let html = '<div class="mp-head">Angular distance</div>';
-  if (measure.active) html += `<div class="mp-hint">${measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?)' : (measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
+  if (measure.active) html += `<div class="mp-hint">${measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?)' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the centre of the image by eye.' + (measure.snap ? ' Discs still snap to centre and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
   const rows = measure.list.slice(-5).map((m) => {
     const a = eqjOf(m.a, frame, bodies), b = eqjOf(m.b, frame, bodies);
     if (!a || !b) return '';
     const s = separation(a, b, frame);
-    return `<div class="mp-row"><span class="mp-names">${esc(nameOf(m.a))} → ${esc(nameOf(m.b))}</span><span class="mp-val">${fmtSep(s.sep)}</span><span class="mp-pa">PA ${s.pa.toFixed(1)}°</span></div>`;
+    return `<div class="mp-row"><span class="mp-names">${esc(nameOf(m.a))} → ${esc(nameOf(m.b))}</span><span class="mp-val">${fmtSep(s.sep)}</span><span class="mp-pa">PA ${s.pa.toFixed(s.sep < 5 / 60 ? 3 : 1)}°</span></div>`;
   }).join('');
   html += rows;
-  html += `<div class="mp-acts">${measure.list.length ? '<button class="btn" data-act="clear">Clear</button>' : ''}${measure.active ? `<button class="btn${measure.snap ? ' on' : ''}" data-act="snap" aria-pressed="${measure.snap}" title="Snap clicks to objects and limbs">Snap</button><button class="btn" data-act="done">Done <kbd>R</kbd></button>` : ''}</div>`;
+  html += `<div class="mp-acts">${measure.onRecord ? `<button class="btn rec" data-act="record" title="Copy this reading into your notebook"${measure.list.length ? '' : ' disabled'}>Record</button>` : ''}${measure.list.length ? '<button class="btn" data-act="clear">Clear</button>' : ''}${measure.active ? `<button class="btn${measure.snap ? ' on' : ''}" data-act="snap" aria-pressed="${measure.snap}" title="Snap clicks to objects and limbs">Snap</button><button class="btn" data-act="done">Done <kbd>R</kbd></button>` : ''}</div>`;
   if (html !== panel.dataset.html) { panel.innerHTML = html; panel.dataset.html = html; }
   panel.hidden = false;
 }
@@ -194,14 +224,15 @@ export function drawMeasures(ctx) {
   const proj = (h, out) => projectHor(R.refr ? refractHor(h) : h, out);
   ctx.save();
   ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(255,214,107,0.95)'; ctx.fillStyle = 'rgba(255,214,107,0.95)';
-  const marker = (p) => { ctx.beginPath(); ctx.arc(p[0], p[1], 3.2, 0, 2 * Math.PI); ctx.fill(); };
-  const arc = (ha, hb, label) => {
+  // by eye: an open ring, so the mark never hides the star image the next click has to be placed on
+  const marker = measure.byEye ? (p) => { ctx.beginPath(); ctx.arc(p[0], p[1], 9, 0, 2 * Math.PI); ctx.stroke(); } : (p) => { ctx.beginPath(); ctx.arc(p[0], p[1], 3.2, 0, 2 * Math.PI); ctx.fill(); };
+  const arc = (ha, hb, label, free = false) => {
     const pts = new Float64Array([ha[0], ha[1], ha[2], hb[0], hb[1], hb[2]]);
     const strips = projectPolyline(pts, Math.max(Math.min(2, cam.fov / 20), 1e-4));
     strokeStrips(ctx, strips);
     const okA = proj(ha, pa), okB = proj(hb, pb);
     if (okA) marker(pa);
-    if (okB) marker(pb);
+    if (okB && !(measure.byEye && free)) marker(pb);          // by eye: no mark at the pointer's end of the rubber band (it would sit in the magnifier)
     if (label) {
       // label at the middle of the visible arc
       let mid = unit([ha[0] + hb[0], ha[1] + hb[1], ha[2] + hb[2]]);
@@ -227,12 +258,12 @@ export function drawMeasures(ctx) {
     const a = eqjOf(measure.pending, frame, bodies);
     if (a) {
       const ha = toHor(a);
-      if (measure.hover) {
+      if (measure.hover && !loupeOpen()) {          // (the rubber band would cross the image in the magnifier)
         let h = unproject(measure.hover[0], measure.hover[1]);
         if (R.refr) h = unrefractHor(h);
         ctx.setLineDash([5, 4]);
         const s = angleBetween(ha, h);
-        arc(ha, h, fmtArc(s));
+        arc(ha, h, fmtArc(s), true);
         ctx.setLineDash([]);
       } else if (proj(ha, pa)) marker(pa);
     }

@@ -11,6 +11,8 @@ import { fmtFov, fmtLat, fmtLon } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
 import { centerOn, toggleTracking, select } from './nav.js';
 import { navKey } from './input.js';
+import { latitudeHidden } from './labs/hidden.js';
+import { keyReached, takesKeys } from './focus.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
 import { INFO_HTML, CREDITS_HTML } from './about.js';
@@ -224,6 +226,7 @@ function buildDrawer() {
     }, (err) => locMsg(err.code === 1 ? 'Location permission was declined.' : 'Could not get a location.', true), { timeout: 12000, maximumAge: 600000 });
   });
   on('loc', () => { fillLocation(); syncPlace(); });
+  on('lab', () => { fillLocation(); syncPlace(); });        // a lab may hide the latitude (labs/hidden.js)
 }
 function locMsg(text, err = false) { const m = $('locMsg'); m.textContent = text; m.classList.toggle('err', err); }
 function nearestCity(lat, lon) {
@@ -236,8 +239,8 @@ function fillLocation() {
   const l = state.loc;
   $('locNow').innerHTML = `<b></b><span class="sub"></span>`;
   $('locNow').querySelector('b').textContent = l.name + (l.region && !/^Custom/.test(l.region) ? ', ' + l.region : '');
-  $('locNow').querySelector('.sub').textContent = `${fmtLat(l.lat)}  ${fmtLon(l.lon)}  ·  ${zoneLabel(state.timeMs, l.tz)}`;
-  $('latIn').value = l.lat; $('lonIn').value = l.lon;
+  $('locNow').querySelector('.sub').textContent = latitudeHidden() ? 'latitude hidden during this lab' : `${fmtLat(l.lat)}  ${fmtLon(l.lon)}  ·  ${zoneLabel(state.timeMs, l.tz)}`;
+  $('latIn').value = latitudeHidden() ? '' : l.lat; $('lonIn').value = latitudeHidden() ? '' : l.lon;
   fillCities();
 }
 function fillCities() {
@@ -257,7 +260,7 @@ function syncPlace() {
   const l = state.loc, b = $('placeBtn');
   b.innerHTML = ICON.pin + '<span class="txt"></span><span class="sub"></span>';
   b.querySelector('.txt').textContent = l.name;
-  b.querySelector('.sub').textContent = `${fmtLat(l.lat)} ${fmtLon(l.lon)}`;
+  b.querySelector('.sub').textContent = latitudeHidden() ? '' : `${fmtLat(l.lat)} ${fmtLon(l.lon)}`;
 }
 function syncBortle() {
   $('bortle').value = state.bortle;
@@ -312,12 +315,12 @@ function buildShortcuts(search) {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { if (closeEverything()) return; if (measure.active) toggleMeasure(false); else if (state.selected) select(null); return; }
     const el = e.target;
-    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+    if (takesKeys(el, e)) return;
     if (document.querySelector('.modal-backdrop.show')) return;
     if (e.key === 'F3' || (e.key === '/' && !e.metaKey && !e.ctrlKey)) { e.preventDefault(); search.focus(); return; }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    // let Space / Enter activate a focused button instead of acting on the sky
-    if ((e.key === ' ' || e.key === 'Enter') && el && (el.tagName === 'BUTTON' || el.tagName === 'A')) return;
+    // a button reached with Tab keeps Space / Enter; one that was merely clicked does not (focus.js)
+    if ((e.key === ' ' || e.key === 'Enter') && keyReached(el)) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const t = byKey[k];
     if (t) { e.preventDefault(); runTool(t); return; }

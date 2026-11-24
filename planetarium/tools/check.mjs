@@ -403,5 +403,20 @@ line('== 18. Bright-star astrometry against SIMBAD (data/stars-*.bin, tools/buil
 }
 
 line();
+line('== 20. Lab notebook: units, numbers, formulas, models, CSV (js/notebook/; a failure throws) ==');
+{ const NB = await import('./check-notebook.mjs'); NB.checkNotebookUnits({ line });
+  line();
+  line('== 21. Lab notebook: the astrometry the parallax labs rely on ==');
+  await NB.checkNotebookPhysics({ line, f2, X, C, makeFrame, state }); }
+
+line();
+line('== 22. Selected / centred / marked = drawn, for every Corrections switch (tools/check-centre.mjs; a failure throws) ==');
+await (await import('./check-centre.mjs')).checkCentre({ line, f2 });
+
+line();
+line('== 23. Look-it-up links and deep-sky pictures (tools/check-links.mjs; a failure throws) ==');
+await (await import('./check-links.mjs')).checkLinks({ line });
+
+line();
 line('== 19. Hosted deep tiles, G 12-17 (tools/build_deep.py, js/deepstars.js) against the ESA archive and GAVO ==');
 await (await import('./check-deep.mjs')).checkDeep({ line, f2, X, netFetch: process.argv.includes('--net') ? netFetch : null });      // --net: also ask the ESA archive and GAVO (about 3 minutes)

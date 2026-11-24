@@ -18,6 +18,8 @@ import { toggleMeasure, measureClick } from './measure.js';
 import { el, esc, toast } from './xui.js';
 import { skyAt, conLabel } from './cursor.js';
 import { marks, isMarked, toggleMark, clearMarks } from './skymarks.js';
+import { linksFor } from './links.js';
+import { rowHidden } from './labs/hidden.js';
 import { trail, startTrail, stopTrail, canTrail } from './labs/trails.js';
 
 const GAL = new Set(['G', 'GPair', 'GTrpl', 'GGroup']);
@@ -136,6 +138,11 @@ function openAt(x, y, clientX, clientY) {
     if (obj) { const f = getFrame(), b = getBodies(f), u = refEqj(obj, f, b), h = refHorApparent(obj, f, b); if (u && h) { const j = toSph(u), a = horToAzAlt(h); c = { raJ: j.lon, decJ: j.lat, az: a.az, alt: a.alt }; } }
     copy((name ? name + ': ' : '') + coordText(c), 'coordinates');
   });
+  if (ref) {
+    const ls = rowHidden('Parallax') ? [] : linksFor(ref);
+    if (ls.length) sep();
+    for (const l of ls) add(`Look up: ${l.label}`, () => window.open(l.url, '_blank', 'noopener'));
+  }
   if (d) {
     sep();
     add('Show in Deep-sky list', () => deps.dsoList.reveal(ref.idx));

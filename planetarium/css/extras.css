@@ -324,3 +324,13 @@ kbd { white-space: nowrap; }
   body:has(.xpanel:not([hidden])) .xtoast { left: calc((100vw - min(404px, 100vw - 24px)) / 2); max-width: min(560px, calc(100vw - min(404px, 100vw - 24px) - 36px)); }
   body:has(.xpanel.wide:not([hidden])) .xtoast { left: calc((100vw - min(600px, 62vw)) / 2); max-width: min(560px, calc(100vw - min(600px, 62vw) - 36px)); }
 }
+
+/* ---- object links, imagery credit (js/links.js, js/skyimages.js) ---- */
+.infopanel .look { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-top: 9px; font-size: 12.5px; }
+.infopanel .look span { color: var(--muted); }
+.infopanel .look a { color: #9cc7ff; text-decoration: underline; text-underline-offset: 2px; }
+.infopanel .look a:hover { color: #cfe4ff; }
+.infopanel .look a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.imgcredit { position: absolute; left: 12px; bottom: calc(var(--bar-h) + 8px); z-index: 4; font: 400 10.5px var(--font); color: #a9b7c8; opacity: 0.8; pointer-events: none; text-shadow: 0 1px 3px #000; }
+.imgcredit[hidden] { display: none; }
+@media (max-width: 560px) { .imgcredit { max-width: 60vw; } }

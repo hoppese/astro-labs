@@ -5,6 +5,7 @@
 // URL parameters (all optional; see setup.js): lab, t, lat, lon, place, tz, target, track, fov,
 // az + alt | ra + dec, mount, on, off, play, rate, obs2, align, trail, tools, instructor.
 
+import { takesKeys } from '../focus.js';
 import { state, on, emit } from '../state.js';
 import { addOverlay } from '../renderer.js';
 import { stepTime } from '../clock.js';
@@ -22,6 +23,7 @@ import { applySetup, describeView, setupFromQuery } from './setup.js';
 import { labById } from './presets.js';
 import { allTargets } from './targets.js';
 import { marks } from './stopwatch.js';
+import { initNotebookHost, toggleNotebook, notebookOpen } from '../notebook/host.js';
 
 const FLASK = '<svg class="line" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.200 9.200A1.800 1.800 0 0 0 6.400 21h11.200a1.800 1.800 0 0 0 1.600-2.800L14 9V3"/><path d="M7.600 15h8.800"/></svg>';
 
@@ -35,6 +37,7 @@ const MENU = [
   { id: 'corrections', ico: '&#916;', label: 'Corrections · effects', card: 'corrections' },
   { id: 'shadow', ico: '&#9681;', label: 'Outline of the Earth’s shadow', run: () => setFx('earthShadow', !state.fx.earthShadow), on: () => state.fx.earthShadow },
   { id: 'measure', ico: '&#8736;', label: 'Measure an angle', k: 'R', run: () => toggleMeasure(), on: () => measure.active },
+  { id: 'notebook', ico: '&#9638;', label: 'Lab notebook · table, graph, model', run: () => toggleNotebook(), on: () => notebookOpen() },
   null,
   { id: 'link', ico: '&#128279;', label: 'Copy link to this view', run: copyLink },
 ];
@@ -85,7 +88,7 @@ function buildMenu() {
 
 function keys(e) {
   const t = e.target;
-  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  if (takesKeys(t, e)) return;
   if (document.querySelector('.modal-backdrop.show')) return;
   if (e.key === 'Escape' && menu && !menu.hidden) { menu.hidden = true; e.stopPropagation(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -110,6 +113,7 @@ export function initLabsSuite() {
   window.addEventListener('keydown', keys, true);
   document.addEventListener('labs-cards', syncMenu);
   on('fx', syncMenu); on('measure', syncMenu);
+  initNotebookHost();             // the lab notebook (js/notebook/): before the URL is read, so a lab link can open it
 
   // ---- URL parameters ----
   const q = new URLSearchParams(location.search);

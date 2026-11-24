@@ -7,7 +7,7 @@ import { RAD, fmtMag } from './astro.js';
 import { cam } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { dso, loadDeepDso, constellations, DSO_TYPES } from './catalog.js';
-import { select, flyTo } from './nav.js';
+import { select, flyTo, toggleTracking } from './nav.js';
 import { makePanel, esc, toast, isNarrow } from './xui.js';
 
 const CLASSES = [['all', 'All types'], ['gal', 'Galaxies'], ['oc', 'Open clusters'], ['gc', 'Globular clusters'], ['pn', 'Planetary nebulae'], ['neb', 'Nebulae'], ['other', 'Other']];
@@ -28,6 +28,7 @@ export function dsoFov(o) { return Math.max(0.25, Math.min(8, (o.maj ? o.maj / 6
 export function goToDso(o) {
   const ref = { kind: 'dso', idx: o.idx };
   select(ref);
+  toggleTracking(true);            // hold it in the centre, as every other "go to" does (nav.js centerOn)
   flyTo(ref, { fov: Math.min(cam.fov, dsoFov(o)) });
   const alt = dsoAltitude(o);
   if (alt < 0 && state.show.ground) toast(`${o.label} is below the horizon now (altitude ${alt.toFixed(0).replace('-', '−')}°). Turn the ground off (G) or change the time to see it.`, { ms: 5200, kind: 'warn' });

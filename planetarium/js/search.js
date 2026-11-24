@@ -6,7 +6,7 @@
 import { state, on } from './state.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, BODIES, MOON_PARENT } from './ephem.js';
-import { stars, starRecord, constellations, dso, loadAllTiers, loadDeepDso, DSO_TYPES, F } from './catalog.js';
+import { stars, starRecord, constellations, dso, loadAllTiers, loadDeepDso, DSO_TYPES, F, FAINT_NAMES } from './catalog.js';
 import { refHorApparent } from './objects.js';
 import { select, centerOn } from './nav.js';
 import { fmtMag } from './astro.js';
@@ -17,7 +17,7 @@ const SUP = { '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4', '⁵': '5
 /** Lower-case, no accents, Greek letters spelled out, punctuation collapsed. */
 export function norm(s) {
   return String(s).replace(/[α-ω]/g, (c) => (GREEK[c] || c) + ' ').replace(/[⁰¹²³⁴-⁹]/g, (c) => SUP[c] || '')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    .replace(/['’‘]/g, '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
 let index = null;        // [{key, label, sub, mag, ref, w}]
@@ -83,17 +83,20 @@ export function search(q, limit = 12) {
   if (!n) return [];
   const out = [];
   // catalogue numbers that are not in the name index
-  const m = /^(hip|hd)\s*(\d+)$/.exec(n);
+  // named stars too faint for the name index (Barnard's, Proxima): found by their Hipparcos number
+  const faint = n.length >= 3 && Object.keys(FAINT_NAMES).find((h) => norm(FAINT_NAMES[h]).startsWith(n));
+  const m = /^(hip|hd)\s*(\d+)$/.exec(faint ? 'hip ' + faint : n);
   if (m) {
     const field = m[1] === 'hip' ? F.hip : F.hd, want = +m[2];
     for (const t of stars.tiers) {
       if (!t.loaded) continue;
       for (let i = 0; i < t.n; i++) if (t.data[i * stars.NF + field] === want) {
         const s = starRecord(t.k, i);
-        out.push({ label: (m[1] === 'hip' ? 'HIP ' : 'HD ') + want + (s.name ? ' · ' + s.name : ''), sub: 'Star', mag: s.mag, ref: { kind: 'star', k: t.k, i }, score: 1000 });
+        out.push({ label: faint ? s.name : (m[1] === 'hip' ? 'HIP ' : 'HD ') + want + (s.name ? ' · ' + s.name : ''), sub: faint ? 'HIP ' + want + ' · Star' : 'Star', mag: s.mag, ref: { kind: 'star', k: t.k, i }, w: 0, score: faint ? 380 : 1000 });
       }
     }
-    if (!out.length && stars.tiers.some((t) => !t.loaded)) { loadAllTiers().then(() => rerun && rerun()); return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }]; }
+    if (!out.length && faint) { if (stars.tiers.some((t) => !t.loaded)) loadAllTiers().then(() => rerun && rerun()); }
+    else if (!out.length && stars.tiers.some((t) => !t.loaded)) { loadAllTiers().then(() => rerun && rerun()); return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }]; }
   }
   const seen = new Set();
   for (const e of index) {
