@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planetarium (beta) · Astro Labs</title>
+<meta name="description" content="An interactive planetarium: the sky for any time and place, with planets, moons, deep-sky objects, grids and measuring tools.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/extras.css">
+</head>
+<body>
+<canvas id="sky" tabindex="0" aria-label="Sky view. Drag to look around, scroll or pinch to zoom, click an object for details."></canvas>
+
+<!-- ===== top bar: title, search, menu ===== -->
+<header class="topbar">
+  <div class="brand"><span class="dot"></span><span class="name">Planetarium</span><span class="beta">BETA</span></div>
+  <div class="search" id="search">
+    <svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.2"/><path d="M12.6 12.6 17 17"/></svg>
+    <input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search stars, planets, Messier, NGC…" aria-label="Search the sky" aria-controls="searchList" aria-expanded="false" role="combobox">
+    <kbd>/</kbd>
+    <div class="search-list" id="searchList" role="listbox" hidden></div>
+  </div>
+  <div class="top-actions">
+    <button class="iconbtn" id="settingsBtn" title="Settings and location" aria-label="Settings and location"></button>
+    <div class="menuwrap">
+      <button class="iconbtn" id="menuBtn" title="Menu" aria-haspopup="true" aria-label="Menu">&#9776;</button>
+      <div class="menu" id="menu" hidden>
+        <a href="../" target="_blank" rel="noopener"><span class="ico">&#8592;</span>All sims</a>
+        <button id="mInfo"><span class="ico">&#9432;</span>Info &amp; shortcuts</button>
+        <button id="mCredits"><span class="ico">&#169;</span>Credits &amp; data</button>
+        <button id="mBug"><span class="ico">&#128030;</span>Submit bug</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== selected-object panel ===== -->
+<section class="infopanel" id="infoPanel" hidden aria-live="polite"></section>
+
+<!-- ===== angular-distance tool ===== -->
+<div class="measurepanel" id="measurePanel" hidden aria-live="polite"></div>
+
+<!-- ===== view read-out ===== -->
+<div class="readout" id="readout" title="Field of view (vertical) and faintest magnitude drawn"></div>
+
+<!-- ===== bottom bar: place, toggles, time ===== -->
+<footer class="bottombar">
+  <button class="chip place" id="placeBtn" title="Change location"></button>
+  <div class="toolbar" id="toolbar" role="toolbar" aria-label="Display toggles"></div>
+  <div class="timebox">
+    <div class="transport" role="group" aria-label="Time controls">
+      <button class="tbtn" id="tSlower" title="Slower / reverse (J)" aria-label="Slower or reverse"></button>
+      <button class="tbtn" id="tPlay" title="Pause or resume (7)" aria-label="Pause or resume"></button>
+      <button class="tbtn" id="tFaster" title="Faster (L)" aria-label="Faster"></button>
+      <button class="tbtn" id="tNow" title="Jump to now, real-time rate (8)" aria-label="Now"></button>
+      <span class="rate" id="rateLabel"></span>
+    </div>
+    <button class="chip clock" id="clockBtn" title="Set date and time" aria-haspopup="dialog">
+      <span class="date" id="clockDate"></span><span class="time" id="clockTime"></span><span class="tz" id="clockTz"></span>
+    </button>
+  </div>
+</footer>
+
+<!-- ===== date / time editor ===== -->
+<div class="popover timepop" id="timePop" hidden role="dialog" aria-label="Date and time">
+  <div class="pop-head">Date &amp; time <span class="tzline" id="timeTz"></span><button class="close" id="timeClose" aria-label="Close">&times;</button></div>
+  <div class="dt-row">
+    <label class="yr">Year <input type="number" id="dtYear" min="-3000" max="3000" step="1" inputmode="numeric"></label>
+    <label class="sm">Month <input type="number" id="dtMonth" min="1" max="12" step="1" inputmode="numeric"></label>
+    <label class="sm">Day <input type="number" id="dtDay" min="1" max="31" step="1" inputmode="numeric"></label>
+    <label>Time <input type="time" id="dtTime" step="1"></label>
+  </div>
+  <div class="steps" id="stepBtns"></div>
+  <div class="calnote" id="calNote" hidden>Before 15 Oct 1582 dates are proleptic Gregorian (not the Julian calendar then in use). Year 0 = 1 BC.</div>
+  <div class="pop-foot"><span class="utc" id="timeUtc"></span><button class="btn" id="dtNow">Now</button></div>
+</div>
+
+<!-- ===== settings drawer ===== -->
+<aside class="drawer" id="drawer" hidden aria-label="Settings">
+  <div class="drawer-head"><h2>Settings</h2><button class="close" id="drawerClose" aria-label="Close">&times;</button></div>
+  <div class="drawer-body">
+    <section id="secLocation">
+      <h3>Location</h3>
+      <div class="loc-now" id="locNow"></div>
+      <input class="field" id="citySearch" type="search" placeholder="Search a city…" autocomplete="off" aria-label="Search a city">
+      <div class="citylist" id="cityList"></div>
+      <div class="latlon">
+        <label>Latitude (°, north +) <input class="field" id="latIn" type="number" min="-90" max="90" step="0.01"></label>
+        <label>Longitude (°, east +) <input class="field" id="lonIn" type="number" min="-180" max="180" step="0.01"></label>
+      </div>
+      <div class="row">
+        <button class="btn" id="locApply">Set coordinates</button>
+        <button class="btn" id="locGeo">Use my location</button>
+      </div>
+      <div class="hint" id="locMsg"></div>
+    </section>
+    <section>
+      <h3>Sky</h3>
+      <label class="check"><input type="checkbox" data-show="atmosphere"> Atmosphere <span class="k">A</span></label>
+      <label class="check"><input type="checkbox" data-show="refraction"> Refraction <span class="k">F</span></label>
+      <label class="check"><input type="checkbox" data-show="ground"> Ground <span class="k">G</span></label>
+      <div class="slider-row">
+        <label for="bortle">Light pollution</label>
+        <input id="bortle" type="range" min="1" max="9" step="1">
+        <div class="bortle-out" id="bortleOut"></div>
+        <div class="presets" id="bortlePresets"></div>
+      </div>
+    </section>
+    <section>
+      <h3>Mount</h3>
+      <div class="seg" id="mountSeg" role="radiogroup" aria-label="Mount">
+        <button data-mount="altaz" role="radio">Alt-az</button>
+        <button data-mount="eq" role="radio">Equatorial</button>
+      </div>
+      <div class="hint">Alt-az keeps the horizon level. Equatorial keeps the celestial pole up, so the sky turns about the pole as time runs. <span class="k">M</span></div>
+    </section>
+    <section>
+      <h3>Labels &amp; markings</h3>
+      <div class="checks" id="showChecks"></div>
+    </section>
+    <section>
+      <h3>Solar system</h3>
+      <label class="check"><input type="checkbox" id="lightTimeChk"> Light-travel time</label>
+      <div class="hint">On: bodies are drawn where we see them (light that left them minutes ago). Off: where they are at this instant.</div>
+    </section>
+  </div>
+</aside>
+
+<!-- ===== modals ===== -->
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal" role="dialog" aria-label="Info and shortcuts">
+    <h2>Planetarium <button class="close" data-close aria-label="Close">&times;</button></h2>
+    <div id="infoBody"></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="creditsModal">
+  <div class="modal" role="dialog" aria-label="Credits and data">
+    <h2>Credits &amp; data <button class="close" data-close aria-label="Close">&times;</button></h2>
+    <div id="creditsBody"></div>
+  </div>
+</div>
+<div class="modal-backdrop bugmodal" id="bugModal">
+  <div class="modal" style="max-width:460px;" role="dialog" aria-label="Report a problem">
+    <h2>Report a problem <button class="close" data-close id="bugClose" aria-label="Close">&times;</button></h2>
+    <p style="font-size:12px;line-height:1.5;color:#b7c2cd;margin:0 0 12px;">Say what looks wrong or confusing. The page URL and your browser are attached automatically.</p>
+    <textarea class="field" id="bugText" rows="4" placeholder="What happened? What did you expect?"></textarea>
+    <input class="field" id="bugEmail" placeholder="Email (optional, for a reply)">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="sendbtn" id="bugSend">Send report</button>
+      <span class="result" id="bugResult"></span>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">Loading the sky…</div>
+
+<script src="vendor/astronomy.browser.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

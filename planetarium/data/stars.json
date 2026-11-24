@@ -1,0 +1,1 @@
+{"fields":["ra","dec","mag","bv","hip","hd","dist","pmra","pmdec"],"source":"HYG v4.1 (astronexus), CC BY-SA 4.0","tiers":[{"file":"stars-0.bin","n":8920,"magMax":6.5},{"file":"stars-1.bin","n":16871,"magMax":7.5},{"file":"stars-2.bin","n":36025,"magMax":8.5},{"file":"stars-3.bin","n":37233,"magMax":9.5},{"file":"stars-4.bin","n":20574,"magMax":19.74}]}
