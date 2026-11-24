@@ -6,9 +6,10 @@
 // This is a visual model tuned to look right, not a radiative-transfer calculation.
 
 import { DEG, RAD, clamp, lerp, smooth, angleBetween } from '../astro.js';
-import { state } from '../state.js';
+import { state, emit } from '../state.js';
 import { cam, unproject } from '../camera.js';
 import { densityLimit } from './density.js';
+import { depthNow, shownLimit } from '../deepstars.js';
 
 /** Naked-eye limiting magnitude at the zenith for Bortle classes 1..9. */
 export const BORTLE_NELM = [0, 7.8, 7.3, 6.8, 6.3, 5.8, 5.3, 4.8, 4.3, 3.8];
@@ -22,10 +23,11 @@ export const STARS_PER_CM2 = 1.3;
 export function zoomGain(fov, night = 0) {
   if (fov >= 60) return -0.6 * (fov - 60) / 120;
   // Against a bright sky (day, twilight) a narrower field gains 2.5 log10 as before. Under a dark sky the gain is
-  // twice that, which is steeper than the star counts need, so at night the crowding limit below is the one
-  // that sets how many stars are drawn: the same number per square centimetre of screen at every zoom.
+  // three times that, which is steeper than the star counts need even at G = 20 (where they rise by only x2 per
+  // magnitude, so holding the screen density takes 6.6 mag per factor of ten in field), so at night the crowding
+  // limit below is the one that sets how many stars are drawn: the same number per square centimetre at every zoom.
   const g = 2.5 * Math.log10(60 / fov);
-  return Math.min(8, g) * (1 - night) + Math.min(16, 2 * g) * night;
+  return Math.min(8, g) * (1 - night) + Math.min(24, 3 * g) * night;
 }
 
 /** Magnitudes lost to a bright sky, from the Sun's altitude in degrees. */
@@ -67,20 +69,58 @@ export function skyConditions(bodies) {
   //            richer screen (x1.5 per magnitude of naked-eye limit, up to x1.22), so light pollution still shows at any zoom.
   // a short window (phone, small iframe) packs the same sky into fewer pixels: treat it as a wider field
   const physical = base + zoomGain(Math.min(180, cam.fov * clamp(Math.sqrt(760 / cam.h), 1, 1.8)), 1 - smooth(0.5, 3, dayLoss));
+  const glare = planetGlare(bodies);
   const perCm2 = STARS_PER_CM2 * (state.starScale || 1) * Math.pow(1.5, clamp(base - 6.3, -4, 0.5));
   const crowd = densityLimit(perCm2);
+  const limWant = Math.min(physical, crowd, depthCap(), glare);      // the limit this view should reach; limMag is what is drawn now
   return {
     atmo, sunAlt, moonAlt, nelm, dayLoss, moonLoss, sunFrac,
     sunDim: 0.1 + 0.9 * Math.sqrt(sunFrac),         // how much of the daylight colour survives an eclipse
     base,                                           // naked-eye limit under this sky
-    physical, crowd, perCm2,
-    // 13.5 = a magnitude and a half past the end of the star catalogue: beyond that no fainter star can appear, and letting
-    // the limit run on only made every field star swell (they are sized by how far they are above the limit) until a
-    // magnitude-11 star outshone Jupiter's moons at high zoom
-    limMag: Math.min(physical, crowd, 13.5),
+    physical, crowd, perCm2, glare,
+    // The cap is a magnitude and a half past the faintest star that can be supplied right now (G = 21 with the online
+    // Gaia layer, 12 from the bundled tiles alone): beyond that no fainter star can appear, and letting the limit run
+    // on only made every field star swell (they are sized by how far they are above the limit) until a magnitude-11
+    // star outshone Jupiter's moons at high zoom.
+    limWant, limMag: shownLimit(limWant), depth: depthNow(),
     day: atmo ? smooth(-8, 4, sunAlt) * (0.1 + 0.9 * Math.sqrt(sunFrac)) : 0,          // 0 night .. 1 day (used for colours)
     twilight: atmo ? smooth(-18, -4, sunAlt) * (1 - smooth(0, 12, sunAlt)) : 0,
   };
+}
+
+/** A bright planet in the field hides the faint stars round it, as its glare does in a telescope: with a planet in the
+ *  window no star more than 14 magnitudes fainter than the planet is drawn (Jupiter: 11.8, Saturn: about 14.5; Uranus and
+ *  Neptune: no effect). Without this, zooming onto Jupiter with the deep Gaia stars filled the field with discs as large
+ *  as the moons' (everything is sized by how far it is above the limit, and that saturates), and the moons were lost
+ *  among them. The rule eases off as the planet leaves the window (from 0.8 to 1.6 view radii from the centre). It has
+ *  no effect on wide views, whose limit is far brighter anyway, and it means a planet's field needs nothing from the
+ *  online star service. The Moon is left out on purpose: stars beside it matter (occultations). */
+const GLARE_MAG = 14;
+function planetGlare(bodies) {
+  let g = 99;
+  const c = unproject(cam.w / 2, cam.h / 2), R = Math.acos(clamp(cam.zMin, -1, 1));
+  for (const b of bodies.list) {
+    if (b.kind !== 'planet' || !b.hor) continue;
+    const sep = Math.acos(clamp(b.hor[0] * c[0] + b.hor[1] * c[1] + b.hor[2] * c[2], -1, 1));
+    const t = clamp((sep / R - 0.8) / 0.8, 0, 1);
+    if (t < 1) g = Math.min(g, b.mag + GLARE_MAG + 10 * t);
+  }
+  return g;
+}
+
+// The cap follows the available depth, but glides (8 mag a second) when that changes, e.g. when the star service
+// stops answering while zoomed far in: the stars then grow over a second instead of jumping.
+let capNow = null, capAt = 0;
+function depthCap() {
+  const target = depthNow() + 1.5, now = typeof performance !== 'undefined' ? performance.now() : 0;
+  if (capNow === null || !now) capNow = target;
+  else if (capNow !== target) {
+    const step = 8 * Math.min(0.1, Math.max(0.001, (now - capAt) / 1000));
+    capNow = Math.abs(target - capNow) <= step ? target : capNow + Math.sign(target - capNow) * step;
+    if (capNow !== target) emit('render');
+  }
+  capAt = now;
+  return capNow;
 }
 
 // ---- background image ----------------------------------------------------------

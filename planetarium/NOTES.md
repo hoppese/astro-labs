@@ -4,7 +4,7 @@ A Stellarium-inspired web planetarium for astro-labs. Static files, no build ste
 Spec: the lead's `SPEC.md` (Tiers 1-3) and `SPEC-LABS.md` (Tier 4, classic measurements). This file is the
 hand-over: architecture, data provenance, what is done, what is left, known issues. Keep it current.
 
-Last updated 2026-11-23: four sections, one per agent; the last ("Integration pass") is the most recent and overrides earlier statements about star limits and known issues.
+Last updated 2026-11-23: five sections, one per agent; the last ("Deep stars: Gaia DR3") is the most recent and overrides earlier statements about faint stars, star limits and the Tycho-2 tiles.
 
 ## Run / test
 - Served at `http://127.0.0.1:8111/planetarium/` (repo root is served). Relative URLs only, so it also
@@ -526,3 +526,178 @@ New: `js/deepstars.js`, `tools/build_tycho.py`, `data/tycho/`. Edited: renderer.
 objects.js, info.js, nav.js, input.js, picks.js, measure.js, ctxmenu.js, quiz.js, ui.js, extras.js, about.js, milkyway.js,
 render/{sky,density,stars,labels,planets}.js, labs/{setup,dock,events}.js, css/{app,extras,labs}.css,
 tools/frame-test.html (`app=` passes parameters to the frames, `bare=1`), LABS.md.
+
+---
+
+# Deep stars: Gaia DR3, bundled to G = 12 and online to G = 21 (fifth agent, 2026-11-23)
+
+Goal (Seth): about 1.3 stars per cm² of screen at EVERY zoom, not only down to 3°. That needs Gaia (1.8 billion stars),
+so: a bundled layer in the repo to G = 12, and below that the stars of the field on screen fetched from a public service.
+
+## What replaced what
+- `data/tycho/` is no longer read by any code (the Gaia bundle replaces it fully). It was NOT deleted: remove it when convenient.
+  `tools/build_tycho.py` is likewise unused now.
+- New: `js/healpix.js`, `tools/fetch_gaia.py`, `tools/build_gaia.py`, `data/gaia/`. Rewritten: `js/deepstars.js`, `js/render/density.js`.
+  Edited: `render/sky.js` (limit: see below), `renderer.js` (feedback call), `objects.js` / `nav.js` / `info.js` / `labs/setup.js`
+  (reference kind `'tyc'` is now `'gaia'`), `ui.js` (read-out), `state.js` (`show.netStars`), `main.js`, `about.js`, `index.html`
+  (Settings → Faint stars), `css/app.css` (`.ro-note`), `tools/check.mjs` (section 17).
+- Module caching while developing: same workaround as before (`fetch(f, {cache: 'reload'})` for each changed file, then reload).
+
+## Licence: read this first
+The brief assumed "Gaia data: free to use with the ESA/Gaia/DPAC acknowledgement". ESA says two things:
+- Gaia DR3 "Credit and citation instructions" (gea.esac.esa.int/archive/documentation/GDR3/Miscellaneous/sec_credit_and_citation_instructions/):
+  "The Gaia data are open and free to use, provided credit is given to 'ESA/Gaia/DPAC'." and the acknowledgement text
+  "This work has made use of data from the European Space Agency (ESA) mission Gaia (https://www.cosmos.esa.int/gaia), processed by
+  the Gaia Data Processing and Analysis Consortium (DPAC, https://www.cosmos.esa.int/web/gaia/dpac/consortium). Funding for the DPAC
+  has been provided by national institutions, in particular the institutions participating in the Gaia Multilateral Agreement."
+- The Gaia Data License page (www.cosmos.esa.int/web/gaia-users/license), read 2026-11-23: "Gaia data are distributed under the
+  CC BY-NC 3.0 IGO license."
+So Gaia carries the SAME licence as Tycho-2 (CC BY-NC 3.0 IGO): the licence question does not go away by switching. Non-commercial
+redistribution with attribution is what that licence allows, and Credits now carries the credit, the full acknowledgement and the
+licence. Whether `data/gaia/` goes into the public repo is Seth's call (see "For Seth"). `data/gaia/` is NOT in `.git/info/exclude`
+(`data/tycho/` is), so a plain `git add` WILL pick it up.
+
+## Bundled layer: `data/gaia/` (30.9 MB, 3,678 files)
+- Source: ESA Gaia archive (gea.esac.esa.int), anonymous synchronous TAP with MAXREC, `gaiadr3.gaia_source` with G < 12 in 12 chunks
+  (HEALPix base pixels by source_id range), 3,087,821 rows (each chunk's row count checked against the archive's COUNT(*)), plus
+  `gaiadr3.hipparcos2_best_neighbour` (99,525 pairs). An anonymous ASYNC job silently stops at 50,000 rows: do not use it.
+  404 MB of CSV, 6 minutes. `fetch_gaia.py RAW` then `build_gaia.py RAW hygdata_v41.csv data/` (75 s).
+- Kept: 2,967,176 stars = everything not already in HYG. Left out: 99,208 sources that ESA's cross-match pairs with a Hipparcos
+  number in HYG, and 21,437 matched by position (3″ at epoch 2016 with |ΔV| < 1.5, V estimated from G and BP−RP with the Gaia DR3
+  documentation's polynomial; within 1.5″ any magnitude (variables: η Car, R Leo); HYG's fast stars without a Hipparcos number
+  searched to 15″ with tighter tests). What remains near bright HYG stars are real companions (Mizar B, Acamar B, Almach B ...).
+- **A finding about HYG while cross-matching:** HYG's epoch-2000 right ascensions were propagated from the Hipparcos epoch
+  without dividing the proper motion by cos(dec), so fast stars far from the equator are off in RA by pmra × 8.75 yr × (1/cos δ − 1):
+  θ UMa 3.2″, η Cas 5″, χ Dra 11″. Also HYG's non-Hipparcos (Gliese) entries can be 10″+ out. Both are in the app's HYG stars today
+  (not fixed here; a fix belongs in `build_stars.py`).
+- Layout: the same declination zones as before. `a/` 7 ≤ G < 9 and `b/` 9 ≤ G < 10 in 15° zones, 12-byte records;
+  `c/` 10 ≤ G < 11 and `d/` 11 ≤ G < 12 in 5° zones, 10-byte records (a 1.0 MB, b 3.4, c 7.6, d 18.4; largest tile 61 kB).
+  Record: u16 RA, u16 Dec within the cell, u16 G (mmag), u8 BP−RP (0.02), i8 pmRA, i8 pmDec (2 mas/yr), u8 parallax (0.2 mas)
+  [+ u8, u8: eight more bits of RA and Dec in a/b]. `index.json` (317 kB, 147 kB gzipped, loaded at start, non-blocking): manifest,
+  all-sky counts, and 3,777 stars at full precision WITH source_id: G < 7 (1,374), proper motion > 250 mas/yr (2,253), parallax
+  > 50 mas (150). `counts.bin` (172 kB): star counts per HEALPix order-4 cell (3,072 cells) at G = 8, 8.5 … 21.5.
+- **Positions are stored at epoch 2000.0** (Gaia's 2016.0 place moved back with Gaia's own proper motion), like HYG; the app applies
+  the stored proper motion for the date on screen (the Labs proper-motion switch works on them) and Gaia's parallax when the
+  parallax switch is on and FOV < 5°. 24,106 sources without a Gaia proper motion sit at their 2016 place with zero motion.
+- **No source_id in the tiles** (8 bytes a star would have meant 54 MB). A clicked bundled star is looked up online (3″ cone, same G):
+  title, exact G, BP−RP, parallax ± error, proper motion, radial velocity. Offline the panel shows the tile's rounded values and says so.
+- Magnitudes are Gaia G, not V (the panel says "Gaia G"); HYG stars stay V. G is brighter than V by up to 1–2 mag for very red
+  stars, which is why 12,000 Gaia stars of G 7–8 are not in HYG (V 8–9).
+
+## Online layer: which service, and the evidence
+Tested 2026-11-23 from the page itself (`fetch` with `mode: 'cors', credentials: 'omit', referrerPolicy: 'no-referrer'`):
+| Service | From http://127.0.0.1:8111 | Note |
+|---|---|---|
+| **GAVO Data Center TAP** `https://dc.g-vo.org/tap/sync`, table `gaia.dr3lite` | **200, type cors**, 1.1 s | echoes the Origin in ACAO; gzip; no key |
+| CDS HiPS catalogue tiles `hipscat.cds.unistra.fr` (first choice) | timeout (20 s) | CDS Strasbourg was down all session: VizieR answered "Page unavailable", TAPVizieR and hipscat timed out |
+| VizieR mirror at CfA `vizier.cfa.harvard.edu` (asu-tsv) | 200 after 9.2 s | CORS `*`, but 45 s for a 30′ cone and "Postgres connect error" on other tries |
+| ESA Gaia archive, ARI Heidelberg, NOIRLab Data Lab, MAST, IRSA (TAP) | blocked | no Access-Control-Allow-Origin (ESA/ARI/NOIRLab/MAST answer curl in 0.5–2 s) |
+From `https://hoppese.github.io` (same test on the live page): GAVO 200 / cors, 2.1 s (first request, TLS), 0.67 s, 0.37 s.
+So the app uses GAVO. `PROVIDER` in `deepstars.js` is the one place to change; CDS HiPS tiles (static files, magnitude-ordered) would
+be faster and lighter on the server and are worth a second provider when CDS is reachable again (not written: could not be tested).
+
+How it asks. Tiles are HEALPix nested pixels; a tile's request is `source_id BETWEEN a AND b` (a Gaia id begins with the source's
+order-12 pixel) plus a half-magnitude range, `ORDER BY G`, `TOP 2000`, columns rounded in ADQL (48 bytes a row). 19 levels,
+G 12–21.5; each level uses, per order-4 cell, the pixel order that puts 100–400 stars in a tile (from `counts.bin`). Which tiles: a
+17 × 10 grid of points over the window (below-horizon points skipped) → true J2000 direction → pixel; so only tiles the window
+touches are asked for. Measured cost at GAVO: **0.4 s + 4.4 ms per row returned** (the size of the patch hardly matters), about
+350 rows/s with 4 requests in parallel. That is why levels are thin and tiles small: the first design (1.5-mag levels, cone test)
+asked for 14,000 rows to draw 800 stars.
+Manners: nothing is asked until the view has been still 350 ms (moving = more than 12 % of the field per second); 4 requests in
+flight; 40 tiles wanted per view; requests for tiles that left the view are dropped; memory LRU (300,000 stars); browser Cache
+storage `planetarium-gaia-dr3-v1` (2,500 answers, about 35 MB at the measured 14 kB each, oldest dropped first; Gaia DR3 is frozen so nothing expires):
+a field is fetched once per browser. No timer ever asks for anything. No cookies, no referrer, no custom headers.
+A browser cannot hide the page's origin from a cross-origin request: GAVO sees `Origin: https://hoppese.github.io` and the IP.
+
+Failure behaviour (tested by making `fetch` reject for the service, and by faking `navigator.onLine`):
+- 3 failures in a row → the layer is marked down: 6 failed requests in all, within 1 s, then silence. One probe tile after 15 s,
+  30 s, 60 s … 5 min, only while a view still wants deep stars. Recovery seen: service back at 20 s, probe at 46 s, 1,100 stars by 60 s.
+- Read-out (amber): "deep stars unavailable (the star service is not answering | offline | switched off in Settings): showing stars
+  to mag 12.0". The limit glides back to 13.5 (the old cap) and everything else works. No console noise.
+- No `data/gaia/` on the server (HTTP 404 for `index.json`, tested by renaming the folder): HYG only, exactly as the live site is
+  today, one console info line, no retries, no online requests; the read-out says "the star catalogue ends here" past mag 9.5.
+- Settings → Faint stars → "Fetch faint stars online (Gaia DR3)" (`state.show.netStars`, on by default, saved with the other
+  switches; `off=netStars` in a URL or `show: {netStars: false}` in a lab setup turns it off for that view).
+
+## Limiting magnitude now (`render/sky.js`, `render/density.js`, `deepstars.js`)
+`limWant = min(physical, crowd, depth cap, planet glare)`; `limMag` (what is drawn) = `limWant`, held back while tiles arrive.
+- `physical`: night gain is now 7.5 log10(60°/fov) (was 5), cap 24, so `crowd` binds at night at every zoom.
+- `crowd`: solved from 0.9 log N(local) + 0.1 log N(all sky) (was 0.65 / 0.35 with 8 latitude bands). N(local) = mean of the count
+  map over 19 directions across the view (never less than a 2.5° circle). All-sky table: exact HYG + Gaia counts to 21.5.
+- **Field correction** (`fieldFeedback`): the map is 13 sq deg a cell and the sky is patchier (a 10′ field in the Cygnus rift held
+  0.59 stars/cm² instead of 1.3). When a zoomed frame (< 20°) is a fair sample (view still, all tiles in, crowding limit in force,
+  window all sky and above 40° when the atmosphere is on, catalogue not exhausted) the stars drawn are compared with the target and
+  the difference kept as a correction (clamped −0.9…+0.6 dex, glides 0.5 dex/s, never past G 20.9). It is dropped on zooming out
+  past 1.5× or panning most of a field away, so it can only make the app ask for less, not more, in a new view.
+- **Depth cap**: 1.5 mag past the faintest star that can be supplied now: 22.5 online, 13.5 otherwise (glides 8 mag/s on change).
+- **Shown limit**: while a window's online tiles are arriving the drawn limit stays 1.2 mag past the depth to which at least half
+  the window is covered, and glides (3 mag/s) as they come. Without this the bright stars swelled first and the field looked empty.
+- **Planet glare** (new): with a planet in the window no star more than 14 mag fainter than it is drawn (Jupiter 11.8, Saturn 14.5,
+  Venus 10; Uranus/Neptune unaffected; the Moon deliberately not: occultations). Zoomed on Jupiter the deep field stars were discs
+  as large as the moons (disc size saturates 12.5 mag above the limit) and Io was lost among them. Side effect: a Jupiter or Venus
+  field makes no online requests at all. Read-out: "fainter stars are lost in the planet's glare".
+- Read-out names the source: "faintest: HYG" (limit ≤ 7), "faintest: Gaia DR3" (to 12), "faintest: Gaia DR3, online (GAVO) [· loading]",
+  "Gaia DR3 ends here" (limit past 21).
+
+## Measured (Chrome, 1512 × 828 CSS px window = 876 cm², Bortle 4, no Moon, cold cache)
+Stars drawn per cm². Cygnus = RA 305.5° Dec +41° (l 79, b +2; 2026-08-12 05:30 UT); pole = north galactic pole (2026-04-17 05:30 UT).
+"req / kB / s" = online requests, decoded kilobytes and seconds until the view was complete, jumping straight to that field of view.
+| FOV | Cygnus: limit, stars, **/cm²**, req / kB / s | Pole: limit, stars, **/cm²**, req / kB / s | Online off: Cygnus / pole per cm² | Before (Tycho-2): Cyg / pole |
+|---|---|---|---|---|
+| 180° | 5.01, 558, **0.64** | 5.14, 560, **0.64** | same | 0.68 / 0.47 |
+| 90° | 5.73, 963, **1.10** | 6.15, 1108, **1.26** | same | 1.14 / 0.98 |
+| 30° | 7.10, 1191, **1.36** | 8.01, 1111, **1.27** | same | 1.66 / 1.02 |
+| 10° | 8.57, 1170, **1.34** | 10.31, 1099, **1.25** | same | 2.26 / 0.93 |
+| 5° | 9.75, 1223, **1.40** | 12.20, 1162, **1.33**, 10 / 92 / 7.9 | 1.35 / 1.14 | 2.55 / 0.83 |
+| 2° | 11.71, 1115, **1.27** | 14.93, 1109, **1.27**, 26 / 353 / 17.8 | 1.25 / 0.18 | 1.52 / 0.21 |
+| 1° | 13.62, 1094, **1.25**, 24 / 340 / 23.3 | 17.61, 1047, **1.19**, 13 / 231 / 3.8 | 0.36 / 0.05 | 0.38 / 0.07 |
+| 30′ | 16.15, 1108, **1.26**, 27 / 275 / 9.4 | 20.86, 1058, **1.21**, 24 / 439 / 7.1 | 0.10 / 0.02 | 0.09 / 0.02 |
+| 10′ | 20.28, 1177, **1.34**, 23 / 357 / 7.9 | Gaia ends: 131 stars, **0.15**, 2 / 24 / 0.8 | 0.02 / 0.00 | |
+| 3′ | Gaia ends: 168 stars, **0.19**, 8 / 64 / 3.6 | Gaia ends: 12 stars, **0.01** | 0 / 0 | |
+| 1′ | Gaia ends: 21 stars, **0.02** | Gaia ends: 1 star | 0 / 0 | |
+- The density holds (1.1–1.4) from 90° down to 10′ in the Milky Way and to 30′ at the galactic pole. Below that there are no more
+  stars in Gaia: every Gaia source in the window is on screen (a 10′ × 18′ window at the pole holds 131). 180° is 0.64 because half
+  the window is ground or beyond the sky's edge (unchanged).
+- The whole table, both fields: 157 requests, 2.17 MB decoded (about 47 % of that on the wire: gzip, measured with curl on one tile, 10.1 kB → 4.8 kB), 0 failures. Request latency:
+  median 1.5 s, 90 % under 3.6 s, worst 6.1 s. Warm (Cache storage): the 1° Cygnus view is complete in 1.4 s with 0 requests.
+- A real session (wheel and keys, Cygnus, cold): zoom 60° → 7′ in steps with pauses, then three drags at 7′: 72 online requests,
+  990 kB decoded, 0 failures, plus 25 bundled tiles (458 kB). Each stop filled in over 2–9 s (e.g. at 14′: 121 → 1,203 stars in 9 s).
+  Frames (2,252 of them): JS per frame median 3.9 ms, p95 4.4, max 18.3; while tiles were arriving median 3.7, max 7.0;
+  frame interval median 8.5 ms, p95 9.0, one frame over 50 ms (70 ms).
+- Jupiter at FOV 12′ (2026-11-24 09:00 UT): limit 11.8 (glare), 2 field stars, four moons clear, 0 online requests.
+- Clicked stars: an online one → "Gaia DR3 2068321215983716224", G 19.414, BP−RP 3.671, parallax −0.207 ± 0.221 mas ("parallax
+  too uncertain"), proper motion 7.61 mas/yr; a bundled G 10.55 star → rounded values at once, then (0.5–1.5 s) source_id,
+  0.936 ± 0.015 mas, "3,480 ly (1,070 pc), from 1 / parallax".
+
+## Known weak spots (this layer)
+- **Speed.** A cold deep field in the Milky Way takes 5–25 s to fill (GAVO returns about 350 rows a second). Fine for exploring,
+  slow for a class of 30 doing it at once, and 30 browsers are 30 times the load on a small academic server: see "For Seth".
+- One service, one point of failure (it degrades to mag 12 cleanly, but then deep zoom is empty again).
+- Mixed photometry: HYG stars are V, Gaia stars G. A red star just fainter than HYG's limit can look 1 mag "too bright".
+- Row cap: a tile holding more than 2,000 stars in half a magnitude (would need a count map wrong by 5×) is cut at its 2,000 brightest
+  (`t.full`); nothing is done about it. Never seen.
+- The field correction makes the limit move a second or two after a view settles (stars fade in or out a little). In a field with
+  ground in it, or below 40° altitude with the atmosphere on, it does not run and the density is the map's (±2× in patchy fields).
+- Deep stars have no labels and cannot be searched; "Copy link" carries the direction, not the star.
+- Bundled c/d tiles store positions to 0.27″: at arcminute fields a bundled star can sit a few pixels from where Gaia has it
+  (the online record shown on click is exact, the drawn place is not).
+- Galaxies and nebulae: Gaia is a star catalogue; deep fields show no faint galaxies (DSOs remain OpenNGC).
+- Not tested: Safari, Firefox, a phone; Cache storage eviction (2,500 entries never reached: 157 were stored, 2.2 MB); memory LRU
+  eviction of online tiles (peak 13,500 stars of 300,000); a whole class at once; the service's behaviour under real throttling
+  (HTTP 429/503 are treated like any failure).
+- `tools/check.mjs` section 17 checks the HEALPix code against six real Gaia rows, the tile request's id range, and (when
+  `data/gaia/` is present) the manifest and two tiles. It does not exercise the network.
+
+## For Seth
+1. **Licence**: Gaia is CC BY-NC 3.0 IGO, the same as Tycho-2 (see above). Commit `data/gaia/` (30.9 MB) to the public repo or not?
+   Without it the live site stays HYG-only and the online layer does not start (it begins at G 12 and needs `counts.bin`).
+2. **Reliance on GAVO in class.** Each student's browser makes roughly 70–150 small requests in a session of deep zooming; the
+   service is run by a university group with no stated limits and no SLA, and CDS (the usual alternative) was down all day today.
+   Options: (a) accept it, and tell students deep stars may be slow or absent; (b) write to gavo@ari.uni-heidelberg.de saying a class
+   will use it (also the polite thing); (c) pre-warm: Cache storage is per browser, so a lab's fields load instantly the second time
+   on the same machine; (d) host deeper tiles yourself (to G 15: 37 million stars, about 260 MB, e.g. Cloudflare R2), which would
+   make everything down to FOV 30′–1° independent of anyone else; (e) add CDS HiPS catalogue tiles as a second provider once CDS is up.
+3. **Planet glare** is a new visual rule (no star more than 14 mag fainter than a planet in the field). It keeps Jupiter's and
+   Saturn's moons readable; it also means no faint field stars beside a planet. OK?
+4. **Gaia G vs V**: fine to show Gaia stars with their G magnitude, or convert to an estimated V (formula exists, σ 0.03–0.05 mag)?
+5. `data/tycho/` (29 MB, local only) and `tools/build_tycho.py` can be deleted.

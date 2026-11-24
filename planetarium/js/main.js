@@ -17,6 +17,7 @@ import { initMeasure, drawMeasures, measureClick } from './measure.js';
 import { initExtras, extrasClick } from './extras.js';
 import { initLabsSuite } from './labs/index.js';
 import { initDeepStars, deep } from './deepstars.js';
+import { fieldAdjust } from './render/density.js';
 
 async function start() {
   const loading = document.getElementById('loading');
@@ -30,7 +31,7 @@ async function start() {
     loading.classList.add('err');
     return;
   }
-  initDeepStars();              // faint-star tiles (Tycho-2): manifest now, tiles on demand; the app runs without them
+  initDeepStars();              // faint stars (Gaia DR3): manifest and count map now, tiles on demand; the app runs without them
   const canvas = document.getElementById('sky');
   const search = initSearch(document.getElementById('search'));
   initInfo(document.getElementById('infoPanel'));
@@ -50,7 +51,7 @@ async function start() {
   loading.classList.add('done');
   setTimeout(() => loading.remove(), 600);
   // handle for the console and for automated checks
-  window.planetarium = { state, cam, perf, stars, deep, dso, constellations, getFrame, getBodies, allPicks, emit, A };
+  window.planetarium = { state, cam, perf, stars, deep, dso, constellations, getFrame, getBodies, allPicks, emit, A, fieldAdjust };
   initExtras({ canvas });       // teaching panels, pointer read-out, right-click menu, Milky Way, night mode (js/extras.js)
   initLabsSuite();              // measuring tools, labs menu, URL parameters (js/labs/index.js)
 }

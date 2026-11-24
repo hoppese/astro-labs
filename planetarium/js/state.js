@@ -33,6 +33,7 @@ export const state = {
     azGrid: false, eqGrid: false,
     meridian: false, ecliptic: false, equator: false,
     dso: true,
+    netStars: true,          // fetch stars fainter than the bundled catalogue (G > 12) for the field on screen from the online Gaia service
   },
   lightTime: true,         // true = positions as seen (light-time corrected); false = geometric
   // physical effects that the measurement labs switch on and off (not saved between visits)

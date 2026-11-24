@@ -14,7 +14,7 @@ import { navKey } from './input.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
 import { INFO_HTML, CREDITS_HTML } from './about.js';
-import { deep } from './deepstars.js';
+import { deep, netUsable, netWhy, NET_END, PROVIDER } from './deepstars.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -343,10 +343,19 @@ function buildShortcuts(search) {
 // ---------- read-out ----------
 let lastRead = '';
 function updateReadout(perf) {
-  // past the end of the catalogue the internal limit keeps rising (it sets how large the stars are drawn), but no fainter
-  // stars exist to show: the read-out then gives the catalogue's limit, not a magnitude nothing on screen has
-  const catEnd = deep.ready ? 12 : 9.5, past = perf.limMag > catEnd + 0.2;
-  const txt = `FOV <b>${fmtFov(cam.fov)}</b> · stars to mag <b>${(past ? catEnd : perf.limMag).toFixed(1)}</b>` + (past ? '<br>the star catalogue ends here' : '') +
+  // Past the end of what can be supplied the internal limit keeps rising (it sets how large the stars are drawn), but no
+  // fainter stars exist to show: the read-out then gives the catalogue's limit, not a magnitude nothing on screen has.
+  // It also says where the faintest stars on screen come from: HYG, the bundled Gaia DR3 tiles, or Gaia DR3 fetched online.
+  const lim = perf.limMag, online = netUsable();
+  const catEnd = !deep.ready ? 9.5 : online ? NET_END : 12, past = lim > catEnd + 0.2;
+  let src;
+  if (!deep.ready) src = past ? '<br>the star catalogue ends here' : '';
+  else if (past && !online) src = `<br><span class="ro-note">deep stars unavailable (${netWhy()}):<br>showing stars to mag ${catEnd.toFixed(1)}</span>`;
+  else if (past) src = '<br>Gaia DR3 ends here';
+  else if (lim > 12) src = `<br>faintest: Gaia DR3, online (${PROVIDER.short})` + (deep.stats.netLoading ? ' · loading' : '');
+  else src = lim > 7 ? '<br>faintest: Gaia DR3' : '<br>faintest: HYG';
+  if (perf.sky && perf.sky.glare <= perf.sky.limWant && perf.sky.glare < catEnd) src = '<br>fainter stars are lost in the planet’s glare';
+  const txt = `FOV <b>${fmtFov(cam.fov)}</b> · stars to mag <b>${(past ? catEnd : lim).toFixed(1)}</b>` + src +
     (state.mount === 'eq' ? '<br>equatorial mount' : '') + (state.tracking ? '<br>tracking' : '');
   if (txt !== lastRead) { $('readout').innerHTML = txt; lastRead = txt; }
 }
