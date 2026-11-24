@@ -57,6 +57,12 @@ python3 -m http.server 8000
 | `eclipsing-binary/` | Two stars eclipsing each other with a side-view inset; the deep and shallow dips give relative sizes and temperatures, and the eclipse type. |
 | `spectroscopic-binary/` | One absorption line splitting in two as the stars swing toward/away at inclination i; K_A/K_B = M_B/M_A; RV curve. |
 
+### Planetarium (beta)
+`planetarium/` is a multi-file app (not a single-file sim): a Stellarium-style sky for any date and place, with
+planets and moons, deep-sky objects, coordinate grids, search, an angle tool, a Hubble's-law lab, a sky quiz and
+33 classic-measurement labs. See `planetarium/NOTES.md` (architecture, data sources and licences) and
+`planetarium/LABS.md` (instructor key).
+
 ### Galaxies & cosmology
 | Sim | What it shows |
 |---|---|
