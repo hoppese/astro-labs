@@ -3,6 +3,8 @@
 
 import { A, fromRot, transpose, mulMV, vecOf, C_AU_PER_DAY, mod } from './astro.js';
 import { state } from './state.js';
+import './deltat.js';            // the clocks: UTC, TT, UT1
+import { jpl, init as initJpl } from './jpl.js';
 
 let cache = null, cacheKey = '';
 
@@ -10,7 +12,7 @@ let cache = null, cacheKey = '';
 export function getFrame() {
   const loc = state.loc;
   const fx = state.fx;
-  const key = state.timeMs + '|' + loc.lat + '|' + loc.lon + '|' + (loc.elev || 0) + '|' + fx.aberration + fx.parallax;
+  const key = jpl.version + '|' + state.timeMs + '|' + loc.lat + '|' + loc.lon + '|' + (loc.elev || 0) + '|' + fx.aberration + fx.parallax;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = makeFrame(state.timeMs, loc);
@@ -27,13 +29,15 @@ export function makeFrame(timeMs, loc) {
   const Mjd = fromRot(A.Rotation_EQJ_EQD(time));           // J2000 -> equator of date
   const Mdh = fromRot(A.Rotation_EQD_HOR(time, obs));      // equator of date -> horizontal
   const ev = A.BaryState(A.Body.Earth, time);              // for annual aberration of the stars
-  const beta = [ev.vx / C_AU_PER_DAY, ev.vy / C_AU_PER_DAY, ev.vz / C_AU_PER_DAY];
+  // annual aberration plus the observer's own share of the Earth's rotation (diurnal, up to 0.32 arcsec)
+  const ov = A.ObserverState(time, obs, false);
+  const beta = [(ev.vx + ov.vx) / C_AU_PER_DAY, (ev.vy + ov.vy) / C_AU_PER_DAY, (ev.vz + ov.vz) / C_AU_PER_DAY];
   const gast = A.SiderealTime(time);                       // Greenwich apparent sidereal time, hours
   return {
-    timeMs, time, obs, loc,
+    timeMs, time, obs, loc, oposB: [ev.x + ov.x, ev.y + ov.y, ev.z + ov.z], opos: [ov.x, ov.y, ov.z],      // observer from the solar-system barycentre / from the Earth's centre, au
     aberration: true, parallax: false,                    // getFrame() sets these from state.fx
     epos: [ev.x, ev.y, ev.z],                              // Earth from the solar-system barycentre, au (annual parallax)
-    betaTrue: beta.slice(),                                // Earth's velocity / c even when aberration is switched off
+    betaTrue: beta.slice(), betaDay: [ov.vx / C_AU_PER_DAY, ov.vy / C_AU_PER_DAY, ov.vz / C_AU_PER_DAY],                                // observer's velocity / c even when aberration is switched off
     Mjh, Mhj: transpose(Mjh), Mjd, Mdj: transpose(Mjd), Mdh, Mhd: transpose(Mdh),
     beta,
     lst: mod(gast + loc.lon / 15, 24),                     // local apparent sidereal time, hours
@@ -50,4 +54,4 @@ export function makeFrame(timeMs, loc) {
     },
   };
 }
-export { vecOf };
+export { vecOf, initJpl };

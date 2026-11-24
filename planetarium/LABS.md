@@ -22,6 +22,11 @@ How the measurements were made, honestly stated:
   the info panel by script, stepping the clock the way a student would.
 - Io's disappearance was judged by eye once (gone between 15:05:45 and 15:05:55) and then found by script as
   "the moment the app stops drawing Io", which is the same criterion.
+- **2026-11-24, later: the Sun, Moon and planets now come from JPL DE440/441 (NOTES.md, "Planets to JPL").** Every lab value that could move was
+  recomputed with the app's own code before and after. Rows marked "now" replace the measured ones where the difference is larger than a reading
+  error; the by-eye measurements themselves were not repeated. Moved: transit contacts (2012: 13-25 s earlier; 1769: about 55 s earlier; Mercury 2019: 51-58 s later,
+  least distance 76.9″ → 73.6″), Eratosthenes' altitudes (+1.5′ both, difference unchanged), Io (6 s), lunar-eclipse contacts (1-2 s), half Moon (9 s).
+  Unchanged to the digits given: all angles in the other labs (elongations, oppositions, Kepler, Venus's phases to 0.03″, months, apsides, aberration, parallaxes).
 - "Truth" is astronomy-engine (`tools/check.mjs` sections 12–16), JPL Horizons for Io, or the published value.
 
 Tools used below: **angle tool** (`R`; snaps to centres, to limbs when you click near the edge of a disc, to
@@ -30,9 +35,8 @@ runs), **stopwatch** (`X` marks the clock; differences are listed), **Events fin
 **Path of an object**, **Corrections**. Time steps: `Shift + ←/→` 1 s, `Shift + ↓/↑` 1 min, and the clock button
 (1 s … 100 yr, synodic and sidereal month, Mars year).
 
-One rule for limb contacts: **refraction off**. The Sun and Moon are drawn as true circles even when refraction
-lifts and squashes things near the horizon, so with refraction on a planet near the limb of a low Sun is
-drawn a few arcseconds from where the contact geometry says. All contact labs start with refraction off.
+One rule for limb contacts: **refraction off**. With refraction on, discs and gaps are now pressed flat together near
+the horizon (since 2026-11-24), so contacts look right, but limb-to-limb sizes of a low Sun or Moon are those of a squashed disc. All contact labs start with refraction off.
 
 ---
 
@@ -44,10 +48,10 @@ Student marks the four umbral contacts.
 
 | Contact | Measured (UTC) | astronomy-engine |
 |---|---|---|
-| U1 umbra first touches | 18:24:04 | 18:24:05 (drawn from Nairobi with light time: 18:24:08) |
-| U2 totality begins | 19:29:55 | 19:29:52 |
-| U3 totality ends | 21:13:38 | 21:13:32 |
-| U4 Moon clear | 22:19:22 | 22:19:19 |
+| U1 umbra first touches | 18:24:04 | 18:24:07 (drawn from Nairobi: 18:24:09) |
+| U2 totality begins | 19:29:55 | 19:29:53 |
+| U3 totality ends | 21:13:38 | 21:13:33 |
+| U4 Moon clear | 22:19:22 | 22:19:20 |
 
 - Moon moves its own diameter in U2 − U1 = 65 min 51 s; leading limb crosses the umbra in U3 − U1 = 2 h 49 min 34 s.
 - **Umbra / Moon = 2.575** from the timings (from astronomy-engine's contact times: 2.576).
@@ -112,11 +116,11 @@ Preset: 2026-11-24 14:54 UTC (full Moon), Richmond.
 ### `half-moon` Distance of the Sun from the half Moon (Aristarchus)
 Preset: 2026-12-17 02:00 UTC, Tokyo, Moon tracked.
 - The info panel reads **Illuminated 50.00%** from about 04:34:40 to 04:37:00 UTC (it shows 0.01% steps, each about
-  1.6 minutes). Exact dichotomy from the model: 04:35:21.
+  1.6 minutes). Exact dichotomy from the model: 04:35:29.
 - Sun–Moon angle then (angle tool, centre to centre): **89.849°** (model 89.8492°).
 - 1 / cos(89.849°) = **379**: the Sun is 379 times farther than the Moon (true ratio that day 379.8).
   One 0.01% step of phase is ±0.008° of angle, which is ±5% in the ratio: the lab's point about sensitivity.
-- The Sun–Moon angle reaches 90.000° at **04:58:32**, 23 minutes after dichotomy (Tao: "about 18 minutes", an average).
+- The Sun–Moon angle reaches 90.000° at **04:58:41**, 23 minutes after dichotomy (Tao: "about 18 minutes", an average).
   Aristarchus's 87° would put it 6 hours earlier.
 - The phase shown is as seen from the site (not geocentric), so it is consistent with the measured angle.
 
@@ -126,8 +130,8 @@ Preset: 2024-04-08 18:25 UTC, Richmond (partial phase), atmosphere off since 202
 
 ### `eratosthenes` Size of the Earth from the noon Sun
 Preset: June solstice of 241 BC (−240-06-22), Syene, second observer Alexandria, refraction off.
-- Syene: Sun on the meridian at 09:45:21 UTC, altitude **89° 36′ 31″** (0.39° from the zenith).
-- After Swap observers, Alexandria: meridian at 09:57:16 UTC, altitude **82° 29′ 54″**.
+- Syene: Sun on the meridian at 09:45:21 UTC, altitude **89° 37′ 59″** (0.37° from the zenith; 89° 36′ 31″ before the JPL positions).
+- After Swap observers, Alexandria: meridian at 09:57:16 UTC, altitude **82° 31′ 22″** (was 82° 29′ 54″).
 - Difference **7.110°** (latitude difference 7.11°; Eratosthenes used 7.2°). 360 / 7.110 × 5000 = **253,200 stadia**.
 - The clock shows local mean time (UTC+2:05:09), because no time zone existed; the date is proleptic Gregorian.
 
@@ -235,11 +239,11 @@ Contacts judged with Venus tracked at FOV 0.06°.
 | | II (inside) | III (touches limb) | Duration |
 |---|---|---|---|
 | Tahiti, measured | 19:41:00 | 01:10:33 | 5 h 29 min 33 s |
-| Tahiti, model | 19:41:02 | 01:10:34 | 19,772 s |
+| Tahiti, model now | 19:40:02 | 01:09:43 | 19,781 s |
 | Vardø, measured | 19:28:43 | 01:21:38 | 5 h 52 min 55 s |
-| Vardø, model | 19:28:44 | 01:21:39 | 21,175 s |
+| Vardø, model now | 19:27:44 | 01:20:46 | 21,182 s |
 
-- **Difference in duration 23 min 22 s** (model 23 min 23 s).
+- **Difference in duration 23 min 22 s** (model now 23 min 21 s; the measured contacts are from before the JPL positions, when everything came about 55 s later).
 - At mid-transit (22:25:30 UTC) Venus to the other observer's Venus: **35.78″**.
 - AU = baseline × (1/0.289 − 1/1.015) / shift: with the square-on baseline 10,470 km, **149.3 million km**;
   with the full 11,410 km chord, 162.8 million km. True 149.6.
@@ -256,33 +260,33 @@ side of each instant. Venus takes 17.5 minutes to cross the limb, so the eye is 
 | | II (just inside) | III (touches limb again) | II → III |
 |---|---|---|---|
 | Honolulu, by eye | **22:28:05** ± 8 s | **04:27:00** ± 8 s | 5 h 58 min 55 s |
-| Honolulu, model | 22:28:03 | 04:27:00 | 5 h 58 min 57 s |
+| Honolulu, model now | 22:27:50 | 04:26:35 | 5 h 58 min 45 s |
 | Sydney (after Swap observers), by eye | **22:34:25** ± 8 s | not judged by eye | |
-| Sydney, model | 22:34:25 | 04:26:39 | 5 h 52 min 14 s |
+| Sydney, model now | 22:34:12 | 04:26:15 | 5 h 52 min 03 s |
 
-Model first and last contacts: Honolulu I 22:10:32, IV 04:44:51; Sydney I 22:16:29, IV 04:44:31. The durations differ
-by **6 min 43 s** (model). "Model" = the instant the app's own topocentric Sun–Venus separation equals R_Sun ∓ R_Venus.
+(By eye: before the JPL positions, 13-25 s later than now.) Model first and last contacts now: Honolulu I 22:10:19, IV 04:44:26; Sydney I 22:16:16, IV 04:44:07. The durations differ
+by **6 min 42 s** (model). NASA’s geocentric greatest transit is 01:29:36 and 554.4″; the app has exactly that. "Model" = the instant the app's own topocentric Sun–Venus separation equals R_Sun ∓ R_Venus.
 
 ### `mercury-transit`
-Preset: 2019-11-11 12:30 UTC, Richmond. At 15:19:48 UTC: Mercury to Sun's centre **76.9″** (geocentric least distance
-79.2″; Richmond sees Mercury about 2″ closer to the centre), diameter **9.95″**.
+Preset: 2019-11-11 12:30 UTC, Richmond. At 15:19:48 UTC: Mercury to Sun's centre **73.6″** (76.9″ before the JPL positions; geocentric least distance
+75.9″, as NASA gives; Richmond sees Mercury about 2″ closer to the centre), diameter **9.95″**.
 
 Contacts (integration pass): Mercury selected and tracked, FOV 0.0225°, clock stepped with `Shift + arrows`; each contact
 bracketed by eye on three screenshots 10 s apart (gap, touching, overlapping).
 
-| Contact | By eye (UTC) | Model, Richmond | Geocentric (astronomy-engine) |
+| Contact | By eye (UTC, before the JPL positions) | Model now, Richmond | Geocentric (astronomy-engine) |
 |---|---|---|---|
-| I first touch | **12:35:19** ± 5 s | 12:35:19 | 12:34:41 |
-| II fully inside | **12:37:00** ± 5 s | 12:37:00 | |
-| III touches limb again | **18:01:43** ± 5 s | 18:01:43 | |
-| IV last touch | **18:03:24** ± 5 s | 18:03:24 | 18:03:11 |
+| I first touch | **12:35:19** ± 5 s | 12:36:10 | 12:35:32 |
+| II fully inside | **12:37:00** ± 5 s | 12:37:51 | |
+| III touches limb again | **18:01:43** ± 5 s | 18:02:41 | |
+| IV last touch | **18:03:24** ± 5 s | 18:04:22 | 18:04:09 |
 
 Mercury crosses the limb in 101 s (Venus in 2012: 17.5 min) and is 9.95″ across against Venus's 57.8″. Richmond's first
 contact is 38 s later than the geocentric one because the Sun was only 2° above its horizon: parallax in action.
 
 ### `mars-parallax` Parallax of Mars, 1672 (Cassini and Richer)
-Preset: 1672-09-05 01:00 UTC, Paris, second observer Cayenne. Mars to Cayenne's Mars: **23.90″**.
-- 6,720 km / 23.90″ = **58.0 million km**; Mars was 0.3812 au away, so AU = **152 million km**
+Preset: 1672-09-05 01:00 UTC, Paris, second observer Cayenne. Mars to Cayenne's Mars: **23.94″** (23.90″ before).
+- 6,720 km / 23.94″ = **57.9 million km**; Mars was 0.3812 au away, so AU = **152 million km**
   (square-on baseline 6,610 km: 149.6).
 
 ## Light
@@ -292,14 +296,14 @@ Preset: 2025-10-01 14:50 UTC, Jupiter tracked, FOV 0.07°.
 
 | | Io gone, light time on | light time off | Delay | Jupiter |
 |---|---|---|---|---|
-| 2025-10-01 | 15:05:47 | 14:21:29 | 2658 s | 5.327 au |
-| 2025-12-11 | 10:04:37 | 09:28:22 | 2175 s | 4.360 au |
+| 2025-10-01 | 15:05:53 | 14:21:35 | 2658 s | 5.326 au |
+| 2025-12-11 | 10:04:43 | 09:28:27 | 2176 s | 4.360 au |
 
-- c = (5.327 − 4.360) au / (2658 − 2175) s = **299,500 km/s**.
+- c = (5.326 − 4.360) au / (2658 − 2176) s = **299,800 km/s**.
 - Rømer's way: the two eclipses are 40 orbits apart; seen with light time on, the interval is 483 s shorter than
   the real one, because the Earth has come 0.97 au closer: the schedule slips by about 12 s per eclipse.
 - Check against JPL Horizons (geocentric): Io's partial-umbral phase 15:02:05–15:05:35 on 2025-10-01 and
-  03:46:15–03:49:55 on 2026-03-01; the app's half-light instants are 15:03:36 and 03:48:21, and Io is drawn until
+  03:46:15–03:49:55 on 2026-03-01; the app's half-light instants are 15:03:42 and 03:48:28, and Io is drawn until
   about 12 s after Horizons' "totally eclipsed".
 - Do not use a fixed 42.5 h schedule over months with light time **off** and expect zero drift: Jupiter's own
   eccentric orbit shifts the shadow by minutes. Comparing on and off isolates light.

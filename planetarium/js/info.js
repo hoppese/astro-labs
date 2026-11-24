@@ -16,6 +16,9 @@ import { linksFor, loadLinks } from './links.js';
 import { BODY_ART } from './bodydata.js';
 import { bodyAxes, subPoint, figure, jupiterSystems, grsLongitude, nextGrsTransit } from './orient.js';
 import { moonError } from './moons.js';
+import { jpl, covered } from './jpl.js';
+import { sun, initSun, groupsAt, onDisc, cycleFacts } from './sunspots.js';
+import { openSunPanel } from './sunpanel.js';
 import { rowHidden, running } from './labs/hidden.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
@@ -42,10 +45,27 @@ export function initInfo(el) {
     else if (act === 'center') centerOn(state.selected);
     else if (act === 'zoom') centerOn(state.selected, true);
     else if (act === 'track') toggleTracking();
+    else if (act === 'sunpanel') openSunPanel();
     else if (act === 'parent') { select({ kind: 'body', id: b.dataset.id }); }
   });
 }
 
+/** What is known about the spots on the date: plainly recorded, statistical, or typical. */
+function sunRows(b, row, e) {
+  initSun();
+  const tt = b.ttSeen, f = cycleFacts(tt), { kind, list } = groupsAt(tt);
+  if (list) {
+    const L = onDisc(list, e.lon, e.lat), k = kind === 'recorded' ? 'recorded groups' : kind === 'statistical' ? 'statistical, from the sunspot number: not real groups' : 'typical cycle, no record: not real groups';
+    const src = kind === 'recorded' ? (tt < -8400 ? 'Royal Greenwich Observatory' : 'USAF/NOAA') : f.basis === 'forecast' ? 'forecast' : f.basis === 'monthly' ? 'monthly number' : f.basis === 'yearly' ? 'yearly number' : f.basis === 'group' ? 'yearly group number' : 'average cycle';
+    row('Sunspots', `<b>${k}</b> (${src})`);
+    const A = L.reduce((s, g) => s + g.rec, 0), day = Math.floor(tt + 0.5), gap = kind === 'recorded' && sun.numbers.missSet.has(day);
+    row('On the disc', L.length ? `${L.length} group${L.length > 1 ? 's' : ''}, ${Math.round(A).toLocaleString('en-US')} millionths of a hemisphere` : 'no spots');
+    if (gap) row('That day', '<span class="nodata">no observation: interpolated</span>');
+  }
+  row('Sunspot number', `about ${Math.round(f.sn)} (${f.basis === 'monthly' ? 'monthly, smoothed' : f.basis === 'yearly' ? 'yearly mean' : f.basis === 'group' ? 'from the group number' : f.basis === 'forecast' ? 'forecast' : 'average cycle'})`);
+  row('Cycle', (f.number ? f.number + ', ' : '') + f.phase + `, ${f.since.toFixed(1)} yr after minimum` + (f.maunder ? ' (Maunder Minimum)' : ''));
+  row('', '<button class="btn" style="padding:2px 9px;font-size:12px" data-act="sunpanel">Butterfly diagram</button>');
+}
 /** Rows about which side of a body we see, from its rotation (orient.js). */
 function faceRows(b, row, frame) {
   const ax = bodyAxes(b.id, b.ttSeen ?? frame.time.tt); if (!ax) return;
@@ -56,6 +76,7 @@ function faceRows(b, row, frame) {
   if (b.id === 'Sun') {
     // the Sun's axis is given against the true north of date
     row('Centre of the disc', 'L<sub>0</sub> ' + e.lon.toFixed(1) + '°, B<sub>0</sub> ' + sgn(e.lat)); row('Axis', 'P ' + sgn(pa > 180 ? pa - 360 : pa));
+    if (state.show.sunspots && !running.id) sunRows(b, row, e);
     return;
   }
   if (b.id === 'Moon') row('Libration', 'longitude ' + sgn(e.lon > 180 ? e.lon - 360 : e.lon) + ', latitude ' + sgn(e.lat));
@@ -74,7 +95,7 @@ function faceRows(b, row, frame) {
 }
 /** Rise, transit and set of the pass that contains (or is nearest to) the current instant. */
 function riseTransitSet(ref, frame, eqjUnit) {
-  const key = refKey(ref) + '|' + Math.round(frame.timeMs / 300000) + '|' + frame.loc.lat + '|' + frame.loc.lon;
+  const key = jpl.version + refKey(ref) + '|' + Math.round(frame.timeMs / 300000) + '|' + frame.loc.lat + '|' + frame.loc.lon;
   if (key === eventsKey) return events;
   eventsKey = key; events = null;
   try {
@@ -174,7 +195,7 @@ function render(force) {
     if (b.id === 'Saturn') row('Ring tilt', (b.ringTilt >= 0 ? '+' : '−') + Math.abs(b.ringTilt).toFixed(1) + '° (' + (b.ringTilt >= 0 ? 'north' : 'south') + ' face toward us)');
     const lt = b.lightMin;
     row('Light time', lt >= 1 ? lt.toFixed(1) + ' min' : (lt * 60).toFixed(2) + ' s');
-    row('Seen vs. actual', fmtAngle(b.shiftDeg) + (state.lightTime ? '' : ' (showing actual)'));
+    if (b.shiftDeg != null) row('Seen vs. actual', fmtAngle(b.shiftDeg) + (state.lightTime ? '' : ' (showing actual)'));
     faceRows(b, row, frame);
     if (b.kind === 'satellite') {
       const km = moonError(b.id);
@@ -185,7 +206,7 @@ function render(force) {
       }
     }
     const art = BODY_ART[b.id];
-    if (art) { if (art.note && !(b.id === 'Sun' && (!state.show.sunspots || running.id))) note += (note ? ' ' : '') + art.note; pic = art.credit; }
+    if (art) { if (art.note && !(b.id === 'Sun' && (!state.show.sunspots || running.id))) note += (note ? ' ' : '') + art.note + (b.id === 'Sun' ? ' Each group is drawn with an SDO/HMI photograph of a real group of about the recorded area, not of that very group; its place and size are the record’s.' : ''); pic = art.credit; }
     else if (b.kind === 'comet') note += 'Magnitude: the whole comet, from JPL’s parameters, very uncertain. Its nucleus (about 15 × 8 km, photographed by Giotto in 1986) is far too small to see, and no tail is drawn.';
     else if (SMALL.some((x) => x.id === b.id) && b.kind === 'dwarf') note += 'Never imaged as more than a point or a few blurred pixels: drawn as a plain disc of its measured size' + (b.id === 'Haumea' ? ' (an ellipsoid 2,322 × 1,704 × 1,026 km; which way it is turned is not modelled).' : '.');
     if (b.kind === 'satellite') note += (note ? ' ' : '') + 'Magnitude ignores the phase and any eclipse by the planet’s shadow.';

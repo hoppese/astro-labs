@@ -34,7 +34,7 @@ export const state = {
     meridian: false, ecliptic: false, equator: false,
     dso: true,
     steady: true,            // when time runs fast: hold the sky's light (and, while following something, ground, refraction, orientation); steady.js
-    sunspots: true,          // the Sun's disc with the spots of one photographed rotation; off = a spotless one (labs always get the spotless disc)
+    sunspots: true,          // sunspots of the date (js/sunspots.js); off = a spotless Sun (labs always get the spotless disc)
     netStars: true,          // fetch stars fainter than the bundled catalogue (G > 12) for the field on screen from the online Gaia service
   },
   lightTime: true,         // true = positions as seen (light-time corrected); false = geometric

@@ -5,7 +5,7 @@ import { state, on, emit, toggle, set, save } from './state.js';
 import { cam, setMount } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { cities } from './catalog.js';
-import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLabel, SIDEREAL_DAY_MS } from './clock.js';
+import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLabel, rateWords, rateCap, SIDEREAL_DAY_MS } from './clock.js';
 import { wallParts, wallToMs, zoneLabel, fmtDate, fmtTime, browserZone, zoneFromLongitude } from './timeutil.js';
 import { fmtFov, fmtLat, fmtLon } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
@@ -100,7 +100,8 @@ function syncToggles() {
 }
 
 // ---------- time ----------
-let lastClockText = '';
+let lastClockText = '', lastZone = '', clockParts = null;
+const putText = (n, s) => { if (n.data !== s) n.data = s; };
 function buildTimeBar() {
   $('tSlower').innerHTML = TICON.slower; $('tFaster').innerHTML = TICON.faster; $('tNow').innerHTML = TICON.now;
   $('tSlower').addEventListener('click', slower);
@@ -133,27 +134,34 @@ function buildTimeBar() {
     setTime(wallToMs(y, mo, d, +t[1], +t[2], +(t[3] || 0), state.loc.tz));
   };
   for (const id of ['dtYear', 'dtMonth', 'dtDay', 'dtTime']) { $(id).addEventListener('change', apply); $(id).addEventListener('keydown', (e) => e.stopPropagation()); }
-  on('rate', syncRate); on('time', () => { updateClock(true); }); on('tick', () => updateClock(false)); on('loc', () => updateClock(true));
+  on('rate', syncRate); on('selection', syncRate); on('time', () => { updateClock(true); }); on('tick', () => updateClock(false)); on('loc', () => updateClock(true));
   setInterval(() => updateClock(false), 500);
   document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && !$('clockBtn').contains(e.target)) openPop(false); });
 }
 function syncRate() {
   $('tPlay').innerHTML = state.playing ? TICON.pause : TICON.play;
   const r = $('rateLabel'); r.textContent = rateLabel();
+  // plain words under the figure once it is too large to mean anything
+  if (state.playing && Math.abs(state.rate) >= 1000) { const w = document.createElement('small'); w.textContent = rateWords().replace('about ', '≈ ').replace(' per second', '/s').replace(', backwards', ''); r.appendChild(w); }
   r.classList.toggle('rt', state.playing && state.rate === 1);
   r.classList.toggle('paused', !state.playing);
-  r.title = state.playing ? (state.rate === 1 ? 'Real-time rate' : `Time runs ${rateLabel()} real time`) : 'Time is paused';
+  r.title = state.playing ? (state.rate === 1 ? 'Real-time rate' : `Time runs ${rateWords()} (${rateLabel()} real time)`) : 'Time is paused';
 }
 function updateClock(force) {
   const tz = state.loc.tz, p = wallParts(state.timeMs, tz);
   const text = fmtDate(p) + fmtTime(p);
   if (text === lastClockText && !force) return;
   lastClockText = text;
-  $('clockDate').innerHTML = `<span class="wd">${p.weekday} </span>${fmtDate(p)}`;
-  $('clockTime').textContent = fmtTime(p);
+  if (!clockParts) {
+    const node = (el) => { el.textContent = ''; return el.appendChild(document.createTextNode('')); }, wd = document.createElement('span'); wd.className = 'wd';
+    $('clockDate').textContent = ''; $('clockDate').appendChild(wd);
+    clockParts = { wd: node(wd), date: $('clockDate').appendChild(document.createTextNode('')), time: node($('clockTime')), tz: node($('clockTz')) };
+  }
+  // text nodes are changed in place, and only when they differ: the bar is not rebuilt sixty times a second
+  putText(clockParts.wd, p.weekday + ' '); putText(clockParts.date, fmtDate(p)); putText(clockParts.time, fmtTime(p));
   // the bar has little room: "UTC+2:05:09 LMT" there, the words in the editor and the tooltip
   const zl = zoneLabel(state.timeMs, tz);
-  $('clockTz').textContent = zl.replace(' (local mean time)', ' LMT'); $('clockTz').title = zl;
+  if (zl !== lastZone) { lastZone = zl; putText(clockParts.tz, zl.replace(' (local mean time)', ' LMT')); $('clockTz').title = zl; }
   if (!$('timePop').hidden) fillEditor(false);
 }
 function fillEditor(force) {

@@ -29,7 +29,7 @@
 // A selected star of either layer is referred to as {kind: 'gaia', t: tile, i}: the reference holds the tile
 // itself, so it stays valid after the tile has been dropped from the cache.
 
-import { DEG, RAD, unrefractHor } from './astro.js';
+import { DEG, RAD, unrefractHor, refractionDeg } from './astro.js';
 import { emit, on, state } from './state.js';
 import { cam, unproject } from './camera.js';
 import { addPick } from './picks.js';
@@ -865,9 +865,7 @@ export function drawDeepStars(ctx) {
       if (refr || atmo) {
         let alt = Math.asin(hz > 1 ? 1 : hz) * RAD;
         if (refr) {
-          const hd = alt < -1 ? -1 : alt;
-          let rf = 0.017 / Math.tan((hd + 10.3 / (hd + 5.11)) * DEG);
-          if (alt < -1) rf *= (alt + 90) / 89;
+          const rf = refractionDeg(alt);
           const a2 = (alt + rf) * DEG, c = Math.sqrt(hx * hx + hy * hy);
           if (c > 1e-9) { const k = Math.cos(a2) / c; hx *= k; hy *= k; hz = Math.sin(a2); }
           alt += rf;

@@ -9,7 +9,9 @@
 import { A, AU_KM, RAD, C_AU_PER_DAY, vecOf, unit, dot, sub, scale, len } from '../astro.js';
 import { state } from '../state.js';
 import { R } from '../render/proj.js';
+import { jpl } from '../jpl.js';
 import { repaintSky } from '../render/sky.js';
+import { squashMatrix } from '../render/planets.js';
 import { placeEqj } from './util.js';
 import { setTargets, registerResolver } from './targets.js';
 
@@ -20,7 +22,7 @@ const SUN_KM = 695700, EARTH_SHADOW_KM = 6459;
  *    radii in degrees, umbraKm / penumbraKm, moonOffKm: Moon's centre from the axis, axisAu }. */
 export function earthShadow(frame, lightTime = true) {
   let time = frame.time;
-  const obsVec = vecOf(A.ObserverVector(frame.time, frame.obs, false));
+  const obsVec = frame.opos;
   if (lightTime) {
     // the Moon is drawn where it was one light-time (1.3 s) ago; put the shadow at that instant too
     const d0 = len(sub(vecOf(A.GeoMoon(time)), obsVec));
@@ -38,8 +40,10 @@ export function earthShadow(frame, lightTime = true) {
   const umbraKm = SUN_KM - (1 + k) * (SUN_KM - EARTH_SHADOW_KM);
   const penumbraKm = -SUN_KM + (1 + k) * (SUN_KM + EARTH_SHADOW_KM);
   const topo = sub(axisPt, obsVec), dist = len(topo);
+  // the Moon is drawn with the observer's aberration (or, with the switch off, without even the Earth's): the shadow goes with it
+  const ab = frame.aberration === false ? sub(frame.betaDay, frame.betaTrue) : frame.betaDay, u = unit([0, 1, 2].map((i) => topo[i] / dist + (lightTime ? ab[i] : 0)));
   return {
-    u: unit(topo), distAu: dist, k, far,
+    u, distAu: dist, k, far,
     umbraKm, penumbraKm,
     umbra: Math.atan(umbraKm / AU_KM / dist) * RAD,
     penumbra: Math.atan(penumbraKm / AU_KM / dist) * RAD,
@@ -49,7 +53,7 @@ export function earthShadow(frame, lightTime = true) {
 
 let cache = null, cacheKey = '';
 export function currentShadow(frame) {
-  const key = frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime;
+  const key = jpl.version + '|' + frame.aberration + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime;
   if (key !== cacheKey) { cacheKey = key; cache = earthShadow(frame, state.lightTime); }
   return cache;
 }
@@ -78,8 +82,11 @@ export function drawShadow(ctx) {
     const rm = Math.max(moon.angRadius * m.scale, 5);
     // when the Moon is drawn enlarged (wide fields) scale the shadow about the Moon so the picture stays in proportion
     const k = rm / (moon.angRadius * m.scale);
-    const cx = m.x + (c.x - m.x) * k, cy = m.y + (c.y - m.y) * k;
+    // low down the Moon is drawn pressed flat by refraction, and so is the shadow on it: both are drawn round, inside that squash
+    const q = squashMatrix(moon.u, m.x, m.y), det = q[0] * q[3] - q[1] * q[2], ox = c.x - m.x, oy = c.y - m.y;
+    const cx = m.x + (q[3] * ox - q[2] * oy) / det * k, cy = m.y + (q[0] * oy - q[1] * ox) / det * k;
     ctx.save();
+    { ctx.translate(m.x, m.y); ctx.transform(q[0], q[1], q[2], q[3], 0, 0); ctx.translate(-m.x, -m.y); }
     ctx.beginPath(); ctx.arc(m.x, m.y, rm + 0.3, 0, 2 * Math.PI); ctx.clip();
     // penumbra: a soft grey that deepens toward the umbra (to the eye only its inner part is noticeable)
     const dk = 1 - R.sky.day, g = ctx.createRadialGradient(cx, cy, ru * k, cx, cy, rp * k);

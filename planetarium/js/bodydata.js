@@ -3,7 +3,7 @@
 // epoch / credit / note go to the object panel. See NOTES.md, "Solar-system bodies", for sources, licences and what is approximate.
 const USGS = 'USGS Astrogeology / NASA';
 export const BODY_ART = {
-  Sun: { tex: 'sun', kind: 'map', light: 'sun', big: 3, credit: 'NASA/SDO and the AIA, EVE, and HMI science teams', note: 'Surface: 30 daily SDO/HMI photographs, 25 October to 23 November 2026, joined into one rotation. The sunspots are those of that month, not of any other date.' },
+  Sun: { tex: 'sun-quiet', small: false, kind: 'map', light: 'sun', big: 3, credit: 'NASA/SDO and the AIA, EVE, and HMI science teams', note: 'Surface: the quiet Sun of November and December 2019 from 30 daily SDO/HMI photographs.' },
   Moon: { tex: 'moon', kind: 'map', light: 'lunar', relief: 'moon-n', gain: 1.12, big: 3, credit: 'NASA SVS CGI Moon Kit (LRO LROC / LOLA)' },
   Mercury: { tex: 'mercury', kind: 'map', light: 'lunar', gain: 1.1, credit: 'MESSENGER MDIS, ' + USGS },
   Venus: { tex: 'venus', kind: 'front', light: 'gas', gain: 1.75, credit: 'Mariner 10, PIA23791, NASA/JPL-Caltech', note: 'Clouds: one Mariner 10 photograph (7 February 1974), always the same face. No published map shows the clouds of a given date.' },

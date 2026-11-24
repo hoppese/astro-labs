@@ -82,7 +82,7 @@ const sp = [0, 0];
 function draw(frame, now) {
   const t0 = performance.now();
   // time running fast past a body: re-place the 120,000 stars every 18 h of sky time, not every frame (7 ms each; the fastest moves 0.02 arcsec meanwhile)
-  stars.epochTol = eff.steady && state.selected && state.selected.kind === 'body' ? Math.max(0.002, epochTolFor(cam.fov)) : epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
+  stars.epochTol = eff.steady && state.selected && state.selected.kind === 'body' ? Math.max(0.002, Math.abs(state.rate) * 0.5 / 31557600, epochTolFor(cam.fov)) : epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
   setStarEpoch(frame.years);
   const bodies = getBodies(frame);
   update(frame);

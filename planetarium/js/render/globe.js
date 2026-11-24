@@ -21,6 +21,7 @@ uniform int uLight, uKind, uNSh, uRings;
 uniform vec3 uTint, uAmb, uBody;
 uniform vec4 uSh[8];                      // shadows of moons: position (equatorial radii, body frame), radius
 uniform float uAlphaSun, uSunSin, uEclDim;
+uniform sampler2D uSpot; uniform int uNSp; uniform vec4 uSp[160]; uniform vec2 uSpSize;      // sunspot groups: 4 vec4 each (direction + strength; tile x, y, w, h; centre x, y, px per radius, flip; cos, sin)
 const float PI = 3.14159265359;
 vec3 toLin(vec3 c){ return pow(c, vec3(2.2)); }
 float ringTau(float r){ float u = (r*60268. - 74000.)/63000.; if(u<0.||u>1.) return 0.; float t = texture(uRing, vec2(u,0.75)).r; return t*t*3.5; }
@@ -66,13 +67,26 @@ void main(){
           mu0 = mu0 > 0.12 ? m2 : mix(mu0, m2, smoothstep(-0.05, 0.06, mu0)) ;
           mu = max(mix(mu, dot(n2,uV), 0.6), 0.02);
         }
-      } else col = texture(uT0, vec2(0.5 + 0.5*q.x, 0.5 - 0.5*q.y)).rgb;
+      } else col = texture(uT0, vec2(0.5 + 0.5*P.x, 0.5 - 0.5*P.z)).rgb;
     }
     vec3 lin = toLin(col); float L = 0.;
     float term = max(1.5*fwidth(mu0), 0.004);
     if (uLight == 3) {                                                     // the Sun: photosphere limb darkening, V band (Pierce & Slaughter form)
       float I = 0.30 + 0.93*mu - 0.23*mu*mu;
       lin = uBody*I*mix(1., 1. + (col.r - 0.502)*1.42*uHas, 1.); L = 1.;
+      vec3 Px = dFdx(P), Py = dFdy(P);
+      for (int i=0;i<uNSp;i++) {                                           // spots: photographs of groups laid on the sphere, multiplied
+        vec4 a0 = uSp[4*i]; if (dot(P, a0.xyz) < 0.96) continue;
+        vec4 b0 = uSp[4*i+1], c0 = uSp[4*i+2], d0 = uSp[4*i+3];
+        vec3 eW = normalize(vec3(-a0.y, a0.x, 0.)), eN = cross(a0.xyz, eW);
+        mat2 rot = mat2(d0.x, d0.y, -d0.y, d0.x);
+        vec2 q = vec2(dot(P,eW), dot(P,eN)*c0.w); q = rot*q*c0.z; vec2 t = c0.xy + vec2(q.x, -q.y);
+        if (t.x < 0. || t.y < 0. || t.x > b0.z || t.y > b0.w) continue;
+        vec2 gx = rot*vec2(dot(Px,eW), dot(Px,eN)*c0.w)*c0.z, gy = rot*vec2(dot(Py,eW), dot(Py,eN)*c0.w)*c0.z;
+        float T = textureGrad(uSpot, (b0.xy + t)/uSpSize, vec2(gx.x,-gx.y)/uSpSize, vec2(gy.x,-gy.y)/uSpSize).r;
+        T = mix(1., T, a0.w);
+        lin *= pow(vec3(T), vec3(1.40, 1.5, 1.68));                        // a spot is cooler (redder); the power gives the contrast of the published pictures on a disc that fills the screen's range
+      }
       lin = max(lin, 0.);
       // redder toward the limb
       lin *= vec3(1., 1. - 0.10*(1.-mu)*(1.-mu), 1. - 0.25*(1.-mu)*(1.-mu));
@@ -121,7 +135,7 @@ void main(){
 }`;
 
 let gl = null, cv = null, prog = null, loc = null, failed = false;
-const U = ['uBox', 'uR', 'uU', 'uV', 'uS', 'uAx', 'uQ', 'uPx', 'uT0', 'uT1', 'uN', 'uRing', 'uMix', 'uHas', 'uRelief', 'uLonOff', 'uGraphic', 'uGain', 'uDay', 'uSpin', 'uLight', 'uKind', 'uNSh', 'uRings', 'uTint', 'uAmb', 'uBody', 'uSh', 'uAlphaSun', 'uEclDim'];
+const U = ['uBox', 'uR', 'uU', 'uV', 'uS', 'uAx', 'uQ', 'uPx', 'uT0', 'uT1', 'uN', 'uRing', 'uMix', 'uHas', 'uRelief', 'uLonOff', 'uGraphic', 'uGain', 'uDay', 'uSpin', 'uLight', 'uKind', 'uNSh', 'uRings', 'uTint', 'uAmb', 'uBody', 'uSh', 'uAlphaSun', 'uEclDim', 'uSpot', 'uNSp', 'uSp', 'uSpSize'];
 function init() {
   if (gl || failed) return !!gl;
   if (typeof WebGL2RenderingContext === 'undefined') { failed = true; return false; }      // (also the Node checks)
@@ -136,7 +150,7 @@ function init() {
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.useProgram(prog); gl.disable(gl.BLEND);
-    cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); gl = null; texs.clear(); failed = false; emit('render'); });
+    cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); emit('gl-lost'); gl = null; texs.clear(); failed = false; emit('render'); });
   } catch (e) { console.warn('Body pictures are off:', e.message); gl = null; failed = true; }
   return !!gl;
 }
@@ -151,7 +165,7 @@ let blankTex = null;
 function texture(file, opts = {}) {
   let t = texs.get(file); if (t) { if (t.state === -1 && performance.now() - t.at > 20000) texs.delete(file); else return t; }
   t = { state: 0, tex: null, at: performance.now(), jobs: [] }; texs.set(file, t);
-  fetch(new URL('../../data/bodies/' + file, import.meta.url)).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); }).then(async (blob) => {
+  fetch(new URL((file.includes('/') ? '../../data/' : '../../data/bodies/') + file, import.meta.url)).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); }).then(async (blob) => {
     const full = await createImageBitmap(blob, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
     t.w = full.width; t.h = full.height;
     const n = Math.max(1, Math.ceil(full.width * full.height / 600000)), hh = Math.ceil(full.height / n);
@@ -197,6 +211,8 @@ export function pickMap(art, px) {
 }
 export function getTex(file, opts) { if (!init()) return null; const t = texture(file, opts); return t.state === 1 ? t.tex : null; }
 
+// the drawing buffer grows in big steps: every reallocation costs a frame
+const grow = (n) => { let s = 512; while (s < n) s *= 1.5; return Math.ceil(s); };
 /** Draw one body. o: {x, y (css px, centre), r (css px, equatorial radius), R, U, V, S (body-frame unit vectors), ax [1, b/a, c/a], map, relief, lonOff, graphic,
  *  light, kind, gain, tint, amb, body, day, spin (turns), shadows [[x, y, z, r]...], alphaSun, rings (texture), reach (in r), eclDim}. Returns false if it could not. */
 export function drawGlobe(ctx, o, dpr, W, H) {
@@ -206,7 +222,7 @@ export function drawGlobe(ctx, o, dpr, W, H) {
   // the part of the body's box that is on screen, in whole device pixels
   const x0 = Math.max(0, Math.floor((o.x - reach) * dpr)), y0 = Math.max(0, Math.floor((o.y - reach) * dpr)), x1 = Math.min(Math.ceil(W * dpr), Math.ceil((o.x + reach) * dpr)), y1 = Math.min(Math.ceil(H * dpr), Math.ceil((o.y + reach) * dpr));
   const w = x1 - x0, h = y1 - y0; if (w <= 0 || h <= 0) return true;
-  if (cv.width < w || cv.height < h) { cv.width = Math.max(cv.width, w); cv.height = Math.max(cv.height, h); }
+  if (cv.width < w || cv.height < h) { cv.width = Math.max(cv.width, grow(w)); cv.height = Math.max(cv.height, grow(h)); }
   gl.viewport(0, 0, w, h); gl.enable(gl.SCISSOR_TEST); gl.scissor(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
   const k = 1 / (o.r * dpr), set3 = (u, v) => gl.uniform3f(loc[u], v[0], v[1], v[2]);
   // s = (right, up) in equatorial radii. uBox = lower left corner and size of the box
@@ -219,13 +235,14 @@ export function drawGlobe(ctx, o, dpr, W, H) {
   gl.uniform1f(loc.uPx, o.r * dpr);
   if (!blankTex) blankTex = blank();
   const bind = (i, t, u) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t || blankTex); gl.uniform1i(loc[u], i); };
-  bind(0, o.map && o.map.t0, 'uT0'); bind(1, o.map && o.map.t1, 'uT1'); bind(2, o.relief, 'uN'); bind(3, o.rings, 'uRing'); gl.activeTexture(gl.TEXTURE0);
+  bind(0, o.map && o.map.t0, 'uT0'); bind(1, o.map && o.map.t1, 'uT1'); bind(2, o.relief, 'uN'); bind(3, o.rings, 'uRing'); bind(4, o.spots && o.spots.tex, 'uSpot'); gl.activeTexture(gl.TEXTURE0);
   gl.uniform1f(loc.uMix, o.map ? o.map.mix : 0); gl.uniform1f(loc.uHas, o.map ? 1 : 0); gl.uniform1f(loc.uRelief, o.relief ? 1 : 0);
   gl.uniform1f(loc.uLonOff, o.lonOff || 0); gl.uniform1f(loc.uGraphic, o.graphic ? 1 : 0); gl.uniform1f(loc.uGain, o.gain ?? 1); gl.uniform1f(loc.uDay, o.day || 0); gl.uniform1f(loc.uSpin, Math.min(1, o.spin || 0));
   gl.uniform1i(loc.uLight, { lunar: 0, gas: 1, icy: 2, sun: 3, mars: 4 }[o.light] ?? 0); gl.uniform1i(loc.uKind, o.kind === 'front' ? 1 : 0);
   set3('uTint', o.tint || [1, 1, 1]); set3('uAmb', o.amb || [0, 0, 0]); set3('uBody', o.body || [0.6, 0.6, 0.6]);
   const sh = o.shadows || [], n = Math.min(8, sh.length), a = new Float32Array(32); for (let i = 0; i < n; i++) a.set(sh[i], 4 * i);
   gl.uniform1i(loc.uNSh, n); gl.uniform4fv(loc.uSh, a); gl.uniform1f(loc.uAlphaSun, o.alphaSun || 0); gl.uniform1f(loc.uEclDim, o.eclDim ?? 1);
+  gl.uniform1i(loc.uNSp, o.spots ? o.spots.n : 0); if (o.spots) { gl.uniform4fv(loc.uSp, o.spots.data); gl.uniform2f(loc.uSpSize, o.spots.w, o.spots.h); }
   gl.uniform1i(loc.uRings, o.rings ? 1 : 0);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   if (o.light !== 'sun') {      // hide what is behind: the sky again, inside the outline (an ellipse from the same quadratic form)

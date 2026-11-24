@@ -3,17 +3,36 @@
 import { state, emit } from './state.js';
 
 export const SIDEREAL_DAY_MS = 86164090.5;
-export const RATES = [-1e6, -1e5, -1e4, -1000, -100, -10, -1, 1, 10, 100, 1000, 1e4, 1e5, 1e6];
+export const RATES = [-1e8, -3e7, -1e7, -3e6, -1e6, -1e5, -1e4, -1000, -100, -10, -1, 1, 10, 100, 1000, 1e4, 1e5, 1e6, 3e6, 1e7, 3e7, 1e8];
 // keep the clock inside the span where the ephemeris and Date arithmetic are trustworthy
 const T_MIN = Date.UTC(-3000, 0, 1), T_MAX = Date.UTC(3001, 0, 1);
 
 let lastReal = null;
+/** The fastest useful rate while something with a short cycle is followed: at least 12 pictures a turn (60 a second). Without this a moon's phase,
+ *  or a satellite's place, would flicker between unrelated pictures. */
+const CYCLE = { Moon: 27.3, Mercury: 88 };
+export function rateCap() {
+  if (!state.tracking || !state.selected || state.selected.kind !== 'body') return 1e8;
+  const id = state.selected.id, P = CYCLE[id];
+  if (P) return Math.max(1e6, P * 86400 * 5);
+  return clockInfo.isMoon && clockInfo.isMoon(id) ? 1e6 : 1e8;
+}
+export const clockInfo = { isMoon: null };      // ephem.js fills it in
+/** A rate in plain words: "about 12 days per second". */
+export function rateWords(r = state.rate) {
+  const a = Math.min(Math.abs(r), rateCap()), u = [[31557600, 'year'], [86400, 'day'], [3600, 'hour'], [60, 'minute'], [1, 'second']].find(([s]) => a >= 0.95 * s);
+  if (a <= 1) return 'real time';
+  const n = a / u[0], t = n >= 9.5 ? Math.round(n) : Number(n.toPrecision(2));
+  return `about ${t} ${u[1]}${t === 1 ? '' : 's'} per second` + (r < 0 ? ', backwards' : '');
+}
 /** Advance the clock; returns true when simulated time changed. */
 export function advance(nowReal) {
   const dt = lastReal === null ? 0 : Math.min(250, nowReal - lastReal);    // a hidden tab does not jump ahead
   lastReal = nowReal;
   if (!state.playing || dt === 0) return false;
-  setTime(state.timeMs + dt * state.rate, true);
+  const t = state.timeMs + dt * Math.sign(state.rate) * Math.min(Math.abs(state.rate), rateCap());
+  setTime(t, true);
+  if (t < T_MIN || t > T_MAX) { state.playing = false; emit('rate'); emit('clock-end'); }      // the ends of the span: stop there
   return true;
 }
 export function setTime(ms, quiet = false) {

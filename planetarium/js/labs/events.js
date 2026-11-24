@@ -13,6 +13,10 @@ import { select, flyTo } from '../nav.js';
 import { wallParts, fmtDate, fmtTime } from '../timeutil.js';
 import { makeCard } from './dock.js';
 import { esc } from './util.js';
+import { jovianEvents } from './jovian.js';
+import { ensure, jpl } from '../jpl.js';
+import { fmtClock } from '../timeutil.js';
+import { running } from './hidden.js';
 
 const DAY = 86400000;
 const ms = (t) => t.date.getTime();
@@ -69,6 +73,10 @@ export const CATEGORIES = [
     }
     return all.sort((a, b) => a.t - b.t).slice(0, n);
   } },
+  { id: 'jovian', label: 'Jupiter: moons, shadows, Red Spot', span: 1, list(t0, n) {
+    return jovianEvents(t0, n).map((e) => ({ t: e.kind === 'mutual' || e.kind === 'spot' ? e.t : e.t + Math.min(600000, (e.end - e.t) / 2), clock: e.t, text: e.text, target: 'Jupiter', fov: e.kind === 'spot' ? 0.03 : 0.06,
+      detail: e.end ? `${hms(e.t)} – ${hms(e.end)} UTC` : `${hms(e.t)} UTC` }));
+  } },
   { id: 'phases', label: 'Moon phases', span: 7.4, list(t0, n) {
     const out = []; let q = A.SearchMoonQuarter(at(t0));
     const names = ['New Moon', 'First quarter', 'Full Moon', 'Last quarter'];
@@ -124,7 +132,7 @@ export const CATEGORIES = [
 ];
 
 export const ev = { cat: 'lunar', planet: 'Mars', anchor: null, instructor: false, rows: [] };
-let card = null;
+let card = null, pending = '';
 const N = 8;
 
 /** Go to an event: clock (paused), target selected and centred. */
@@ -149,6 +157,9 @@ function refresh() {
   if (!card || !card.isOpen()) return;
   const cat = CATEGORIES.find((c) => c.id === ev.cat);
   if (ev.anchor == null) ev.anchor = state.timeMs;
+  // the positions for the years to be searched first; the search itself runs on whatever is here
+  const tt = ev.anchor / DAY - 10957.5, key = ev.cat + ev.anchor + ev.planet, reach = ev.cat === 'transit' ? 366 * 260 : Math.min(cat.span * N * 1.3, 36500);
+  if (pending !== key && !jpl.failed) { pending = key; ensure(tt - 400, tt + reach).then(() => { if (pending === key) refresh(); }); }
   let rows = [], error = '';
   try { rows = cat.list(ev.anchor, N, ev.planet); } catch (e) { error = 'No events found from this date (the search range of the ephemeris ends).'; }
   ev.rows = rows;
@@ -161,11 +172,11 @@ function refresh() {
     list = '<ul class="ev-list">' + rows.map((e, i) => {
       const alt = altitudeHere(e);
       const vis = alt == null ? '' : alt > 0 ? ' · up here' : ' · below the horizon here';
-      return `<li><button data-i="${i}" title="Set the clock to this event"><span class="when">${fmtDate(wallParts(e.t, 'UTC'))}</span><span class="what">${esc(e.text)}<span style="color:var(--muted)">${vis}</span></span>` +
+      return `<li><button data-i="${i}" title="Set the clock to this event"><span class="when">${e.clock ? fmtDate(wallParts(e.clock, state.loc.tz)) + (running.id && !ev.instructor ? '' : ' ' + fmtClock(e.clock, state.loc.tz)) : fmtDate(wallParts(e.t, 'UTC'))}</span><span class="what">${esc(e.text)}<span style="color:var(--muted)">${vis}</span></span>` +
         (ev.instructor && e.detail ? `<span class="more">${esc(e.detail)}</span>` : '') + '</button></li>';
     }).join('') + '</ul>';
   }
-  const foot = `<label class="chk" style="margin-top:6px"><input type="checkbox" id="evInst"${ev.instructor ? ' checked' : ''}><span>Instructor: show times and contact times<small>Dates are UTC. Click an event to set the clock to its middle; measure the rest yourself.</small></span></label>`;
+  const foot = `<label class="chk" style="margin-top:6px"><input type="checkbox" id="evInst"${ev.instructor ? ' checked' : ''}><span>Instructor: show times and contact times<small>${ev.cat === 'jovian' ? 'Dates and times are those of the place’s clock.' : 'Dates are UTC.'} Click an event to set the clock to its middle; measure the rest yourself.</small></span></label>`;
   card.body.innerHTML = head + list + foot;
 }
 export function initEvents() {

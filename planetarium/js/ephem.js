@@ -1,11 +1,14 @@
 // ephem.js: Sun, Moon, planets and their moons for the current frame.
-// Sun, Moon, planets, Pluto and the Galilean moons come from astronomy-engine; the other moons, the asteroids, dwarf planets and Halley
+// Sun, Moon, planets and Pluto come from JPL DE440 / DE441 (js/jpl.js), the Galilean moons from astronomy-engine (L1.2); the other moons, the asteroids, dwarf planets and Halley
 // from fits and tables made from JPL Horizons (js/moons.js), each with its stated error and span of dates.
 
 import { A, DEG, RAD, AU_KM, C_AU_PER_DAY, vecOf, unit, len, sub, add, scale, dot, cross, sph, mulMV, mod } from './astro.js';
 import { state } from './state.js';
 import { moonVector, smallVector, smallHelio, small, smallCovers, MOON_SPAN } from './moons.js';
 import { bodyAxes } from './orient.js';
+import { jpl } from './jpl.js';
+import { MOON_ORBITS } from './moon-data.js';
+import { clockInfo } from './clock.js';
 
 export const BODIES = [
   { id: 'Sun', name: 'Sun', kind: 'sun', radiusKm: 695700, color: '#fff3c4' },
@@ -64,15 +67,18 @@ const SAT_PHYS = {
   Iapetus: { radiusKm: 734.5, v10: 1.5, color: '#c8b8a0' },
 };
 export const MOON_PARENT = {};
+export const MOON_PERIOD = { Io: 1.769, Europa: 3.551, Ganymede: 7.155, Callisto: 16.689, Phoebe: 550.5 };
+for (const id in MOON_ORBITS) MOON_PERIOD[id] = 2 * Math.PI / MOON_ORBITS[id].p[10];
 for (const m of OTHER_MOONS) Object.assign(m, SAT_PHYS[m.id]);
 JUPITER_MOONS.forEach((m) => { MOON_PARENT[m.id] = 'Jupiter'; });
 OTHER_MOONS.forEach((m) => { MOON_PARENT[m.id] = m.parent; });
+clockInfo.isMoon = (id) => !!MOON_PARENT[id];
 
 let cache = null, cacheKey = '';
 
 /** All solar-system bodies for this frame: {list, byId}. Cached per instant, site and light-time setting. */
 export function getBodies(frame) {
-  const key = frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
+  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = compute(frame, state.lightTime, frame.aberration !== false);
@@ -96,28 +102,68 @@ export function hiddenFraction(rel, axis, pole, parent, moonKm, inner = 0, outer
   return { depth, perp, frac: Math.max(0, Math.min(1, (perp - lo) / (hi - lo))) };
 }
 
+/** Sun-centred place (au, EQJ) of a body's own centre at `time`. */
+function helioOf(id, time) {
+  if (id === 'Sun') return [0, 0, 0];
+  if (id === 'Moon') { const e = vecOf(A.HelioVector(A.Body.Earth, time)), m = vecOf(A.GeoMoon(time)); return add(e, m); }
+  const v = vecOf(A.HelioVector(id, time)), o = centreOffset(id, time);
+  return o ? add(v, o) : v;
+}
+/** From the barycentre of a planet and its moons (what the ephemeris gives) to the planet's own centre. The moons' masses are JPL's (GM / GM of the system). */
+function centreOffset(id, time) {
+  if (id === 'Jupiter') { const j = A.JupiterMoons(time), o = [0, 0, 0]; for (const [k, f] of [['io', 4.70333e-5], ['europa', 2.52756e-5], ['ganymede', 7.80336e-5], ['callisto', 5.66580e-5]]) { o[0] -= f * j[k].x; o[1] -= f * j[k].y; o[2] -= f * j[k].z; } return o; }
+  if (id === 'Saturn') { const t = moonVector('Titan', time.tt); return t && scale(t, -2.36637e-4); }
+  if (id === 'Pluto') { const t = moonVector('Charon', time.tt); return t && scale(t, -0.108762); }
+  return null;
+}
+const sunB = (time) => { const s = A.HelioVector('SSB', time); return [-s.x, -s.y, -s.z]; };      // Sun from the barycentre
+const SCHW = 2 * 1.32712440018e11 / 299792.458 ** 2 / AU_KM;                                       // 2 GM(Sun) / c^2, au
+/** Direction and distance of a body from the observer: {seen: where its light comes from (light time, bending by the Sun, aberration), geo: where it is now}.
+ *  Done in the barycentric frame like JPL's "airless apparent" place: light left body(t - tau), the observer is where they are at t. */
+export function apparent(id, frame, aberration = true, earth = null) {
+  const { time } = frame, e = earth || vecOf(A.HelioVector(A.Body.Earth, time)), obs = add(e, frame.opos);
+  const geo = sub(helioOf(id, time), obs);
+  const obsB = add(obs, sunB(time));
+  let tau = len(geo) / C_AU_PER_DAY, seen = geo, hel = null;
+  for (let k = 0; k < 4; k++) {
+    const t = time.AddDays(-tau); hel = helioOf(id, t);
+    seen = sub(add(hel, sunB(t)), obsB);
+    const n = len(seen) / C_AU_PER_DAY; if (Math.abs(n - tau) < 1e-9) { tau = n; break; } tau = n;
+  }
+  const d = len(seen);
+  if (id !== 'Sun' && id !== 'Moon') {
+    // bending of light by the Sun's gravity (IAU SOFA's iauLd): 0.5 arcsec for a planet 3.5 degrees beyond the Sun, nothing for one in front
+    const p = scale(seen, 1 / d), q = unit(hel), E = len(obs), eh = scale(obs, 1 / E), w = SCHW / E / Math.max(dot(q, add(q, eh)), 1e-6);
+    const dl = scale(sub(scale(eh, dot(p, q)), scale(q, dot(eh, p))), w);
+    seen = scale(unit(add(p, dl)), d);
+  }
+  if (aberration) seen = scale(unit(add(scale(seen, 1 / d), frame.betaTrue)), d);
+  return { seen, geo, tau };
+}
+/** One moon's shadow on another: m.mutual = [{rel (au, from m to the moon that casts it), km}], and m.light less the part of its disc that is covered. */
+function mutualShadows(parent) {
+  const s = unit(parent.helioVec), dSun = len(parent.helioVec) * AU_KM;
+  for (const m of parent.moons) for (const c of parent.moons) {
+    if (c === m) continue;
+    const d = scale(sub(m.rel, c.rel), AU_KM), z = dot(d, s); if (z <= 0) continue;
+    const off = len(sub(d, scale(s, z))), pen = z * 695700 / dSun;
+    if (off > m.radiusKm + c.radiusKm + pen) continue;
+    (m.mutual = m.mutual || []).push({ rel: sub(c.rel, m.rel), km: c.radiusKm });
+    const r = c.radiusKm, R = m.radiusKm;                    // share of the disc inside a shadow of the caster's own size (its half-light edge)
+    let f = 0;
+    if (off < Math.abs(R - r)) f = Math.min(1, (r / R) ** 2);
+    else if (off < R + r) { const a = Math.acos((off * off + R * R - r * r) / (2 * off * R)), b = Math.acos((off * off + r * r - R * R) / (2 * off * r)); f = (R * R * (a - Math.sin(2 * a) / 2) + r * r * (b - Math.sin(2 * b) / 2)) / (Math.PI * R * R); }
+    if (f > 0) { m.mutualDim = 1 - (1 - (m.mutualDim ? 1 - m.mutualDim : 0)) * (1 - f); m.mag += -2.5 * Math.log10(Math.max(1e-4, 1 - f)); }
+  }
+}
 export function compute(frame, lightTime, aberration = true) {
-  const { time, obs } = frame;
-  const obsVec = vecOf(A.ObserverVector(time, obs, false));       // geocentre -> observer, EQJ, au
+  const { time } = frame;
+  const obsVec = frame.opos;                                       // geocentre -> observer, EQJ, au
   const earth = vecOf(A.HelioVector(A.Body.Earth, time));
   const list = [], byId = {};
   for (const def of BODIES) {
     const b = { ...def, moons: [] };
-    // --- as seen: light-time corrected, with aberration (what astronomy-engine's Equator returns) ---
-    let seen;
-    if (def.id === 'Moon') {
-      // astronomy-engine ignores the Moon's 1.3 s light time; apply it here so the toggle is honest.
-      const d0 = len(sub(vecOf(A.GeoMoon(time)), obsVec));
-      seen = sub(vecOf(A.GeoMoon(time.AddDays(-d0 / C_AU_PER_DAY))), obsVec);
-    } else {
-      seen = vecOf(A.Equator(def.id, time, obs, false, aberration).vec);
-    }
-    // --- geometric: where the body is at this instant, no light time, no aberration ---
-    let geo;
-    if (def.id === 'Moon') geo = sub(vecOf(A.GeoMoon(time)), obsVec);
-    else if (def.id === 'Sun') geo = sub(scale(earth, -1), obsVec);
-    else geo = sub(sub(vecOf(A.HelioVector(def.id, time)), earth), obsVec);
-
+    const { seen, geo } = apparent(def.id, frame, aberration, earth);
     b.vecSeen = seen; b.vecGeo = geo;
     b.vec = lightTime ? seen : geo;
     b.dist = len(b.vec);
@@ -145,7 +191,7 @@ export function compute(frame, lightTime, aberration = true) {
   }
 
   // --- direction of the sunlight on each body ---
-  for (const b of list) b.toSun = b === sun ? null : b.id === 'Moon' ? sub(sun.vec, b.vec) : scale(vecOf(A.HelioVector(b.id, lightTime ? time.AddDays(-b.lightMin / 1440) : time)), -1);
+  for (const b of list) b.toSun = b === sun ? null : b.id === 'Moon' ? sub(sun.vec, b.vec) : scale(helioOf(b.id, lightTime ? time.AddDays(-b.lightMin / 1440) : time), -1);
 
   // --- pole directions (for ring tilt, disc flattening, moon planes) ---
   for (const id of ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']) {
@@ -170,7 +216,7 @@ export function compute(frame, lightTime, aberration = true) {
       angRadius: Math.asin(def.radiusKm / AU_KM / d) * RAD,
       mag: def.v10 + 5 * Math.log10(parent.helioDist * d),
       lightMin: d / C_AU_PER_DAY * 1440, phaseAngle: parent.phaseAngle, phaseFrac: parent.phaseFrac,
-      orbitKm: len(rel) * AU_KM,
+      orbitKm: len(rel) * AU_KM, periodDays: MOON_PERIOD[def.id],
     };
     m.ttSeen = parent.ttSeen; m.toSun = sub(parent.toSun, rel);
     const pole = parent.pole || [0, 0, 1];
@@ -199,6 +245,7 @@ export function compute(frame, lightTime, aberration = true) {
     addMoon(parent, def, rel);
     byId[def.id].inSpan = tt >= MOON_SPAN[0] && tt <= MOON_SPAN[1];
   }
+  for (const b of list) if (b.moons.length > 1) mutualShadows(b);
 
   // --- asteroids, dwarf planets, Halley: light-time corrected (two passes), aberration as for everything else ---
   const ssb = small.data ? vecOf(A.HelioVector('SSB', time)) : null;      // Sun -> barycentre (its change over the light time is under 0.01 arcsec for all of these)

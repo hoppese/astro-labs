@@ -1131,3 +1131,63 @@ Overrides: "Saturn's moons" (fit_saturn_moons.mjs is superseded and does not run
   by dispatched pointer events Venus 57.81″, Mercury 9.95″, Jupiter 38.38″, Saturn 18.88″, Mars 7.58″, each equal to its true diameter.
 - Panel tilts are planetocentric everywhere (Saturn has only "Ring tilt"). The object panel stops above the angle tool (`--mp-h`, measure.js): all 35 labs checked at
   1512 × 772, 1440 × 800 and 800 × 560 (iframes): no panel overlaps another.
+
+---
+
+# Jump, blinking, fast time; planets to JPL; sunspots (2026-11-24, evening)
+
+Overrides: "Positions come from astronomy-engine", every accuracy figure for planets above, "Planets themselves are up to 19″", the Sun's row in the picture table (`sun.webp` is gone),
+"Moon shadows … not done", "the Sun and Moon are still true circles", `vendor/astronomy.browser.min.js` (no longer loaded; may be deleted).
+
+## Part 0: what jumped and what blinked
+- **Jump** at 23:27:46 EST on 24 November 2026 (Jupiter 1 deg below the horizon, Callisto in front of it): `refractionDeg` had a break of slope at −1 deg, so the up-down scale changed by 17 % in one frame.
+  Measured at ×1000, 2.7′ field, frame-to-frame change of velocity: Callisto 7.3 px, Amalthea 27, Europa 142. Now the slope is continuous (astro.js; the star loops and the engine use the same function)
+  and everything in a low field is pressed flat together, discs included (`planets.js` `skyJacobian`), so a transit keeps its geometry. After, in Chrome: ≤ 0.015 px at ×1000, ≤ 0.07 px at ×100.
+- **Blinking**: in a narrow field the horizon, dawn and dusk each crossed the WHOLE window in one frame (every 86 s at ×1000), and the panels (86 % opaque, blurred backdrop) changed with it; plus a 0.7 s stall when
+  the first globe compiled its shader. Evidence: 2,304 screencast frames, frame 272: every panel region changed by 2-9 grey levels at once. Fixes: steady sky from ×300 when following in a field under 5 deg; panels
+  95 % opaque, no backdrop blur; clock text changed in place (535 × 4 DOM rewrites in 9 s → text nodes only when they differ); shader compiled 0.4 s after start; the WebGL buffer grows in steps.
+  After: 3,619 frames of Jupiter ×1000 with wheel zooms, Saturn ×3000 and Moon ×1000: no panel region changed by over 1 level (first frames and the rate label apart); longest frame 709 → 31 ms, p99 JS 10 → 1.6 ms.
+- `js/diag.js`: `planetarium.diag()` in the console lists the last 30 s of slow frames, sky jumps, layout shifts, canvas resizes, lost contexts. Nothing is sent anywhere.
+- Rates ×3M, ×10M, ×30M, ×100M; plain words under the figure and in the notice; capped at 12 pictures a turn while a satellite (×1M), the Moon (×11.8M) or Mercury (×38M) is followed; stops at the ends of the span.
+  Moons that turn over 0.15-0.35 of an orbit a frame fade out.
+- Jupiter's moons: `labs/jovian.js` (Events finder, "Jupiter: moons, shadows, Red Spot"): transits, shadows, eclipses, occultations, mutual events, spot. L1.2 against Horizons, Nov 2026 - Feb 2027: Io 10 s,
+  Europa 12 s, Ganymede 20 s, Callisto 63 s at worst. Mutual shadows are drawn on the discs (`ephem.mutualShadows`); nearer moons cover farther ones.
+  **Not compared with a printed prediction list, only with Horizons positions.**
+- Mars' phase against Horizons on 7 dates (2020-2027): lit fraction, phase angle, defect and its position angle agree to 0.002 %, 0.006 deg, 0.001″, 0.07 deg (worst of the last only near opposition). 24 Nov 2026: 89.65 %, 37.5 deg.
+
+## Planets to JPL
+- **Why it was off.** Theory, not convention: the library's truncated VSOP87 (Neptune 19″, Saturn 20″, Uranus 17″, Jupiter 10″, Mars 9″ since 1800), its Moon (2″ since 1900, 1 deg by 1000 BC because of old tidal terms), its
+  Delta T (6.5 s too big today, 442 s for 2200). Conventions, all small and now right: no daily aberration (0.3″), no solar light bending, 5 nutation terms of 77, no frame bias (0.02″; stars are ICRS), planet-system
+  barycentre for planet (Jupiter 0.07″, Saturn 0.05″, Pluto 0.1″), clock UTC taken for UT1 (Moon 0.4″).
+- `vendor/astronomy.js` = astronomy-engine 2.1.19 patched by `tools/patch_engine.py` (list in its header): every position comes from `js/jpl.js`, so discs, events, rise/set, seasons, shadows, trails, two observers and
+  transits share one source. `ephem.apparent()` is the one apparent-place routine (barycentric light time, Sun's bending, aberration with the observer's full velocity).
+- `data/ephem/` (2.8 MB; 112 kB at start): near set 1550.2-2249.3 from DE440 in 14 files of 50 years (Moon 0.1 km, Mercury 5, Venus 3, Earth 3, Mars 4 km, giants 32-215 km), far set from DE441 in 47 files of 100 years
+  (planets 60-1200 km: under 1″), Moon there a fitted series (353 terms, 1″ rms, 10″ worst). Loaded on demand with the neighbour ahead; Mercury-Mars as residuals from an ellipse. Build: `tools/build_ephemeris.py`.
+  Steps at the joints of segments: at most 0.1″ for the Moon, 0.01″ for the planets (not zero: the pieces are not constrained to meet).
+- `js/deltat.js`: TT−UTC from leap seconds 1962-2026; UT1 from IERS C04 (30-day nodes); before 1962 Morrison et al. 2021; after 2026 a cubic to their parabola in 2500 (100 s in 2100, 228 s in 2200; a guess beyond 10 years).
+  Horizons freezes TT−UTC at 69.18 s instead: compare at equal TT.
+- **Verified** (check.mjs 25, 24 dates 1600-2200, airless apparent topocentric at Richmond): Sun, planets, Pluto ≤ 0.007″ (Pluto 0.013″) for 1970-2026; ≤ 0.07″ before and 0.12″ after, all of which is a constant offset of Horizons'
+  old IAU 1976/80 frame (Saturn, Pluto, Mercury, Venus up to 0.19″ at the ends). Moon geocentric ≤ 0.04″ 1823-2200, 0.08″ 1751, 0.26″ 1600. Horizons' own planet-centre files for Uranus and Neptune differ from DE441 by up to
+  0.7″ / 0.16″ in 1800; the app follows DE441. NASA's transit values (2012: 01:29:36, 554.4″; Mercury 2019: 75.9″) are reproduced.
+- Cost of a frame's positions: 0.76 → 0.17 ms.
+- Not done: bending of starlight by the Sun; long-term precession (IAU 2006 polynomials are used to 3000 BC: some arcseconds there); TDB−TT (2 ms); Galilean moons remain L1.2.
+
+## Sunspots
+- `js/sunspots.js` (what is there), `planets.js sunSpots` + `globe.js` (drawn per pixel: each group's photograph laid on the sphere, multiplied, up to 40), `js/sunpanel.js` (butterfly diagram, click to go there), `info.js sunRows`.
+- Data (`data/sun/`, 1.9 MB, 0.4 MB of it when the Sun is first resolved, then 60-135 kB a decade): `g1870.bin … g2020.bin` 45,721 tracks, 260,630 group-days, 10 May 1874 - 24 Nov 2026: Greenwich to 1976, USAF/NOAA after,
+  Hathaway's compilation at solarcyclescience.com (no licence stated there beyond "Copyright SolarCycleScience.com 2017"; the observations are RGO's and NOAA's; NOAA data are public domain), November 2026 from NOAA SWPC's
+  region summaries. `numbers.json`: SILSO monthly 1749-, yearly 1700-, group number 1610- ("our sunspot data can be freely downloaded (Licence: CC BY-NC)", credit asked: WDC-SILSO, Royal Observatory of Belgium, Brussels,
+  DOI 10.24414/qnza-ac80), SILSO 12-month and NOAA/SWPC (to 2030) forecasts. `spots.webp`: 38 groups cut from SDO/HMI 4096 px browse pictures (NASA/SDO, not copyrighted), background set to exactly 1. Update: re-run `tools/build_sunspots.py`.
+- USAF/NOAA areas × 1.4 (Hathaway 2015); with it, area per unit of sunspot number is 10.67 (Greenwich) and 10.64; the HMI cut-outs give a median of 1.3 too. The panel prints the areas as recorded.
+- Statistical groups: births Poisson from the sunspot number, mean latitude 28 deg exp(−months/90) (Hathaway), spread measured on Greenwich, area log-normal, life = area/10 days (Gnevyshev-Waldmeier), Newton and Nunn rotation, Joy's law,
+  overlapping cycles, Maunder Minimum weighted by 0.3 and southern (Ribes and Nesme-Ribes 1993). Seeded by the day: same date, same Sun. Beside Greenwich (percentiles 5-25-50-75-90-97-99.5 of area): 5-29-86-221-466-935-2091 against
+  5-21-82-220-464-873-1729 (measured before the last 8 % change of the birth rate, which does not alter sizes); mean latitudes by phase within 1.2 deg of Greenwich.
+- Verified: 28 SOHO/MDI and SDO/HMI images 1997-2026 (helioviewer.org): all 88 groups over 80 millionths within 65 deg of the centre are in the photograph, place 2.0 deg mean (records are whole degrees, once a day), area photo/app 0.92 median.
+  Butterfly diagram of what is drawn against Hathaway's bflydata.txt: r = 0.94. Spotless days a year 215-301 where SILSO counts 240-311 (the app keeps a group up to 0.8 day beyond its last record). Nothing pops: ≤ 90 millionths change in 20 min.
+- At ≥ 1.3 days a frame the Sun is shown as stills a whole number of rotations apart, cross-faded (2-3 a second).
+- Approximate: the picture is of another group; shapes do not evolve day by day; Wilson depression not modelled; no faculae; record gaps interpolated (the panel says so); catalogue blips kept (AR 9393 jumps 17-13-17 deg on 2001-03-29);
+  USAF areas can be far off (AR 13664 on 2024-05-10: NOAA 1090, HMI about 3,200). RGO 1874-1976 could not be compared with photographs except the great group of April 1947 (place and area as recorded).
+- Labs: spotless (as before).
+
+## Not tested
+Safari, Firefox, phones, no-WebGL, GPUs with only 224 fragment uniforms (the shader needs about 205), real-time frame captures of Seth's own screen (headless Chrome screencasts and one Chrome session were used), upload to the live site.

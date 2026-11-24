@@ -1,7 +1,7 @@
 /* Planetarium: layout and components. Sky fills the window; chrome floats over it. */
 :root {
   --bg: #05080f;
-  --panel: rgba(13, 20, 31, 0.86);
+  --panel: rgba(13, 20, 31, 0.95);       /* nearly opaque and no backdrop blur: what the sky does behind must not flicker through the panels */
   --panel-solid: #101927;
   --line: rgba(255, 255, 255, 0.12);
   --line-strong: rgba(255, 255, 255, 0.22);
@@ -40,7 +40,7 @@ kbd, .k { font: 600 10.5px var(--mono); color: var(--muted); border: 1px solid v
 .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 1 1 0; }
 
 .search { position: relative; flex: 0 1 420px; min-width: 150px; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 10px;
-  background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  background: var(--panel); border: 1px solid var(--line); }
 .search:focus-within { border-color: rgba(232, 184, 106, 0.7); }
 .search .ico { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; }
 .search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--text); font-size: 14px; }
@@ -58,7 +58,7 @@ kbd, .k { font: 600 10.5px var(--mono); color: var(--muted); border: 1px solid v
 .search-list .empty { padding: 10px; color: var(--muted); font-size: 13px; }
 
 .iconbtn { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text);
-  cursor: pointer; font-size: 15px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  cursor: pointer; font-size: 15px; }
 .iconbtn:hover { background: rgba(40, 54, 74, 0.92); }
 .iconbtn svg { width: 18px; height: 18px; }
 svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -72,7 +72,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 
 /* ---------- object info ---------- */
 .infopanel { position: absolute; left: 12px; top: 58px; width: 316px; max-width: calc(100vw - 24px); max-height: calc(100% - 58px - var(--bar-h) - 22px - var(--mp-h, 0px)); overflow: auto; z-index: 15;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 12px; }
 .infopanel h2 { margin: 0; font: 600 19px 'Source Serif 4', Georgia, serif; line-height: 1.2; padding-right: 28px; }
 .infopanel .aka { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
 .infopanel .type { color: var(--accent); font-size: 12px; font-weight: 600; letter-spacing: 0.03em; margin-top: 3px; }
@@ -96,7 +96,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 /* ---------- angular-distance tool ---------- */
 #sky.measuring { cursor: crosshair; }
 .measurepanel { position: absolute; left: 12px; bottom: calc(var(--bar-h) + 10px); max-width: min(430px, calc(100vw - 24px)); z-index: 16; background: var(--panel); border: 1px solid rgba(255, 214, 107, 0.45);
-  border-radius: 12px; padding: 10px 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  border-radius: 12px; padding: 10px 12px; }
 .mp-head { font: 700 10.5px var(--font); letter-spacing: 0.1em; text-transform: uppercase; color: #ffd66b; }
 .mp-hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
 .mp-row { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 12px; align-items: baseline; margin-top: 6px; font-size: 12.5px; }
@@ -114,7 +114,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 
 /* ---------- bottom bar ---------- */
 .bottombar { position: absolute; left: 0; right: 0; bottom: 0; min-height: var(--bar-h); display: flex; align-items: center; gap: 10px; padding: 7px 12px calc(7px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, rgba(4, 7, 13, 0.94), rgba(4, 7, 13, 0.78)); border-top: 1px solid rgba(255, 255, 255, 0.07); z-index: 20; }
+  background: linear-gradient(to top, rgba(4, 7, 13, 0.97), rgba(4, 7, 13, 0.94)); border-top: 1px solid rgba(255, 255, 255, 0.07); z-index: 20; }
 .chip { height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 11px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text); cursor: pointer; font-size: 13px; white-space: nowrap; }
 .chip:hover { background: rgba(255, 255, 255, 0.11); }
 .chip svg { width: 15px; height: 15px; flex: none; color: var(--accent); }
@@ -133,7 +133,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .tbtn { width: 30px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none; color: #c5d0de; cursor: pointer; }
 .tbtn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
-.rate { font: 600 11.5px var(--mono); color: var(--accent); min-width: 52px; text-align: center; }
+.rate { font: 600 11.5px var(--mono); color: var(--accent); min-width: 84px; text-align: center; }
 .rate.rt { color: var(--muted); }
 .clock { font-family: var(--mono); font-size: 12.5px; gap: 9px; }
 .clock .time { font-weight: 600; color: #fff; min-width: 62px; }
@@ -162,7 +162,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 
 /* ---------- drawer ---------- */
 .drawer { position: absolute; top: 0; right: 0; bottom: var(--bar-h); width: 332px; max-width: 100vw; z-index: 45; background: rgba(12, 18, 28, 0.96); border-left: 1px solid var(--line-strong);
-  display: flex; flex-direction: column; box-shadow: -18px 0 44px rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  display: flex; flex-direction: column; box-shadow: -18px 0 44px rgba(0, 0, 0, 0.5); }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
 .drawer-head h2 { margin: 0; font: 600 17px 'Source Serif 4', Georgia, serif; }
 .drawer-body { overflow: auto; padding: 4px 14px 20px; flex: 1; }
@@ -200,7 +200,7 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .dim { opacity: 0.45; }
 
 /* ---------- modals (same look as the other astro-labs sims) ---------- */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 34, 0.86); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 30px; z-index: 90; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 34, 0.86); display: none; align-items: center; justify-content: center; padding: 30px; z-index: 90; }
 .modal-backdrop.show { display: flex; }
 .modal { max-width: 780px; width: 100%; max-height: 90vh; overflow: auto; background: rgba(17, 26, 38, 0.96); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 22px 26px; color: #eef2f6; }
 .modal h2 { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 20px; margin: 0 0 14px; display: flex; justify-content: space-between; align-items: baseline; }
@@ -267,3 +267,5 @@ svg.line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 @media (max-height: 520px) {
   .infopanel { max-height: calc(100% - 58px - var(--bar-h) - 12px - var(--mp-h, 0px)); }
 }
+
+.rate small { display: block; font: 500 9.5px/1.1 var(--mono); color: var(--muted); white-space: nowrap; }

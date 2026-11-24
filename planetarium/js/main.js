@@ -16,7 +16,10 @@ import { allPicks } from './picks.js';
 import { setLabelInset } from './render/grids.js';
 import { initMeasure, drawMeasures, measureClick } from './measure.js';
 import { initExtras, extrasClick } from './extras.js';
+import { ensure as ensureEphem } from './jpl.js';
 import { loadSmallBodies } from './moons.js';
+import { globesWork } from './render/globe.js';
+import { initDiag } from './diag.js';
 import { initSteady } from './steady.js';
 import { initLabsSuite } from './labs/index.js';
 import { initDeepStars, deep } from './deepstars.js';
@@ -27,7 +30,9 @@ async function start() {
   if (!A) { loading.textContent = 'The ephemeris library did not load. Check the connection and reload.'; loading.classList.add('err'); return; }
   load();
   try {
-    await loadCore();
+    // the planets' positions for the date on the clock (and for a date in the address) come with the first picture
+    const t = Date.parse(new URLSearchParams(location.search).get('t') || '');
+    await Promise.all([loadCore(), ensureEphem((t || state.timeMs) / 86400000 - 10957.5)]);
   } catch (e) {
     console.error(e);
     loading.textContent = 'Could not load the star catalogue (' + e.message + '). Reload to try again.';
@@ -58,6 +63,8 @@ async function start() {
   window.planetarium = { state, cam, perf, stars, deep, dso, constellations, getFrame, getBodies, allPicks, emit, A, fieldAdjust };
   initExtras({ canvas });       // teaching panels, pointer read-out, right-click menu, Milky Way, night mode (js/extras.js)
   initSteady();
+  initDiag(canvas);
+  setTimeout(() => globesWork(), 400);      // compile the shader before it is needed, not at the first moonrise (0.1 - 0.7 s)
   initLabsSuite();              // measuring tools, labs menu, URL parameters (js/labs/index.js)
 }
 start();

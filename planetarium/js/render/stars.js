@@ -1,7 +1,7 @@
 // render/stars.js: draws the star tiers as soft discs sized by magnitude.
 // The loop is the app's hot path: plain arithmetic on typed arrays, no allocation per star.
 
-import { DEG, RAD, clamp } from '../astro.js';
+import { DEG, RAD, clamp, refractionDeg } from '../astro.js';
 import { stars, FAINT_NAMES } from '../catalog.js';
 import { state } from '../state.js';
 import { cam } from '../camera.js';
@@ -123,9 +123,7 @@ export function drawStars(ctx) {
         // refraction (Saemundsson) and extinction (Kasten-Young air mass, 0.2 mag per air mass)
         let alt = Math.asin(hz > 1 ? 1 : hz) * RAD;
         if (refr) {
-          const hd = alt < -1 ? -1 : alt;
-          let rf = 0.017 / Math.tan((hd + 10.3 / (hd + 5.11)) * DEG);
-          if (alt < -1) rf *= (alt + 90) / 89;
+          const rf = refractionDeg(alt);
           const a2 = (alt + rf) * DEG, c = Math.sqrt(hx * hx + hy * hy);
           if (c > 1e-9) { const k = Math.cos(a2) / c; hx *= k; hy *= k; hz = Math.sin(a2); }
           alt += rf;

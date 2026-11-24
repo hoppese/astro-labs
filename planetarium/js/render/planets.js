@@ -3,16 +3,18 @@
 // Where no picture exists, or WebGL is missing, a plain disc with the right phase stands in (and the object panel says so).
 
 import { DEG, RAD, AU_KM, refractHor, mulMV, unit, dot, cross, airmass, clamp, smooth, scale as vscale, len } from '../astro.js';
-import { state, eff } from '../state.js';
+import { state, eff, emit } from '../state.js';
 import { cam, projectHor } from '../camera.js';
 import { addPick } from '../picks.js';
 import { R } from './proj.js';
 import { repaintSky } from './sky.js';
 import { drawStarPoint, starSize, starSprite } from './stars.js';
 import { BODY_ART } from '../bodydata.js';
-import { bodyAxes, toBody, figure, spinRate, grsEast, GRS_MAP_EAST } from '../orient.js';
+import { bodyAxes, toBody, subPoint, figure, spinRate, grsEast, GRS_MAP_EAST } from '../orient.js';
 import { drawGlobe, pickMap, getTex, photo, globesWork, pumpTextures } from './globe.js';
 import { running } from '../labs/hidden.js';
+import { moonFade } from '../steady.js';
+import { sun, initSun, groupsAt, tileFor, centralMeridian } from '../sunspots.js';
 
 const POINT_BV = { Mercury: 0.9, Venus: 0.65, Mars: 1.5, Jupiter: 0.8, Saturn: 1.0, Uranus: 0.25, Neptune: 0.1 };
 // Saturn's ring radii in km (inner C, inner B, outer B, inner A, outer A)
@@ -65,13 +67,38 @@ function airTint(alt) {
   const X = Math.min(airmass(Math.max(alt, 0)), 38) - 1, f = (k) => Math.max(0.12, Math.pow(10, -0.4 * k * X * 0.4545 * 0.3));
   return [f(0.07), f(0.13), f(0.24)];
 }
+const j0 = [0, 0], j1 = [0, 0];
+/** Inverse of the local map (east, north) -> (screen right, screen up), scaled so that without refraction it is a pure rotation: [rightE, rightN, upE, upN]. */
+function skyJacobian(u, E, N, x, y) {
+  const eps = Math.max(2e-6, Math.min(0.01, 8 / cam.pxPerDeg * DEG)), M = R.frame.Mjh;
+  const at = (d, k, out) => { const v = unit([u[0] + k * d[0], u[1] + k * d[1], u[2] + k * d[2]]), h = mulMV(M, v); return projectHor(R.refr ? refractHor(h) : h, out); };
+  const col = (d) => (at(d, eps, j0) && at(d, -eps, j1) ? [(j0[0] - j1[0]) / (2 * eps), -(j0[1] - j1[1]) / (2 * eps)] : null);
+  const e = col(E), n = col(N); if (!e || !n) return [1, 0, 0, 1];
+  const h = mulMV(M, u), a = R.refr ? refractHor(h) : h, V = cam.V, sc = 2 * cam.s / (1 + V[6] * a[0] + V[7] * a[1] + V[8] * a[2]);
+  const D = e[0] * n[1] - e[1] * n[0];
+  return [sc * n[1] / D, -sc * e[1] / D, -sc * n[0] / D, sc * e[0] / D];
+}
+/** The same squash as a canvas transform about a point: ideal (unrefracted) offsets -> screen offsets. Used by the Earth's shadow on the Moon. */
+export function squashMatrix(u, x, y) {
+  const E = unit(cross([0, 0, 1], u)), N = cross(u, E), J = skyJacobian(u, E, N, x, y);
+  // J maps screen (right, up) to (E, N); its symmetric part after removing the rotation is the inverse of the squash
+  const D = J[0] * J[3] - J[1] * J[2], F = [J[3] / D, -J[2] / D, -J[1] / D, J[0] / D];      // (E, N) -> (right, up): [rE, rN, uE, uN]
+  const t = Math.atan2(F[2] - F[1], F[0] + F[3]), c = Math.cos(t), s = Math.sin(t);
+  // S = F * rotation(-t)
+  const S = [F[0] * c - F[1] * s, F[0] * s + F[1] * c, F[2] * c - F[3] * s, F[2] * s + F[3] * c];
+  return [S[0], -S[2], -S[1], S[3]];      // canvas a, b, c, d (y down)
+}
 /** The body's axes as seen on the screen, in its own frame. */
 function viewAxes(b, ax, x, y) {
-  const u = b.u, E = unit(cross([0, 0, 1], u)), N = cross(u, E);
-  const al = screenAngleToward(b, [0, 0, 1], x, y), c = Math.cos(al), s = Math.sin(al);
-  const right = [c * N[0] + s * E[0], c * N[1] + s * E[1], c * N[2] + s * E[2]], up = [-s * N[0] + c * E[0], -s * N[1] + c * E[1], -s * N[2] + c * E[2]];
-  const back = [-u[0], -u[1], -u[2]];
-  if (!ax) return { R: [1, 0, 0], U: [0, 0, 1], V: [0, -1, 0], map: (v) => [dot(v, right), -dot(v, back), dot(v, up)] };
+  const u = b.u, E = unit(cross([0, 0, 1], u)), N = cross(u, E), back = [-u[0], -u[1], -u[2]];
+  // How the sky's east and north lie on the screen here, refraction included: low down it presses everything together vertically (17 % at the
+  // horizon), the discs as much as the gaps between them. So `right` and `up` are the sky directions that one screen unit spans, not unit vectors.
+  const J = skyJacobian(u, E, N, x, y), mix = (a, e) => [a * E[0] + e * N[0], a * E[1] + e * N[1], a * E[2] + e * N[2]];
+  const right = mix(J[0], J[1]), up = mix(J[2], J[3]);
+  if (!ax) {
+    const al = screenAngleToward(b, [0, 0, 1], x, y), c = Math.cos(al), s = Math.sin(al), r0 = mix(s, c), u0 = mix(c, -s);
+    return { R: [dot(right, r0), 0, dot(right, u0)], U: [dot(up, r0), 0, dot(up, u0)], V: [0, -1, 0], map: (v) => [dot(v, r0), -dot(v, back), dot(v, u0)] };
+  }
   return { R: toBody(ax, right), U: toBody(ax, up), V: toBody(ax, back), map: (v) => toBody(ax, v) };
 }
 const hex = (c) => [1, 3, 5].map((k) => Math.pow(parseInt(c.slice(k, k + 2), 16) / 255, 2.2));
@@ -101,14 +128,47 @@ function drawFromMap(ctx, b, pl, r, extra = {}) {
     o.alphaSun = 695700 / AU_KM / dSun;
     // only moons on the sunward side whose shadow can reach the globe
     const list = [];
-    for (const m of b.moons) { const p = vscale(va.map(m.rel), 1 / km), h = dot(p, S); if (h <= 0) continue; if (len([p[0] - h * S[0], p[1] - h * S[1], p[2] - h * S[2]]) < 1.1) list.push([p[0], p[1], p[2], m.radiusKm / b.radiusKm]); }
+    for (const m of b.moons) { if (moonFade(m.periodDays, sRate.ms) < 0.5) continue; const p = vscale(va.map(m.rel), 1 / km), h = dot(p, S); if (h <= 0) continue; if (len([p[0] - h * S[0], p[1] - h * S[1], p[2] - h * S[2]]) < 1.1) list.push([p[0], p[1], p[2], m.radiusKm / b.radiusKm]); }
     o.shadows = list;
   }
+  if (b.mutual && r > 1.5) { const km = b.radiusKm / AU_KM; o.alphaSun = 695700 / AU_KM / len(b.toSun); o.shadows = b.mutual.map((m) => { const p = vscale(va.map(m.rel), 1 / km); return [p[0], p[1], p[2], m.km / b.radiusKm]; }); }
   if (b.id === 'Saturn') { const ring = getTex('rings.png', { nomip: true, wrap: false }); if (ring) { o.rings = ring; o.reach = RING.a1 / b.radiusKm; } }
   if (!drawGlobe(ctx, o, dpr, cam.w, cam.h)) return 0;
   return b.id === 'Saturn' && o.rings ? rr * o.reach : rr;
 }
 
+// ---- sunspots --------------------------------------------------------------------------------------
+const spotData = new Float32Array(640), slides = { tt: null, prev: null, at: 0 };
+const SLIDE_MS = 420, FADE = 160;
+/** The groups on the disc, ready for the shader. When time runs so fast that the Sun turns more than a twentieth of a rotation a frame, single frames would
+ *  flicker: the spots are then shown as a slow series of stills (each the Sun of one date, cross-faded), a whole number of solar rotations apart if that is possible. */
+function sunSpots(b, r) {
+  if (r < 14) return null;
+  if (!sun.tiles) { initSun(); return null; }
+  const tex = getTex('sun/spots.webp', { wrap: false }); if (!tex) return null;
+  const now = performance.now(), tt = b.ttSeen ?? R.frame.time.tt, perFrame = state.playing ? Math.abs(state.rate) * sRate.ms / 86400000 : 0;
+  const sets = [];
+  if (perFrame < 1.3) { slides.tt = null; sets.push([tt, 1]); }
+  else {
+    if (slides.tt === null || now - slides.at > SLIDE_MS || Math.abs(slides.tt - tt) > perFrame * 400) { slides.prev = slides.tt; slides.at = now; const s = Math.sign(state.rate); slides.tt = slides.tt === null || Math.abs(slides.tt - tt) > perFrame * 400 ? tt : slides.tt + s * Math.max(27.2753, Math.round(Math.abs(tt - slides.tt) / 27.2753) * 27.2753); }
+    const u = clamp((now - slides.at) / FADE, 0, 1); if (slides.prev !== null && u < 1) sets.push([slides.prev, 1 - u]); sets.push([slides.tt, slides.prev === null ? 1 : u]);
+    emit('render');
+  }
+  let n = 0; const T = sun.tiles, ax0 = bodyAxes('Sun', tt);
+  for (const [t, w] of sets) {
+    const { list } = groupsAt(t); if (!list) continue;
+    // in a still the disc keeps its own face: longitudes are carried over to the present orientation
+    const sub = (a) => subPoint(a, [-b.u[0], -b.u[1], -b.u[2]]).lon, dl = t === tt ? 0 : sub(ax0) - centralMeridian(t), c = sub(ax0), la = subPoint(ax0, [-b.u[0], -b.u[1], -b.u[2]]).lat;
+    const L = list.filter((g) => Math.sin(g.lat * DEG) * Math.sin(la * DEG) + Math.cos(g.lat * DEG) * Math.cos(la * DEG) * Math.cos((g.lon + dl - c) * DEG) > -0.08).sort((p, q) => q.area - p.area);
+    for (const g of L) {
+      if (n >= 40) break;
+      const k = tileFor(g), m = T.tiles[k.i], lo = (g.lon + dl) * DEG, cb = Math.cos(g.lat * DEG), o = 16 * n++;
+      spotData[o] = cb * Math.cos(lo); spotData[o + 1] = cb * Math.sin(lo); spotData[o + 2] = Math.sin(g.lat * DEG); spotData[o + 3] = w * clamp(g.area / 4, 0, 1);
+      spotData.set([m[0], m[1], m[2], m[3], m[4], m[5], RAD / T.dpp / k.scale, k.flip, Math.cos(k.rot), Math.sin(k.rot), 0, 0], o + 4);
+    }
+  }
+  return { tex, data: spotData, n, w: T.w, h: T.h };
+}
 let glareLast = null;
 function drawSun(ctx, b, pl, rpx) {
   const r = Math.max(rpx, 5);
@@ -125,7 +185,7 @@ function drawSun(ctx, b, pl, rpx) {
   if (frac < 0.004) drawCorona(ctx, b, pl, r, 1 - frac / 0.004);
   const quiet = !state.show.sunspots || !!running.id;    // labs time the limbs of real planets: no unrelated spots on the disc
   const air = airTint(pl.alt), glare = 1 + (1.2 + 0.8 * day) * clamp(14 / r, 0, 1);      // reddened, never dimmed below the sky; dazzling when small
-  if (r >= 8 && drawFromMap(ctx, b, pl, r, { tex: quiet ? 'sun-quiet' : 'sun', small: false, day: 0, body: [1.0 * glare, 0.875 * glare, 0.64 * glare], tint: [1, air[1] / air[0], air[2] / air[0]], gain: 1, spin: 0 })) return r;
+  if (r >= 8 && drawFromMap(ctx, b, pl, r, { spots: quiet ? null : sunSpots(b, r), day: 0, body: [1.0 * glare, 0.875 * glare, 0.64 * glare], tint: [1, air[1] / air[0], air[2] / air[0]], gain: 1, spin: 0 })) return r;
   // redden toward the horizon when there is an atmosphere
   const low = R.atmo ? clamp(1 - pl.alt / 12, 0, 1) : 0;
   const core = `rgb(255,${Math.round(250 - 70 * low)},${Math.round(232 - 150 * low)})`;
@@ -184,6 +244,7 @@ export function drawBodies(ctx) {
     let drawnR = 0, visible = true;
     const moonsBehind = [], moonsFront = [];
     for (const m of b.moons) (m.behind ? moonsBehind : moonsFront).push(m);
+    if (b.moons.length > 1) { const far = (a, c) => c.dist - a.dist; moonsBehind.sort(far); moonsFront.sort(far); }      // one moon in front of another covers it
 
     if (b.kind !== 'sun' && b.kind !== 'moon') for (const m of moonsBehind) drawMoonOf(ctx, b, m, pl, rpx, lim, ext);
     if (b.kind === 'sun') drawnR = drawSun(ctx, b, pl, rpx);
@@ -224,6 +285,7 @@ function drawPointFaded(ctx, x, y, dm, bv, k) {
   return r;
 }
 function drawMoonOf(ctx, parent, m, ppl, prpx, lim, ext) {
+  const fade = moonFade(m.periodDays, sRate.ms); if (fade < 0.02) return;
   if (m.occulted || m.light <= 0.002) return;              // behind the disc, or deep in the planet's shadow
   const pl = place(m.hor);
   if (!pl) return;
@@ -236,18 +298,18 @@ function drawMoonOf(ctx, parent, m, ppl, prpx, lim, ext) {
   if (rpx >= 1.6) {
     // in the planet's shadow: sunlight goes, a trace of coppery light stays so the disc can still be found when zoomed in
     const lit = m.light ?? 1;
-    r = drawFromMap(ctx, m, pl, rpx, { eclDim: Math.max(0.02, lit) });
-    if (!r) { ctx.globalAlpha = Math.max(0.03, lit); ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(pl.x, pl.y, rpx, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1; r = rpx; }
+    r = drawFromMap(ctx, m, pl, rpx, { eclDim: Math.max(0.02, lit) * fade });
+    if (!r) { ctx.globalAlpha = Math.max(0.03, lit) * fade; ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(pl.x, pl.y, rpx, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1; r = rpx; }
   }
   else {
     // A moon's point is capped in size (dm 6); apply any eclipse dimming AFTER the cap, so a moon sliding into
     // its planet's shadow is seen to fade out over the few minutes that takes, instead of staying at full size.
-    const dim = m.light < 1 ? 2.5 * Math.log10(Math.max(m.light, 1e-6)) : 0;
+    const dim = (m.light < 1 ? 2.5 * Math.log10(Math.max(m.light, 1e-6)) : 0) + (fade < 1 ? 2.5 * Math.log10(fade) : 0);
     const dmPoint = Math.min(dm - dim, 6) + dim;
     if (dmPoint <= 0) return;
     r = drawStarPoint(ctx, pl.x, pl.y, dmPoint, 0.7);
   }
   addPick(pl.x, pl.y, Math.max(r, 3), m.mag, { kind: 'body', id: m.id });
-  if (state.show.planetNames && sepPx > 14) R.labels.add(pl.x, pl.y, m.name, 'moon', 90 - m.mag, { gap: r + 4 });
+  if (state.show.planetNames && sepPx > 14 && fade > 0.6) R.labels.add(pl.x, pl.y, m.name, 'moon', 90 - m.mag, { gap: r + 4 });
 }
 export { AU_KM };

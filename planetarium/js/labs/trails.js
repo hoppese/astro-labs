@@ -8,6 +8,8 @@ import { A, vecOf, unit, mulMV, refractHor, unrefractHor } from '../astro.js';
 import { state, on, emit, eff } from '../state.js';
 import { projectHor, cam } from '../camera.js';
 import { makeFrame } from '../skyframe.js';
+import { apparent } from '../ephem.js';
+import { jpl } from '../jpl.js';
 import { wallParts, fmtDate } from '../timeutil.js';
 import { R } from '../render/proj.js';
 import { makeCard } from './dock.js';
@@ -20,13 +22,12 @@ const BODIES = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 
 export const trail = { on: false, body: 'Mars', step: DAY * 5, before: 30, after: 30, frame: 'stars', t0: null, pts: [], key: '' };
 let card = null;
 
-/** Apparent topocentric J2000 direction of a body (the same call ephem.js uses), or for the Moon its geocentric place minus the observer. */
+/** Apparent topocentric J2000 direction of a body (the same call ephem.js uses). */
 function dirOf(id, frame) {
-  if (id === 'Moon') return unit(vecOf(A.Equator('Moon', frame.time, frame.obs, false, true).vec));
-  return unit(vecOf(A.Equator(id, frame.time, frame.obs, false, frame.aberration !== false).vec));
+  return unit(apparent(id, frame, frame.aberration !== false).seen);
 }
 function build() {
-  const key = [trail.body, trail.step, trail.before, trail.after, trail.frame, trail.t0, state.loc.lat, state.loc.lon, eff.refraction, state.fx.aberration].join('|');
+  const key = [jpl.version, trail.body, trail.step, trail.before, trail.after, trail.frame, trail.t0, state.loc.lat, state.loc.lon, eff.refraction, state.fx.aberration].join('|');
   if (key === trail.key) return;
   trail.key = key; trail.pts = [];
   for (let i = -trail.before; i <= trail.after; i++) {

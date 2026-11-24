@@ -5,6 +5,7 @@
 //   align = 'sun'    ghosts are shifted so both observers' Suns coincide: the planet (or Moon) in front
 //                    of the Sun then shows as two dots on one disc (transits, solar eclipses)
 
+import { jpl } from '../jpl.js';
 import { RAD, unit, dot, horToAzAlt, refractHor, fmtLat, fmtLon } from '../astro.js';
 import { state, on, emit, eff } from '../state.js';
 import { makeFrame } from '../skyframe.js';
@@ -24,7 +25,7 @@ const IDS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Ur
 export function bodies2(frame) {
   if (!cmp.obs2) return null;
   const o = cmp.obs2;
-  const key = frame.timeMs + '|' + o.lat + '|' + o.lon + '|' + state.lightTime + '|' + frame.aberration;
+  const key = jpl.version + '|' + frame.timeMs + '|' + o.lat + '|' + o.lon + '|' + state.lightTime + '|' + frame.aberration;
   if (key !== cacheKey) { cacheKey = key; const f2 = makeFrame(frame.timeMs, o); cache = { frame: f2, bodies: compute(f2, state.lightTime, frame.aberration !== false) }; }
   return cache;
 }

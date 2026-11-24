@@ -72,14 +72,15 @@ export function azAltToHor(az, alt) {
   return [c * Math.cos(a), -c * Math.sin(a), Math.sin(b)];
 }
 
+const R1 = 1.02 / Math.tan((-1 + 10.3 / 4.11) * DEG) / 60, SLOPE1 = (R1 - 1.02 / Math.tan((-0.999 + 10.3 / 4.111) * DEG) / 60) / 0.001 + R1 / 89;
 /** Atmospheric refraction in degrees for a TRUE altitude in degrees.
- *  Same formula as astronomy-engine's Refraction('normal', alt) (Saemundsson/Meeus,
- *  tapered to zero toward the nadir so nothing jumps at the horizon). */
+ *  Same formula as astronomy-engine's Refraction('normal', alt) (Saemundsson/Meeus) down to -1 deg, then eased
+ *  (slope continuous) to zero at the nadir. */
 export function refractionDeg(alt) {
-  let hd = alt < -1 ? -1 : alt;
-  let r = (1.02 / Math.tan((hd + 10.3 / (hd + 5.11)) * DEG)) / 60;
-  if (alt < -1) r *= (alt + 90) / 89;
-  return r;
+  if (alt >= -1) return 1.02 / Math.tan((alt + 10.3 / (alt + 5.11)) * DEG) / 60;
+  // Below that (nobody sees it: the ground is in the way, unless it is switched off) the slope must not break: a break is a kink in the
+  // up-down scale, and at x1000 every moon and star near Jupiter jumped by 17 % of its distance as the planet passed 1 deg below the horizon.
+  return (R1 + SLOPE1 * 2 * (1 - Math.exp((alt + 1) / 2))) * (alt + 90) / 89;
 }
 /** Lift a true HOR unit vector to its apparent (refracted) direction. */
 export function refractHor(h) {

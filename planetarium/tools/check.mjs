@@ -17,6 +17,7 @@ const X = await import('../js/astro.js');
 const { state } = await import('../js/state.js');
 
 await C.loadCore();
+await (await import('../js/jpl.js')).loadAll();
 const RICHMOND = { lat: 39.83, lon: -84.89, elev: 300 };
 const star = (name) => { for (const i of Object.keys(C.stars.names.name)) if (C.stars.names.name[i] === name) return C.starRecord(0, +i); throw new Error(name); };
 const utc = (s) => Date.parse(s);
@@ -423,3 +424,5 @@ await (await import('./check-deep.mjs')).checkDeep({ line, f2, X, netFetch: proc
 line(); line('== 24. Solar-system bodies: places, orientations, Great Red Spot (tools/check-bodies.mjs; a failure throws) ==');
 globalThis.__catFetch = true;
 await (await import('./check-bodies.mjs')).checkBodies(line);
+await (await import('./check-jpl.mjs')).default(line);
+await (await import('./check-sun.mjs')).default(line);
