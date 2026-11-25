@@ -70,7 +70,7 @@ function uiBlocks() {
   if (blockCache && now - blockAt < 400) return blockCache;
   blockAt = now; blockCache = [];
   const c = canvas.getBoundingClientRect();
-  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.steady-note', '.imgcredit']) {
+  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.steady-note', '.imgcredit', '.trackchip']) {
     const el = document.querySelector(sel);
     if (!el || el.hidden) continue;
     const r = el.getBoundingClientRect();
@@ -82,7 +82,7 @@ const sp = [0, 0];
 function draw(frame, now) {
   const t0 = performance.now();
   // time running fast past a body: re-place the 120,000 stars every 18 h of sky time, not every frame (7 ms each; the fastest moves 0.02 arcsec meanwhile)
-  stars.epochTol = eff.steady && state.selected && state.selected.kind === 'body' ? Math.max(0.002, Math.abs(state.rate) * 0.5 / 31557600, epochTolFor(cam.fov)) : epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
+  stars.epochTol = eff.steady && state.tracking && state.trackRef && state.trackRef.kind === 'body' ? Math.max(0.002, Math.abs(state.rate) * 0.5 / 31557600, epochTolFor(cam.fov)) : epochTolFor(cam.fov);          // before the frame, not after it (catalog.js)
   setStarEpoch(frame.years);
   const bodies = getBodies(frame);
   update(frame);
@@ -133,7 +133,7 @@ function drawSelection(frame, bodies) {
   let r = 13;
   if (ref.kind === 'body') { const b = bodies.byId[ref.id]; if (b) r = Math.max(r, b.angRadius * cam.pxPerDeg * (b.id === 'Saturn' ? 2.4 : 1) + 8); }
   r = Math.min(r, Math.max(cam.w, cam.h));
-  ctx.strokeStyle = state.tracking ? 'rgba(255,196,96,0.95)' : 'rgba(255,214,140,0.85)'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = state.tracking && sameRef(ref, state.trackRef) ? 'rgba(255,196,96,0.95)' : 'rgba(255,214,140,0.85)'; ctx.lineWidth = 1.5;
   // four corner brackets, Stellarium-style pointer
   const g = Math.PI / 7;
   ctx.beginPath();

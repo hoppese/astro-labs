@@ -9,9 +9,9 @@ import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLab
 import { wallParts, wallToMs, zoneLabel, fmtDate, fmtTime, browserZone, zoneFromLongitude } from './timeutil.js';
 import { fmtFov, fmtLat, fmtLon } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
-import { centerOn, toggleTracking, select } from './nav.js';
+import { centerOn, toggleTracking, select, stopTracking } from './nav.js';
 import { navKey } from './input.js';
-import { latitudeHidden } from './labs/hidden.js';
+import { latitudeHidden, running } from './labs/hidden.js';
 import { keyReached, takesKeys } from './focus.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
@@ -242,7 +242,7 @@ function nearestCity(lat, lon) {
   for (const c of cities) { const d = Math.hypot(c.lat - lat, (c.lon - lon) * Math.cos(lat * Math.PI / 180)); if (!best || d < best.d) best = { c, d }; }
   return best;
 }
-export function setLocation(loc) { locMsg(''); set('loc', loc); }
+export function setLocation(loc) { locMsg(''); if (!running.id) stopTracking(); set('loc', loc); }
 function fillLocation() {
   const l = state.loc;
   $('locNow').innerHTML = `<b></b><span class="sub"></span>`;
@@ -333,7 +333,7 @@ function buildShortcuts(search) {
     const t = byKey[k];
     if (t) { e.preventDefault(); runTool(t); return; }
     switch (k) {
-      case ' ': e.preventDefault(); if (state.selected) centerOn(state.selected); return;
+      case ' ': e.preventDefault(); { const ref = state.selected || (state.tracking && state.trackRef); if (ref) centerOn(ref); } return;
       case 't': toggleTracking(); return;
       case 'j': slower(); return;
       case 'l': faster(); return;
@@ -367,7 +367,7 @@ function updateReadout(perf) {
   else src = lim > 7 ? '<br>faintest: Gaia DR3' : '<br>faintest: HYG';
   if (perf.sky && perf.sky.glare <= perf.sky.limWant && perf.sky.glare < catEnd) src = '<br>fainter stars are lost in the planet’s glare';
   const txt = `FOV <b>${fmtFov(cam.fov)}</b> · stars to mag <b>${(past ? catEnd : lim).toFixed(1)}</b>` + src +
-    (state.mount === 'eq' ? '<br>equatorial mount' : '') + (state.tracking ? '<br>tracking' : '');
+    (state.mount === 'eq' ? '<br>equatorial mount' : '');
   if (txt !== lastRead) { $('readout').innerHTML = txt; lastRead = txt; }
 }
 

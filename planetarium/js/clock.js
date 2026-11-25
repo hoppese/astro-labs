@@ -12,8 +12,8 @@ let lastReal = null;
  *  or a satellite's place, would flicker between unrelated pictures. */
 const CYCLE = { Moon: 27.3, Mercury: 88 };
 export function rateCap() {
-  if (!state.tracking || !state.selected || state.selected.kind !== 'body') return 1e8;
-  const id = state.selected.id, P = CYCLE[id];
+  if (!state.tracking || !state.trackRef || state.trackRef.kind !== 'body') return 1e8;
+  const id = state.trackRef.id, P = CYCLE[id];
   if (P) return Math.max(1e6, P * 86400 * 5);
   return clockInfo.isMoon && clockInfo.isMoon(id) ? 1e6 : 1e8;
 }

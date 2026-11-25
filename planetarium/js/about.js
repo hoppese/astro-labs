@@ -11,6 +11,8 @@ and Saturn's moons and Saturn's rings.</p>
 <ul>
   <li><b>Drag</b> to pan. <b>Scroll</b>, two-finger scroll or <b>pinch</b> to zoom about the pointer.</li>
   <li><b>Click</b> an object to select it; <b>double-click</b> to centre it. <b>Track</b> keeps it centred while time runs.</li>
+  <li><b>While something is tracked</b> a drag, the arrow keys or a zoom move the view but go on following: the object keeps its new place on the screen. The “Tracking” label names what is followed: click the name to bring it back to the middle, × (or <kbd>T</kbd>) to stop. Clicking empty sky or another object only changes what the panel shows.</li>
+  <li><b>On a phone</b> the panel opens short: tap its name or drag it up for everything, drag it down or tap the sky to put it away. Tap twice on an object to centre it, twice on empty sky to zoom in.</li>
   <li>The bottom bar has the display toggles, the time controls and the clock (click it to set a date and time).</li>
   <li><b>Move the mouse</b> over the sky to read the right ascension, declination, altitude, azimuth and constellation under it (bottom of the sky; Settings can move it to the pointer or turn it off).</li>
   <li><b>Right-click</b> (or press and hold on a touch screen) for a menu: centre, track, zoom, measure an angle from there, mark, copy coordinates, and for galaxies “add to the Hubble table”.</li>
@@ -21,8 +23,8 @@ and Saturn's moons and Saturn's rings.</p>
   ${K('Search', ['/', 'F3'])}
   ${K('Pan', ['←', '↑', '↓', '→'])}
   ${K('Zoom in / out', ['+', '−'])}
-  ${K('Centre the selection', ['Space'])}
-  ${K('Track the selection', ['T'])}
+  ${K('Centre the selection (or what is tracked)', ['Space'])}
+  ${K('Track the selection / stop tracking', ['T'])}
   ${K('Deselect / close panels', ['Esc'])}
   ${K('Slower · real time · faster', ['J', 'K', 'L'])}
   ${K('Pause / resume', ['7'])}

@@ -13,7 +13,9 @@ export const FOV_MIN = 0.00004, FOV_MAX = 180;      // 0.14 arcsec to all-sky
 
 export const cam = {
   lon: -180, lat: 28, fov: 90,
-  w: 800, h: 600, cx: 400, cy: 300, s: 1,
+  roll: 0,                    // degrees the picture is turned from the mount's own up; only following with an offset uses it (nav.js), and it eases back to 0
+  w: 800, h: 600, cx: 400, cy: 300, s: 1,      // (cx, cy): where the view direction is on screen: the middle of the sky left free by the panels (layout.js)
+  ox: 0, oy: 0,               // (cx, cy) less the middle of the canvas
   V: IDENTITY.slice(),        // HOR -> view (rows: right, up, forward)
   Vt: IDENTITY.slice(),       // view -> HOR
   M: IDENTITY.slice(),        // mount -> HOR
@@ -22,7 +24,9 @@ export const cam = {
   pxPerDeg: 1,                // screen scale at the centre of the view
 };
 
-export function resize(w, h) { cam.w = w; cam.h = h; cam.cx = w / 2; cam.cy = h / 2; }
+export function resize(w, h) { cam.w = w; cam.h = h; cam.cx = w / 2 + cam.ox; cam.cy = h / 2 + cam.oy; }
+/** Move the place on screen where the view direction lies (px from the middle of the canvas). */
+export function setCentre(ox, oy) { cam.ox = ox; cam.oy = oy; resize(cam.w, cam.h); }
 
 /** Rebuild the matrices for the current pointing, mount and frame. Call before projecting. */
 export function update(frame) {
@@ -32,14 +36,16 @@ export function update(frame) {
   const l = cam.lon * DEG, b = cam.lat * DEG, cl = Math.cos(l), sl = Math.sin(l), cb = Math.cos(b), sb = Math.sin(b);
   const f = [cb * cl, cb * sl, sb], r = [sl, -cl, 0];
   const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
-  const Vm = [r[0], r[1], r[2], u[0], u[1], u[2], f[0], f[1], f[2]];     // mount -> view
+  const ca = Math.cos(cam.roll * DEG), sa = Math.sin(cam.roll * DEG);
+  const Vm = cam.roll ? [ca * r[0] + sa * u[0], ca * r[1] + sa * u[1], ca * r[2] + sa * u[2], ca * u[0] - sa * r[0], ca * u[1] - sa * r[1], ca * u[2] - sa * r[2], f[0], f[1], f[2]]
+    : [r[0], r[1], r[2], u[0], u[1], u[2], f[0], f[1], f[2]];     // mount -> view
   cam.M = eff.mount === 'eq' ? frame.Mdh : IDENTITY;
   cam.Mt = transpose(cam.M);
   cam.V = mulMM(Vm, cam.Mt);
   cam.Vt = transpose(cam.V);
   cam.s = (cam.h / 2) / (2 * Math.tan(cam.fov * DEG / 4));
   cam.pxPerDeg = cam.s * DEG;
-  const rho = (Math.hypot(cam.w, cam.h) / 2 + 60) / cam.s;
+  const rho = (Math.hypot(Math.max(cam.cx, cam.w - cam.cx), Math.max(cam.cy, cam.h - cam.cy)) + 60) / cam.s;
   cam.zMin = Math.cos(Math.min(2 * Math.atan(rho / 2), 160 * DEG));
 }
 
@@ -82,7 +88,8 @@ export const centerHor = () => [cam.V[6], cam.V[7], cam.V[8]];
  *  would need to stops at the pole and swings the sky round it instead, as an alt-az or equatorial mount does. */
 let poleGrab = null, poleSide = 0, poleOf = null;
 export function bringUnder(g, x, y, frame) {
-  const px = (x - cam.cx) / cam.s, py = -(y - cam.cy) / cam.s;
+  const qx = (x - cam.cx) / cam.s, qy = -(y - cam.cy) / cam.s, ca = Math.cos(cam.roll * DEG), sa = Math.sin(cam.roll * DEG);
+  const px = cam.roll ? qx * ca - qy * sa : qx, py = cam.roll ? qx * sa + qy * ca : qy;      // on the mount's own axes
   const r2 = px * px + py * py, vz = (4 - r2) / (4 + r2), k = (1 + vz) / 2, vx = px * k, vy = py * k;
   const S = Math.sin(clamp(g.lat, -90, 90) * DEG), Rr = Math.hypot(vy, vz);
   let b = cam.lat * DEG;
@@ -121,6 +128,28 @@ export function bringUnder(g, x, y, frame) {
   update(frame);
 }
 
+/** Give the camera the orientation V (HOR -> view, rows right, up, forward), as longitude, latitude and roll of the mount. */
+export function setAxes(V, frame) {
+  const f = mulMV(cam.Mt, [V[6], V[7], V[8]]), u = mulMV(cam.Mt, [V[3], V[4], V[5]]), m = toSph(f);
+  cam.lon = m.lon; cam.lat = m.lat;
+  const l = m.lon * DEG, b = m.lat * DEG;
+  cam.roll = Math.atan2(-(u[0] * Math.sin(l) - u[1] * Math.cos(l)), -u[0] * Math.sin(b) * Math.cos(l) - u[1] * Math.sin(b) * Math.sin(l) + u[2] * Math.cos(b)) * RAD;
+  update(frame);
+}
+/** Point the camera, at the given roll, so that the HOR direction h is seen along the view-space direction v. False if the mount cannot. */
+export function placeAt(h, v, roll, frame) {
+  const m = mulMV(cam.Mt, h), ca = Math.cos(roll * DEG), sa = Math.sin(roll * DEG);
+  const vx = v[0] * ca - v[1] * sa, vy = v[0] * sa + v[1] * ca, vz = v[2], Rr = Math.hypot(vy, vz);
+  if (Rr < 1e-9 || Math.abs(m[2]) > Rr) return false;
+  const phi = Math.atan2(vz, vy), d = Math.acos(clamp(m[2] / Rr, -1, 1)), near = cam.lat * DEG;
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a)), ok = [wrap(phi + d), wrap(phi - d)].filter((a) => Math.abs(a) <= Math.PI / 2).sort((a, b) => Math.abs(a - near) - Math.abs(b - near));
+  if (!ok.length) return false;
+  const b = ok[0], mx = -vy * Math.sin(b) + vz * Math.cos(b), my = -vx;
+  cam.lat = b * RAD; cam.lon = (Math.atan2(m[1], m[0]) - Math.atan2(my, mx)) * RAD; cam.roll = roll;
+  update(frame);
+  return true;
+}
+
 /** Zoom by `factor` (< 1 zooms in) keeping the sky point under (x, y) fixed. */
 export function zoomAt(factor, x, y, frame, keepCentre = false) {
   const g = keepCentre ? null : mountAt(x, y);
@@ -132,7 +161,7 @@ export function zoomAt(factor, x, y, frame, keepCentre = false) {
 /** Switch mounts without moving the centre of the view. */
 export function setMount(mount, frame) {
   const h = centerHor();
-  state.mount = mount;
+  state.mount = mount; cam.roll = 0;
   update(frame);
   lookAtHor(h);
   update(frame);

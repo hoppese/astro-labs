@@ -9,7 +9,7 @@ import { state, emit, on } from '../state.js';
 import { setTime } from '../clock.js';
 import { makeFrame } from '../skyframe.js';
 import { compute } from '../ephem.js';
-import { select, flyTo } from '../nav.js';
+import { select, flyTo, track } from '../nav.js';
 import { wallParts, fmtDate, fmtTime } from '../timeutil.js';
 import { makeCard } from './dock.js';
 import { esc } from './util.js';
@@ -142,7 +142,7 @@ export function jumpTo(e) {
   if (e.target) {
     const ref = { kind: 'body', id: e.target };
     select(ref);
-    state.tracking = true; emit('selection');
+    track(ref);
     flyTo(ref, { fov: e.fov || null, dur: 500 });
   }
 }

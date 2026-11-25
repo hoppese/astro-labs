@@ -78,7 +78,7 @@ export function sqDegPerCm2() {
   const s = cam.s, nx = 12, ny = 8;
   let omega = 0;
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-    const x = ((i + 0.5) / nx - 0.5) * cam.w / s, y = ((j + 0.5) / ny - 0.5) * cam.h / s;
+    const x = ((i + 0.5) / nx * cam.w - cam.cx) / s, y = ((j + 0.5) / ny * cam.h - cam.cy) / s;
     const k = 1 + (x * x + y * y) / 4;
     omega += 1 / (k * k);
   }
@@ -107,7 +107,7 @@ function sampleCells() {
   const mp = deep.map;
   haveCells = !!(deep.ready && mp && mp.data);
   if (!haveCells) return;
-  const M = getFrame().Mhj, h = unproject(cam.w / 2, cam.h / 2);
+  const M = getFrame().Mhj, h = unproject(cam.cx, cam.cy);
   // centre of the view in J2000, and two directions across it
   const c0 = M[0] * h[0] + M[1] * h[1] + M[2] * h[2], c1 = M[3] * h[0] + M[4] * h[1] + M[5] * h[2], c2 = M[6] * h[0] + M[7] * h[1] + M[8] * h[2];
   centre[0] = c0; centre[1] = c1; centre[2] = c2;

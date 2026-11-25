@@ -18,7 +18,7 @@ export const FREE_RATE = 50000;       // not following: only the light of the sk
 function wanted() {
   if (!state.show.steady || running.id || see.on) return '';
   const r = Math.abs(state.rate);
-  if (state.tracking && state.selected) {
+  if (state.tracking && state.trackRef) {
     const close = cam.fov < (eff.steady === 'full' ? 8 : 5);
     if (state.playing && r >= (close ? CLOSE_RATE : FOLLOW_RATE)) return 'full';
     // paused after running fast: keep the view as it was, so that what was being watched does not vanish into daylight or the ground
@@ -34,7 +34,7 @@ export function moonFade(periodDays, frameMs = 16.7) {
   const turn = Math.min(Math.abs(state.rate), rateCap()) * frameMs / 86400000 / periodDays;
   return Math.max(0, Math.min(1, (0.35 - turn) / 0.2));
 }
-const moonsFading = () => state.playing && state.selected && state.selected.kind === 'body' && moonFade({ Jupiter: 16.7, Saturn: 79, Uranus: 13.5, Neptune: 5.9, Mars: 1.26, Pluto: 6.4, Earth: 27 }[state.selected.id]) < 1;
+const moonsFading = () => state.playing && state.tracking && state.trackRef && state.trackRef.kind === 'body' && moonFade({ Jupiter: 16.7, Saturn: 79, Uranus: 13.5, Neptune: 5.9, Mars: 1.26, Pluto: 6.4, Earth: 27 }[state.trackRef.id]) < 1;
 let snap = null, fadeAt = -1e9;
 const FADE_MS = 450;
 

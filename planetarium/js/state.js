@@ -42,8 +42,8 @@ export const state = {
   fx: { aberration: true, parallax: true, properMotion: true, earthShadow: false },
   // --- selection ---
   selected: null,          // object reference, see objects.js
-  tracking: false,
-  keepTracked: false,      // notebook labs: selecting something else does not end tracking of trackRef (nav.js)
+  tracking: false,         // following trackRef (nav.js: track / stopTracking); independent of what is selected
+  keepTracked: false,      // notebook labs: closing the object panel only puts it away (nav.js select)
   trackRef: null,
 };
 

@@ -1,26 +1,30 @@
 // input.js: mouse, trackpad, touch and keyboard navigation on the sky canvas.
 // Drag pans (the sky point under the pointer stays under it), wheel / two-finger scroll / pinch
-// zooms about the pointer, a click selects the nearest object.
+// zooms about the pointer, a click selects the nearest object. While something is followed a drag keeps following it with an offset
+// (nav.js); a zoom is about the pointer once there is an offset, about the object while it is in the middle.
 
 import { state, emit } from './state.js';
-import { cam, mountAt, bringUnder, zoomAt, update } from './camera.js';
+import { cam, mountAt, bringUnder, zoomAt, update, unproject } from './camera.js';
+import { sameRef } from './objects.js';
 import { getFrame } from './skyframe.js';
 import { pickAt } from './picks.js';
-import { select, centerOn, cancelAnim, zoomAnim } from './nav.js';
+import { select, centerOn, flyTo, cancelAnim, zoomAnim, takeView, moveSky, zoomTracked, skyUnder, hasOffset, holdCentre } from './nav.js';
 
-const CLICK_SLOP = 5;
+const CLICK_SLOP = 5, TAP_SLOP = 12;      // px a mouse / a finger may wander and still have clicked
+const DOUBLE_MS = 320, DOUBLE_PX = 34;     // two taps this close are a double tap
 
 export function initInput(canvas, { onClickSky } = {}) {
   const pointers = new Map();
-  let grab = null, moved = 0, downAt = null, pinch = null;
+  let grab = null, moved = 0, downAt = null, pinch = null, lastTap = null, lastType = 'mouse';
 
   const pos = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const userMoves = () => { cancelAnim(); if (state.tracking) { state.tracking = false; emit('selection'); } };
+  const userMoves = () => { if (state.tracking) takeView(); else cancelAnim(); };
 
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
     canvas.setPointerCapture(e.pointerId);
     const p = pos(e);
+    lastType = e.pointerType; holdCentre(true);
     pointers.set(e.pointerId, p);
     update(getFrame());
     if (pointers.size === 1) { grab = mountAt(p[0], p[1]); moved = 0; downAt = p; }
@@ -30,8 +34,8 @@ export function initInput(canvas, { onClickSky } = {}) {
   function startPinch() {
     const [a, b] = [...pointers.values()];
     const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
-    pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, fov: cam.fov, g: mountAt(mx, my) };
-    moved = 99;
+    pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, fov: cam.fov, g: mountAt(mx, my), mx, my, last: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, began: false, scratch: {} };
+    moved = 99; lastTap = null;
   }
   canvas.addEventListener('pointermove', (e) => {
     const p = pos(e);
@@ -44,19 +48,28 @@ export function initInput(canvas, { onClickSky } = {}) {
     pointers.set(e.pointerId, p);
     const frame = getFrame();
     if (pointers.size === 1 && grab) {
-      moved += Math.hypot(p[0] - prev[0], p[1] - prev[1]);
-      if (moved > CLICK_SLOP) {
-        if (!canvas.classList.contains('dragging')) { canvas.classList.add('dragging'); userMoves(); }
-        bringUnder(grab, p[0], p[1], frame);
+      moved = Math.max(moved, Math.hypot(p[0] - downAt[0], p[1] - downAt[1]));
+      if (moved > (e.pointerType === 'mouse' ? CLICK_SLOP : TAP_SLOP)) {
+        if (!canvas.classList.contains('dragging')) {
+          canvas.classList.add('dragging'); userMoves();
+          if (e.pointerType !== 'mouse' && !state.tracking) { update(frame); grab = mountAt(prev[0], prev[1]); }      // no jump by the 12 px it took to be sure
+        }
+        if (state.tracking) moveSky(skyUnder(prev[0], prev[1]), p[0], p[1], grab);
+        else bringUnder(grab, p[0], p[1], frame);
         emit('render');
       }
     } else if (pointers.size === 2 && pinch) {
       const [a, b] = [...pointers.values()];
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1;
-      userMoves();
-      cam.fov = pinch.fov * pinch.d / d;
-      update(frame);
-      bringUnder(pinch.g, mx, my, frame);
+      if (!pinch.began) { pinch.began = true; pinch.offset = hasOffset() || grabbedAway(); if (!state.tracking || pinch.offset) userMoves(); else cancelAnim(); pinch.fov = cam.fov; }
+      if (state.tracking && !pinch.offset) zoomAt(pinch.last / d, cam.cx, cam.cy, frame, true);       // the followed object stays in the middle
+      else if (state.tracking) zoomTracked(pinch.last / d, pinch.mx, pinch.my, mx, my, pinch.scratch);
+      else {
+        cam.fov = pinch.fov * pinch.d / d;
+        update(frame);
+        bringUnder(pinch.g, mx, my, frame);
+      }
+      pinch.mx = mx; pinch.my = my; pinch.last = d;
       emit('render');
     }
   });
@@ -66,21 +79,43 @@ export function initInput(canvas, { onClickSky } = {}) {
     pointers.delete(e.pointerId);
     canvas.classList.remove('dragging');
     if (pointers.size === 0) {
-      if (e.type === 'pointerup' && moved <= CLICK_SLOP && downAt) {
-        const ref = pickAt(p[0], p[1], e.pointerType === 'touch' ? 20 : 12);
-        if (!(onClickSky && onClickSky(p[0], p[1], ref))) select(ref);
+      holdCentre(false);
+      const touch = e.pointerType === 'touch';
+      if (e.type === 'pointerup' && moved <= (e.pointerType === 'mouse' ? CLICK_SLOP : TAP_SLOP) && downAt) {
+        // with the object sheet open on a small screen a tap is first of all a way to put it away: only a tap right on something else selects that
+        const open = touch && panelOpen();
+        let ref = pickAt(downAt[0], downAt[1], open ? 11 : 20);
+        if (!touch) ref = pickAt(p[0], p[1], 12);
+        const now = performance.now(), twice = touch && lastTap && now - lastTap.t < DOUBLE_MS && Math.hypot(p[0] - lastTap.x, p[1] - lastTap.y) < DOUBLE_PX;
+        if (onClickSky && onClickSky(p[0], p[1], ref)) lastTap = null;
+        else if (twice) doubleTap(p, lastTap.ref);
+        else {
+          lastTap = touch ? { t: now, x: p[0], y: p[1], ref } : null;
+          select(open && sameRef(ref, state.selected) ? null : ref);
+        }
       }
       grab = null; pinch = null; downAt = null;
     } else if (pointers.size === 1) {
       // one finger lifted after a pinch: keep panning with the other
       const q = [...pointers.values()][0];
-      grab = mountAt(q[0], q[1]); pinch = null; moved = 99;
+      grab = mountAt(q[0], q[1]); pinch = null; moved = 99; downAt = q;
     }
   };
   canvas.addEventListener('pointerup', end);
   canvas.addEventListener('pointercancel', end);
 
+  const panelOpen = () => { const el = document.querySelector('.infopanel'); return !!el && el.offsetHeight > 0 && el.classList.contains('small'); };
+  /** A finger already moved a followed object off the middle in this gesture? */
+  const grabbedAway = () => canvas.classList.contains('dragging');
+  /** Two taps: centre what the first one was on; on empty sky, zoom in about the place. */
+  function doubleTap(p, ref) {
+    lastTap = null;
+    if (ref) { select(ref); centerOn(ref); return; }
+    if (state.tracking) { if (hasOffset()) zoomTracked(0.5, p[0], p[1]); else zoomAt(0.5, p[0], p[1], getFrame(), true); emit('render'); }
+    else { update(getFrame()); flyTo(unproject(cam.cx + (p[0] - cam.cx) / 2, cam.cy + (p[1] - cam.cy) / 2), { fov: cam.fov / 2, dur: 260 }); }
+  }
   canvas.addEventListener('dblclick', (e) => {
+    if (lastType === 'touch') return;      // the taps have been dealt with already
     const p = pos(e); const ref = pickAt(p[0], p[1]);
     if (ref) { select(ref); centerOn(ref); }
   });
@@ -92,8 +127,9 @@ export function initInput(canvas, { onClickSky } = {}) {
     let dy = e.deltaY * (e.deltaMode === 1 ? 32 : 1);
     const k = e.ctrlKey ? 0.012 : 0.0022;
     dy = Math.max(-240, Math.min(240, dy));
-    cancelAnim();
-    zoomAt(Math.exp(dy * k), p[0], p[1], getFrame(), state.tracking);
+    const f = Math.exp(dy * k);
+    if (state.tracking) { if (!zoomAnim(f)) { if (hasOffset()) zoomTracked(f, p[0], p[1]); else zoomAt(f, p[0], p[1], getFrame(), true); } }
+    else { cancelAnim(); zoomAt(f, p[0], p[1], getFrame()); }
     emit('render');
   }, { passive: false });
   // Safari's own pinch gesture would zoom the page
@@ -105,7 +141,13 @@ export function navKey(e) {
   const frame = getFrame();
   const step = cam.fov * 0.12;
   const pan = (dl, db) => {
-    cancelAnim(); if (state.tracking) { state.tracking = false; emit('selection'); }
+    if (state.tracking) {
+      takeView();
+      const px = 0.12 * cam.h, a = skyUnder(cam.cx, cam.cy);
+      moveSky(a, cam.cx + px * Math.sign(dl), cam.cy + px * Math.sign(db), {});
+      return;
+    }
+    cancelAnim();
     cam.lon += dl / Math.max(Math.cos(cam.lat * Math.PI / 180), 0.15); cam.lat += db; update(frame); emit('render');
   };
   // on screen, +lon is to the left in both mounts (east is left of north when looking up at the sky)

@@ -426,3 +426,5 @@ globalThis.__catFetch = true;
 await (await import('./check-bodies.mjs')).checkBodies(line);
 await (await import('./check-jpl.mjs')).default(line);
 await (await import('./check-sun.mjs')).default(line);
+line(); line('== 25. Following with an offset, the middle of the free sky (tools/check-track.mjs; a failure throws) ==');
+await (await import('./check-track.mjs')).checkTrack({ line });

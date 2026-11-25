@@ -31,6 +31,7 @@ export async function startLab(id, { extra = null } = {}) {
   card.open();
   // on a phone or in a small embed the prompt would hide the sky: start it folded (its title bar still names the lab)
   if (window.innerWidth <= 560 || window.innerHeight < (L.notebook ? 640 : 560)) card.root.classList.add('min');
+  if (window.innerHeight <= 520) document.querySelectorAll('.labsdock .lcard:not([hidden])').forEach((c) => c.classList.add('min'));      // a phone on its side: title bars only
   if (modal) modal.classList.remove('show');
   document.getElementById('sky').focus({ preventScroll: true });
   return true;

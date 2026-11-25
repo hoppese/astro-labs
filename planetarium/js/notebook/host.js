@@ -180,7 +180,7 @@ export function initNotebookHost() {
     const nl = !!(L && L.notebook);
     root.classList.toggle('nb-lab', nl);
     info.classList.remove('gone'); info.classList.toggle('fold', nl);
-    state.keepTracked = nl && state.tracking; state.trackRef = state.selected; shown = state.selected;
+    state.keepTracked = nl && state.tracking; shown = state.selected;
     if (L && L.notebook) openNotebook({ slot: 'lab:' + L.id, obs: L.obs || null, lab: L, template: L.template || null, folded: mode() === 'over' });
     else { labNow = null; if (active) { see.enabled = false; emit('render'); } }
   });

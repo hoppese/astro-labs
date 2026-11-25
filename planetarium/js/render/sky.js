@@ -98,7 +98,7 @@ export function skyConditions(bodies) {
 const GLARE_MAG = 14;
 function planetGlare(bodies) {
   let g = 99;
-  const c = unproject(cam.w / 2, cam.h / 2), R = Math.acos(clamp(cam.zMin, -1, 1));
+  const c = unproject(cam.cx, cam.cy), R = Math.acos(clamp(cam.zMin, -1, 1));
   for (const b of bodies.list) {
     if (b.kind !== 'planet' || !b.hor) continue;
     const sep = Math.acos(clamp(b.hor[0] * c[0] + b.hor[1] * c[1] + b.hor[2] * c[2], -1, 1));

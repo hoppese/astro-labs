@@ -293,7 +293,7 @@ function evict() {
   for (const t of loaded) {
     if (cachedStars <= CACHE_STARS * 0.8) break;
     if (now - t.lastUsed < 1500) break;                 // on screen (or just was): keep
-    if (state.selected && state.selected.t === t) continue;        // the selected star lives in it
+    if ((state.selected && state.selected.t === t) || (state.tracking && state.trackRef && state.trackRef.t === t)) continue;        // the selected star lives in it
     cachedStars -= t.n; t.status = 0; t.raw = t.vec = t.mag = t.spr = t.plx = null;
   }
 }

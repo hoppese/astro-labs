@@ -477,7 +477,7 @@ Snapping and picking (all made worse, or exposed, by having a faint star behind 
 - Right-click → Start trail did not open the Path card, so there was no visible way to stop the trail.
 Navigation and time:
 - Selecting another object silently kept tracking on, so the lab text "click Venus, press T" switched tracking OFF.
-  Tracking now ends when a different object is selected (`nav.select`).
+  (Then: tracking ended when a different object was selected. Superseded, see "Following" at the end.)
 - `+` / `−` pressed during a glide (e.g. straight after a search) were thrown away; they now move the glide's end FOV.
 - Bottom toolbar: with a long zone label ("UTC+11:39:04 (local mean time)", any date before standard time) the centred
   toolbar overflowed and its first button was unreachable. `safe center`, and the bar shows "… LMT".
@@ -1009,7 +1009,7 @@ CSV export and re-import identical (through the page's own functions, not a file
 ## Centring: what was off
 - **Cause of "Betelgeuse is a few arcseconds off":** centring was a one-off. With the clock running the sky turns 15 arcsec a second, so the view was
   stale when the 0.7 s glide ended and kept sliding. `nav.centerOn()` (search, Space, double-click, menu, deep-sky list) now *holds* the object:
-  it switches tracking on. Dragging or the arrow keys let go; `T` toggles.
+  it switches tracking on. (Dragging used to let go; since "Following", at the end of this file, it keeps following with an offset.)
 - **Deep-sky symbols and every other fixed J2000 direction** were not unit vectors after adding the aberration vector (1e-4 off), so refraction moved
   them by up to about an arcminute against their own marker, and zoomed in they vanished. `skyframe.starHor`, `proj.eqjArrayToHor`, `dso.js` renormalise;
   `dso.js` uses a loose view-cone test before refraction, as the stars do.
@@ -1191,3 +1191,35 @@ Overrides: "Positions come from astronomy-engine", every accuracy figure for pla
 
 ## Not tested
 Safari, Firefox, phones, no-WebGL, GPUs with only 224 fragment uniforms (the shader needs about 205), real-time frame captures of Seth's own screen (headless Chrome screencasts and one Chrome session were used), upload to the live site.
+
+# Following with an offset; the phone sheet (2026-11-24, last)
+
+Overrides everything above about what ends tracking.
+
+## Following (`js/nav.js`, `js/camera.js`)
+- `state.trackRef` is followed while `state.tracking`; it has nothing to do with `state.selected`. Use `track(ref)` / `stopTracking()` / `centerOn(ref)`; never set the flags directly.
+- Ends only with: T on it (or with nothing selected), Track, the chip's ×; tracking or centring something else; `flyTo` anywhere else (search, Centre here, quiz, deep-sky list), a lab, a link with a
+  direction, a new place (`ui.setLocation`, except inside a lab). Clicking empty sky, Esc, closing the panel, selecting another object do not end it.
+- A drag, the arrows, or a wheel / pinch once off-centre make an offset: `hold = {v, Q}`, the whole orientation of the camera against the object's own axes (direction, celestial north there). Each frame the camera is put back
+  to it, so nothing on screen moves at any rate, through the zenith and beside the pole. `cam.roll` (new, degrees) is the turn from the mount's up that this needs. The roll is eased to 0 about the object whenever the mount's up
+  matters and is well defined: always in the equatorial mount (except beside the pole), in alt-az while the horizon is in the picture (a tracked sunset keeps a level horizon). Otherwise in alt-az an offset view does not turn with
+  the mount; a CENTRED view still does (field rotation), as before. Space / T off ease back upright.
+- Wheel and pinch: about the pointer once there is an offset; about the object while it is exactly in the middle (or a zoom from 90° would lose it at once). +/− always about the middle.
+- Steady sky, rate cap and star epoch ask `trackRef`, not the selection. `keepTracked` (notebook labs) now only means "closing the panel does not deselect".
+- Links: `track=1&toff=<x>,<y>,<roll>` (degrees right, up, roll), `target` = the followed object (what else was selected is not carried).
+- Not tracked: unchanged; a drag holds the mount's frame, so in a narrow alt-az field the sky still runs.
+
+## Layout (`js/layout.js`)
+- `(cam.cx, cam.cy)` is the middle of the FREE sky, not of the canvas: `cam.ox, cam.oy`, eased in `nav.stepCentre`. Small windows (≤ 900 wide or ≤ 600 high): object panel, lab cards, angle panel, side panels count;
+  wide: side panels and the overlaid notebook only. Anything that wants the view direction uses `cam.cx, cam.cy`, not `cam.w / 2`.
+- An object tapped (not tracked) that ends under a panel is moved out from under it. The "Tracking" chip sits above the read-out (phone: top left). On phones the notice, angle panel, read-out stack (`--sn-top`, `--mpt`, `--ro-top`).
+
+## Object panel on a small window (`js/info.js`, ≤ 860 wide or ≤ 600 high)
+Opens short (name, type, magnitude, distance, az/alt, rise/set, buttons); grip, title or drag up = everything, drag down = short, then away; remembered (`astro-labs.planetarium.sheet`). Search centres, it does not zoom.
+
+## Touch (`js/input.js`)
+12 px still a tap (displacement, not path); drag starts without the 12 px jump; with the panel open only a tap within 11 px of something else selects it, any other tap just closes the panel; double tap = centre / zoom ×2; long press = menu.
+
+## Numbers (check.mjs section 25, headless Chrome 157 with CDP mouse and touch)
+Drift of the dragged object 256 cases ≤ 7e-10 px; in the page (Jupiter, Moon, Sun, Vega at the zenith, Polaris, Betelgeuse, Neptune, labs; ×1 to ×10⁶) ≤ 2e-9 px. Vega through 89.96°: picture turns 0.0014° (refraction).
+Not tested: a real phone or finger, Safari, Firefox, `touchcancel` by the system.

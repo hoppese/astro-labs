@@ -13,7 +13,7 @@ import { cam, unproject, update, centerHor } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
 import { constellations, stars, starRecord } from './catalog.js';
-import { select, flyTo } from './nav.js';
+import { select, flyTo, stopTracking } from './nav.js';
 import { projEqj } from './render/proj.js';
 import { clipToSky } from './render/groundshade.js';
 import { makePanel, esc, loadJSON, saveJSON } from './xui.js';
@@ -111,7 +111,7 @@ function start() {
     sh.atmosphere = false; q.note = sunAlt > -12 ? 'Daylight is switched off for the quiz.' : '';
     state.starScale = 0.5;            // an airless sky shows too many stars to pick figures out: thin them (read by render/sky.js)
   }
-  select(null);
+  select(null); stopTracking();          // (the chip would name what is followed)
   document.documentElement.classList.add('quizzing');      // the pointer read-out stops naming constellations
   emit('show');
   // "find" quizzes need room to look around: if the view is zoomed in or pointed at the ground (e.g. left there by

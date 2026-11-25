@@ -4,7 +4,7 @@
 //
 // A setup object (every field optional):
 //   t: ISO UTC string or ms          loc: {name, region, lat, lon, elev, tz}
-//   target: body id | star/DSO name | {hip: n}      track: bool      fov: degrees (vertical)
+//   target: body id | star/DSO name | {hip: n}      track: bool      toff: [x, y, roll] degrees (where the followed object is)      fov: degrees (vertical)
 //   look: {az, alt} or {ra, dec} in degrees (used when there is no target)
 //   mount: 'altaz' | 'eq'            show: {key: bool}  (state.show)   fx: {key: bool} (state.fx)
 //   lightTime: bool                  rate: number        play: bool
@@ -18,7 +18,7 @@ import { cam, update, lookAtHor, centerHor, setMount } from '../camera.js';
 import { getFrame } from '../skyframe.js';
 import { getBodies } from '../ephem.js';
 import { setTime } from '../clock.js';
-import { select, cancelAnim } from '../nav.js';
+import { select, cancelAnim, track, stopTracking, setOffset, getOffset } from '../nav.js';
 import { refHorApparent, refName } from '../objects.js';
 import { stars, loadAllTiers, starRecord } from '../catalog.js';
 import { search } from '../search.js';
@@ -83,9 +83,10 @@ export async function applySetup(s, { ephemeral = true } = {}) {
     select(ref);
     const f2 = getFrame(), h = refHorApparent(ref, f2, getBodies(f2));
     if (h && !s.look) { update(f2); lookAtHor(h); }
-    state.tracking = !!s.track && !s.look; emit('selection');
-  } else if ('target' in s && !s.target) select(null);
+    if (s.track && !s.look) { stopTracking(); track(ref); if (s.toff) setOffset(s.toff); } else stopTracking();
+  } else if ('target' in s && !s.target) { select(null); stopTracking(); }
   if (s.look) {
+    stopTracking(); cam.roll = 0;
     const f2 = getFrame(); update(f2);
     if (s.look.az != null) lookAtHor(azAltToHor(+s.look.az, +s.look.alt));
     else if (s.look.ra != null) { const h = mulMV(f2.Mjh, sph(+s.look.ra, +s.look.dec)); lookAtHor(eff.refraction ? refractHor(h) : h); }
@@ -104,15 +105,16 @@ export function describeView() {
   if (l.name) q.set('place', l.name);
   if (l.tz) q.set('tz', l.tz);
   q.set('fov', String(+cam.fov.toPrecision(4)));
-  const tyc = state.selected && state.selected.kind === 'gaia';     // a faint tile star cannot be looked up by name: the link carries the direction only
-  if (state.selected && state.selected.kind !== 'con' && !tyc) {
-    const s = state.selected;
+  const what = state.tracking ? state.trackRef : state.selected;
+  const tyc = what && what.kind === 'gaia';     // a faint tile star cannot be looked up by name: the link carries the direction only
+  if (what && what.kind !== 'con' && !tyc) {
+    const s = what;
     let nm = refName(s);
     if (s.kind === 'star') { const r = starRecord(s.k, s.i); nm = r.hip ? 'HIP ' + r.hip : nm; }
     q.set('target', nm);
-    if (state.tracking) q.set('track', '1');
+    if (state.tracking) { q.set('track', '1'); const o = getOffset(); if (o) q.set('toff', o.map((x) => +x.toPrecision(6)).join(',')); }
   }
-  if (!state.tracking || tyc) { const a = horToAzAlt(centerHor()); q.set('az', a.az.toFixed(3)); q.set('alt', a.alt.toFixed(3)); }
+  if (!state.tracking || tyc || what.kind === 'con') { const a = horToAzAlt(centerHor()); q.set('az', a.az.toFixed(3)); q.set('alt', a.alt.toFixed(3)); }
   if (state.mount === 'eq') q.set('mount', 'eq');
   const onL = [], offL = [];
   for (const k of Object.keys(SHOW_DEFAULTS)) if (state.show[k] !== SHOW_DEFAULTS[k]) (state.show[k] ? onL : offL).push(k);
@@ -134,7 +136,7 @@ export function setupFromQuery(q) {
   const num = (k) => { const v = parseFloat(q.get(k)); return isFinite(v) ? v : null; };
   if (q.get('t')) { const ms = Date.parse(q.get('t')); if (isFinite(ms)) { s.t = ms; any = true; } }
   if (num('lat') != null && num('lon') != null) { s.loc = { lat: num('lat'), lon: num('lon'), elev: num('elev') || 0, name: q.get('place') || '', tz: q.get('tz') || '' }; any = true; }
-  if (q.get('target')) { s.target = q.get('target'); s.track = q.get('track') === '1'; any = true; }
+  if (q.get('target')) { s.target = q.get('target'); s.track = q.get('track') === '1'; any = true; const o = (q.get('toff') || '').split(',').map(Number); if (o.length === 3 && o.every(isFinite)) s.toff = o; }
   if (num('fov') != null) { s.fov = Math.min(180, Math.max(0.0005, num('fov'))); any = true; }
   if (num('az') != null && num('alt') != null) { s.look = { az: num('az'), alt: num('alt') }; any = true; }
   else if (num('ra') != null && num('dec') != null) { s.look = { ra: num('ra'), dec: num('dec') }; any = true; }

@@ -20,6 +20,7 @@ import { jpl, covered } from './jpl.js';
 import { sun, initSun, groupsAt, onDisc, cycleFacts } from './sunspots.js';
 import { openSunPanel } from './sunpanel.js';
 import { rowHidden, running } from './labs/hidden.js';
+import { smallWindow } from './layout.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
 let trailing = null;
@@ -37,17 +38,68 @@ export function initInfo(el) {
   on('frame', () => render(false));
   on('links', () => render(true));
   loadLinks();
+  initSheet();
   panel.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
     const act = b.dataset.act;
     if (act === 'close') select(null);
+    else if (act === 'grip') { if (performance.now() - openedAt > 350) setSheet(!mini); }
     else if (act === 'center') centerOn(state.selected);
     else if (act === 'zoom') centerOn(state.selected, true);
     else if (act === 'track') toggleTracking();
     else if (act === 'sunpanel') openSunPanel();
     else if (act === 'parent') { select({ kind: 'body', id: b.dataset.id }); }
   });
+}
+
+// ---- the short form -------------------------------------------------------------
+// On a small screen (layout.js smallWindow) the panel opens short: name, type, the key rows, the buttons. The grip at its top, a tap on the name or a
+// drag upward shows everything; a drag downward shortens it again and then puts it away, as × does. The choice is remembered on the device.
+const SHEET_KEY = 'astro-labs.planetarium.sheet';
+let mini = true, openedAt = -1e9;
+const isSheet = () => window.innerWidth <= 560;
+function setSheet(m) { mini = m; try { localStorage.setItem(SHEET_KEY, m ? 'short' : 'full'); } catch (e) { /* fine */ } if (m) panel.scrollTop = 0; syncSheet(); emit('render'); }
+function syncSheet() {
+  const small = smallWindow();
+  panel.classList.toggle('small', small); panel.classList.toggle('mini', small && mini);
+  const g = panel.querySelector('.ip-grip');
+  if (g) { const t = mini ? 'Show everything' : 'Show less'; g.setAttribute('aria-expanded', String(!mini)); g.setAttribute('aria-label', t); g.querySelector('span').textContent = mini ? 'More' : 'Less'; }
+}
+function initSheet() {
+  try { mini = localStorage.getItem(SHEET_KEY) !== 'full'; } catch (e) { /* storage unavailable: short */ }
+  syncSheet();
+  window.addEventListener('resize', syncSheet);
+  let d = null;
+  panel.addEventListener('pointerdown', (e) => {
+    d = null;
+    if (!panel.classList.contains('small') || (e.pointerType === 'mouse' && e.button) || e.target.closest('a, .close, .ip-acts')) return;
+    // in the long form the list scrolls: there only the grip and the title drag
+    if (!mini && !e.target.closest('.ip-grip, h2, .type, .aka')) return;
+    d = { id: e.pointerId, y: e.clientY, dy: 0, moved: false };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    d.dy = e.clientY - d.y;
+    if (!d.moved && Math.abs(d.dy) > 8) d.moved = true;
+    if (d.moved && isSheet()) panel.style.transform = `translateY(${Math.max(-24, d.dy)}px)`;
+  });
+  const end = (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const { dy, moved } = d; d = null;
+    panel.style.transform = '';
+    if (!moved) return;
+    eatClick = performance.now();                       // the click that ends a drag presses nothing
+    if (e.type === 'pointercancel') return;
+    if (isSheet()) { if (dy < -24 && mini) setSheet(false); else if (dy > 30) { if (mini) select(null); else setSheet(true); } }
+    else if (dy > 24 && mini) setSheet(false); else if (dy < -24 && !mini) setSheet(true);
+  };
+  window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+  let eatClick = -1e9;
+  panel.addEventListener('click', (e) => {
+    if (performance.now() - eatClick < 60) { e.stopPropagation(); e.preventDefault(); return; }
+    if (panel.classList.contains('small') && !document.documentElement.classList.contains('nb-lab') && e.target.closest('h2') && performance.now() - openedAt > 350) setSheet(!mini);
+  }, true);
 }
 
 /** What is known about the spots on the date: plainly recorded, statistical, or typical. */
@@ -128,7 +180,7 @@ function moonPhaseName(elong) {
 
 function render(force) {
   const ref = state.selected;
-  if (!ref) { if (!panel.hidden) { panel.hidden = true; panel.innerHTML = ''; } return; }
+  if (!ref) { if (!panel.hidden) { panel.hidden = true; panel.innerHTML = ''; panel.style.transform = ''; } return; }
   const now = performance.now();
   if (!force && now - lastUpdate < 240) {
     // throttled: make sure the panel still catches up with the last frame (a single time step must not leave stale numbers)
@@ -142,7 +194,7 @@ function render(force) {
   const tz = state.loc.tz;
   let title = '', aka = '', type = '', note = '', pic = '';
   const rows = [];
-  const row = (k, v) => rows.push(`<tr><td>${k}</td><td>${rowHidden(k) ? '<span class="nodata">hidden during this lab</span>' : v}</td></tr>`);      // labs/hidden.js: what the lab asks for
+  const row = (k, v) => rows.push(`<tr${/^(Magnitude|Distance|Az \/ Alt|Rise)/.test(k) ? ` class="key${k[0] === 'R' ? ' rise' : ''}"` : ''}><td>${k}</td><td>${rowHidden(k) ? '<span class="nodata">hidden during this lab</span>' : v}</td></tr>`);      // labs/hidden.js: what the lab asks for
   const sep = () => rows.push('<tr class="sep"><td></td><td></td></tr>');
 
   if (ref.kind === 'star') {
@@ -255,7 +307,7 @@ function render(force) {
 
   const head = `<h2>${esc(title)}</h2>` +
     (aka ? `<div class="aka">${esc(aka)}</div>` : '') + `<div class="type">${type}</div>`;
-  const trk = state.tracking && (!state.keepTracked || refKey(state.trackRef) === refKey(ref));
+  const trk = state.tracking && refKey(state.trackRef) === refKey(ref);
   const acts = `<div class="acts"><button class="btn" data-act="center" title="Centre the view on it (Space)">Center <kbd>Space</kbd></button>` +
     `<button class="btn${trk ? ' on' : ''}" data-act="track" aria-pressed="${trk}" title="Keep it centred as time runs (T)">Track <kbd>T</kbd></button>` +
     `<button class="btn" data-act="zoom" title="Centre and zoom in">Zoom to</button></div>`;
@@ -264,7 +316,7 @@ function render(force) {
   const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + (pic ? `<div class="note">Picture: ${pic}.</div>` : '');
   // The numbers change several times a second, the buttons and links hardly ever: they live in boxes of their own, each touched
   // only when it changes. (A button replaced between press and release never gets its click.)
-  if (!panel.querySelector('.ip-main')) { panel.innerHTML = '<button class="close" data-act="close" aria-label="Deselect">&times;</button><div class="ip-main"></div><div class="ip-look"></div><div class="ip-acts"></div>'; partHtml = {}; }
+  if (!panel.querySelector('.ip-main')) { panel.innerHTML = '<button class="ip-grip" type="button" data-act="grip"><i></i><span></span></button><button class="close" data-act="close" aria-label="Deselect">&times;</button><div class="ip-main"></div><div class="ip-look"></div><div class="ip-acts"></div>'; partHtml = {}; syncSheet(); }
   for (const [k, h] of [['main', html], ['look', look], ['acts', acts]]) {
     if (partHtml[k] === h) continue;
     partHtml[k] = h;
@@ -272,6 +324,7 @@ function render(force) {
     box.innerHTML = h;
     if (keepFocus) { const b = box.querySelector(`[data-act="${keepFocus}"]`); if (b) b.focus(); }
   }
+  if (panel.hidden) openedAt = performance.now();
   panel.hidden = false;
 }
 export { DEG, RAD, emit };

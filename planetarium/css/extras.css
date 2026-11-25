@@ -344,3 +344,56 @@ kbd { white-space: nowrap; }
 @media (max-width: 560px) { :root { --mp-h: 0px !important; } }
 
 #sunPanel .xp-body { display: block; padding: 10px 14px 14px; }
+
+/* ---- following: the chip; the object panel on a small screen (js/layout.js, js/info.js) ---- */
+.trackchip { position: absolute; right: 12px; bottom: calc(var(--bar-h) + 16px + var(--ro-h, 0px)); z-index: 14; display: flex; align-items: stretch; max-width: min(230px, 60vw); border-radius: 9px; overflow: hidden;
+  background: rgba(13, 20, 31, 0.93); border: 1px solid rgba(232, 184, 106, 0.45); font: 500 12px var(--font); color: #cfd9e5; }
+.trackchip[hidden] { display: none; }
+.trackchip button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; padding: 4px 4px 4px 9px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trackchip b { font-weight: 600; color: #ffe2a8; }
+.trackchip .tc-x { flex: none; padding: 4px 9px 4px 5px; font-size: 15px; line-height: 1; color: var(--muted); }
+.trackchip button:hover { background: rgba(255, 255, 255, 0.09); color: #fff; }
+.trackchip button:focus-visible { outline-offset: -2px; }
+html.quizzing .trackchip { display: none; }
+.ip-grip { display: none; }
+.infopanel.small .ip-grip { display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: none; color: var(--muted); font: 600 11.5px var(--font); cursor: pointer; padding: 0; touch-action: none; }
+.infopanel.small .ip-grip i { width: 34px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.28); }
+.infopanel.small .ip-grip { position: absolute; left: 50%; top: 0; transform: translateX(-50%); height: 18px; width: 120px; }
+.infopanel.small { padding-top: 18px; overscroll-behavior: contain; }
+.infopanel.small h2, .infopanel.small .type, .infopanel.small .aka { touch-action: none; }
+.infopanel.small h2 { cursor: pointer; }
+.infopanel.mini { touch-action: none; overflow: hidden; }
+.infopanel.small.fold .ip-grip { display: none; } .infopanel.small.fold { padding-top: 10px; }
+.infopanel.mini .aka, .infopanel.mini .note, .infopanel.mini .ip-look, .infopanel.mini tr:not(.key) { display: none; }
+.infopanel.mini table { margin-top: 5px; } .infopanel.mini .acts { margin-top: 7px; flex-wrap: nowrap; }
+.infopanel.small:not(.mini) .ip-acts { position: sticky; bottom: -13px; background: #0d141f; padding-bottom: 8px; margin-bottom: -8px; }
+.infopanel.small .acts kbd { display: none; }
+.infopanel.small .acts .btn { flex: 1 1 auto; justify-content: center; }
+@media (min-width: 561px) {
+  .infopanel.small .acts .btn { padding-left: 6px; padding-right: 6px; }
+  .infopanel.mini td:last-child { white-space: nowrap; letter-spacing: -0.35px; font-size: 11px; }
+  body:has(.xpanel:not([hidden])) .trackchip { right: calc(min(404px, 100vw - 24px) + 20px); }
+  body:has(.xpanel.wide:not([hidden])) .trackchip { right: calc(min(600px, 62vw) + 20px); }
+  html.nb-over .trackchip { right: calc(var(--nb-w) + 12px); }
+}
+@media (min-width: 561px) and (max-height: 520px) {
+  .infopanel.mini tr.rise { display: none; }
+  body:has(.measurepanel:not([hidden])) .trackchip { max-width: 130px; }
+  .trackchip { right: calc(22px + var(--ro-w, 0px)); bottom: calc(var(--bar-h) + 40px); }
+}
+@media (max-width: 560px) {
+  .steady-note { top: var(--sn-top, 56px); } .measurepanel { top: var(--mpt, 56px); } .readout { top: var(--ro-top, 56px); }
+  body:has(.trackchip:not([hidden])) .readout { max-width: calc(100% - 24px - var(--chip-w, 0px)); }
+  .steady-note:not(.survey-note) { left: 8px; right: 8px; transform: none; max-width: none; justify-content: space-between; }
+  .trackchip { bottom: auto; top: var(--ro-top, 56px); right: auto; left: 8px; max-width: 46vw; }
+  .trackchip .tc-w { display: none; } .trackchip .tc-go::before { content: '\25CE\00A0'; color: var(--accent); }
+  .trackchip button { min-height: 40px; } .trackchip .tc-x { min-width: 40px; font-size: 18px; }
+  .infopanel.small { max-height: 48%; }
+  .infopanel.small.mini { max-height: 210px; }
+  .infopanel.mini table, .infopanel.mini tbody { display: flex; flex-wrap: wrap; gap: 1px 14px; } .infopanel.mini tr.key { display: inline-flex; gap: 6px; }
+  .infopanel.mini td:first-child { width: auto; padding-right: 0; }
+  .infopanel.mini td { font-size: 12px; } .infopanel.mini td:last-child { font-size: 11px; white-space: nowrap; }
+  /* sheet and lab cards together: the cards get one strip, so that at least half of the sky stays free */
+  html body:has(.infopanel:not([hidden])) .labsdock { max-height: 18%; }
+  body:has(.labsdock .lcard:not([hidden])) .infopanel.small:not(.mini) { max-height: 32%; }
+}

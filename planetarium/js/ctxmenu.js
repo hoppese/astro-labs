@@ -109,7 +109,7 @@ function openAt(x, y, clientX, clientY) {
   if (ref) {
     add(`Centre on ${name}`, () => { select(ref); centerOn(ref); }, { key: 'Space' });
     if (obj) {
-      const tracking = state.tracking && sameRef(state.selected, ref);
+      const tracking = state.tracking && sameRef(state.trackRef, ref);
       add(tracking ? `Stop tracking ${name}` : `Track ${name}`, () => { select(ref); toggleTracking(!tracking); }, { key: 'T' });
     }
     add(`Zoom to ${name}`, () => { select(ref); centerOn(ref, true); });

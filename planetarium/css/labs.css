@@ -1,5 +1,5 @@
 /* labs.css: the measurement tools and labs (js/labs/). Loaded by js/labs/index.js. */
-.labsdock { position: absolute; right: 12px; top: 58px; width: 326px; max-width: calc(100vw - 24px); max-height: calc(100% - 58px - var(--bar-h) - 100px);
+.labsdock { position: absolute; right: 12px; top: 58px; width: 326px; max-width: calc(100vw - 24px); max-height: calc(100% - 58px - var(--bar-h) - 136px);
   overflow: auto; z-index: 18; display: flex; flex-direction: column; gap: 8px; pointer-events: none; scrollbar-width: thin; }
 .labsdock > * { pointer-events: auto; }
 .lcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; flex: none; }
@@ -90,7 +90,7 @@
   .labsdock { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(var(--bar-h) + 8px); max-height: 36%; }
   /* the object-info sheet stacks above the open cards (it used to lie underneath them), and both stay short enough to leave some sky */
   .infopanel { bottom: calc(var(--bar-h) + 6px + var(--dock-h, 0px)); }
-  body:has(.labsdock .lcard:not([hidden])) .infopanel { max-height: 30%; }
+  body:has(.labsdock .lcard:not([hidden])) .infopanel:not(.mini) { max-height: 30%; }
   body:has(.xpanel.peek:not([hidden])) .labsdock { bottom: calc(var(--bar-h) + 60px); }
   body:has(.xpanel.peek:not([hidden])) .infopanel { bottom: calc(var(--bar-h) + 60px + var(--dock-h, 0px)); }
   .labsbtn .txt { display: none; } .labsbtn { padding: 0 !important; width: 36px !important; }
@@ -109,3 +109,4 @@
   .infopanel { width: 262px; }
   .labsdock { width: 290px; }
 }
+@media (min-width: 561px) and (max-height: 520px) { .labsdock { max-height: calc(100% - 58px - var(--bar-h) - 76px); } }
