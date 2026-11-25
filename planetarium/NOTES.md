@@ -1348,3 +1348,4 @@ Hooks elsewhere: `eff.pointing` (state.js: alt-az, refraction on, no steady sky)
 
 - Angle tool (2026-11-25): each measurement has an x, the first point can be taken back, and the position angle is written out; pressing it (or pointing at the row) draws north, east and the turn on the sky (equator of date, `fromNorth`).
 - Sliders (2026-11-25): − and + beside each slider change the VALUE (a tidy step of about 1/100 of its reach; Shift ten times finer; hold to repeat; keyboard works); “narrow” / “widen” change the slider's reach by 3, in place, exact inverses. (The old ⊕ / ⊖ changed the reach and were read as value buttons.)
+- Every lab that follows something at a field under 2.5 deg opens in the equatorial mount (north up), so the picture does not turn. Honolulu 2012: the Sun crosses the meridian at 88.6 deg, so in alt-az the field turned through about 180 deg between first and second contact. Both observers' views then also have the same orientation.

@@ -78,7 +78,7 @@ export const LABS = [
   // ------------------------------------------------------------------ Earth and Moon
   { id: 'eclipse-timing', group: 'Earth and Moon', title: 'Size of the Moon from a lunar eclipse', who: 'Aristarchus, about 270 BC',
     blurb: 'Time the Moon crossing the Earth’s shadow.',
-    setup: { t: '2018-07-27T17:50:00Z', loc: P.nairobi, target: 'Moon', track: true, fov: 2.4, show: { refraction: false }, fx: { earthShadow: false }, tools: ['stopwatch'] },
+    setup: { t: '2018-07-27T17:50:00Z', loc: P.nairobi, target: 'Moon', track: true, fov: 2.4, mount: 'eq', show: { refraction: false }, fx: { earthShadow: false }, tools: ['stopwatch'] },
     steps: [
       `The Moon is about to enter the Earth’s dark inner shadow (the umbra). Zoom in on it, ${RUN} until the dark edge first touches the Moon, step to the moment and press <b>Mark time</b>.${FINE}`,
       `Mark the instant the Moon is completely inside the umbra (totality begins).`,
@@ -90,7 +90,7 @@ export const LABS = [
     about: `The Moon passes almost through the center of the shadow in this eclipse. The Sun is not a point, so the Earth’s shadow tapers: at the Moon it is narrower than the Earth by about one Moon diameter (because the Sun and Moon look the same size). Earth’s diameter ≈ (shadow + 1) Moon diameters. The model enlarges the shadow by 1.4% for the Earth’s atmosphere, as eclipse predictions do. ${STEPKEYS} See ${tao}.` },
   { id: 'eclipse-shape', group: 'Earth and Moon', title: 'The Earth’s round shadow', who: 'Aristotle, about 350 BC',
     blurb: 'The edge of the shadow on the Moon is always an arc of a circle.',
-    setup: { t: '2019-01-21T04:05:00Z', loc: P.richmond, target: 'Moon', track: true, fov: 1.5, show: { refraction: false }, fx: { earthShadow: false } },
+    setup: { t: '2019-01-21T04:05:00Z', loc: P.richmond, target: 'Moon', track: true, fov: 1.5, mount: 'eq', show: { refraction: false }, fx: { earthShadow: false } },
     steps: [
       `Look at the edge of the shadow on the Moon. Step the clock through the partial phase (<kbd>Shift</kbd> + <kbd>↑</kbd> is 1 minute): is the edge ever straight, or curved the other way?`,
       `Estimate by eye how many times bigger than the Moon the circle is that this arc belongs to.`,
@@ -118,7 +118,7 @@ export const LABS = [
     about: `The straight line between the cities is 8,735 km long, but it is a little slanted to the Moon; only the square-on part, 8,350 km, makes the shift. This is ordinary surveying with the Earth as the baseline. Hipparchus used the same idea with the solar eclipse of 129 BC. See ${tao}.` },
   { id: 'eclipse-two-sites', group: 'Earth and Moon', title: 'Total here, partial there', who: 'Hipparchus (eclipse of 129 BC), with the eclipse of 8 April 2024',
     blurb: 'A solar eclipse that is total in one town is only partial a few hundred km away.',
-    setup: { t: '2024-04-08T19:09:50Z', loc: P.richmond, obs2: P.atlanta, align: 'stars', target: 'Sun', track: true, fov: 1.6, show: { refraction: false, atmosphere: false }, tools: ['compare'] },
+    setup: { t: '2024-04-08T19:09:50Z', loc: P.richmond, obs2: P.atlanta, align: 'stars', target: 'Sun', track: true, fov: 1.6, mount: 'eq', show: { refraction: false, atmosphere: false }, tools: ['compare'] },
     steps: [
       `In Richmond the eclipse is total. The dashed circles are the Sun (yellow) and the Moon (blue) as seen from Atlanta at the same instant. Is the Sun covered there?`,
       `With ${ANGLE} measure how far the Moon is shifted between the two towns: from the center of the Moon to the center of the dashed Moon.`,
@@ -128,7 +128,7 @@ export const LABS = [
     about: `In a straight line the towns are 677 km apart, but that line is slanted to the Moon. Using its full length overestimates the distance: the same difficulty Hipparchus had. See ${tao}.` },
   { id: 'moon-apsides', group: 'Earth and Moon', title: 'The Moon’s oval orbit', who: 'Hipparchus; Ptolemy',
     blurb: 'The Moon looks bigger at perigee than at apogee.',
-    setup: { t: '2026-11-25T21:02:00Z', loc: P.richmond, target: 'Moon', track: true, fov: 1.2, show: DARK, tools: ['events'], events: 'apsis' },
+    setup: { t: '2026-11-25T21:02:00Z', loc: P.richmond, target: 'Moon', track: true, fov: 1.2, mount: 'eq', show: DARK, tools: ['events'], events: 'apsis' },
     steps: [
       `The Events finder lists the Moon’s closest (perigee) and farthest (apogee) points. Click one of each. (“Below your horizon” does not matter here: the ground is switched off.)`,
       `Each time, measure the Moon’s diameter from edge to edge with ${ANGLE}. The row follows the Moon, so one measurement is enough: read it at each date.`,
@@ -150,7 +150,7 @@ export const LABS = [
   // ------------------------------------------------------------------ The Sun
   { id: 'half-moon', group: 'The Sun', title: 'Distance of the Sun from the half Moon', who: 'Aristarchus',
     blurb: 'When the Moon is exactly half lit, how far is it from the Sun in the sky?',
-    setup: { t: '2026-12-17T02:00:00Z', loc: P.tokyo, target: 'Moon', track: true, fov: 1.3, show: DARK, tools: ['stopwatch'] },
+    setup: { t: '2026-12-17T02:00:00Z', loc: P.tokyo, target: 'Moon', track: true, fov: 1.3, mount: 'eq', show: DARK, tools: ['stopwatch'] },
     steps: [
       `The Moon is selected. Step the clock until its panel says <b>Illuminated 50.00%</b> exactly. Mark the time.${FINE}`,
       `At that instant Sun, Moon and you make a right angle at the Moon. Zoom out until the Sun is in view too and measure the angle from the Moon to the Sun with ${ANGLE}, center to center, to 0.01°.`,
@@ -160,7 +160,7 @@ export const LABS = [
     about: `The angle is so close to 90° that a tiny error changes the answer enormously, and judging the instant of exact half phase by eye is hopeless: that, not the geometry, is why Aristarchus was out by a factor of 20. See ${tao}.` },
   { id: 'sun-moon-size', group: 'The Sun', title: 'Sun and Moon: the same size in the sky', who: 'Aristarchus',
     blurb: 'Compare their angular diameters during a solar eclipse.',
-    setup: { t: '2024-04-08T18:25:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.5, show: { refraction: false, atmosphere: false }, tools: [] },
+    setup: { t: '2024-04-08T18:25:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.5, mount: 'eq', show: { refraction: false, atmosphere: false }, tools: [] },
     steps: [
       `The atmosphere is switched off, so that the dark Moon can be seen outside the Sun (in a real sky it has the color of the sky there). With ${ANGLE} measure the Sun’s diameter and the Moon’s, edge to edge: click near each edge, where the other body is not in the way.`,
       `Their distances are in the ratio you found with the half Moon. What is the ratio of their true diameters?`,
@@ -179,7 +179,7 @@ export const LABS = [
     about: `This needs the Sun to be far enough away for its rays to be parallel, which Eratosthenes could take from Aristarchus. Syene is not exactly on the tropic and not exactly south of Alexandria. Dates before 1582 are proleptic Gregorian. See ${tao}.` },
   { id: 'sun-apsides', group: 'The Sun', title: 'The Earth’s oval orbit', who: 'Hipparchus',
     blurb: 'The Sun is slightly bigger in January than in July.',
-    setup: { t: '2027-01-03T02:08:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.2, show: DARK, tools: ['events'], events: 'earthApsis' },
+    setup: { t: '2027-01-03T02:08:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.2, mount: 'eq', show: DARK, tools: ['events'], events: 'earthApsis' },
     steps: [
       `Use the Events finder to go to perihelion and to aphelion. Each time measure the Sun’s diameter from edge to edge with ${ANGLE}. (The row follows the Sun: one measurement is enough.)`,
       `Find the eccentricity of the Earth’s orbit: e = (big − small) ÷ (big + small).`,
@@ -246,7 +246,7 @@ export const LABS = [
     about: `Repeating this for many pairs of dates gave Kepler the shape of both orbits. It fails when Mars is near opposition or conjunction, where the sight lines are nearly parallel. See ${tao}.` },
   { id: 'jupiter-mass', group: 'The planets', title: 'Weighing Jupiter', who: 'Galileo, 1610; Newton, 1687',
     blurb: 'Periods and orbit sizes of the four big moons.',
-    setup: { t: '2026-11-24T09:00:00Z', loc: P.richmond, target: 'Jupiter', track: true, fov: 0.3, show: DARK, tools: ['stopwatch'] },
+    setup: { t: '2026-11-24T09:00:00Z', loc: P.richmond, target: 'Jupiter', track: true, fov: 0.3, mount: 'eq', show: DARK, tools: ['stopwatch'] },
     notebook: true, obs: { seeing: 0.8, noise: 0 },
     template: { cols: [{ key: 'jd', kind: 'data', name: 'Julian Date', unit: 'd', sig: 0, raw: 'jd', rawLabel: 'Julian Date' }, { key: 'sep', kind: 'data', name: 'separation', unit: 'arcsec', sig: 0, raw: 'sep', rawLabel: 'Separation' }, { key: 'pa', kind: 'data', name: 'position angle', unit: 'deg', sig: 0, raw: 'pa', rawLabel: 'Position angle (north through east)' }] },
     steps: [
@@ -258,7 +258,7 @@ export const LABS = [
     about: 'Galileo’s moons were the first clear case of things going round something other than the Earth; Newton used them to weigh Jupiter.' },
   { id: 'venus-phases', group: 'The planets', title: 'The phases of Venus', who: 'Galileo, 1610',
     blurb: 'Venus is small when full and large when a thin crescent.',
-    setup: { t: '2026-06-01T01:30:00Z', loc: P.richmond, target: 'Venus', track: true, fov: 0.03, show: DARK, tools: [] },
+    setup: { t: '2026-06-01T01:30:00Z', loc: P.richmond, target: 'Venus', track: true, fov: 0.03, mount: 'eq', show: DARK, tools: [] },
     steps: [
       `Write down the date, the fraction of Venus that is lit (its panel: <b>Illuminated</b>) and its angular diameter, edge to edge with ${ANGLE}. The row follows Venus, so one measurement is enough.`,
       `Step forward a month at a time (click the date and time: <b>+1 month</b>) until Venus has passed between us and the Sun. Tabulate phase against size.`,
@@ -269,7 +269,7 @@ export const LABS = [
   // ------------------------------------------------------------------ The astronomical unit
   { id: 'venus-transit-1769', group: 'The astronomical unit', title: 'The transit of Venus, 1769', who: 'Halley’s method; Cook at Tahiti, Hell at Vardø',
     blurb: 'Time the transit from the Pacific and from the Arctic.',
-    setup: { t: '1769-06-03T19:15:00Z', loc: P.tahiti, obs2: P.vardo, align: 'sun', target: 'Sun', track: true, fov: 0.8, show: DARK, tools: ['stopwatch', 'compare'] },
+    setup: { t: '1769-06-03T19:15:00Z', loc: P.tahiti, obs2: P.vardo, align: 'sun', target: 'Sun', track: true, fov: 0.8, mount: 'eq', show: DARK, tools: ['stopwatch', 'compare'] },
     steps: [
       `Venus will cross the face of the Sun. Four moments have names:${CONTACTS}`,
       `You are at Point Venus, Tahiti. ${RUN.replace("run", "Run")} until Venus bites into the Sun’s edge. Click Venus, press <kbd>T</kbd> to follow it and zoom far in. Mark <b>second contact</b>.${FINE}`,
@@ -281,7 +281,7 @@ export const LABS = [
     about: `The straight line between the two places is 11,410 km long; only the part square-on to the Sun counts. Seen from two latitudes Venus crosses the Sun on two slightly different chords of different lengths, so the durations differ by minutes: Halley’s way to turn clocks into a parallax. From Kepler’s third law the shift of Venus against the Sun is (1/0.289 − 1/1.015) times the baseline in au. See ${tao}.` },
   { id: 'venus-transit-2012', group: 'The astronomical unit', title: 'The transit of Venus, 2012', who: 'The last one until 2117',
     blurb: 'The same measurement with modern places.',
-    setup: { t: '2012-06-05T22:00:00Z', loc: P.honolulu, obs2: P.sydney, align: 'sun', target: 'Sun', track: true, fov: 0.8, show: DARK, tools: ['stopwatch', 'compare'] },
+    setup: { t: '2012-06-05T22:00:00Z', loc: P.honolulu, obs2: P.sydney, align: 'sun', target: 'Sun', track: true, fov: 0.8, mount: 'eq', show: DARK, tools: ['stopwatch', 'compare'] },
     steps: [
       `Venus will cross the face of the Sun. Four moments have names:${CONTACTS}`,
       `You are in Honolulu. Click Venus, press <kbd>T</kbd> to follow it and zoom far in. ${RUN.replace("run", "Run")} and mark <b>second contact</b> and <b>third contact</b>.${FINE}`,
@@ -292,7 +292,7 @@ export const LABS = [
     about: 'In a straight line the two places are 7,620 km apart. Both places saw the whole transit. Venus was 0.2887 au from the Earth and the Sun 1.0147 au.' },
   { id: 'mercury-transit', group: 'The astronomical unit', title: 'A transit of Mercury', who: 'Gassendi, 1631; Halley, 1677',
     blurb: 'Mercury crosses the Sun about 13 times a century.',
-    setup: { t: '2019-11-11T12:30:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 0.8, show: DARK, tools: ['stopwatch'] },
+    setup: { t: '2019-11-11T12:30:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 0.8, mount: 'eq', show: DARK, tools: ['stopwatch'] },
     steps: [
       `Mercury will cross the face of the Sun. Four moments have names:${CONTACTS}`,
       `Click Mercury (or find it with the search box, <kbd>/</kbd>), press <kbd>T</kbd> to follow it and zoom far in. ${RUN.replace("run", "Run")}, then step, and mark all four contacts.${FINE}`,
@@ -302,7 +302,7 @@ export const LABS = [
     about: 'Mercury is small and far from us during a transit, so its parallax against the Sun is too small to time well.' },
   { id: 'mars-parallax', group: 'The astronomical unit', title: 'Parallax of Mars, 1672', who: 'Cassini in Paris and Richer in Cayenne',
     blurb: 'Mars at a close opposition, from two continents.',
-    setup: { t: '1672-09-05T01:00:00Z', loc: P.paris, obs2: P.cayenne, align: 'stars', target: 'Mars', track: true, fov: 0.04, show: DARK, tools: ['compare'] },
+    setup: { t: '1672-09-05T01:00:00Z', loc: P.paris, obs2: P.cayenne, align: 'stars', target: 'Mars', track: true, fov: 0.04, mount: 'eq', show: DARK, tools: ['compare'] },
     steps: [
       `Mars is near a very close opposition. The dashed circle is Mars as seen from Cayenne at the same instant. Measure the shift, center to center, in arcseconds, with ${ANGLE}.`,
       `Seen square-on from Mars, Paris and Cayenne are 6,610 km apart. Estimate the distance to Mars in km.${RADIANS}`,
@@ -313,7 +313,7 @@ export const LABS = [
   // ------------------------------------------------------------------ Light
   { id: 'romer', group: 'Light', title: 'The speed of light from Io', who: 'Rømer, 1676',
     blurb: 'Io’s eclipses run late when Jupiter is far away.',
-    setup: { t: '2025-08-04T05:10:00Z', loc: P.richmond, target: 'Jupiter', track: true, fov: 0.07, show: DARK, lightTime: true, tools: ['stopwatch', 'corrections'] },
+    setup: { t: '2025-08-04T05:10:00Z', loc: P.richmond, target: 'Jupiter', track: true, fov: 0.07, mount: 'eq', show: DARK, lightTime: true, tools: ['stopwatch', 'corrections'] },
     steps: [
       `Light takes time to cross the solar system, so you see Jupiter and its moons as they <b>were</b>. Io is about to go into Jupiter’s shadow, just beside the planet: it fades over about 3½ minutes. ${RUN.replace("run", "Run")}, step to the instant Io is completely gone, and mark it.${FINE}`,
       `Click Jupiter and write down its distance from you now (its panel, in au).`,
@@ -326,7 +326,7 @@ export const LABS = [
     about: `Rømer found the eclipses about 10 minutes late or early compared with a steady schedule, and Huygens turned that into a speed. At opposition the shadow is straight behind the planet, and Io goes behind Jupiter’s edge before it can fade; that is why the two dates are a month before opposition and six weeks after Jupiter passed behind the Sun. See ${tao}.` },
   { id: 'aberration', group: 'Light', title: 'Aberration of starlight', who: 'Bradley, 1727',
     blurb: 'Every star traces a small yearly ellipse.',
-    setup: { t: '2026-03-21T00:00:00Z', loc: P.greenwich, target: 'Eltanin', track: true, fov: 0.03, show: DARK, tools: ['corrections'] },
+    setup: { t: '2026-03-21T00:00:00Z', loc: P.greenwich, target: 'Eltanin', track: true, fov: 0.03, mount: 'eq', show: DARK, tools: ['corrections'] },
     steps: [
       `This is γ Draconis, the star Bradley watched pass overhead in London. Zoomed in this far its panel gives its coordinates (J2000) to 0.01″.`,
       `Write down its declination now (<b>RA / Dec (J2000)</b>, the second value), then step forward a month at a time for a year (click the date and time: <b>+1 month</b>).`,
@@ -339,7 +339,7 @@ export const LABS = [
   // ------------------------------------------------------------------ The stars
   { id: 'parallax', group: 'The stars', title: 'Distance of a star by parallax', who: 'Bessel, 1838',
     blurb: '61 Cygni shifts as the Earth goes round the Sun.',
-    setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 104214 }, track: true, fov: 0.004, show: DARK, fx: { aberration: false, properMotion: false, parallax: true }, tools: ['corrections'] },
+    setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 104214 }, track: true, fov: 0.004, mount: 'eq', show: DARK, fx: { aberration: false, properMotion: false, parallax: true }, tools: ['corrections'] },
     steps: [
       `This is 61 Cygni A. Aberration and proper motion are switched off so that only parallax moves the star. Its panel gives its coordinates (J2000) to 0.01″.`,
       `Write down RA and Dec, then step a month at a time for a year (click the date and time: <b>+1 month</b>).`,
@@ -364,7 +364,7 @@ export const LABS = [
     about: ASTROMETRY_ABOUT('Proxima Centauri') },
   { id: 'proper-motion', group: 'The stars', title: 'A star that moves', who: 'Halley, 1718; Barnard, 1916',
     blurb: 'Barnard’s star crosses the sky faster than any other.',
-    setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 87937 }, track: false, fov: 0.12, show: DARK, fx: { aberration: false, parallax: false, properMotion: true }, tools: ['corrections'] },
+    setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 87937 }, track: false, fov: 0.12, mount: 'eq', show: DARK, fx: { aberration: false, parallax: false, properMotion: true }, tools: ['corrections'] },
     steps: [
       `This is Barnard’s star. Open ${ANGLE} and switch <b>Snap</b> off, so that your clicks mark places on the sky and not the star itself. Click the star once.`,
       `Step the clock forward 10 years (click the date and time: <b>+1 year</b>): the star walks away from your mark. Click the star again. How far did it move, and so how many arcseconds per year?`,

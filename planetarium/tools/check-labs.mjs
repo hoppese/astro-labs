@@ -20,6 +20,8 @@ export async function checkLabs({ line }) {
     }
     if (/BC/.test(L.steps[0]) && L.setup.t.startsWith('-')) need(/a year 0/.test(L.steps[0]), L.id + ': the clock’s year is not explained');
   }
+  // through a telescope the picture must not turn: in alt-az it spins when the target passes near the zenith (the Sun, 88.6 deg high, at the 2012 transit's contacts)
+  for (const L of LABS) if (L.setup.fov <= 2.5 && L.setup.track) need(L.setup.mount === 'eq', L.id + ' turns with the zenith');
   for (const id of Object.keys(H.HIDDEN)) need(LABS.some((L) => L.id === id), 'hidden.js names no lab: ' + id);
   line(`  ${LABS.length} labs, ${n} steps (longest ${longest} characters): no unfilled text, no key value, angle tool off and the same clock rate at the start`);
 
