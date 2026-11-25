@@ -29,6 +29,9 @@ export function openLoupe(sky, x, y, onPick) {
   Object.assign(box.style, { left: left + 'px', top: top + 'px', width: size + 'px', height: size + 'px' });
   Object.assign(hint.style, { left: (left + size / 2) + 'px', top: (top + size + 8 > sky.clientHeight - 30 ? top - 30 : top + size + 8) + 'px' });
   host.appendChild(box); host.appendChild(hint);
+  // under the circle, or over it where it would lie on the angle tool's box or another panel
+  const h = hint.getBoundingClientRect(), hits = (r) => r.width && r.left < h.right && r.right > h.left && r.top < h.bottom && r.bottom > h.top;
+  if (parseFloat(hint.style.top) > top && top > 34 && [...document.querySelectorAll('.measurepanel, .trackchip, .readout, .infopanel, .lcard, .popover')].some((p) => hits(p.getBoundingClientRect()))) hint.style.top = (top - 34) + 'px';
   state = { x, y, size, px: x - left, py: y - top, ox: x - left, oy: y - top };
   // the sky point (x, y) is shown at (ox, oy) inside the magnifier: at its centre unless the magnifier was pushed in from an edge
   const c = cv.getContext('2d');

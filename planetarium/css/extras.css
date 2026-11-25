@@ -453,8 +453,6 @@ body:has(.xpanel:not([hidden])) .xtoast, body:has(.xpanel.wide:not([hidden])) .x
   body:has(.xpanel.wide:not([hidden])) .readout { right: calc(min(600px, var(--ww) * 0.62) + 20px); }
   body:has(.xpanel.card:not([hidden])) .readout { right: 12px; }
   body:has(.xpanel.card:not([hidden])) .xpanel.card { max-height: calc(100% - 58px - var(--bar-h) - 24px - var(--ro-h, 0px)); }
-  .labsdock { max-height: calc(100% - 58px - var(--bar-h) - 22px - var(--ro-h, 0px)) !important; }
-  body:has(.trackchip:not([hidden])) .labsdock { max-height: calc(100% - 58px - var(--bar-h) - 64px - var(--ro-h, 0px)) !important; }
 }
 #card-trails input[type=number] { width: 58px; padding-left: 5px; padding-right: 2px; } #card-trails #trFrame { flex: 1; width: 0; }
 .qz-hint.say { color: #ffd98a; font-size: 12.5px; }

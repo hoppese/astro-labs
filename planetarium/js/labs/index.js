@@ -89,7 +89,7 @@ function buildMenu() {
 
 function keys(e) {
   const t = e.target;
-  if (takesKeys(t, e)) return;
+  if (takesKeys(t, e) || (t && t.closest && t.closest('.nbpanel, .nb-dialog'))) return;      // (a letter typed beside a box in the notebook is not X on the stopwatch)
   if (document.querySelector('.modal-backdrop.show')) return;
   if (e.key === 'Escape' && menu && !menu.hidden) { menu.hidden = true; e.stopPropagation(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;

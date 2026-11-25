@@ -28,7 +28,7 @@ export const PLACES = {
 const P = PLACES;
 // no sky glow, no ground, and no refraction (the Sun and Moon are drawn as true circles, so limb contacts near the horizon are only right without it)
 const DARK = { atmosphere: false, ground: false, refraction: false };
-const STEPKEYS = 'Shift + ← / → steps the clock 1 second, Shift + ↓ / ↑ 1 minute; the clock button has more steps.';
+const STEPKEYS = 'Shift + ← / → steps the clock 1 second, Shift + ↓ / ↑ 1 minute; a click on the date and time has more.';
 // pieces of the prompts that several labs share
 const HELP = (t) => `<span class="help">${t}</span>`;
 const RUN = 'run the clock (<kbd>L</kbd> faster, <kbd>J</kbd> slower, <kbd>7</kbd> stop)';
@@ -55,7 +55,7 @@ const SPLIT_DIAGRAM = '<svg class="lab-diagram" viewBox="0 0 250 150" role="img"
 const ASTROMETRY_STEPS = (what) => [
   `The star in the middle is ${what}. The sky is shown the way a telescope records it: every star is a small blurred disc, and each exposure (each clock second) comes out slightly different. The ground and the daylight are switched off, so any date and hour will do. Faint stars can take a few seconds to appear.`,
   'Choose one of the faint stars near it as your <b>reference star</b>: your own choice. It is far in the background and hardly moves. Make a note of which one it is, so that you can find it again.',
-  'With the angle tool (<kbd>R</kbd>) measure <b>from your reference star to the star in the middle</b>: click near each star in turn, and in the magnifier that opens place the cross on the center of its image. You get a separation and a position angle.',
+  'With the angle tool (open at the bottom left; <kbd>R</kbd> puts it away and brings it back) measure <b>from your reference star to the star in the middle</b>: click near each star in turn, and in the magnifier that opens place the cross on the center of its image. You get a separation and a position angle.',
   'Set up your notebook: columns of your own, with names and units, and <b>Choose what Record copies</b>. Then press <b>Record</b> (in the notebook, or on the angle tool’s panel).',
   'Change the date: click the <b>date and time</b> at the bottom of the sky (the words, not the small clock picture, which jumps to today), step it on by days, weeks or months, and measure again. Follow the star for at least a year and a half, on dates of your own choosing. More dates, better answer.',
   'A separation by itself does not say where the star is: every point of a circle round your reference star is at the same distance from it. The position angle says in which direction. Together they make a right-angled triangle: the separation is the long side, and the other two sides are how far <b>east</b> and how far <b>north</b> of the reference star you find it.' + SPLIT_DIAGRAM + 'Work out those two sides for every date, as two new columns. What would each be if the position angle were 0°? If it were 90°? That tells you whether you have them the right way round.',
@@ -201,7 +201,7 @@ export const LABS = [
     setup: { t: '2026-11-24T02:00:00Z', loc: P.richmond, look: { az: 180, alt: 45 }, target: '', fov: 150, show: { ecliptic: true, atmosphere: false, ground: false, conNames: false }, tools: [] },
     steps: [
       `The yellow line is the ecliptic, the Sun’s yearly path. Find every planet and the Moon (type a name in the search box, <kbd>/</kbd>).`,
-      `Click each one and read its ecliptic latitude in its panel (<b>Ecliptic lon / lat</b>: the second number). Step forward a month at a time for a year (clock button, <b>+1 month</b>; the panel stays open and follows). What is the largest latitude you see for each?`,
+      `Click each one and read its ecliptic latitude in its panel (<b>Ecliptic lon / lat</b>: the second number). Step forward a month at a time for a year (click the date and time: <b>+1 month</b>; the panel stays open and follows). What is the largest latitude you see for each?`,
       `What does that say about the shape of the solar system?`,
     ],
     about: `That the planets stay within a few degrees of the ecliptic means their orbits lie nearly in one plane. See ${tao}.` },
@@ -240,7 +240,7 @@ export const LABS = [
     steps: [
       `Date 1 is on the clock. The Sun is the bright one on the yellow line; Mars is labeled. With ${ANGLE} click the Sun, then Mars. Write the angle down, and note on which side of the Sun Mars is, along the yellow line (left is east, right is west).`,
       `The two pink dots with dates are the Sun’s place among the stars today (on the Sun itself) and one Mars year, 686.98 days, later (drag the sky to the left until you see it). Measure from the Sun to the other dot and write the angle down: that is how far short of two full laps the Earth is.`,
-      `Step the clock forward one Mars year (clock button: <b>+1 Mars yr</b>). Mars is back at the same point of its orbit. Read the Sun–Mars angle again (the row follows the objects), and note the side: drag the sky until you see both, or search (<kbd>/</kbd>) for Mars.`,
+      `Step the clock forward one Mars year (click the date and time: <b>+1 Mars yr</b>). Mars is back at the same point of its orbit. Read the Sun–Mars angle again (the row follows the objects), and note the side: drag the sky until you see both, or search (<kbd>/</kbd>) for Mars.`,
       `Draw the Sun, the Earth’s two places (1 au from the Sun, separated by the angle from step 2) and the two sight lines to Mars, each at its angle from the Sun. Where they cross is Mars: how far is it from the Sun?`,
     ],
     about: `Repeating this for many pairs of dates gave Kepler the shape of both orbits. It fails when Mars is near opposition or conjunction, where the sight lines are nearly parallel. See ${tao}.` },
@@ -261,7 +261,7 @@ export const LABS = [
     setup: { t: '2026-06-01T01:30:00Z', loc: P.richmond, target: 'Venus', track: true, fov: 0.03, show: DARK, tools: [] },
     steps: [
       `Write down the date, the fraction of Venus that is lit (its panel: <b>Illuminated</b>) and its angular diameter, edge to edge with ${ANGLE}. The row follows Venus, so one measurement is enough.`,
-      `Step forward a month at a time (clock button, <b>+1 month</b>) until Venus has passed between us and the Sun. Tabulate phase against size.`,
+      `Step forward a month at a time (click the date and time: <b>+1 month</b>) until Venus has passed between us and the Sun. Tabulate phase against size.`,
       `Can an Earth-centered system in which Venus always stays between us and the Sun produce a nearly full Venus?`,
     ],
     about: 'A full, small Venus means it is beyond the Sun; a large crescent means it is on our side. Venus goes round the Sun.' },
@@ -329,7 +329,7 @@ export const LABS = [
     setup: { t: '2026-03-21T00:00:00Z', loc: P.greenwich, target: 'Eltanin', track: true, fov: 0.03, show: DARK, tools: ['corrections'] },
     steps: [
       `This is γ Draconis, the star Bradley watched pass overhead in London. Zoomed in this far its panel gives its coordinates (J2000) to 0.01″.`,
-      `Write down its declination now (<b>RA / Dec (J2000)</b>, the second value), then step forward a month at a time for a year (clock button: <b>+1 month</b>).`,
+      `Write down its declination now (<b>RA / Dec (J2000)</b>, the second value), then step forward a month at a time for a year (click the date and time: <b>+1 month</b>).`,
       `Plot declination against date. What is the half-range, in arcseconds? In which months are the extremes?`,
       `Switch <b>Annual aberration</b> off in Corrections and step through the year again. What is left?`,
       `The full effect is 20.5″ = (Earth’s speed) ÷ (speed of light), as an angle in radians. The Earth’s orbital speed is the length of its orbit (2π × 1 au) divided by a year. Find the speed of light.${RADIANS}`,
@@ -342,7 +342,7 @@ export const LABS = [
     setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 104214 }, track: true, fov: 0.004, show: DARK, fx: { aberration: false, properMotion: false, parallax: true }, tools: ['corrections'] },
     steps: [
       `This is 61 Cygni A. Aberration and proper motion are switched off so that only parallax moves the star. Its panel gives its coordinates (J2000) to 0.01″.`,
-      `Write down RA and Dec, then step a month at a time for a year (clock button: <b>+1 month</b>).`,
+      `Write down RA and Dec, then step a month at a time for a year (click the date and time: <b>+1 month</b>).`,
       `Turn the RA changes into arcseconds (1 s of RA = 15″ × cos Dec) and plot the yearly loop. Half its length is the parallax p.`,
       `Distance in parsecs = 1 ÷ p (in arcseconds). 1 parsec is 3.26 light-years: how many light-years is that?`,
       `Switch proper motion and aberration back on: what would Bessel actually have had to untangle?`,
@@ -367,7 +367,7 @@ export const LABS = [
     setup: { t: '2026-06-01T00:00:00Z', loc: P.richmond, target: { hip: 87937 }, track: false, fov: 0.12, show: DARK, fx: { aberration: false, parallax: false, properMotion: true }, tools: ['corrections'] },
     steps: [
       `This is Barnard’s star. Open ${ANGLE} and switch <b>Snap</b> off, so that your clicks mark places on the sky and not the star itself. Click the star once.`,
-      `Step the clock forward 10 years (clock button, <b>+1 year</b>): the star walks away from your mark. Click the star again. How far did it move, and so how many arcseconds per year?`,
+      `Step the clock forward 10 years (click the date and time: <b>+1 year</b>): the star walks away from your mark. Click the star again. How far did it move, and so how many arcseconds per year?`,
       `What speed across the line of sight is that, in km/s? Use the distance you measured in the Barnard’s star parallax lab, or the one your instructor gives you. (1″ per year at 1 pc is 4.74 km/s.)`,
     ],
     about: 'Proper motions are from the HYG catalog and are applied as straight-line drifts.' },
@@ -418,7 +418,7 @@ export const LABS = [
     steps: [
       `It is 2701 BC. The blue grid is the equatorial grid of that date; its center is the celestial pole. Thuban is selected: read its declination <b>of date</b> in its panel. How far is it from the pole (declination +90°)?${YEAR0(2701)}`,
       `Find Polaris (search box, <kbd>/</kbd>) and read how far it was from the pole then.`,
-      `Step forward a century at a time (clock button: <b>+100 yr</b>) to the present and a little beyond. In which century is Polaris closest to the pole?`,
+      `Step forward a century at a time (click the date and time: <b>+100 yr</b>) to the present and a little beyond. In which century is Polaris closest to the pole?`,
       `The pole goes round a circle of radius 23.4° once in about 25,800 years. How far does it move in your lifetime?`,
     ],
     about: 'The app covers the years −3000 to +3000, so Vega as pole star (about AD 14000) is out of range. Dates this old are proleptic Gregorian.' },

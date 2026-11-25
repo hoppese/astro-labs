@@ -50,12 +50,16 @@ export class LabelLayer {
       else if (it.anchor === 'below') { x0 = it.x - tw / 2; yc = it.y + it.gap + st.h / 2; }
       else if (it.anchor === 'left') x0 = it.x - it.gap - tw;
       else x0 = it.x + it.gap;
+      // a moon's name that would lie over its planet goes to the moon's other side
+      if (it.style === 'moon' && it.anchor === 'right' && soft.some((sb) => sb.only.includes('moon') && Math.hypot(it.x - sb.block[0], it.y - sb.block[1]) >= sb.block[2] && x0 < sb.block[0] + sb.block[2] && x0 + tw > sb.block[0] - sb.block[2] && it.x < sb.block[0] && Math.abs(yc - sb.block[1]) < sb.block[2] + 4)) x0 = it.x - it.gap - tw;
       const r = [x0 - 3, yc - st.h / 2 - 2, x0 + tw + 3, yc + st.h / 2 + 2];
       if (r[2] < 0 || r[0] > w || r[3] < 0 || r[1] > h) continue;
       let hit = false;
       for (const p of placed) { if (r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]) { hit = true; break; } }
       if (!hit) for (const sb of soft) {
         if (!sb.only.includes(it.style)) continue;
+        // (a moon on the disc itself may have its name there: it has no other place)
+        if (it.style === 'moon' && Math.hypot(it.x - sb.block[0], it.y - sb.block[1]) < sb.block[2]) continue;
         const [cx, cy, cr] = sb.block, nx = Math.max(r[0], Math.min(cx, r[2])), ny = Math.max(r[1], Math.min(cy, r[3]));
         if ((nx - cx) * (nx - cx) + (ny - cy) * (ny - cy) < cr * cr) { hit = true; break; }
       }

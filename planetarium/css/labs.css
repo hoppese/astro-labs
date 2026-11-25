@@ -83,8 +83,9 @@
 /* the date box and the read-out stand beside the cards, not over them (--dock-l: js/labs/dock.js) */
 @media (min-width: 561px) {
   .popover { right: max(12px, var(--dock-l, 0px)); }
-  .xcursor:not(.follow) { left: calc((100% - var(--dock-l, 0px)) / 2); }
-  html .readout { right: max(12px, var(--dock-l, 0px)); } body:has(.labsdock .lcard:not([hidden])) .readout { bottom: calc(var(--bar-h) + 42px); background: rgba(6, 10, 18, 0.6); border-radius: 8px; padding: 1px 8px; }      /* above the pointer's read-out */ html.nb-over .readout { right: calc(var(--nb-w) + 12px); }
+  .xcursor:not(.follow) { left: calc((max(0px, var(--free-l, 0px)) + 100% - max(var(--dock-l, 0px), 0px)) / 2); }
+  html .readout { right: max(12px, var(--dock-l, 0px)); } body:has(.labsdock .lcard:not([hidden])) .readout { bottom: calc(var(--bar-h) + 42px); background: rgba(6, 10, 18, 0.82); border-radius: 8px; padding: 1px 8px; }      /* above the pointer's read-out */ html.nb-over .readout { right: calc(var(--nb-w) + 12px); }
+  body:has(.measurepanel:not([hidden])) .xcursor:not(.follow) { left: calc((440px + 100% - var(--dock-l, 0px)) / 2); }
   html.pop-wide .popover { width: 630px; } html.pop-wide .popover .steps { grid-template-columns: repeat(8, 1fr); } html.pop-wide .popover .steps button { font-size: 11px; white-space: nowrap; }
   html.pop-wide .popover .dt-row { max-width: 420px; }
   html.pop-wide .popover .pop-foot { position: absolute; top: 11px; right: 50px; margin: 0; gap: 12px; } html.pop-wide .popover .pop-foot .btn { padding: 3px 10px; }

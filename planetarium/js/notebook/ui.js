@@ -83,7 +83,7 @@ export function createNotebook(root, opts = {}) {
     if (!from.length) { status(`Nothing to ${word}.`); return; }
     to.push(snap); snap = from.pop();
     Object.assign(nb, JSON.parse(snap)); S.touch(nb); closePop();
-    clearTimeout(saveT); S.save(nb); titleIn.value = titleIn.defaultValue = nb.title || '';
+    clearTimeout(saveT); saveT = 0; S.save(nb); titleIn.value = titleIn.defaultValue = nb.title || '';
     renderTable(); renderAxes(); renderModel(); drawGraph(); footState();
     if (!root.contains(document.activeElement)) tableWrap.focus({ preventScroll: true });
     if (opts.onChange) opts.onChange(nb);
@@ -102,7 +102,7 @@ export function createNotebook(root, opts = {}) {
   }
   function changed({ structure = false } = {}) {
     S.touch(nb); remember();
-    clearTimeout(saveT); saveT = setTimeout(() => S.save(nb), 250);
+    clearTimeout(saveT); saveT = setTimeout(() => { saveT = 0; S.save(nb); }, 250);
     followData();
     if (structure) renderTable(); else refreshComputed();
     renderAxes(); renderModel(); drawGraph();
@@ -288,6 +288,8 @@ export function createNotebook(root, opts = {}) {
     const a = e.target.closest('[data-act]'); if (a) act(a.dataset.act, a);
   });
   tableWrap.addEventListener('keydown', (e) => { const th = e.target.closest && e.target.closest('th[data-col]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); columnDialog(S.colById(nb, th.dataset.col)); } });
+  // the last change is still waiting for its timer when the page is left
+  window.addEventListener('pagehide', () => { if (saveT) { clearTimeout(saveT); saveT = 0; S.save(nb); } });
   chainBox.addEventListener('click', (e) => { const n = e.target.closest('[data-col]'); if (n) { const th = tableWrap.querySelector(`th[data-col="${n.dataset.col}"]`); if (th) { th.scrollIntoView({ block: 'nearest', inline: 'center' }); th.classList.add('flash'); setTimeout(() => th.classList.remove('flash'), 900); } } });
 
   // ---- column dialogs ---------------------------------------------------------------------------------------------------------
@@ -518,7 +520,7 @@ export function createNotebook(root, opts = {}) {
     if (!nb.recordMap.length) { recordSetup(); return false; }
     const R = Object.fromEntries(host.readings().map((r) => [r.key, r]));
     const missing = nb.recordMap.filter((m) => !R[m.raw] || R[m.raw].value == null);
-    if (missing.length) { status(`Nothing recorded: ${[...new Set(missing.map((m) => (R[m.raw] ? R[m.raw].why || R[m.raw].label + ' has no reading' : m.raw)))].join('; ')}.`, 'warn'); return false; }
+    if (missing.length) { status(`Nothing recorded: ${[...new Set(missing.map((m) => (R[m.raw] ? R[m.raw].why || R[m.raw].label + ' has no reading' : m.raw)))].join('; ')}.`, 'warn'); if (host.afterMiss) host.afterMiss(); return false; }
     const cells = {}; for (const m of nb.recordMap) cells[m.col] = R[m.raw].value;
     const i = S.addRow(nb, cells);
     changed({ structure: true });
@@ -769,7 +771,7 @@ export function createNotebook(root, opts = {}) {
     m.p[key] = v; (m.moved = m.moved || {})[key] = true;
     if (t.dataset.p) { const nbx = modelBox.querySelector(`[data-n="${id}"]`); if (nbx) { nbx.value = parText(v, m.r[key]); nbx.classList.remove('bad'); } }
     else { const sl = modelBox.querySelector(`[data-p="${id}"]`); if (sl) sl.value = v; }          // the slider's range grows only when the typed number is finished (change, below): "2" on the way to "2026.2" must not stretch it
-    S.touch(nb); clearTimeout(saveT); saveT = setTimeout(() => S.save(nb), 400);
+    S.touch(nb); clearTimeout(saveT); saveT = setTimeout(() => { saveT = 0; S.save(nb); }, 400);
     drawGraph();
   });
   modelBox.addEventListener('focusin', (e) => { const t = e.target; if (t.dataset.n) { const [k, key] = t.dataset.n.split(':'); t._was = mOf(k).p[key]; } });
@@ -905,7 +907,7 @@ export function createNotebook(root, opts = {}) {
   const api = {
     el: root, get nb() { return nb; }, record, recordSetup, status, undo, redo, undoKey, get wide() { return wide; }, changed, setTab, importText, csv: () => S.toCSV(nb), dialog: openDialog, closeDialog,
     /** Switch to another saved notebook (one per lab). */
-    open(slot) { clearTimeout(saveT); S.save(nb); nb = S.load(slot) || S.touch(S.newNotebook(slot)); if (!nb.seed) nb.seed = 1 + Math.floor(Math.random() * 999998); renderAll(); return nb; },
+    open(slot) { clearTimeout(saveT); saveT = 0; S.save(nb); nb = S.load(slot) || S.touch(S.newNotebook(slot)); if (!nb.seed) nb.seed = 1 + Math.floor(Math.random() * 999998); renderAll(); return nb; },
     /** Columns and Record mapping from a template (the instructor URL switch): only into an empty notebook. */
     template(tpl) {
       if (nb.cols.length || !tpl) return false;

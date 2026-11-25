@@ -49,7 +49,7 @@ export function restoreMarks(list) { if (Array.isArray(list)) marks.push(...list
 export function clearMarks() { marks.length = 0; picked = []; render(); }
 
 const utcStr = (t) => { const p = wallParts(t, 'UTC'); return fmtDate(p) + ' ' + fmtTime(p); };
-const KEYS = '<p class="sw-keys"><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd> 1 second &ensp;<kbd>Shift</kbd> + <kbd>&darr;</kbd> <kbd>&uarr;</kbd> 1 minute<br><kbd>L</kbd> faster <kbd>J</kbd> slower <kbd>7</kbd> run / stop</p>';
+const KEYS = '<p class="sw-keys"><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd> 1 s &ensp;<kbd>Shift</kbd> + <kbd>&darr;</kbd> <kbd>&uarr;</kbd> 1 min<br><kbd>L</kbd> faster <kbd>J</kbd> slower <kbd>7</kbd> run / stop</p>';
 function render() {
   if (!card || !card.isOpen()) return;
   picked = picked.filter((m) => marks.includes(m));

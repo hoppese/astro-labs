@@ -125,6 +125,7 @@ function subtitle() {
   sub.textContent = (labNow ? labNow.title : 'your own notebook') + (o && (o.seeing || o.noise) ? ` · seeing ${o.seeing}″${o.noise ? `, simulated noise ${o.noise}″, seed ${nb.seed}` : ''}` : '');
   tabBtn.innerHTML = `Notebook <b>${nb.rows.length} row${nb.rows.length === 1 ? '' : 's'}</b>`;
 }
+const toSky = () => { if (!big) document.getElementById('sky').focus({ preventScroll: true }); };
 function build() {
   panel = document.createElement('section'); panel.className = 'nbpanel'; panel.id = 'nbPanel'; panel.hidden = true; panel.setAttribute('aria-label', 'Lab notebook');
   panel.innerHTML = '<div class="nbp-drag" title="Drag to resize"></div><header class="nbp-head"><h2>Lab notebook</h2><span class="sub"></span>' +
@@ -151,7 +152,9 @@ function build() {
   window.addEventListener('resize', () => { if (mode() !== lastMode) { lastMode = mode(); layout(); } });
   const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL('../../css/notebook.css', import.meta.url).href; document.head.appendChild(link);
   api = createNotebook(body, { slot: 'free', instructor: URLOPT.instructor, onChange: subtitle,
-    host: { readings, big: () => { big = !big; layout(); }, conditions: conditionsDialog, afterRecord: ({ clear }) => { if (clear && measure.byEye) clearMeasures(); } } });
+    host: { readings, big: () => { big = !big; layout(); }, conditions: conditionsDialog, afterRecord: ({ clear }) => { if (clear && measure.byEye) clearMeasures();
+      // the next thing is to step the clock or measure again: the sky's keys work at once
+      toSky(); }, afterMiss: () => toSky() } });
 }
 
 /** Open the notebook (and switch the planetarium into notebook mode). slot: which saved notebook; obs: conditions to set. */

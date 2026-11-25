@@ -286,6 +286,7 @@ export function drawBodies(ctx) {
     addPick(pl.x, pl.y, Math.max(drawnR, 4), b.mag, { kind: 'body', id: b.id });
     // no star or deep-sky label on the face of the Sun or Moon (the stars behind are hidden; their names were not)
     if ((b.kind === 'sun' || b.kind === 'moon') && drawnR >= 10) labels.blockDisc(pl.x, pl.y, drawnR, ['star', 'starDim', 'dso']);
+    else if (b.moons.length && rpx >= 6) labels.blockDisc(pl.x, pl.y, rpx, ['moon']);      // nor a moon's name on its planet
     if (state.show.planetNames) labels.add(pl.x, pl.y, b.name, 'planet', state.selected && state.selected.kind === 'body' && state.selected.id === b.id ? 200 : 120 - b.mag * 0.5, { gap: Math.min(drawnR, 600) + 6 });
   }
   if (glareLast) glareLast();

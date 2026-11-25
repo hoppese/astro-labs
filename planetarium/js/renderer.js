@@ -132,7 +132,8 @@ function drawSelection(frame, bodies) {
   if (see.on && see.noMarker && ref.kind !== 'body') return;          // measuring by eye: brackets round the image would do the centering for the student
   if (see.on && (ref.kind === 'star' || ref.kind === 'gaia')) { for (const it of allPicks()) if (it.ref && it.ref.kind === ref.kind && sameRef(it.ref, ref)) { sp[0] = it.x; sp[1] = it.y; break; } }
   let r = 13;
-  if (ref.kind === 'body') { const b = bodies.byId[ref.id]; if (b) r = Math.max(r, b.angRadius * cam.pxPerDeg * (b.id === 'Saturn' ? 2.4 : 1) + 8); }
+  if (ref.kind === 'body') { const b = bodies.byId[ref.id]; if (b) { const rp = b.angRadius * cam.pxPerDeg; if (rp > 40) return;      // a disc this large needs no pointer, and brackets along its edge hide contacts
+    r = Math.max(r, rp * (b.id === 'Saturn' ? 2.4 : 1) + 8); } }
   r = Math.min(r, Math.max(cam.w, cam.h));
   ctx.strokeStyle = state.tracking && sameRef(ref, state.trackRef) ? 'rgba(255,196,96,0.95)' : 'rgba(255,214,140,0.85)'; ctx.lineWidth = 1.5;
   // four corner brackets, Stellarium-style pointer
