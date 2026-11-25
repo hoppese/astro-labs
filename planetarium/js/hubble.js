@@ -11,10 +11,11 @@
 import { state, on, emit } from './state.js';
 import { fmtMag } from './astro.js';
 import { cam } from './camera.js';
-import { dso, loadDeepDso } from './catalog.js';
+import { dso, dsoDoubt, loadDeepDso } from './catalog.js';
 import { projEqj } from './render/proj.js';
 import { clipToSky } from './render/groundshade.js';
-import { makePanel, esc, toast, download, isNarrow, loadJSON, saveJSON } from './xui.js';
+import { makePanel, esc, toast, download, isNarrow, loadJSON, saveJSON, readNumber } from './xui.js';
+import { keepFocus } from './focus.js';
 import { goToDso } from './dsolist.js';
 
 export const C_KM_S = 299792.458;
@@ -32,6 +33,7 @@ let hover = -1, plotPts = [];
 
 const cz = (o) => o.z * C_KM_S;
 const magOf = (o) => (o.vmag != null ? { v: o.vmag, band: 'V' } : o.bmag != null ? { v: o.bmag, band: 'B' } : null);
+const odd = (o) => { const t = dsoDoubt(o); return t ? `<sup title="${esc('Doubtful: ' + t)}">?</sup>` : ''; };
 const nameOf = (o) => (o.m ? 'M ' + o.m : o.id);
 const morphClass = (h) => { if (!h) return ''; if (/^S0|^E-S0|^S0-a/.test(h)) return 'S0'; if (/^SB/.test(h)) return 'SB'; if (/^E/.test(h)) return 'E'; if (/^I/.test(h)) return 'I'; if (/^S/.test(h)) return 'S'; return ''; };
 const fnum = (v, dp) => (v == null || !isFinite(v) ? '–' : v.toFixed(dp).replace('-', '−'));
@@ -43,7 +45,15 @@ function index() {
 }
 const galaxies = () => dso.rows.filter((o) => GAL.has(o.type));
 const save = () => saveJSON(STORE, table.map((r) => ({ id: r.id, d: r.d, src: r.src, D: r.D })));
-const dist = (r) => { const v = parseFloat(String(r.d).replace(',', '.')); return isFinite(v) && v > 0 ? v : null; };
+/** A distance as typed: {v} in Mpc, {empty} or {err}. */
+function readDist(text) {
+  const t = String(text).trim(), other = /(kpc|kiloparsecs?|\bpc|parsecs?|ly|light.?years?|km|au)\.?$/i.exec(t);
+  if (other && !/(mpc|megaparsecs?)\.?$/i.test(t)) return { err: `“${t}”: this column wants megaparsecs (Mpc).` };
+  const r = readNumber(t, /\s*(mpc|megaparsecs?)\.?$/i);
+  return r.v != null && !(r.v > 0) ? { err: `“${t}”: a distance must be more than zero.` } : r;
+}
+const dist = (r) => readDist(r.d).v ?? null;
+const distErrors = () => table.map((r) => { const e = readDist(r.d).err, o = byId && byId.get(r.id); return e ? `<div>${esc(o ? nameOf(o) : r.id)}: ${esc(e)} Not plotted.</div>` : ''; }).join('');
 
 // ---- the fit: v = H0 d, a line through the origin, least squares in v ----------------------------
 export function fitThroughOrigin(pts) {
@@ -94,7 +104,7 @@ function pickHtml() {
     body += `<tr data-id="${esc(o.id)}"${on ? ' class="on"' : ''}><td class="ck"><input type="checkbox" aria-label="Add ${esc(nameOf(o))} to my table"${on ? ' checked' : ''}></td>` +
       `<td class="nm"><button type="button" class="hb-go" title="Show ${esc(nameOf(o))} on the sky">${esc(nameOf(o))}</button>${o.names && o.names.length ? `<i>${esc(o.names[0])}</i>` : ''}</td>` +
       `<td class="ty">${esc(o.hubble || '–')}</td>` +
-      `<td class="n">${m ? fmtMag(m.v, 1) + (m.band === 'B' ? '<sup>B</sup>' : '') : '–'}</td>` +
+      `<td class="n">${m ? fmtMag(m.v, 1) + (m.band === 'B' ? '<sup>B</sup>' : '') + odd(o) : '–'}</td>` +
       `<td class="n">${o.maj != null ? fnum(o.maj, o.maj < 10 ? 2 : 1) : '–'}</td>` +
       `<td class="n">${o.z.toFixed(5).replace('-', '−')}</td><td class="n">${int(cz(o))}</td></tr>`;
   }
@@ -109,7 +119,7 @@ function pickHtml() {
     <div class="hb-count"><span>${list.length.toLocaleString('en-US')} galaxies match</span><span>Tick a box to add a galaxy to your table. Click a name to see it.</span></div>
     ${list.length ? `<div class="hb-scroll"><table class="hb-table"><thead><tr><th class="ck"></th>${th('name', 'Galaxy', 'nm')}<th class="ty">Type</th>${th('mag', 'Mag', 'n')}${th('size', 'Size ′', 'n')}${th('z', 'z', 'n')}<th class="n">cz km/s</th></tr></thead><tbody>${body}</tbody></table>${more}</div>`
     : '<div class="xp-empty">No galaxy matches these filters. <button class="btn" data-act="reset">Reset filters</button></div>'}
-    <div class="xp-foot">Magnitude is V where OpenNGC has it, otherwise B (marked <sup>B</sup>). Size is the catalogue's major axis in arcminutes. cz = c × z.</div>`;
+    <div class="xp-foot">Magnitude is V where OpenNGC has it, otherwise B (marked <sup>B</sup>); <sup>?</sup> = a doubtful value, left as the catalogue has it (point at it for the reason). Size is the catalogue's major axis in arcminutes. cz = c × z.</div>`;
 }
 
 // ---- step 2: my table and the plot -----------------------------------------------------------
@@ -123,7 +133,7 @@ function dataHtml() {
     if (!o) { body += `<tr data-id="${esc(r.id)}"><td class="nm">${esc(r.id)}</td><td colspan="5" class="nd">loading…</td><td></td></tr>`; continue; }
     const m = magOf(o);
     body += `<tr data-id="${esc(r.id)}"><td class="nm"><button type="button" class="hb-go" title="Show ${esc(nameOf(o))} on the sky">${esc(nameOf(o))}</button></td>` +
-      `<td class="n">${m ? fmtMag(m.v, 1) + (m.band === 'B' ? '<sup>B</sup>' : '') : '–'}</td><td class="n">${o.maj != null ? fnum(o.maj, o.maj < 10 ? 2 : 1) : '–'}</td>` +
+      `<td class="n">${m ? fmtMag(m.v, 1) + (m.band === 'B' ? '<sup>B</sup>' : '') + odd(o) : '–'}</td><td class="n">${o.maj != null ? fnum(o.maj, o.maj < 10 ? 2 : 1) : '–'}</td>` +
       `<td class="n">${o.z.toFixed(5).replace('-', '−')}</td><td class="n">${int(cz(o))}</td>` +
       `<td class="d"><input type="text" inputmode="decimal" class="field hb-d${r.d !== '' && dist(r) == null ? ' bad' : ''}" value="${esc(r.d)}" placeholder="?" aria-label="Distance to ${esc(nameOf(o))} in megaparsecs">${r.src === 'size' ? `<span class="src" title="Filled in from the angular size with an assumed diameter of ${esc(r.D)} kpc">θ</span>` : ''}</td>` +
       `<td class="x"><button type="button" class="hb-x" aria-label="Remove ${esc(nameOf(o))}" title="Remove from the table">&times;</button></td></tr>`;
@@ -131,6 +141,7 @@ function dataHtml() {
   const lastD = (table.find((r) => r.src === 'size') || {}).D || '';
   return `
     <div class="hb-scroll short"><table class="hb-table mine"><thead><tr><th class="nm">Galaxy</th><th class="n">Mag</th><th class="n">Size ′</th><th class="n">z</th><th class="n">v = cz km/s</th><th class="d">Distance Mpc</th><th class="x"></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="hb-msg" role="status"></div>
     <div class="hb-acts">
       <button type="button" class="btn" data-act="copy">Copy table</button><button type="button" class="btn" data-act="csv">Download CSV</button>
       <button type="button" class="btn" data-tab="pick">Add galaxies</button><button type="button" class="btn quiet" data-act="clear">Clear table</button>
@@ -166,7 +177,7 @@ function drawPlot() {
   if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
   const pts = points(), fit = fitThroughOrigin(pts);
-  const L = 58, Rm = 14, T = 12, B = 38, pw = w - L - Rm, ph = h - T - B;
+  const L = 68, Rm = 14, T = 12, B = 38, pw = w - L - Rm, ph = h - T - B;
   const allV = table.map((r) => (byId && byId.get(r.id) ? cz(byId.get(r.id)) : 0));
   const vMax = Math.max(1000, ...allV) * 1.08, vMin = Math.min(0, ...allV) * 1.08;
   const dMax = pts.length ? Math.max(...pts.map((p) => p.d)) * 1.12 : 100;
@@ -204,6 +215,7 @@ function drawPlot() {
   });
 }
 function refreshResult() {
+  const msg = panel.body.querySelector('.hb-msg'); if (msg) msg.innerHTML = distErrors();
   const r = panel.body.querySelector('.hb-result'); if (r) r.innerHTML = resultHtml();
   drawPlot();
 }
@@ -231,16 +243,22 @@ function aboutHtml() {
       <li>Spread your choices over a wide range of redshift, and take at least six.</li>
       <li>The line is forced through the origin (zero distance, zero velocity): v = H<sub>0</sub> d.</li>
     </ul>
-    <p class="fine">Fine print: OpenNGC's own radial-velocity column is slightly smaller than cz at the high end (it uses the relativistic Doppler formula; 3% smaller at z = 0.06). cz is the usual choice for a Hubble diagram. Redshifts are heliocentric.</p>
+    <p class="fine">Fine print: OpenNGC's own radial-velocity column (the object panel shows it) is slightly smaller than cz, because it uses the relativistic Doppler formula: M 99, z = 0.008098, has 2,418 km/s there and cz = 2,428 km/s; 3% smaller at z = 0.06. cz is the usual choice for a Hubble diagram. Redshifts are heliocentric.</p>
   </div>`;
 }
 
 // ---- wiring ----------------------------------------------------------------------------------------
-function render() {
-  if (!panel || !panel.isOpen()) return;
+function render() { if (panel && panel.isOpen()) keepFocus(panel.body, rebuild); }
+function rebuild() {
   if (dso.deepLoaded && !byId) index();
   const n = table.length;
   panel.sub.textContent = '';
+  // somebody is using a filter: it stays (a list that is rebuilt forgets the letters typed so far), only what follows it changes
+  const filters = panel.body.querySelector('.hb-filters');
+  if (tab === 'pick' && filters && filters.contains(document.activeElement)) {
+    const t = document.createElement('div'); t.innerHTML = pickHtml();
+    if (t.querySelector('.hb-filters')) { while (filters.nextSibling) filters.nextSibling.remove(); t.querySelector('.hb-filters').remove(); filters.after(...t.childNodes); return; }
+  }
   panel.body.innerHTML = `<div class="hb-tabs" role="tablist">
       <button type="button" role="tab" data-tab="pick" aria-selected="${tab === 'pick'}">1 · Choose galaxies</button>
       <button type="button" role="tab" data-tab="data" aria-selected="${tab === 'data'}">2 · My table &amp; plot${n ? ` <span class="badge">${n}</span>` : ''}</button>
@@ -351,7 +369,8 @@ function bind() {
 }
 
 function fillFromSize() {
-  const inp = panel.body.querySelector('#hbD'), D = parseFloat(String(inp.value).replace(',', '.'));
+  const inp = panel.body.querySelector('#hbD'), rd = readNumber(inp.value, /\s*(kpc|kiloparsecs?)\.?$/i), D = rd.v;
+  if (rd.err) { toast(rd.err, { kind: 'warn' }); inp.focus(); return; }
   if (!(D > 0)) { toast('Type the true diameter you want to assume, in kiloparsecs, first.', { kind: 'warn' }); inp.focus(); return; }
   let n = 0, skipped = 0;
   for (const r of table) {

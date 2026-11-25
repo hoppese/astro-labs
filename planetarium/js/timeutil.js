@@ -78,6 +78,16 @@ export function zoneLabel(ms, tz) {
 }
 
 const p2 = (n) => String(n).padStart(2, '0');
+export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+export function daysInMonth(y, mo) { const d = new Date(Date.UTC(2000, mo, 0)); d.setUTCFullYear(y, mo, 0); return d.getUTCDate(); }
+/** What is wrong with a date somebody typed, in words, or ''. */
+export function dateProblem(y, mo, d) {
+  if (!Number.isInteger(y) || y < -3000 || y > 3000) return 'The year must be a whole number from −3000 to 3000 (the span the positions are computed for).';
+  if (!Number.isInteger(mo) || mo < 1 || mo > 12) return 'The month must be a number from 1 to 12.';
+  const n = daysInMonth(y, mo);
+  if (!Number.isInteger(d) || d < 1 || d > n) return `${MONTHS[mo - 1]} ${y < 0 ? '−' + -y : y} has ${n} days: the day must be from 1 to ${n}.`;
+  return '';
+}
 export const fmtDate = (p) => `${p.year < 0 ? '\u2212' : ''}${String(Math.abs(p.year)).padStart(4, '0')}-${p2(p.month)}-${p2(p.day)}`;
 export const fmtTime = (p, secs = true) => `${p2(p.hour)}:${p2(p.minute)}` + (secs ? `:${p2(p.second)}` : '');
 /** "14:03" style clock time of an instant, for rise/set tables. */

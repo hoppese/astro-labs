@@ -7,6 +7,7 @@ import { setTime } from '../clock.js';
 import { wallParts, fmtDate, fmtTime } from '../timeutil.js';
 import { makeCard } from './dock.js';
 import { esc, fmtDuration } from './util.js';
+import { keepFocus } from '../focus.js';
 
 export const marks = [];              // [{t: ms (whole seconds), label}]
 let card = null;
@@ -39,7 +40,7 @@ function render() {
     html += '</ol>';
     if (marks.length > 2) html += `<div class="sw-total">first → last: <b>${fmtDuration(marks[marks.length - 1].t - marks[0].t)}</b></div>`;
   }
-  card.body.innerHTML = html;
+  keepFocus(card.body, () => { card.body.innerHTML = html; });
 }
 function copyText() {
   const rows = ['#\tUTC\tlabel\tsince previous (s)'];

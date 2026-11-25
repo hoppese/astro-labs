@@ -22,23 +22,20 @@ const conName = new Map();
 const p2 = (n) => String(n).padStart(2, '0');
 /** RA with a precision that suits the field of view; fixed width so the digits do not dance. */
 function raText(deg, fov) {
-  const tenths = fov < 0.2;
-  const unit = fov > 20 ? 60 : tenths ? 0.1 : 1;                  // seconds of time per step
-  let t = Math.round(mod(deg, 360) / 15 * 3600 / unit) * unit;
-  if (t >= 86400) t -= 86400;
-  const h = Math.floor(t / 3600), m = Math.floor((t - h * 3600) / 60), s = t - h * 3600 - m * 60;
-  if (fov > 20) return `${p2(h)}h ${p2(m)}m`;
-  return `${p2(h)}h ${p2(m)}m ${tenths ? s.toFixed(1).padStart(4, '0') : p2(Math.round(s))}s`;
+  if (fov > 20) { const n = Math.round(mod(deg, 360) * 4) % 1440; return `${p2(Math.floor(n / 60))}h ${p2(n % 60)}m`; }
+  const dp = fov < 2e-4 ? 4 : fov < 2e-3 ? 3 : fov < 0.02 ? 2 : fov < 0.2 ? 1 : 0, k = 10 ** dp;                  // whole steps of 1/k seconds of time
+  const n = Math.round(mod(deg, 360) * 240 * k) % (86400 * k), r = n % (60 * k), m = (n - r) / (60 * k);
+  return `${p2(Math.floor(m / 60))}h ${p2(m % 60)}m ${(r / k).toFixed(dp).padStart(dp ? 3 + dp : 2, '0')}s`;
 }
 function decText(deg, fov) {
-  const unit = fov > 20 ? 60 : 1;                                 // arcseconds per step
-  const t = Math.round(Math.abs(deg) * 3600 / unit) * unit;
-  const d = Math.floor(t / 3600), m = Math.floor((t - d * 3600) / 60), s = t - d * 3600 - m * 60;
-  const sg = deg < 0 && t > 0 ? '−' : '+';
-  return `${sg}${p2(d)}° ${p2(m)}′` + (fov > 20 ? '' : ` ${p2(s)}″`);
+  const sg = (n) => (deg < 0 && n > 0 ? '−' : '+');
+  if (fov > 20) { const n = Math.round(Math.abs(deg) * 60); return `${sg(n)}${p2(Math.floor(n / 60))}° ${p2(n % 60)}′`; }
+  const dp = fov < 2e-4 ? 3 : fov < 2e-3 ? 2 : fov < 0.02 ? 1 : 0, k = 10 ** dp;                                 // whole steps of 1/k arcseconds
+  const n = Math.round(Math.abs(deg) * 3600 * k), r = n % (60 * k), m = (n - r) / (60 * k);
+  return `${sg(n)}${p2(Math.floor(m / 60))}° ${p2(m % 60)}′ ${(r / k).toFixed(dp).padStart(dp ? 3 + dp : 2, '0')}″`;
 }
 const degText = (v, fov, signed) => {
-  const dp = fov > 20 ? 1 : fov > 1 ? 2 : fov > 0.05 ? 3 : 4;
+  const dp = fov > 20 ? 1 : fov > 1 ? 2 : fov > 0.05 ? 3 : fov > 2e-3 ? 4 : fov > 2e-4 ? 5 : 6;
   const s = Math.abs(v).toFixed(dp).padStart(dp + (signed ? 3 : 4), '0');
   return (signed ? (v < 0 && +s !== 0 ? '−' : '+') : '') + s + '°';
 };
@@ -136,6 +133,7 @@ export function initCursor(canvas) {
     sec.querySelectorAll('#xCurSeg button').forEach((b) => b.addEventListener('click', () => { setMode(b.dataset.mode); saveJSON(OPT_KEY, opt); sync(); }));
     sec.querySelector('#xCurDate').addEventListener('change', (e) => { opt.ofDate = e.target.checked; saveJSON(OPT_KEY, opt); lastText = ''; schedule(); });
     sync();
+    on('display-reset', () => { setMode('dock'); opt.ofDate = false; saveJSON(OPT_KEY, opt); sync(); });
   }
 }
 export { xs, saveXs, RAD };

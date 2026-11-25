@@ -4,7 +4,7 @@ export async function checkLinks({ line }) {
   const D = new URL('../data/', import.meta.url), json = (f) => JSON.parse(readFileSync(new URL(f, D)));
   const C = await import('../js/catalog.js'), L = await import('../js/links.js');
   const l = json('links.json'); L.links.data = l;
-  const names = new Set(Object.values(C.stars.names.name)), ids = new Set(C.dso.rows.map((o) => o.id)), cons = new Set(C.constellations.map((c) => c.id));
+  const names = new Set(Object.values(C.stars.names.name).concat(Object.values(C.FAINT_NAMES))), ids = new Set(C.dso.rows.map((o) => o.id)), cons = new Set(C.constellations.map((c) => c.id));
   const stray = [...Object.keys(l.star).filter((k) => !names.has(k)), ...Object.keys(l.dso).filter((k) => !ids.has(k)), ...Object.keys(l.con).filter((k) => !cons.has(k))];
   if (stray.length) throw new Error('links.json names unknown objects: ' + stray.join(', '));
   const refs = [...C.dso.rows.map((o) => ({ kind: 'dso', idx: o.idx })), ...C.constellations.map((c) => ({ kind: 'con', id: c.id })), ...Object.keys(l.body).map((id) => ({ kind: 'body', id }))];

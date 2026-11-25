@@ -4,10 +4,9 @@
 
 import { state, on } from './state.js';
 import { RAD, fmtMag } from './astro.js';
-import { cam } from './camera.js';
 import { getFrame } from './skyframe.js';
-import { dso, loadDeepDso, constellations, DSO_TYPES } from './catalog.js';
-import { select, flyTo, toggleTracking } from './nav.js';
+import { dso, dsoDoubt, loadDeepDso, constellations, DSO_TYPES } from './catalog.js';
+import { select, flyTo, niceFov, toggleTracking } from './nav.js';
 import { makePanel, esc, toast, isNarrow } from './xui.js';
 
 const CLASSES = [['all', 'All types'], ['gal', 'Galaxies'], ['oc', 'Open clusters'], ['gc', 'Globular clusters'], ['pn', 'Planetary nebulae'], ['neb', 'Nebulae'], ['other', 'Other']];
@@ -21,15 +20,13 @@ let panel, shown = PAGE, deepError = false, flash = -1;
 
 /** Apparent altitude (degrees, no refraction) of a catalogue row right now. */
 export function dsoAltitude(o, frame = getFrame()) { return Math.asin(Math.max(-1, Math.min(1, frame.starHor(o.vec)[2]))) * RAD; }
-/** A field of view that frames the object. */
-export function dsoFov(o) { return Math.max(0.25, Math.min(8, (o.maj ? o.maj / 60 : 0.1) * 7)); }
 
 /** Select a row, glide to it, say so if it is below the horizon. */
 export function goToDso(o) {
   const ref = { kind: 'dso', idx: o.idx };
   select(ref);
   toggleTracking(true);            // hold it in the centre, as every other "go to" does (nav.js centerOn)
-  flyTo(ref, { fov: Math.min(cam.fov, dsoFov(o)) });
+  flyTo(ref, { fov: niceFov(ref) });
   const alt = dsoAltitude(o);
   if (alt < 0 && state.show.ground) toast(`${o.label} is below the horizon now (altitude ${alt.toFixed(0).replace('-', '−')}°). Turn the ground off (G) or change the time to see it.`, { ms: 5200, kind: 'warn' });
 }
@@ -100,7 +97,7 @@ function renderList() {
       `<span class="up${up ? '' : ' down'}" aria-label="${up ? 'above the horizon' : 'below the horizon'}">${up ? '▲' : '▽'}</span>` +
       `<span class="nm"><b>${esc(title(o))}</b><i>${esc(subtitle(o))}</i></span>` +
       `<span class="ty t-${cls}">${SHORT[cls]}</span>` +
-      `<span class="mg">${o.mag != null ? fmtMag(o.mag, 1) : '–'}</span>` +
+      `<span class="mg">${o.mag != null ? fmtMag(o.mag, 1) + (dsoDoubt(o) ? `<sup title="${esc('Doubtful: ' + dsoDoubt(o))}">?</sup>` : '') : '–'}</span>` +
       `<span class="al">${alt.toFixed(0).replace('-', '−')}°</span></button>`;
   }
   if (list.length > shown) html += `<button type="button" class="btn dl-more" data-act="more">Show ${Math.min(PAGE, list.length - shown)} more (${(list.length - shown).toLocaleString('en-US')} left)</button>`;
@@ -128,7 +125,7 @@ function build() {
     </div>
     <div class="dl-headrow"><span class="dl-count" aria-live="polite"></span><span class="dl-cols"><span>mag</span><span>alt</span></span></div>
     <div class="dl-rows" role="list"></div>
-    <div class="xp-foot">Data: OpenNGC (CC BY-SA 4.0). A dash means the catalogue lists no magnitude. ▲ = above the horizon now.</div>`;
+    <div class="xp-foot">Data: OpenNGC (CC BY-SA 4.0). A dash means the catalogue lists no magnitude, ? that its value is doubtful. ▲ = above the horizon now.</div>`;
   const sync = () => {
     panel.body.querySelectorAll('.dl-cat button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.cat === f.cat)));
     panel.body.querySelectorAll('[data-f]').forEach((c) => { if (c.type === 'checkbox') c.checked = f[c.dataset.f]; else c.value = f[c.dataset.f]; });

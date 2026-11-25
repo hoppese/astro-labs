@@ -1,17 +1,19 @@
 // ui.js: the chrome around the sky: toolbar toggles, time bar and date editor, settings drawer
 // (location, sky, mount, markings), menu and modals, keyboard shortcuts, read-out.
 
-import { state, on, emit, toggle, set, save } from './state.js';
+import { state, eff, on, emit, toggle, set, save, SHOW_DEFAULTS } from './state.js';
 import { cam, setMount } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { cities } from './catalog.js';
-import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLabel, rateWords, rateCap, SIDEREAL_DAY_MS } from './clock.js';
-import { wallParts, wallToMs, zoneLabel, fmtDate, fmtTime, browserZone, zoneFromLongitude } from './timeutil.js';
+import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLabel, rateWords, rateCap, SIDEREAL_DAY_MS, T_MIN, T_MAX } from './clock.js';
+import { wallParts, wallToMs, zoneLabel, fmtDate, fmtTime, browserZone, zoneFromLongitude, dateProblem, daysInMonth } from './timeutil.js';
+import { findCities } from './fuzzy.js';
+import { readNumber } from './xui.js';
 import { fmtFov, fmtLat, fmtLon } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
-import { centerOn, toggleTracking, select, stopTracking } from './nav.js';
+import { centerOn, toggleTracking, select } from './nav.js';
 import { navKey } from './input.js';
-import { latitudeHidden, running } from './labs/hidden.js';
+import { latitudeHidden } from './labs/hidden.js';
 import { keyReached, takesKeys } from './focus.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
@@ -111,7 +113,7 @@ function buildTimeBar() {
   $('tPlay').addEventListener('click', togglePlay);
   $('tNow').addEventListener('click', setNow);
   const pop = $('timePop');
-  const openPop = (open) => { pop.hidden = !open; if (open) { fillEditor(true); (touchy() ? $('timeClose') : $('dtYear')).focus({ preventScroll: true }); } };
+  const openPop = (open) => { pop.hidden = !open; draft = false; dateMsg(''); if (open) { fillEditor(true); (touchy() ? $('timeClose') : $('dtYear')).focus({ preventScroll: true }); } };
   $('clockBtn').addEventListener('click', () => openPop(pop.hidden));
   $('timeClose').addEventListener('click', () => openPop(false));
   $('dtNow').addEventListener('click', setNow);
@@ -124,22 +126,28 @@ function buildTimeBar() {
         const p = wallParts(state.timeMs, state.loc.tz), n = parseInt(d.slice(1), 10);
         let y = p.year, mo = p.month;
         if (d[0] === 'y') y += n; else { mo += n; if (mo < 1) { mo = 12; y--; } if (mo > 12) { mo = 1; y++; } }
-        setTime(wallToMs(y, mo, p.day, p.hour, p.minute, p.second, state.loc.tz));
+        setTime(wallToMs(y, mo, Math.min(p.day, daysInMonth(y, mo)), p.hour, p.minute, p.second, state.loc.tz));      // a month after 31 January is the last of February
       }
     });
     sb.appendChild(b);
   }
   const apply = () => {
-    const y = parseInt($('dtYear').value, 10), mo = parseInt($('dtMonth').value, 10), d = parseInt($('dtDay').value, 10);
+    const int = (id) => ($(id).value.trim() === '' ? NaN : Number($(id).value)), y = int('dtYear'), mo = int('dtMonth'), d = int('dtDay');
     const t = /^(\d\d):(\d\d)(?::(\d\d))?/.exec($('dtTime').value);
-    if (!t || !(y >= -3000 && y <= 3000) || !(mo >= 1 && mo <= 12) || !(d >= 1 && d <= 31)) return;
+    const bad = dateProblem(y, mo, d) || (t ? '' : 'Type the whole time: hours, minutes and seconds.');
+    draft = !!bad; dateMsg(bad ? bad + ' The clock has not been changed.' : '');
+    if (bad) return;                      // what was typed stays in the boxes until it is right (fillEditor)
     setTime(wallToMs(y, mo, d, +t[1], +t[2], +(t[3] || 0), state.loc.tz));
   };
-  for (const id of ['dtYear', 'dtMonth', 'dtDay', 'dtTime']) { $(id).addEventListener('change', apply); $(id).addEventListener('keydown', (e) => e.stopPropagation()); }
+  for (const id of ['dtYear', 'dtMonth', 'dtDay', 'dtTime']) { $(id).addEventListener('change', apply); $(id).addEventListener('keydown', (e) => { if (e.key !== 'Escape') e.stopPropagation(); }); }
+  for (const b of [sb, $('dtNow'), $('tNow')]) b.addEventListener('click', () => { draft = false; if (state.timeMs > T_MIN && state.timeMs < T_MAX) dateMsg(''); fillEditor(true); });
+  on('clock-end', () => dateMsg(`The clock runs from the year −3000 to the year 3000: it stopped at the ${state.timeMs <= T_MIN ? 'first' : 'last'} moment of that span.`));
   on('rate', syncRate); on('selection', syncRate); on('time', () => { updateClock(true); }); on('tick', () => updateClock(false)); on('loc', () => updateClock(true));
   setInterval(() => updateClock(false), 500);
   document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && !$('clockBtn').contains(e.target)) openPop(false); });
 }
+let draft = false;               // the date box holds something typed that is not a date
+function dateMsg(text) { const m = $('dtMsg'); m.textContent = text; m.hidden = !text; }
 function syncRate() {
   $('tPlay').innerHTML = state.playing ? TICON.pause : TICON.play;
   const r = $('rateLabel'); r.textContent = rateLabel();
@@ -170,7 +178,7 @@ function fillEditor(force) {
   const tz = state.loc.tz, p = wallParts(state.timeMs, tz);
   const active = document.activeElement;
   const put = (id, v) => { if (force || active !== $(id)) $(id).value = v; };
-  put('dtYear', p.year); put('dtMonth', p.month); put('dtDay', p.day); put('dtTime', fmtTime(p));
+  if (!draft || force) { put('dtYear', p.year); put('dtMonth', p.month); put('dtDay', p.day); put('dtTime', fmtTime(p)); }
   $('calNote').hidden = state.timeMs >= Date.UTC(1582, 9, 15);
   $('timeTz').textContent = zoneLabel(state.timeMs, tz);
   $('timeUtc').textContent = new Date(state.timeMs).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
@@ -208,8 +216,8 @@ function buildDrawer() {
 
   // location
   const cs = $('citySearch');
-  cs.addEventListener('input', fillCities);
-  cs.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const b = $('cityList').querySelector('button'); if (b) b.click(); } e.stopPropagation(); });
+  cs.addEventListener('input', () => { locMsg(''); fillCities(); });
+  cs.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const b = $('cityList').querySelector('button'); if (b) b.click(); } else if (e.key === 'Escape' && cs.value) { e.preventDefault(); cs.value = ''; fillCities(); e.stopPropagation(); return; } if (e.key !== 'Escape') e.stopPropagation(); });
   $('cityList').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     const c = cities[+b.dataset.i];
@@ -220,8 +228,9 @@ function buildDrawer() {
   // Enter in a coordinate box applies the coordinates
   for (const id of ['latIn', 'lonIn']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('locApply').click(); } });
   $('locApply').addEventListener('click', () => {
-    const lat = parseFloat($('latIn').value), lon = parseFloat($('lonIn').value);
-    if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) return locMsg('Latitude must be between −90 and 90, longitude between −180 and 180.', true);
+    const q = readPlace($('latIn').value, $('lonIn').value);
+    if (q.err) return locMsg(q.err, true);
+    const { lat, lon } = q;
     const near = nearestCity(lat, lon);
     setLocation({ name: `${fmtLat(lat)}, ${fmtLon(lon)}`, region: 'Custom location', lat, lon, elev: 0, tz: near && near.d < 1.5 ? near.c.tz : zoneFromLongitude(lon) });
     locMsg(near && near.d < 1.5 ? `Using the time zone of ${near.c.name}.` : 'Time zone estimated from the longitude (whole hours).');
@@ -235,6 +244,15 @@ function buildDrawer() {
       locMsg('Location set from the browser, with this device’s time zone.');
     }, (err) => locMsg(err.code === 1 ? 'Location permission was declined.' : 'Could not get a location.', true), { timeout: 12000, maximumAge: 600000 });
   });
+  $('resetShow').addEventListener('click', (e) => {
+    const b = e.currentTarget;
+    if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Really reset? Click again'; setTimeout(() => { delete b.dataset.sure; b.textContent = 'Reset display to defaults'; }, 3500); return; }
+    delete b.dataset.sure; b.textContent = 'Reset display to defaults';
+    Object.assign(state.show, SHOW_DEFAULTS); state.bortle = 4; state.lightTime = true;
+    for (const k of Object.keys(state.fx)) { state.fx[k] = k !== 'earthShadow'; emit('fx', k); }
+    if (state.mount !== 'altaz') switchMount();
+    save(); emit('show'); emit('bortle'); emit('lightTime', true); emit('display-reset');
+  });
   on('loc', () => { fillLocation(); syncPlace(); });
   on('lab', () => { fillLocation(); syncPlace(); });        // a lab may hide the latitude (labs/hidden.js)
 }
@@ -244,7 +262,22 @@ function nearestCity(lat, lon) {
   for (const c of cities) { const d = Math.hypot(c.lat - lat, (c.lon - lon) * Math.cos(lat * Math.PI / 180)); if (!best || d < best.d) best = { c, d }; }
   return best;
 }
-export function setLocation(loc) { locMsg(''); if (!running.id) stopTracking(); set('loc', loc); }
+/** Two coordinates somebody typed: {lat, lon} or {err}. A letter N, S, E or W may follow. */
+export function readPlace(a, b) {
+  const one = (text, what, lim, pos, neg) => {
+    const t = String(text).trim(), m = /\s*°?\s*([NSEW])\s*$/i.exec(t), r = readNumber(m ? t.slice(0, m.index) : t.replace(/°/g, ''));
+    if (r.empty) return { err: `Type a ${what}.` };
+    if (r.err) return r;
+    const c = m ? m[1].toUpperCase() : pos;
+    if (c !== pos && c !== neg) return { err: `A ${what} is ${pos} or ${neg}.` };
+    const v = c === neg ? -Math.abs(r.v) : r.v;
+    return Math.abs(v) <= lim ? { v } : { err: `The ${what} must be between −${lim} and ${lim} degrees.` };
+  };
+  const la = one(a, 'latitude', 90, 'N', 'S'), lo = one(b, 'longitude', 180, 'E', 'W');
+  return la.err || lo.err ? { err: la.err || lo.err } : { lat: la.v, lon: lo.v };
+}
+/** A new place. What is followed goes on being followed, seen from there. */
+export function setLocation(loc) { locMsg(''); set('loc', loc); }
 function fillLocation() {
   const l = state.loc;
   $('locNow').innerHTML = `<b></b><span class="sub"></span>`;
@@ -254,11 +287,9 @@ function fillLocation() {
   fillCities();
 }
 function fillCities() {
-  const q = $('citySearch').value.trim().toLowerCase();
   const list = $('cityList');
-  const hits = cities.map((c, i) => ({ c, i })).filter(({ c }) => !q || (c.name + ' ' + c.region).toLowerCase().includes(q))
-    .sort((a, b) => (q ? (b.c.name.toLowerCase().startsWith(q) - a.c.name.toLowerCase().startsWith(q)) : 0)).slice(0, 60);
-  list.innerHTML = '';
+  const hits = findCities(cities, $('citySearch').value).slice(0, 60);
+  list.innerHTML = hits.length && hits[0].near ? '<div class="hint" style="padding:6px 9px 2px;margin:0">Did you mean</div>' : '';
   for (const { c, i } of hits) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.i = i;
     b.append(c.name); const s = document.createElement('span'); s.textContent = c.region; b.appendChild(s);
@@ -327,6 +358,7 @@ function buildShortcuts(search) {
     const el = e.target;
     if (takesKeys(el, e)) return;
     if (document.querySelector('.modal-backdrop.show')) return;
+    if (e.key === '?') { e.preventDefault(); $('mInfo').click(); return; }
     if (e.key === 'F3' || (e.key === '/' && !e.metaKey && !e.ctrlKey)) { e.preventDefault(); search.focus(); return; }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // a button reached with Tab keeps Space / Enter; one that was merely clicked does not (focus.js)
@@ -369,7 +401,7 @@ function updateReadout(perf) {
   else src = lim > 7 ? '<br>faintest: Gaia DR3' : '<br>faintest: HYG';
   if (perf.sky && perf.sky.glare <= perf.sky.limWant && perf.sky.glare < catEnd) src = '<br>fainter stars are lost in the planet’s glare';
   const txt = `FOV <b>${fmtFov(cam.fov)}</b> · stars to mag <b>${(past ? catEnd : lim).toFixed(1)}</b>` + src +
-    (state.mount === 'eq' ? '<br>equatorial mount' : '');
+    (state.mount === 'eq' ? '<br>equatorial mount' + (state.loc.lat < 0 && eff.ground && cam.fov > 15 ? ': celestial north is<br>up, so the zenith is not at the top' : '') : '');
   if (txt !== lastRead) { $('readout').innerHTML = txt; lastRead = txt; }
 }
 

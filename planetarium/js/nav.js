@@ -6,6 +6,7 @@ import { cam, update, centerHor, lookAtHor, setAxes, placeAt, setCentre, bringUn
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
 import { refHorApparent, sameRef } from './objects.js';
+import { dso } from './catalog.js';
 
 let anim = null;       // {t0, dur, fromFov, toFov, fromHor, ref | null, toHor, v0 (a followed object gliding back to the middle)}
 
@@ -196,8 +197,24 @@ export function select(ref) {
   state.selected = ref || null;
   emit('selection');
 }
+/** Fields (degrees) that other modules want in the picture with an object: functions of the ref (labs/compare.js: the second observer's image). */
+export const alsoFrame = [];
 /** A field of view that frames the object nicely. */
 export function niceFov(ref) {
+  let f = baseFov(ref);
+  for (const fn of alsoFrame) f = Math.max(f, Math.min(60, fn(ref) || 0));
+  return f;
+}
+/** For a search: the field to arrive with. The one in use, unless so narrow that the object would not fit or nothing would be recognised. */
+export function arriveFov(ref) {
+  const near = { body: 0, con: 30, star: 0.25, dso: 0.1, gaia: 0 }[ref.kind];
+  let size = 0;
+  if (ref.kind === 'body') { const b = getBodies(getFrame()).byId[ref.id]; size = b ? 3 * b.angRadius * (b.id === 'Saturn' ? 2.3 : 1) : 0; }
+  else if (ref.kind === 'dso') { const o = dso.rows[ref.idx]; size = o && o.maj ? o.maj / 60 : 0; }
+  if (cam.fov >= Math.max(near, size)) return null;
+  return ref.kind === 'star' ? 2 : niceFov(ref);
+}
+function baseFov(ref) {
   const bodies = getBodies(getFrame());
   if (ref.kind === 'body') {
     const b = bodies.byId[ref.id];
@@ -209,16 +226,19 @@ export function niceFov(ref) {
     return clamp(b.angRadius * 2 * 30, 0.02, 0.3);
   }
   if (ref.kind === 'con') return 50;
-  if (ref.kind === 'star') return 20;
+  if (ref.kind === 'star') return cam.fov > 25 ? 20 : 2;                // a second press goes closer; from a field with nothing else in it, back out
+  if (ref.kind === 'dso') { const o = dso.rows[ref.idx]; return clamp((o && o.maj ? o.maj / 60 : 0.1) * 7, 0.25, 8); }
   if (ref.kind === 'gaia') { const m = ref.t.mag[ref.i]; return m <= 12 ? 2 : m <= 15 ? 0.6 : m <= 18 ? 0.2 : 0.08; }      // a field in which the star is well above the limit
   return 6;
 }
 /** Centre on an object, and HOLD it there (as Stellarium's Space does): with the clock running the sky turns 15 arcsec a second, so a
- *  one-off centring was already 19 arcsec stale when the glide ended. A drag afterwards keeps following, with an offset. */
+ *  one-off centring was already 19 arcsec stale when the glide ended. A drag afterwards keeps following, with an offset.
+ *  zoom: true = to the field that frames it, in or out; 'arrive' = only out, when the present field is too narrow for it (search). */
 export function centerOn(ref, zoom = false) {
   if (!ref) return;
+  const same = state.tracking && sameRef(ref, state.trackRef);
   track(ref);
-  flyTo(ref, { fov: zoom ? Math.min(cam.fov, niceFov(ref)) : null });
+  flyTo(ref, { fov: zoom === 'arrive' ? (same ? null : arriveFov(ref)) : zoom ? niceFov(ref) : null });
 }
 /** T and the Track button: follow the selected object; if it is the one followed (or nothing is selected), stop. */
 export function toggleTracking(on) {

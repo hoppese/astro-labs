@@ -430,3 +430,34 @@ html.quizzing .trackchip { display: none; }
   .infopanel.mini:has(.below) table { display: none; }
 }
 @media (min-width: 561px) and (max-width: 640px) and (max-height: 520px) { .readout { display: none; } .trackchip { right: 8px; bottom: calc(var(--bar-h) + 8px); max-width: 130px; } }
+
+/* ---- student pass, 2026-11-25 ---- */
+/* notices take the strip between the panels (layout.js), never the object panel */
+.xtoast, .steady-note { left: calc((var(--free-l, 12px) + 100% - var(--free-r, 12px)) / 2); right: auto; transform: translateX(-50%); width: max-content; max-width: min(560px, calc(100% - var(--free-l, 12px) - var(--free-r, 12px))); }
+body:has(.xpanel:not([hidden])) .xtoast, body:has(.xpanel.wide:not([hidden])) .xtoast { left: calc((var(--free-l, 12px) + 100% - var(--free-r, 12px)) / 2); max-width: min(560px, calc(100% - var(--free-l, 12px) - var(--free-r, 12px))); }
+@media (max-width: 560px) { .steady-note:not(.survey-note) { left: 8px; right: 8px; transform: none; width: auto; max-width: none; } .xtoast { left: 50%; max-width: calc(100% - 16px); } }
+.trackchip.away { border-color: var(--accent); max-width: min(330px, calc(var(--ww) * 0.8)); }
+.trackchip.away button { white-space: normal; text-align: left; }
+.dt-msg { margin-top: 8px; font-size: 12px; line-height: 1.4; color: #f0a58c; }
+.hb-msg { padding: 6px 14px 0; font-size: 12px; line-height: 1.4; color: #f0a58c; } .hb-msg:empty { display: none; }
+.hint.err { color: #f0a58c !important; }
+.lcard-body input.num { width: 74px; font-family: var(--mono); }
+.ev-list .when small { font: 500 10.5px var(--font); color: var(--muted); }
+.ev-list button:has(.when small) { grid-template-columns: 1fr; }
+.dl-row sup { color: var(--accent); font-size: 9px; }
+.steps button { font-size: 10.5px; padding-left: 2px; padding-right: 2px; letter-spacing: -0.02em; }
+.infopanel .below { margin-right: 34px; } .below > span { padding-right: 0; }
+@media (min-width: 561px) {
+  /* the field read-out moves over beside an open side panel instead of showing faintly through it */
+  body:has(.xpanel:not([hidden])) .readout { right: calc(min(404px, var(--ww) - 24px) + 20px); }
+  body:has(.xpanel.wide:not([hidden])) .readout { right: calc(min(600px, var(--ww) * 0.62) + 20px); }
+  body:has(.xpanel.card:not([hidden])) .readout { right: 12px; }
+  body:has(.xpanel.card:not([hidden])) .xpanel.card { max-height: calc(100% - 58px - var(--bar-h) - 24px - var(--ro-h, 0px)); }
+  .labsdock { max-height: calc(100% - 58px - var(--bar-h) - 22px - var(--ro-h, 0px)) !important; }
+  body:has(.trackchip:not([hidden])) .labsdock { max-height: calc(100% - 58px - var(--bar-h) - 64px - var(--ro-h, 0px)) !important; }
+}
+#card-trails input[type=number] { width: 58px; padding-left: 5px; padding-right: 2px; } #card-trails #trFrame { flex: 1; width: 0; }
+.qz-hint.say { color: #ffd98a; font-size: 12.5px; }
+/* a side panel beside the object panel: room for both, or (phone: both are sheets at the bottom) the one that was opened last */
+@media (min-width: 561px) and (max-width: 900px) { body:has(.infopanel:not([hidden])) .xpanel { max-width: calc(var(--ww) - 262px - 34px); } }
+@media (max-width: 560px) { body:has(.xpanel:not(.peek):not([hidden])) .infopanel { display: none; } }

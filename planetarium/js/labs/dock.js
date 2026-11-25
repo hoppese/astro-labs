@@ -2,6 +2,7 @@
 // (lab prompt, stopwatch, events, second observer, trails, corrections). Cards can be minimised.
 
 import { el } from './util.js';
+import { takesKeys } from '../focus.js';
 
 let dock = null;
 const cards = {};
@@ -21,7 +22,7 @@ export function makeCard(id, title, { onOpen, onClose, cls = '' } = {}) {
   const root = el('section', { class: 'lcard ' + cls, id: 'card-' + id, hidden: true, 'aria-label': title });
   const head = el('div', { class: 'lcard-head' });
   const ttl = el('span', { class: 'ttl' }); ttl.textContent = title;
-  const minB = el('button', { class: 'mini', type: 'button', title: 'Minimise', 'aria-label': 'Minimise ' + title }, '&#8211;');
+  const minB = el('button', { class: 'mini', type: 'button', title: 'Minimize', 'aria-label': 'Minimize ' + title }, '&#8211;');
   const closeB = el('button', { class: 'mini', type: 'button', title: 'Close', 'aria-label': 'Close ' + title }, '&times;');
   head.append(ttl, minB, closeB);
   const body = el('div', { class: 'lcard-body' });
@@ -31,14 +32,15 @@ export function makeCard(id, title, { onOpen, onClose, cls = '' } = {}) {
     id, root, body, title: ttl,
     isOpen: () => !root.hidden,
     open() { const was = root.hidden; root.hidden = false; root.classList.remove('min'); if (was && onOpen) onOpen(); root.scrollIntoView({ block: 'nearest' }); document.dispatchEvent(new CustomEvent('labs-cards')); },
-    close() { if (root.hidden) return; root.hidden = true; if (onClose) onClose(); document.dispatchEvent(new CustomEvent('labs-cards')); },
-    toggle() { if (root.hidden) card.open(); else card.close(); },
+    /** byUser: × or the menu entry, not a lab being set up */
+    close(byUser = false) { if (root.hidden) return; root.hidden = true; if (onClose) onClose(byUser); document.dispatchEvent(new CustomEvent('labs-cards')); },
+    toggle() { if (root.hidden) card.open(); else card.close(true); },
   };
   minB.addEventListener('click', () => root.classList.toggle('min'));
   ttl.addEventListener('click', () => { if (root.classList.contains('min')) root.classList.remove('min'); });
-  closeB.addEventListener('click', () => card.close());
+  closeB.addEventListener('click', () => card.close(true));
   // typing in a card must not trigger the sky's keyboard shortcuts
-  root.addEventListener('keydown', (e) => { if (e.target.matches('input, select, textarea') && e.key !== 'Escape') e.stopPropagation(); });
+  root.addEventListener('keydown', (e) => { if (e.key !== 'Escape' && takesKeys(e.target, e)) e.stopPropagation(); });
   cards[id] = card;
   return card;
 }

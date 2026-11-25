@@ -77,7 +77,7 @@ export function jovianEvents(t0, n = 8, opt = {}) {
       const g = geometry(t), ax = bodyAxes('Jupiter', g.tr.tt), cml = jupiterSystems(subPoint(ax, scale(g.u, -1)).lon, g.tr.tt).II, tt = g.time.tt;
       if (!grsLongitude(g.tr.tt).ok) break;
       const x = nextGrsTransit(tt, (y) => cml + 870.27 * (y - tt), tt - g.tr.tt), ms = t + (x - tt) * 86400000;
-      out.push({ t: ms, end: null, kind: 'spot', moon: null, text: 'Great Red Spot at the centre' }); t = ms + 3600000;
+      out.push({ t: ms, end: null, kind: 'spot', moon: null, text: 'Great Red Spot at the center' }); t = ms + 3600000;
     }
   }
   out.sort((a, b) => a.t - b.t);

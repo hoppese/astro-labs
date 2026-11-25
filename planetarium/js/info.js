@@ -8,7 +8,7 @@ import { state, on, emit, eff, toggle } from './state.js';
 import { setTime } from './clock.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, MOON_PARENT, SMALL } from './ephem.js';
-import { starRecord, dso, constellations, DSO_TYPES, ASTROMETRY } from './catalog.js';
+import { starRecord, dso, dsoDoubt, constellations, DSO_TYPES, ASTROMETRY } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
 import { deepRecord, PROVIDER } from './deepstars.js';
@@ -131,7 +131,7 @@ function faceRows(b, row, frame) {
   const pa = mod(Math.atan2(ax.z[0] * E[0] + ax.z[1] * E[1], ax.z[0] * N[0] + ax.z[1] * N[1] + ax.z[2] * N[2]) * RAD, 360);
   if (b.id === 'Sun') {
     // the Sun's axis is given against the true north of date
-    row('Centre of the disc', 'L<sub>0</sub> ' + e.lon.toFixed(1) + '°, B<sub>0</sub> ' + sgn(e.lat)); row('Axis', 'P ' + sgn(pa > 180 ? pa - 360 : pa));
+    row('Center of the disc', 'L<sub>0</sub> ' + e.lon.toFixed(1) + '°, B<sub>0</sub> ' + sgn(e.lat)); row('Axis', 'P ' + sgn(pa > 180 ? pa - 360 : pa));
     if (state.show.sunspots && !running.id) sunRows(b, row, e);
     return;
   }
@@ -146,7 +146,7 @@ function faceRows(b, row, frame) {
     const t = nextGrsTransit(tt, (x) => now + 870.27 * (x - tt), state.lightTime ? tau : 0);
     const min = Math.round(g.sigma * 1.66);
     row('Great Red Spot', `System II ${g.lon.toFixed(0)}° ± ${g.sigma.toFixed(0)}°` + (g.ok ? '' : ' <span class="nodata">(unreliable for this date)</span>'));
-    row('Spot crosses centre', g.ok ? fmtClock(frame.timeMs + (t - tt) * 86400000, state.loc.tz) + ` ± ${min} min` : '<span class="nodata">no reliable drift for this date</span>');
+    row('Spot crosses center', g.ok ? fmtClock(frame.timeMs + (t - tt) * 86400000, state.loc.tz) + ` ± ${min} min` : '<span class="nodata">no reliable drift for this date</span>');
   }
 }
 /** Rise, transit and set of the pass that contains (or is nearest to) the current instant. */
@@ -234,7 +234,7 @@ function render(force) {
     aka = ids.join(' · ');
     type = 'Star';
     row('Magnitude', fmtMag(s.mag) + ' (V)');
-    row('Colour index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
+    row('Color index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
     row('Distance', s.dist ? `${sig(s.dist * LY_PER_PC, 3)} ly (${sig(s.dist, 3)} pc)` : ND);
     // where the place and proper motion come from (tools/build_stars.py); everything else is HYG's
     if (s.src != null && ASTROMETRY[s.src]) note = 'Position and proper motion: ' + ASTROMETRY[s.src] + '.';
@@ -244,7 +244,7 @@ function render(force) {
     title = s.id ? 'Gaia DR3 ' + s.id : 'Gaia DR3 star'; type = 'Star';
     const r = s.rounded;
     row('Magnitude', s.mag.toFixed(r ? 2 : 3) + ' (Gaia G)');
-    row('Colour index', s.col == null ? ND : s.col.toFixed(r ? 2 : 3) + ' (G<sub>BP</sub>−G<sub>RP</sub>)');
+    row('Color index', s.col == null ? ND : s.col.toFixed(r ? 2 : 3) + ' (G<sub>BP</sub>−G<sub>RP</sub>)');
     if (s.plx == null) { row('Parallax', ND); row('Distance', ND); } else {
       row('Parallax', s.plx.toFixed(r ? 1 : 3) + (s.plxErr != null ? ' ± ' + s.plxErr.toFixed(3) : '') + ' mas');
       // a distance only where the parallax is worth inverting: at least 5 times its error (or, from the rounded tile value, at least 1 mas)
@@ -301,12 +301,16 @@ function render(force) {
     title = (o.names && o.names[0]) || ids[0];
     aka = ids.filter((x) => x !== title).concat((o.names || []).slice(1)).join(' · ');
     type = (DSO_TYPES[o.type] || o.type) + (o.hubble ? ' · Hubble type ' + esc(o.hubble) : '');
-    row('Magnitude', o.vmag != null ? fmtMag(o.vmag) + ' (V)' : o.bmag != null ? fmtMag(o.bmag) + ' (B)' : ND);
+    const doubt = dsoDoubt(o);
+    row('Magnitude', (o.vmag != null ? fmtMag(o.vmag) + ' (V)' : o.bmag != null ? fmtMag(o.bmag) + ' (B)' : ND) + (doubt ? ' <span class="nodata">doubtful</span>' : ''));
     row('Size', o.maj != null ? (o.min != null ? `${o.maj}′ × ${o.min}′` : `${o.maj}′`) : ND);
     row('Surface brightness', o.sb != null ? o.sb.toFixed(2) + ' mag/arcsec²' : ND);
     row('Redshift z', o.z != null ? o.z.toFixed(6) : ND);
+    if (o.z != null) row('c × z', Math.round(o.z * 299792.458).toLocaleString('en-US').replace('-', '−') + ' km/s');
     row('Radial velocity', o.rv != null ? Math.round(o.rv).toLocaleString('en-US') + ' km/s' : ND);
     note = 'Catalogue values from OpenNGC. No distance is listed there.';
+    if (doubt) note += ' <b>Doubtful magnitude:</b> ' + doubt;
+    if (o.rv != null && o.z != null && Math.abs(o.rv - o.z * 299792.458) >= 2) note += ' Two velocities: c × z is the one used for Hubble’s law; the catalogue’s own “radial velocity” is worked out from the same redshift with the relativistic Doppler formula, which gives a little less.';
   } else if (ref.kind === 'con') {
     const c = constellations.find((x) => x.id === ref.id);
     title = c.name; type = 'Constellation'; aka = `${c.id} · genitive ${c.gen}`;
@@ -338,9 +342,9 @@ function render(force) {
   const head = `<h2>${esc(title)}</h2>` +
     (aka ? `<div class="aka">${esc(aka)}</div>` : '') + `<div class="type">${type}</div>`;
   const trk = state.tracking && refKey(state.trackRef) === refKey(ref);
-  const acts = `<div class="acts"><button class="btn" data-act="center" title="Centre the view on it (Space)">Center <kbd>Space</kbd></button>` +
-    `<button class="btn${trk ? ' on' : ''}" data-act="track" aria-pressed="${trk}" title="Keep it centred as time runs (T)">Track <kbd>T</kbd></button>` +
-    `<button class="btn" data-act="zoom" title="Centre and zoom in">Zoom to</button></div>`;
+  const acts = `<div class="acts"><button class="btn" data-act="center" title="Center the view on it (Space)">Center <kbd>Space</kbd></button>` +
+    `<button class="btn${trk ? ' on' : ''}" data-act="track" aria-pressed="${trk}" title="Keep it centered as time runs (T)">Track <kbd>T</kbd></button>` +
+    `<button class="btn" data-act="zoom" title="Center it and set the field that frames it">Zoom to</button></div>`;
   const ls = rowHidden('Parallax') ? [] : linksFor(ref);      // a lab that hides the parallax does not link to it either
   const look = ls.length ? `<div class="look"><span>Look it up</span>${ls.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.title)}">${esc(l.label)}</a>`).join('')}</div>` : '';
   const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + (pic ? `<div class="note">Picture: ${pic}.</div>` : '');

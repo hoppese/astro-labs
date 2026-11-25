@@ -12,11 +12,12 @@ import { state, on, emit, save as saveState, eff } from './state.js';
 import { cam, unproject, update, centerHor } from './camera.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
-import { constellations, stars, starRecord } from './catalog.js';
-import { select, flyTo, stopTracking } from './nav.js';
+import { constellations, stars, starRecord, starLabel } from './catalog.js';
+import { select, flyTo, track, stopTracking } from './nav.js';
 import { projEqj } from './render/proj.js';
 import { clipToSky } from './render/groundshade.js';
-import { makePanel, esc, loadJSON, saveJSON } from './xui.js';
+import { makePanel, esc, toast, loadJSON, saveJSON } from './xui.js';
+import { keepFocus } from './focus.js';
 import { strokeConstellation } from './skymarks.js';
 
 const ZODIAC = ['Ari', 'Tau', 'Gem', 'Cnc', 'Leo', 'Vir', 'Lib', 'Sco', 'Sgr', 'Cap', 'Aqr', 'Psc'];
@@ -27,7 +28,7 @@ const OPT_KEY = 'astro-labs.planetarium.quiz.v1';
 const SHOW_KEYS = ['conNames', 'starNames', 'dso', 'conLines', 'conBounds', 'ground', 'atmosphere', 'planetNames'];
 
 const opt = { mode: 'find', set: 'famous', starSet: '20', scope: 'up', lines: true, answer: 'choice' };
-const q = { running: false, pool: [], i: 0, cur: null, phase: 'setup', right: 0, asked: 0, streak: 0, best: 0, result: null, choices: [], click: null, savedShow: null, note: '' };
+const q = { running: false, pool: [], i: 0, cur: null, phase: 'setup', right: 0, asked: 0, streak: 0, best: 0, result: null, choices: [], click: null, savedShow: null, savedView: null, note: '', hint: '', confirm: false };
 let panel;
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -100,7 +101,9 @@ function start() {
   const p = pool();
   if (p.list.length < 4) { q.note = 'Too few to make a quiz right now. Choose a bigger set, or “Whole sky”.'; renderPanel(); return; }
   saveJSON(OPT_KEY, opt);
-  Object.assign(q, { running: true, pool: shuffle(p.list.slice()), i: 0, right: 0, asked: 0, streak: 0, best: 0, result: null, click: null, note: '' });
+  Object.assign(q, { running: true, pool: shuffle(p.list.slice()), i: 0, right: 0, asked: 0, streak: 0, best: 0, result: null, click: null, note: '', hint: '', confirm: false });
+  update(getFrame()); q.savedView = { fov: cam.fov, hor: centerHor(), ref: state.tracking ? state.trackRef : null, sel: state.selected };
+  state.holdSave = true;
   // hide everything that gives the answer away; remember how things were
   const sh = state.show; q.savedShow = {}; for (const k of SHOW_KEYS) q.savedShow[k] = sh[k];
   sh.conNames = false; sh.starNames = false; sh.dso = false; sh.conBounds = false;
@@ -127,14 +130,17 @@ function start() {
 }
 function end(summary = false) {
   if (!q.running && q.phase !== 'done') { q.phase = 'setup'; renderPanel(); return; }
-  if (q.savedShow) { for (const k of SHOW_KEYS) state.show[k] = q.savedShow[k]; q.savedShow = null; saveState(); emit('show'); }
-  q.running = false; q.cur = null; q.result = null; q.click = null;
+  if (q.savedShow) { for (const k of SHOW_KEYS) state.show[k] = q.savedShow[k]; q.savedShow = null; state.holdSave = false; saveState(); emit('show'); }
+  q.running = false; q.confirm = false; q.hint = ''; q.cur = null; q.result = null; q.click = null;
   document.documentElement.classList.remove('quizzing'); state.starScale = 1;
+  // ... and the view as it was before the quiz
+  const v = q.savedView; q.savedView = null;
+  if (v) { if (v.ref) track(v.ref); if (v.sel) select(v.sel); flyTo(v.ref || v.hor, { fov: v.fov, dur: 600 }); }
   q.phase = summary ? 'done' : 'setup';
   emit('render'); renderPanel();
 }
 function ask() {
-  q.cur = q.pool[q.i]; q.phase = 'ask'; q.result = null; q.click = null; q.typed = '';
+  q.cur = q.pool[q.i]; q.phase = 'ask'; q.result = null; q.click = null; q.typed = ''; q.hint = ''; q.confirm = false;
   if (opt.mode === 'name') {
     const c = q.cur.c;
     flyTo(getFrame().starHor(c.labelVec), { fov: Math.max(28, Math.min(95, figureRadius(c) * 3.4)), dur: 800 });
@@ -147,13 +153,14 @@ function ask() {
 }
 function answer(ok, detail = '') {
   if (q.phase !== 'ask') return;
-  q.phase = 'feedback'; q.asked++;
+  q.phase = 'feedback'; q.hint = ''; q.confirm = false; q.asked++;
   if (ok) { q.right++; q.streak++; q.best = Math.max(q.best, q.streak); } else q.streak = 0;
   q.result = { ok, detail };
   // show the right answer on the sky: always for a miss, and when it is off screen
   if (opt.mode !== 'name') {
     const vec = q.cur.kind === 'star' ? q.cur.s.vec : q.cur.c.labelVec, sp = [0, 0];
-    const vis = projEqj(vec, sp) && sp[0] > 60 && sp[0] < cam.w - 60 && sp[1] > 70 && sp[1] < cam.h - 90;
+    const b = panel.el.getBoundingClientRect(), c = document.getElementById('sky').getBoundingClientRect(), under = projEqj(vec, sp) && sp[0] + c.left > b.left - 70 && sp[0] + c.left < b.right + 70 && sp[1] + c.top > b.top - 50 && sp[1] + c.top < b.bottom + 30;
+    const vis = !under && projEqj(vec, sp) && sp[0] > 60 && sp[0] < cam.w - 60 && sp[1] > 70 && sp[1] < cam.h - 90;
     if (!ok || !vis) flyTo(getFrame().starHor(vec), { fov: q.cur.kind === 'star' ? Math.min(cam.fov, 60) : Math.max(30, Math.min(cam.fov, 100, figureRadius(q.cur.c) * 4)), dur: 900 });
   }
   renderPanel(); emit('render');
@@ -167,7 +174,10 @@ function next() {
 /** A click on the sky during a quiz. Always consumed, so nothing gets selected (that would show the name). */
 function click(x, y) {
   if (!q.running) return false;
+  if (q.confirm) { q.confirm = false; renderPanel(); return true; }
   if (q.phase !== 'ask' || opt.mode === 'name') return true;
+  const say = (t) => { q.hint = t; renderPanel(); return true; };      // not an answer: nothing is counted
+  if (eff.ground && unproject(x, y)[2] < 0) return say('That is the ground. Click on the sky: this one does not count.');
   const v = eqjAt(x, y);
   q.click = v;
   if (opt.mode === 'find') {
@@ -186,8 +196,9 @@ function click(x, y) {
       if (d < bd) { bd = d; best = i; }
     }
     const ok = best === q.cur.i && bd < tol;
-    const nm = best != null && bd < tol ? stars.names.name[best] : null;
-    answer(ok, ok ? '' : nm ? `That is ${nm}.` : 'No bright star just there.');
+    if (best == null || bd >= tol) return say('There is no bright star just there. Click closer to one: this one does not count.');
+    const nm = starLabel(starRecord(0, best));
+    answer(ok, ok ? '' : `That is ${nm}.`);
   }
   return true;
 }
@@ -202,6 +213,7 @@ function typedAnswer(text) {
 }
 function key(e) {
   if (!q.running) return false;
+  if (q.confirm && (e.key === 'Enter' || e.key === ' ')) { if (keyReached(e.target)) return false; q.confirm = false; renderPanel(); return true; }
   if (q.phase === 'feedback' && (e.key === 'Enter' || e.key === ' ')) { if (keyReached(e.target)) return false; next(); return true; }
   if (q.phase === 'ask' && opt.mode === 'name' && opt.answer === 'choice' && /^[1-4]$/.test(e.key)) { const c = q.choices[+e.key - 1]; if (c) answer(c === q.cur.c, c === q.cur.c ? '' : `You chose ${c.name}.`); return true; }
   // the name toggles would give the game away
@@ -235,8 +247,8 @@ function runHtml() {
   const name = q.cur.kind === 'star' ? q.cur.name : q.cur.c.name;
   let main;
   if (q.phase === 'ask') {
-    if (opt.mode === 'find') main = `<div class="qz-prompt"><span>Click on</span><b>${esc(name)}</b></div><p class="qz-hint">Drag to look around. Anywhere inside the constellation counts.</p>`;
-    else if (opt.mode === 'star') main = `<div class="qz-prompt"><span>Click on the star</span><b>${esc(name)}</b></div><p class="qz-hint">Drag to look around, scroll to zoom.</p>`;
+    if (opt.mode === 'find') main = `<div class="qz-prompt"><span>Click on</span><b>${esc(name)}</b></div><p class="qz-hint${q.hint ? ' say' : ''}" role="status">${esc(q.hint) || 'Drag to look around. Anywhere inside the constellation counts.'}</p>`;
+    else if (opt.mode === 'star') main = `<div class="qz-prompt"><span>Click on the star</span><b>${esc(name)}</b></div><p class="qz-hint${q.hint ? ' say' : ''}" role="status">${esc(q.hint) || 'Drag to look around, scroll to zoom.'}</p>`;
     else if (opt.answer === 'choice') main = `<div class="qz-prompt"><span>Which constellation is highlighted?</span></div><div class="qz-choices">${q.choices.map((c, i) => `<button type="button" class="btn" data-choice="${i}"><kbd>${i + 1}</kbd>${esc(c.name)}</button>`).join('')}</div>`;
     else main = `<div class="qz-prompt"><span>Which constellation is highlighted?</span></div><form class="qz-type"><input class="field" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type its name" aria-label="Constellation name"><button type="submit" class="btn primary">Check</button></form>`;
     main += `<div class="qz-acts"><button type="button" class="btn quiet" data-act="skip">Show me</button><button type="button" class="btn quiet" data-act="end">End quiz</button></div>`;
@@ -247,6 +259,7 @@ function runHtml() {
       `${r.ok ? `That is ${esc(name)}.` : `${esc(r.detail)} ${r.skipped ? '' : 'This is'} <b>${esc(name)}</b>${r.skipped ? '' : '.'}${where}`}${r.ok && r.detail ? ' ' + esc(r.detail) : ''}</div>` +
       `<div class="qz-acts"><button type="button" class="btn primary" data-act="next">${last ? 'See my score' : 'Next'} <kbd>Enter</kbd></button><button type="button" class="btn quiet" data-act="end">End quiz</button></div>`;
   }
+  if (q.confirm) main = `<div class="qz-feedback no"><b>End the quiz?</b> You have ${q.right} of ${q.asked} right so far; the score is kept and your view comes back.</div><div class="qz-acts"><button type="button" class="btn primary" data-act="end">End and see my score</button><button type="button" class="btn quiet" data-act="stay">Keep going</button></div>`;
   return `<div class="qz-run">${scoreHtml()}${main}${q.note ? `<p class="qz-note">${esc(q.note)}</p>` : ''}</div>`;
 }
 function doneHtml() {
@@ -254,11 +267,11 @@ function doneHtml() {
   return `<div class="qz-done"><div class="qz-big">${q.right} / ${q.asked}</div><p>${pct}% right${q.best > 1 ? `, best streak ${q.best}` : ''}. ${pct === 100 ? 'A clean sheet.' : pct >= 70 ? 'Good work.' : 'The sky takes practice; try again.'}</p>
     <div class="qz-acts"><button type="button" class="btn primary" data-act="again">Play again</button><button type="button" class="btn" data-act="setup">Change options</button></div></div>`;
 }
-function renderPanel() {
-  if (!panel || !panel.isOpen()) return;
+function renderPanel() { if (panel && panel.isOpen()) keepFocus(panel.body, drawPanel); }
+function drawPanel() {
   panel.body.innerHTML = q.running ? runHtml() : q.phase === 'done' ? doneHtml() : setupHtml();
-  const inp = panel.body.querySelector('.qz-type input'); if (inp) setTimeout(() => inp.focus(), 60);
-  if (q.phase === 'feedback') { const nb = panel.body.querySelector('[data-act="next"]'); if (nb && !window.matchMedia('(pointer: coarse)').matches) nb.focus({ preventScroll: true }); }
+  const inp = panel.body.querySelector('.qz-type input'); if (inp && !q.confirm) setTimeout(() => inp.focus(), 60);
+  if (q.phase === 'feedback' && !q.confirm) { const nb = panel.body.querySelector('[data-act="next"]'); if (nb && !window.matchMedia('(pointer: coarse)').matches) nb.focus({ preventScroll: true }); }
 }
 function bind() {
   panel.body.addEventListener('click', (e) => {
@@ -272,10 +285,11 @@ function bind() {
     if (act === 'start' || act === 'again') start();
     else if (act === 'next') next();
     else if (act === 'end') end(q.asked > 0);
+    else if (act === 'stay') { q.confirm = false; renderPanel(); }
     else if (act === 'setup') { q.phase = 'setup'; renderPanel(); }
     else if (act === 'skip') { answer(false, ''); q.result.skipped = true; renderPanel(); }
   });
-  panel.body.addEventListener('change', (e) => { const t = e.target; if (t.dataset.opt && t.tagName === 'SELECT') { opt[t.dataset.opt] = t.value; q.note = ''; renderPanel(); } });
+  panel.body.addEventListener('change', (e) => { const t = e.target; if (t.dataset.opt && t.tagName === 'SELECT') { opt[t.dataset.opt] = t.value; q.note = ''; const tmp = document.createElement('div'); tmp.innerHTML = setupHtml(); panel.body.querySelector('.qz-start').replaceWith(tmp.querySelector('.qz-start')); } });
   panel.body.addEventListener('submit', (e) => { e.preventDefault(); const inp = e.target.querySelector('input'); if (inp) typedAnswer(inp.value); });
 }
 
@@ -320,7 +334,13 @@ export function initQuiz() {
   panel = makePanel({
     id: 'quizPanel', title: 'Sky quiz', cls: 'card',
     onOpen() { if (!bound) { bind(); bound = true; } q.note = ''; renderPanel(); },
-    onClose() { if (q.running) end(false); q.phase = 'setup'; },
+    // Esc, × and the button: with a score to lose, ask first; a second Esc ends it, with the score
+    mayClose() {
+      if (!q.running || !q.asked) return true;
+      if (q.confirm) end(true); else { q.confirm = true; renderPanel(); }
+      return false;
+    },
+    onClose() { if (q.running) { const a = q.asked, r = q.right; end(false); if (a) toast(`Quiz ended: ${r} of ${a} right.`); } q.phase = 'setup'; },
   });
   // nothing may be selected during a quiz (the info panel would name it)
   on('selection', () => { if (q.running && state.selected) select(null); });

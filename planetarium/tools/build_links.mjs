@@ -37,6 +37,10 @@ const targets = [];
     if (hip) cand.push('HIP ' + hip);
     targets.push({ group: 'star', key: name, cand: [...new Set(cand)], ra: at(+i, 'ra'), dec: at(+i, 'dec'), tol: 0.05, codes: hip ? ['HIP ' + hip] : [] });
   } }
+// --- named stars beyond the name list (js/catalog.js FAINT_NAMES: Barnard's, Proxima, ...)
+{ const src = readFileSync(new URL('../js/catalog.js', import.meta.url), 'utf8'), FAINT = new Function('return ' + /FAINT_NAMES = (\{[^}]*\})/.exec(src)[1])(), man = json('stars.json'), NF = man.fields.length, k = (n) => man.fields.indexOf(n);
+  for (const t of man.tiers) { const buf = readFileSync(new URL(t.file, D)), f = new Float32Array(buf.buffer, buf.byteOffset, buf.length / 4);
+    for (let i = 0; i < f.length / NF; i++) { const hip = f[i * NF + k('hip')], name = FAINT[hip]; if (name) targets.push({ group: 'star', key: name, cand: [name.replace('’', "'"), name], ra: f[i * NF + k('ra')], dec: f[i * NF + k('dec')], tol: 0.05, codes: ['HIP ' + hip] }); } } }
 // --- deep sky: Messier, Caldwell and everything OpenNGC has a common name for
 { const d = json('dso.json'); for (const r of d.rows) {
   const o = Object.fromEntries(d.fields.map((k, i) => [k, r[i]]));
@@ -97,6 +101,9 @@ for (const t of targets) {
   } }
 // an article about a constellation's star must not stand for two different stars unless it covers both: list repeats for a look
 const seen = {}; for (const g of ['star', 'dso']) for (const [k, v] of Object.entries(out[g])) (seen[v] = seen[v] || []).push(k);
+// Wikidata states no position or number for these, but the article exists (seen above) under the star's own Bayer / Flamsteed or IAU name: checked by hand 2026-11-25
+const HAND = { 'Cor Caroli': 'Cor Caroli', Athebyne: 'Eta Draconis', Titawin: 'Upsilon Andromedae', Chamukuy: 'Theta Tauri', Revati: 'Zeta Piscium', Veritate: '14 Andromedae', Meleph: 'Epsilon Cancri' };
+for (const [k, v] of Object.entries(HAND)) if (!out.star[k] && targets.some((t) => t.group === 'star' && t.key === k)) out.star[k] = v;
 const date = new Date().toISOString().slice(0, 10);
 writeFileSync(new URL('links.json', D), JSON.stringify({ date, note: 'English Wikipedia titles, each checked through its Wikidata item (tools/build_links.mjs)', ...out }).replace(/\},"/g, '},\n"') + '\n');
 for (const g of Object.keys(out)) console.log(g, Object.keys(out[g]).length, 'of', targets.filter((t) => t.group === g).length);

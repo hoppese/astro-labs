@@ -204,7 +204,7 @@ function updatePanel() {
   const frame = getFrame(), bodies = getBodies(frame);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let html = '<div class="mp-head">Angular distance</div>';
-  if (measure.active) html += `<div class="mp-hint">${measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?)' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the centre of the image by eye.' + (measure.snap ? ' Discs still snap to centre and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
+  if (measure.active) html += `<div class="mp-hint">${measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?)' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the center of the image by eye.' + (measure.snap ? ' Discs still snap to center and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
   const rows = measure.list.slice(-5).map((m) => {
     const a = eqjOf(m.a, frame, bodies), b = eqjOf(m.b, frame, bodies);
     if (!a || !b) return '';
@@ -237,15 +237,24 @@ export function drawMeasures(ctx) {
     if (okB && !(measure.byEye && free)) marker(pb);          // by eye: no mark at the pointer's end of the rubber band (it would sit in the magnifier)
     if (label) {
       // label at the middle of the visible arc
-      let mid = unit([ha[0] + hb[0], ha[1] + hb[1], ha[2] + hb[2]]);
-      const pm = [0, 0];
-      if (proj(mid, pm) && pm[0] > 0 && pm[0] < cam.w && pm[1] > 0 && pm[1] < cam.h) {
-        const dx = pb[0] - pa[0], dy = pb[1] - pa[1], d = Math.hypot(dx, dy) || 1;
-        let nx = -dy / d, ny = dx / d; if (ny > 0) { nx = -nx; ny = -ny; }       // offset to the upper side of the line
+      const dx = pb[0] - pa[0], dy = pb[1] - pa[1], d = Math.hypot(dx, dy) || 1;
+      let nx = -dy / d, ny = dx / d; if (ny > 0) { nx = -nx; ny = -ny; }       // offset to the upper side of the line
+      const pm = [0, 0], hw = label.length * 3.9 + 4;
+      // where no bright star or body is under it: the middle if possible, else along the arc or on the other side of it
+      let best = null;
+      for (const [f, side] of [[0.5, 1], [0.5, -1], [0.4, 1], [0.6, 1], [0.4, -1], [0.6, -1], [0.3, 1], [0.7, 1]]) {
+        if (!proj(unit([0, 1, 2].map((k) => ha[k] * (1 - f) + hb[k] * f)), pm) || !(pm[0] > 0 && pm[0] < cam.w && pm[1] > 0 && pm[1] < cam.h)) continue;
+        const x = pm[0] + side * nx * 13, y = pm[1] + side * ny * 13;
+        const hit = allPicks().some((it) => it.ref && it.ref.kind !== 'con' && (it.mag ?? 9) < 4 && Math.abs(it.x - x) < hw + it.r && Math.abs(it.y - y) < 9 + it.r);
+        if (!best || !hit) best = { x, y };
+        if (!hit) break;
+      }
+      if (best) {
         ctx.font = "600 12.5px 'JetBrains Mono', ui-monospace, monospace"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(2,6,14,0.9)'; ctx.lineJoin = 'round';
-        ctx.strokeText(label, pm[0] + nx * 13, pm[1] + ny * 13);
-        ctx.fillText(label, pm[0] + nx * 13, pm[1] + ny * 13);
+        ctx.strokeText(label, best.x, best.y);
+        ctx.fillText(label, best.x, best.y);
+        R.labels.block(best.x - hw, best.y - 8, best.x + hw, best.y + 8);      // the names of things keep off it
         ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(255,214,107,0.95)'; ctx.textAlign = 'left';
       }
     }

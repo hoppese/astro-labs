@@ -7,8 +7,8 @@ import { state } from '../state.js';
 import { cam, centerHor, unproject } from '../camera.js';
 import { R, projectPolyline, strokeStrips } from './proj.js';
 
-const DEG_STEPS = [30, 20, 15, 10, 5, 2, 1, 1 / 2, 1 / 3, 1 / 6, 1 / 12, 1 / 30, 1 / 60, 1 / 120, 1 / 360, 1 / 720, 1 / 3600];
-const HOUR_STEPS = [2, 1, 1 / 2, 1 / 3, 1 / 6, 1 / 12, 1 / 30, 1 / 60, 1 / 120, 1 / 360, 1 / 720, 1 / 3600].map((h) => h * 15);
+const DEG_STEPS = [30, 20, 15, 10, 5, 2, 1, 1 / 2, 1 / 3, 1 / 6, 1 / 12, 1 / 30, 1 / 60, 1 / 120, 1 / 360, 1 / 720, 1 / 3600, 1 / 7200, 1 / 18000, 1 / 36000, 1 / 72000, 1 / 180000, 1 / 360000, 1 / 720000];
+const HOUR_STEPS = [2, 1, 1 / 2, 1 / 3, 1 / 6, 1 / 12, 1 / 30, 1 / 60, 1 / 120, 1 / 360, 1 / 720, 1 / 3600, 1 / 7200, 1 / 18000, 1 / 36000, 1 / 72000, 1 / 180000, 1 / 360000, 1 / 720000, 1 / 1800000, 1 / 3600000].map((h) => h * 15);
 const pick = (list, target) => list.find((s) => s <= target) || list[list.length - 1];
 /** The smallest step in a (descending) list that is at least `target`: lines never closer than the target spacing. */
 const pickUp = (list, target) => { for (let i = list.length - 1; i >= 0; i--) if (list[i] >= target - 1e-12) return list[i]; return list[0]; };
@@ -71,13 +71,13 @@ const fmtDegLabel = (v, step, signed) => {
   const neg = v < -1e-9; const a = Math.abs(v);
   const sg = neg ? '−' : (signed && a > 1e-9 ? '+' : '');
   if (step >= 1 - 1e-9) return sg + Math.round(a) + '°';
-  const t = Math.round(a * 3600), d = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
-  return sg + d + '°' + String(m).padStart(2, '0') + '′' + (step < 1 / 60 - 1e-9 ? String(s).padStart(2, '0') + '″' : '');
+  const dp = Math.max(0, Math.ceil(-Math.log10(step * 3600) - 1e-6)), k = 10 ** dp, n = Math.round(a * 3600 * k), r = n % (60 * k), t = (n - r) / (60 * k);      // r: seconds, in steps of 1/k
+  return sg + Math.floor(t / 60) + '°' + String(t % 60).padStart(2, '0') + '′' + (step < 1 / 60 - 1e-9 ? (r / k).toFixed(dp).padStart(dp ? 3 + dp : 2, '0') + '″' : '');
 };
 const fmtHourLabel = (deg, step) => {
-  const t = Math.round(mod(deg, 360) / 15 * 3600) % 86400, h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  const dp = Math.max(0, Math.ceil(-Math.log10(step * 240) - 1e-6)), k = 10 ** dp, n = Math.round(mod(deg, 360) * 240 * k) % (86400 * k), r = n % (60 * k), t = (n - r) / (60 * k), h = Math.floor(t / 60), m = t % 60;
   if (step >= 15 - 1e-9) return h + 'h';
-  return h + 'h' + String(m).padStart(2, '0') + 'm' + (step < 0.25 - 1e-9 ? String(s).padStart(2, '0') + 's' : '');
+  return h + 'h' + String(m).padStart(2, '0') + 'm' + (step < 0.25 - 1e-9 ? (r / k).toFixed(dp).padStart(dp ? 3 + dp : 2, '0') + 's' : '');
 };
 
 /** Generic lon/lat grid. toHor(lon, lat) gives a HOR unit vector; c = view centre {lon, lat} in the grid's frame. */
@@ -124,7 +124,7 @@ function drawGrid(ctx, toHor, c, { color, labelColor, refract, lonSteps, lonLabe
     // is drawn toward the pole only as far as that family's lines stay a readable distance apart. So the fan
     // thins out in stages instead of piling up into a knot at the pole.
     let fam = lonStep;
-    for (const g of [90, ...lonSteps]) { if (g < lonStep - 1e-9) break; const m = mod(lon + 1e-7, g); if (m < 1e-5 || g - m < 1e-5) { fam = g; break; } }
+    for (const g of [90, ...lonSteps]) { if (g < lonStep - 1e-9) break; const tol = Math.min(1e-5, lonStep * 0.01), m = mod(lon, g); if (m < tol || g - m < tol) { fam = g; break; } }
     // ... and each stage ends on a parallel, not in mid-air
     const top = fam >= 90 ? 90 : Math.min(90 - latStep, Math.ceil(Math.acos(Math.min(1, want / 3 / fam)) * RAD / latStep - 1e-9) * latStep);
     const a = Math.max(lat0, -top), b = Math.min(lat1, top);

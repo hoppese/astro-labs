@@ -2,6 +2,7 @@
 // side panels that become bottom sheets on a phone, toasts, tooltips, and a few per-viewer settings.
 
 import { emit } from './state.js';
+import { takesKeys } from './focus.js';
 
 // ---- per-viewer settings for the extras (kept apart from state.js's own store) ----
 const KEY = 'astro-labs.planetarium.extras.v1';
@@ -17,6 +18,18 @@ export function saveXs() { try { localStorage.setItem(KEY, JSON.stringify(xs)); 
 export function loadJSON(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return v == null ? fallback : v; } catch (e) { return fallback; } }
 export function saveJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* fine */ } }
 
+/** Read a number a person typed. {v} | {empty: true} | {err: what is wrong, in words}. "1,000" and "1 000" are a thousand, "12,5" is 12.5; a unit may follow. */
+export function readNumber(text, unit = null) {
+  const raw = String(text ?? '').trim();
+  let s = raw.replace(/[−–]/g, '-').replace(/[\u00a0\u202f\u2009]/g, ' ');
+  if (!s) return { empty: true };
+  if (unit) s = s.replace(unit, '').trim();
+  const num = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+  if (/^[+-]?[1-9]\d{0,2}([, ]\d{3})+(\.\d*)?$/.test(s)) s = s.replace(/[, ]/g, '');
+  else if (/^[+-]?\d*,\d+$/.test(s)) s = s.replace(',', '.');
+  if (!num.test(s) || !isFinite(+s)) return { err: `“${raw}” is not a number I can read. Type it like 1234.5 or 1,234.5.` };
+  return { v: +s };
+}
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const isNarrow = () => window.matchMedia('(max-width: 560px)').matches;
 export const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -26,7 +39,7 @@ const panels = [];
 const CHEV = '<svg class="line" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.500l6 6 6-6"/></svg>';
 
 /** A docked panel: right side on a laptop, bottom sheet on a phone. Only one is open at a time. */
-export function makePanel({ id, title, cls = '', onOpen, onClose }) {
+export function makePanel({ id, title, cls = '', onOpen, onClose, mayClose }) {
   const root = el('section', 'xpanel ' + cls);
   root.id = id; root.hidden = true; root.setAttribute('aria-label', title);
   root.innerHTML = `<header class="xp-head"><button class="xp-grip" type="button" aria-label="Collapse or expand this panel" aria-expanded="true">${CHEV}</button>` +
@@ -44,24 +57,24 @@ export function makePanel({ id, title, cls = '', onOpen, onClose }) {
       if (onOpen) onOpen();
       emit('render');
     },
-    close() {
-      if (root.hidden) return;
+    /** byUser: ×, Esc or the panel's own button. mayClose() may then say no (the quiz asks first). */
+    close(byUser = false) {
+      if (root.hidden || (byUser && mayClose && !mayClose())) return;
       root.hidden = true;
       if (onClose) onClose();
       emit('render');
       const sky = document.getElementById('sky'); if (sky && root.contains(document.activeElement)) sky.focus({ preventScroll: true });
     },
-    toggle() { if (root.hidden) p.open(); else p.close(); },
+    toggle() { if (root.hidden) p.open(); else p.close(true); },
     /** Collapse to just the header (used on a phone so the sky shows after "go to"). */
     peek(on) { root.classList.toggle('peek', !!on); grip.setAttribute('aria-expanded', String(!on)); },
     peeked: () => root.classList.contains('peek'),
   };
   grip.addEventListener('click', () => p.peek(!p.peeked()));
-  root.querySelector('[data-x="close"]').addEventListener('click', () => p.close());
+  root.querySelector('[data-x="close"]').addEventListener('click', () => p.close(true));
   // typing in a panel must not trigger the sky's keyboard shortcuts
   root.addEventListener('keydown', (e) => {
-    const t = e.target;
-    if (e.key !== 'Escape' && t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) e.stopPropagation();
+    if (e.key !== 'Escape' && takesKeys(e.target, e)) e.stopPropagation();
   });
   panels.push(p);
   return p;
@@ -76,6 +89,7 @@ export function toast(text, { ms = 4200, kind = '' } = {}) {
   if (!toastEl) { toastEl = el('div', 'xtoast'); toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite'); toastEl.hidden = true; document.body.appendChild(toastEl); }
   toastEl.className = 'xtoast' + (kind ? ' ' + kind : '');
   toastEl.textContent = text; toastEl.hidden = false;
+  document.dispatchEvent(new CustomEvent('app-notice'));      // layout.js finds it a place clear of the panels
   clearTimeout(toastTimer);
   if (ms) toastTimer = setTimeout(() => { toastEl.hidden = true; }, ms);
 }

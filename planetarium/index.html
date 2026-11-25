@@ -37,7 +37,7 @@
       <button class="iconbtn" id="menuBtn" title="Menu" aria-haspopup="true" aria-label="Menu">&#9776;</button>
       <div class="menu" id="menu" hidden>
         <a href="../" target="_blank" rel="noopener"><span class="ico">&#8592;</span>All sims</a>
-        <button id="mInfo"><span class="ico">&#9432;</span>Info &amp; shortcuts</button>
+        <button id="mInfo"><span class="ico">&#9432;</span>Help &amp; shortcuts</button>
         <button id="mCredits"><span class="ico">&#169;</span>Credits &amp; data</button>
         <button id="mBug"><span class="ico">&#128030;</span>Submit bug</button>
       </div>
@@ -81,6 +81,7 @@
     <label class="sm">Day <input type="number" id="dtDay" min="1" max="31" step="1" inputmode="numeric"></label>
     <label>Time <input type="time" id="dtTime" step="1"></label>
   </div>
+  <div class="dt-msg" id="dtMsg" role="alert" hidden></div>
   <div class="steps" id="stepBtns"></div>
   <div class="calnote" id="calNote" hidden>Before 15 Oct 1582 dates are proleptic Gregorian (not the Julian calendar then in use). Year 0 = 1 BC.</div>
   <div class="pop-foot"><span class="utc" id="timeUtc"></span><button class="btn" id="dtNow">Now</button></div>
@@ -96,8 +97,8 @@
       <input class="field" id="citySearch" type="search" placeholder="Search a city…" autocomplete="off" aria-label="Search a city">
       <div class="citylist" id="cityList"></div>
       <div class="latlon">
-        <label>Latitude (°, north +) <input class="field" id="latIn" type="number" min="-90" max="90" step="0.01"></label>
-        <label>Longitude (°, east +) <input class="field" id="lonIn" type="number" min="-180" max="180" step="0.01"></label>
+        <label>Latitude (°, north +) <input class="field" id="latIn" type="text" inputmode="text" autocomplete="off" spellcheck="false"></label>
+        <label>Longitude (°, east +) <input class="field" id="lonIn" type="text" inputmode="text" autocomplete="off" spellcheck="false"></label>
       </div>
       <div class="row">
         <button class="btn" id="locApply">Set coordinates</button>
@@ -125,11 +126,13 @@
         <button data-mount="altaz" role="radio">Alt-az</button>
         <button data-mount="eq" role="radio">Equatorial</button>
       </div>
-      <div class="hint">Alt-az keeps the horizon level. Equatorial keeps the celestial pole up, so the sky turns about the pole as time runs. <span class="k">M</span></div>
+      <div class="hint">Alt-az keeps the horizon level. Equatorial keeps the celestial pole up, so the sky turns about the pole as time runs; south of the equator that leaves the zenith, and the sky above the ground, toward the bottom of the picture. <span class="k">M</span></div>
     </section>
     <section>
       <h3>Labels &amp; markings</h3>
       <div class="checks" id="showChecks"></div>
+      <div class="row"><button class="btn" id="resetShow" type="button">Reset display to defaults</button></div>
+      <div class="hint">Puts every switch in this drawer back as it is for a new visitor (mount and light pollution too). The place and the time stay.</div>
     </section>
     <section>
       <h3>Solar system</h3>
@@ -147,7 +150,7 @@
 
 <!-- ===== modals ===== -->
 <div class="modal-backdrop" id="infoModal">
-  <div class="modal" role="dialog" aria-label="Info and shortcuts">
+  <div class="modal" role="dialog" aria-label="Help and shortcuts">
     <h2>Planetarium <button class="close" data-close aria-label="Close">&times;</button></h2>
     <div id="infoBody"></div>
   </div>

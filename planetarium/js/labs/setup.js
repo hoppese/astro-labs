@@ -13,7 +13,7 @@
 //   trail: {body, step, before, after, frame}       events: category id
 
 import { DEG, RAD, sph, mulMV, azAltToHor, horToAzAlt, toSph, refractHor } from '../astro.js';
-import { state, emit, eff } from '../state.js';
+import { state, emit, eff, SHOW_DEFAULTS } from '../state.js';
 import { cam, update, lookAtHor, centerHor, setMount } from '../camera.js';
 import { getFrame } from '../skyframe.js';
 import { getBodies } from '../ephem.js';
@@ -30,7 +30,6 @@ import { cmp, setObserver2, setAlign } from './compare.js';
 import { trail, startTrail, stopTrail } from './trails.js';
 import { ev } from './events.js';
 
-export const SHOW_DEFAULTS = { ...state.show };          // captured before the viewer's saved settings load
 export const FX_DEFAULTS = { ...state.fx };
 
 async function resolveTarget(target) {

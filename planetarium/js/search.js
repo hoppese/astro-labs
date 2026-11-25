@@ -10,6 +10,7 @@ import { stars, starRecord, constellations, dso, loadAllTiers, loadDeepDso, DSO_
 import { refHorApparent } from './objects.js';
 import { select, centerOn } from './nav.js';
 import { fmtMag } from './astro.js';
+import { nearest } from './fuzzy.js';
 
 const GREEK = { 'α': 'alpha', 'β': 'beta', 'γ': 'gamma', 'δ': 'delta', 'ε': 'epsilon', 'ζ': 'zeta', 'η': 'eta', 'θ': 'theta', 'ι': 'iota', 'κ': 'kappa',
   'λ': 'lambda', 'μ': 'mu', 'ν': 'nu', 'ξ': 'xi', 'ο': 'omicron', 'π': 'pi', 'ρ': 'rho', 'σ': 'sigma', 'τ': 'tau', 'υ': 'upsilon', 'φ': 'phi', 'χ': 'chi', 'ψ': 'psi', 'ω': 'omega' };
@@ -57,6 +58,34 @@ function build() {
     if (conById[con]) add(n + ' ' + conById[con].gen, fl, 'Star', mag, ref, 30 - mag * 4);
   }
   addDso(0);
+  const best = new Map();
+  for (const e of index) { const b = best.get(e.key); if (!b || e.w > b.w) best.set(e.key, e); }
+  for (const [text, target] of Object.entries(ALIASES)) { const e = best.get(norm(target)); if (e) index.push({ ...e, key: norm(text), sub: `“${text}”` + (e.sub ? ' · ' + e.sub : '') }); }
+}
+/** Everyday names. */
+const ALIASES = { 'Seven Sisters': 'Pleiades', Subaru: 'Pleiades', 'North Star': 'Polaris', 'Pole Star': 'Polaris', 'Dog Star': 'Sirius', 'Beetlejuice': 'Betelgeuse', 'Beetle juice': 'Betelgeuse', 'Orion’s Belt': 'Alnilam',
+  'Demon Star': 'Algol', 'Big Dipper': 'Ursa Major', Plough: 'Ursa Major', Plow: 'Ursa Major', 'Great Bear': 'Ursa Major', 'Little Dipper': 'Ursa Minor', 'Little Bear': 'Ursa Minor', 'Northern Cross': 'Cygnus', 'Southern Cross': 'Crux',
+  Teapot: 'Sagittarius', 'Great Square': 'Pegasus', 'Great Square of Pegasus': 'Pegasus', 'Summer Triangle': 'Vega', 'Evening Star': 'Venus', 'Morning Star': 'Venus', 'Red Planet': 'Mars', Luna: 'Moon', Sol: 'Sun',
+  'Beehive Cluster': 'Beehive', Praesepe: 'M 44', 'Rigil Kent': 'α Cen', 'Andromeda Nebula': 'M 31', 'Great Nebula': 'M 42', 'Halley’s Comet': 'Halley', 'Comet Halley': 'Halley' };
+/** Things people look for that are not here, and what to say. */
+const ABSENT = [[/^(iss|(the )?international space station|space stations?|tiangong|starlink|satellites?|hubble( space)? telescope|hst|jwst|(james )?webb( space)?( telescope)?|voyager( [12])?|spacecraft)$/, 'Satellites and spacecraft (the ISS, Starlink, Hubble …) are not included.'],
+  [/^(milky ?way|our galaxy|galactic cent(er|re)|sagittarius a|sgr a)$/, 'The Milky Way is a band across the sky, not one object: press W to show it. Its center is in Sagittarius.'],
+  [/^(earth|the earth)$/, 'You are standing on it: the ground at the bottom of the view.'],
+  [/^(planet (nine|9|x)|nibiru)$/, 'No such planet has been found.'],
+  [/^(black holes?|quasars?|exoplanets?|meteors?( showers?)?|shooting stars?|perseids|leonids|geminids|aurora|northern lights|comets?|asteroid belt|oort cloud)$/, 'Not included. Try a star, a planet, a moon, a constellation, or a Messier or NGC number. The one comet here is Halley.']];
+export const absentNote = (q) => { const n = norm(q), a = ABSENT.find(([re]) => re.test(n)); return a ? a[1] : ''; };
+/** For a query that matched nothing: what it was probably meant to be. */
+export function guesses(q) {
+  const n = norm(q), seen = new Set(), out = [];
+  if (n.length < 4) return out;
+  const pool = index.filter((e) => /^[a-z][a-z ]{2,}$/.test(e.key) && e.w > 0).concat(Object.values(FAINT_NAMES).map((x) => ({ key: norm(x), faint: x })));
+  for (const e of nearest(n, pool, (x) => x.key, 24)) {
+    const hit = e.faint ? search(e.faint, 1)[0] : e;
+    if (!hit || (e.faint && hit.pending)) { if (hit) return [hit]; continue; }
+    const k = JSON.stringify(hit.ref); if (seen.has(k)) continue;
+    seen.add(k); out.push(hit); if (out.length >= 5) break;
+  }
+  return out;
 }
 let dsoIndexed = 0;
 function addDso() {
@@ -85,20 +114,20 @@ export function search(q, limit = 12) {
   const out = [];
   // catalogue numbers that are not in the name index
   // named stars too faint for the name index (Barnard's, Proxima): found by their Hipparcos number
-  const faint = n.length >= 3 && Object.keys(FAINT_NAMES).find((h) => norm(FAINT_NAMES[h]).startsWith(n));
-  const m = /^(hip|hd)\s*(\d+)$/.exec(faint ? 'hip ' + faint : n);
-  if (m) {
-    const field = m[1] === 'hip' ? F.hip : F.hd, want = +m[2];
+  const faint = n.length >= 3 ? Object.keys(FAINT_NAMES).filter((h) => norm(FAINT_NAMES[h]).startsWith(n)) : [];
+  const m = /^(hip|hd)\s*(\d+)$/.exec(n), unloaded = stars.tiers.some((t) => !t.loaded);
+  for (const [field, want, name] of (m ? [[m[1] === 'hip' ? F.hip : F.hd, +m[2], '']] : faint.map((h) => [F.hip, +h, FAINT_NAMES[h]]))) {
     for (const t of stars.tiers) {
       if (!t.loaded) continue;
       for (let i = 0; i < t.n; i++) if (t.data[i * stars.NF + field] === want) {
         const s = starRecord(t.k, i);
-        out.push({ label: faint ? s.name : (m[1] === 'hip' ? 'HIP ' : 'HD ') + want + (s.name ? ' · ' + s.name : ''), sub: faint ? 'HIP ' + want + ' · Star' : 'Star', mag: s.mag, ref: { kind: 'star', k: t.k, i }, w: 0, score: faint ? 380 : 1000 });
+        out.push({ label: name || (m[1] === 'hip' ? 'HIP ' : 'HD ') + want + (s.name ? ' · ' + s.name : ''), sub: name ? 'HIP ' + want + ' · Star' : 'Star', mag: s.mag, ref: { kind: 'star', k: t.k, i }, w: 0, score: name ? 380 : 1000 });
       }
     }
-    if (!out.length && faint) { if (stars.tiers.some((t) => !t.loaded)) loadAllTiers().then(() => rerun && rerun()); }
-    else if (!out.length && stars.tiers.some((t) => !t.loaded)) { loadAllTiers().then(() => rerun && rerun()); return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }]; }
   }
+  const loading = (faint.length || m) && unloaded && !out.length;
+  if (loading) loadAllTiers().then(() => rerun && rerun());
+  if (loading && m) return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }];
   const seen = new Set();
   for (const e of index) {
     let s;
@@ -117,6 +146,7 @@ export function search(q, limit = 12) {
     seen.add(k); res.push(e);
     if (res.length >= limit) break;
   }
+  if (!res.length && loading) return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }];
   if (!res.length && /^(ngc|ic)\s*\d+/.test(n) && !dso.deepLoaded) { loadDeepDso().then(() => rerun && rerun()); return [{ label: 'Loading the full NGC/IC list…', sub: '', pending: true }]; }
   return res;
 }
@@ -132,7 +162,7 @@ export function brightestStars(count = 30) {
 // ---- UI --------------------------------------------------------------------------------
 export function initSearch(root) {
   const input = root.querySelector('input'), list = root.querySelector('.search-list');
-  let items = [], active = -1;
+  let items = [], active = -1, wanted = false;      // wanted: Enter was pressed before the answer was there
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const isUp = (ref) => {
     const frame = getFrame(); const h = refHorApparent(ref, frame, getBodies(frame));
@@ -156,32 +186,36 @@ export function initSearch(root) {
       html = '<div class="grp">Solar system</div>' + sol.map(optHtml).join('') +
         '<div class="grp">Brightest stars · ▲ = up now</div>' + br.map((e, i) => optHtml(e, i + sol.length)).join('');
     } else {
-      items = search(q);
-      html = items.length ? items.map(optHtml).join('') : '<div class="empty">Nothing found. Try a star name, “M 31”, “NGC 7000”, “HIP 91262” or a constellation.</div>';
+      const note = absentNote(q);
+      items = note ? [] : search(q);
+      let head = '';
+      if (!note && !items.length) { items = guesses(q); if (items.length && !items[0].pending) head = '<div class="grp">Nothing by that exact name. Did you mean</div>'; }
+      html = note ? `<div class="empty">${esc(note)}</div>` : items.length ? head + items.map(optHtml).join('') : '<div class="empty">Nothing found. Try a star name, “M 31”, “NGC 7000”, “HIP 91262” or a constellation.</div>';
     }
     list.innerHTML = html; list.hidden = false; input.setAttribute('aria-expanded', 'true');
     active = q && items.length && !items[0].pending ? 0 : -1;
     mark();
+    if (wanted && active === 0) { wanted = false; choose(0); }
   }
   function mark() {
     list.querySelectorAll('.opt').forEach((el) => { const on = +el.dataset.i === active; el.classList.toggle('active', on); el.setAttribute('aria-selected', on); if (on) el.scrollIntoView({ block: 'nearest' }); });
     if (active >= 0) input.setAttribute('aria-activedescendant', 'sopt' + active); else input.removeAttribute('aria-activedescendant');
   }
-  function hide() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); rerun = null; }
+  function hide() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); rerun = null; wanted = false; }
   function choose(i) {
     const e = items[i];
     if (!e || e.pending) return;
-    select(e.ref); centerOn(e.ref);
+    select(e.ref); centerOn(e.ref, 'arrive');
     input.value = ''; hide(); input.blur();
     document.getElementById('sky').focus({ preventScroll: true });
   }
   input.addEventListener('focus', () => { rerun = show; show(); });
-  input.addEventListener('input', () => { rerun = show; show(); });
+  input.addEventListener('input', () => { wanted = false; rerun = show; show(); });
   input.addEventListener('keydown', (e) => {
     const n = items.filter((x) => !x.pending).length;
     if (e.key === 'ArrowDown') { e.preventDefault(); if (list.hidden) show(); else { active = Math.min(n - 1, active + 1); mark(); } }
     else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); mark(); }
-    else if (e.key === 'Enter') { e.preventDefault(); if (active >= 0) choose(active); else if (n) choose(0); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (active >= 0) choose(active); else if (n) choose(0); else wanted = items.some((x) => x.pending); }
     else if (e.key === 'Escape') { e.preventDefault(); if (input.value) { input.value = ''; show(); } else { hide(); input.blur(); } }
     e.stopPropagation();
   });

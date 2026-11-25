@@ -140,7 +140,7 @@ export function setStarEpoch(years) {
 
 /** Plain-object view of one star. */
 /** Proper names of faint stars, which the name list (bright stars only) does not reach: by Hipparcos number. */
-export const FAINT_NAMES = { 87937: 'Barnard’s Star', 70890: 'Proxima Centauri' };
+export const FAINT_NAMES = { 87937: 'Barnard’s Star', 70890: 'Proxima Centauri', 24186: 'Kapteyn’s Star', 54035: 'Lalande 21185', 57548: 'Ross 128', 3829: 'Van Maanen’s Star', 36208: 'Luyten’s Star', 92403: 'Ross 154', 114046: 'Lacaille 9352', 1475: 'Groombridge 34', 110893: 'Kruger 60' };
 export function starRecord(k, i) {
   const t = stars.tiers[k], d = t.data, o = i * NF;
   const ext = NF >= 13;
@@ -169,6 +169,14 @@ function addDsoRows(file) {
     o.idx = dso.rows.length;
     dso.rows.push(o);
   }
+}
+/** Why a galaxy's catalogue magnitude should not be trusted, in words, or ''. The value itself is never changed: IC 127 is listed in OpenNGC's own file
+ *  with V 9.20 beside B 14.83, J 10.94 (V comes from its source 2). Tests: B − V outside what galaxies have, or too bright for the size listed. */
+export function dsoDoubt(o) {
+  if (!/^G/.test(o.type) || o.mag == null) return '';
+  if (o.vmag != null && o.bmag != null) { const d = o.bmag - o.vmag; if (d > 2.5 || d < -1.3) return `OpenNGC gives V ${o.vmag.toFixed(2)} but B ${o.bmag.toFixed(2)}; galaxies have B − V of about 0.3 to 1.2, so at least one of the two is wrong.`; }
+  if (o.maj > 0) { const sb = o.mag + 2.5 * Math.log10(Math.PI / 4 * o.maj * (o.min || o.maj) * 3600); if (sb < 18) return `magnitude ${o.mag.toFixed(1)} spread over the size listed would be ${sb.toFixed(1)} mag/arcsec² on average, brighter than galaxies are.`; }
+  return '';
 }
 export function loadDeepDso() {
   if (dso.deepLoaded) return Promise.resolve();

@@ -1251,3 +1251,20 @@ Phobos 8, Miranda 14, Ariel 32, Umbriel 110, Titania 443, Oberon 517 (grazing), 
 - The below-horizon note (`info.js belowHtml`): when the ground is drawn and the object is under it. A lab that hides rise/set or the hour angle hides its time; no "Go to" during a lab.
 - Emulated (headless Chrome 157): touch, sizes 320x568 to 1440x800, safe-area insets (Emulation.setSafeAreaInsetsOverride), page scale, a mocked visualViewport (keyboard, 24 px left-over shift, stuck zoom), forced scroll, rotation.
   **Not tested: a real iPhone or Android, Safari, the installed window itself, VoiceOver.**
+
+# Student pass: keys, numbers, quiz, events, zoom (2026-11-25)
+
+Checks: `tools/check-student.mjs` (check.mjs 27). Overrides: a new place no longer ends following; the Events box; "Zoom to".
+- **Keys never leak** (`js/focus.js`): a list that was rebuilt while somebody typed in it lost the focus and the rest of the word became shortcuts (Events, Hubble, quiz). Rules: do not rebuild a list in use (Events `head()`, Hubble `.hb-filters`,
+  quiz `.qz-start`); where a panel is rebuilt use `keepFocus(root, fn)`; a safety net drops letters for 1.5 s after a typed-in box vanished. `takesKeys(SELECT, '/')` is false: `/` searches from a list. A list chosen from with the mouse gives the focus back after 1.2 s.
+- **Numbers**: `xui.readNumber` ("1,000" = 1000, "12,5" = 12.5, else words); `ui.readPlace` ("33.5 S"). Latitude/longitude boxes are text boxes: a number box drops a comma silently ("1,5" became 15). Dates: `timeutil.dateProblem`; what is wrong stays in the boxes.
+- **Search**: `js/fuzzy.js`, `ALIASES`, `ABSENT` in search.js; `search()` stays exact (links and labs use it), only the box and city lists guess (`guesses`, `findCities`). Enter before the star tiers are in waits for them. `FAINT_NAMES` has 9 more stars.
+- **Zoom**: `niceFov(ref)` whatever the field now (`alsoFrame`: the second observer's image); `centerOn(ref, 'arrive')` = search, opens out only if the object would not fit. A star: 20°, then 2°.
+- **Steady sky**: the change keeps the middle (refraction put in or taken out of the direction) and the orientation (roll eased): Jupiter at ×1000, 9′ field, T off: 0.0 px in the frame of the change, then 0.9 px a frame of real refraction. Not following, equatorial, fast: 'full'.
+- **Events** go to the middle of what lasts; lists say start and middle. The Instructor box exists only with `?instructor=1`.
+- **Quiz**: ground and empty sky do not count; Esc / × asks once a question has been answered, a second Esc ends with the score; the view, selection and following come back; `state.holdSave` keeps the quiz's switches out of the saved settings.
+- **Two observers**: × or the menu ends it (card `close(true)`), not in a lab. **Place**: following goes on. **Chip** says "off screen". **Reset display** in Settings (`display-reset`). Toolbar `?` and key `?` = help.
+- **OpenNGC oddities** (`catalog.dsoDoubt`): IC 127 is V 9.20 in OpenNGC's own NGC.csv (B 14.83, J 10.94). 23 galaxies flagged "doubtful"; no value changed. `RadVel` = the relativistic formula on z (worst difference 10 km/s over 4,582 objects).
+- **Notices** sit in the strip between the panels (`--free-l`, `--free-r`, layout.js). Phone: an open side panel hides the object sheet instead of lying over it.
+- **Left**: drags near the zenith (an alt-az mount would have to roll, and easing that back would spin the view: explained in Help); M31's and M32's cores are clipped in the baked pictures; a moon's name over its planet's disc; "Virgin" for Virgo; British spelling in
+  `labs/presets.js` and `js/notebook/` (other owner).

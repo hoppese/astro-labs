@@ -5,7 +5,7 @@ import { state, emit } from './state.js';
 export const SIDEREAL_DAY_MS = 86164090.5;
 export const RATES = [-1e8, -3e7, -1e7, -3e6, -1e6, -1e5, -1e4, -1000, -100, -10, -1, 1, 10, 100, 1000, 1e4, 1e5, 1e6, 3e6, 1e7, 3e7, 1e8];
 // keep the clock inside the span where the ephemeris and Date arithmetic are trustworthy
-const T_MIN = Date.UTC(-3000, 0, 1), T_MAX = Date.UTC(3001, 0, 1);
+export const T_MIN = Date.UTC(-3000, 0, 1), T_MAX = Date.UTC(3001, 0, 1);
 
 let lastReal = null;
 /** The fastest useful rate while something with a short cycle is followed: at least 12 pictures a turn (60 a second). Without this a moon's phase,
@@ -38,6 +38,7 @@ export function advance(nowReal) {
 export function setTime(ms, quiet = false) {
   state.timeMs = Math.min(T_MAX, Math.max(T_MIN, ms));
   emit(quiet ? 'tick' : 'time');
+  if (!quiet && (ms < T_MIN || ms > T_MAX)) emit('clock-end');
 }
 export const stepTime = (deltaMs) => setTime(state.timeMs + deltaMs);
 export function setNow() { state.rate = 1; state.playing = true; setTime(Date.now()); emit('rate'); }

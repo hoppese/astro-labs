@@ -6,6 +6,8 @@
 
 import { A, vecOf, unit, mulMV, refractHor, unrefractHor } from '../astro.js';
 import { state, on, emit, eff } from '../state.js';
+import { select, track, flyTo } from '../nav.js';
+import { readNumber } from '../xui.js';
 import { projectHor, cam } from '../camera.js';
 import { makeFrame } from '../skyframe.js';
 import { apparent } from '../ephem.js';
@@ -20,7 +22,10 @@ const DAY = 86400000, SID = 86164090.5;
 export const STEPS = [['1 hour', 3600000], ['1 day', DAY], ['1 sidereal day', SID], ['5 days', 5 * DAY], ['10 days', 10 * DAY], ['30 days', 30 * DAY]];
 const BODIES = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
 export const trail = { on: false, body: 'Mars', step: DAY * 5, before: 30, after: 30, frame: 'stars', t0: null, pts: [], key: '' };
-let card = null;
+let card = null, problem = '', offScreen = false;
+/** Ticks that show one round of each body without drawing over itself: a month of the Moon, a year of the Sun, a retrograde loop and what leads to it for the planets. */
+const DEFAULTS = { Sun: [10 * DAY, 18], Moon: [DAY, 13], Mercury: [5 * DAY, 12], Venus: [5 * DAY, 30], Mars: [5 * DAY, 30], Jupiter: [10 * DAY, 20], Saturn: [10 * DAY, 20], Uranus: [10 * DAY, 20], Neptune: [10 * DAY, 20] };
+export const trailDefaults = (id) => { const [step, n] = DEFAULTS[id] || DEFAULTS.Mars; return { step, before: n, after: n, frame: 'stars' }; };
 
 /** Apparent topocentric J2000 direction of a body (the same call ephem.js uses). */
 function dirOf(id, frame) {
@@ -69,7 +74,7 @@ export function drawTrail(ctx) {
   for (const s of pts) { if (!s) { pen = false; continue; } if (pen) ctx.lineTo(s.x, s.y); else ctx.moveTo(s.x, s.y); pen = true; }
   ctx.stroke();
   // label about a dozen ticks, always including the start
-  const n = trail.pts.length, every = Math.max(1, Math.ceil(n / 12));
+  const n = pts.filter((s) => s && s.x > 0 && s.y > 0 && s.x < cam.w && s.y < cam.h).length, every = Math.max(1, Math.ceil(n / 12));
   const showTime = trail.step < DAY;
   for (const s of pts) {
     if (!s || s.x < -20 || s.y < -20 || s.x > cam.w + 20 || s.y > cam.h + 20) continue;
@@ -84,6 +89,8 @@ export function drawTrail(ctx) {
   }
   ctx.restore();
   setTargets('trail', targets);
+  const off = !pts.some((s) => s && s.x > 0 && s.y > 0 && s.x < cam.w && s.y < cam.h);
+  if (off !== offScreen) { offScreen = off; const m = card && card.body.querySelector('#trOff'); if (m) m.hidden = !off; }
 }
 
 function render() {
@@ -92,13 +99,17 @@ function render() {
   card.body.innerHTML =
     `<div class="row"><label for="trBody">Path of</label>${sel('trBody', BODIES.map((b) => [b, b]), trail.body)}</div>` +
     `<div class="row"><label for="trStep">one tick every</label>${sel('trStep', STEPS, trail.step)}</div>` +
-    `<div class="row"><input type="number" id="trBefore" min="0" max="400" value="${trail.before}" aria-label="Ticks before"><span>ticks before,</span><input type="number" id="trAfter" min="0" max="400" value="${trail.after}" aria-label="Ticks after"><span>after the clock time</span></div>` +
+    `<div class="row"><input type="number" id="trBefore" min="0" max="400" value="${trail.before}" aria-label="Ticks before"><span>ticks before and</span><input type="number" id="trAfter" min="0" max="400" value="${trail.after}" aria-label="Ticks after"><span>after the clock time</span></div>` +
+    (problem ? `<p class="hint err" role="alert">${problem}</p>` : '') +
     `<div class="row"><label for="trFrame">drawn</label>${sel('trFrame', [['against the stars', 'stars'], ['in the sky here, same clock time (analemma)', 'horizon']], trail.frame)}</div>` +
     `<div class="row"><button class="btn primary" data-act="start">${trail.on ? 'Redraw from the clock time' : 'Draw path'}</button>${trail.on ? '<button class="btn" data-act="stop">Remove</button>' : ''}</div>` +
+    `<div class="row" id="trOff"${trail.on && offScreen ? '' : ' hidden'}><span class="hint" style="margin:0;flex:1 1 60%">The path is drawn, but it is outside this view.</span><button class="btn" data-act="go">Go to it</button></div>` +
     `<p class="hint">${trail.on ? 'The large dot is the start. Dates are local. The angle tool snaps to the ticks.' : 'Ticks are labelled with their dates. For the analemma choose the Sun, 5 or 10 days, and “in the sky here”.'}</p>`;
 }
 function readForm() {
-  const g = (id) => card.body.querySelector('#' + id);
+  const g = (id) => card.body.querySelector('#' + id), n = ['trBefore', 'trAfter'].map((id) => readNumber(g(id).value).v);
+  problem = n.every((v) => Number.isInteger(v) && v >= 0 && v <= 400) ? '' : 'The numbers of ticks must be whole numbers from 0 to 400.';
+  if (problem) { const m = card.body.querySelector('.hint.err') || Object.assign(document.createElement('p'), { className: 'hint err' }); m.textContent = problem; g('trAfter').closest('.row').after(m); return null; }
   return { body: g('trBody').value, step: +g('trStep').value, before: +g('trBefore').value, after: +g('trAfter').value, frame: g('trFrame').value };
 }
 export function initTrails() {
@@ -112,7 +123,11 @@ export function initTrails() {
   });
   card.body.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.act === 'start') startTrail(readForm()); else if (b.dataset.act === 'stop') stopTrail();
+    if (b.dataset.act === 'start') { const f = readForm(); if (f) startTrail(f); }
+    else if (b.dataset.act === 'go') { const ref = { kind: 'body', id: trail.body }; select(ref); track(ref); flyTo(ref, { fov: Math.max(cam.fov, 30) }); }
+    else if (b.dataset.act === 'stop') stopTrail();
   });
+  // another body: the ticks that suit it
+  card.body.addEventListener('change', (e) => { if (e.target.id !== 'trBody') return; const d = trailDefaults(e.target.value); for (const [id, v] of [['trStep', d.step], ['trBefore', d.before], ['trAfter', d.after]]) card.body.querySelector('#' + id).value = v; });
   return card;
 }

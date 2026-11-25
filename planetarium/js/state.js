@@ -47,6 +47,9 @@ export const state = {
   trackRef: null,
 };
 
+/** The display switches as they are for a new visitor (labs/setup.js, "Reset display" in ui.js). */
+export const SHOW_DEFAULTS = { ...state.show };
+
 /** What is in force NOW: the user's switches, less what steady.js holds off while time runs fast. Read these, not state.show, when drawing or projecting. */
 export const eff = {
   steady: '',              // '' | 'sky' | 'full'
@@ -71,7 +74,8 @@ export function set(key, value) {
 // ---- persistence (per-viewer convenience only; the app works without it) ----
 const KEY = 'astro-labs.planetarium.v1';
 export function save() {
-  if (state.ephemeral) return;      // a lab preset or a shared link is showing: do not overwrite the viewer's own settings
+  if (state.ephemeral || state.holdSave) return;      // (holdSave: a quiz has switched things off for the time being)
+  // a lab preset or a shared link is showing: do not overwrite the viewer's own settings
   try {
     localStorage.setItem(KEY, JSON.stringify({ loc: state.loc, mount: state.mount, bortle: state.bortle, show: state.show, lightTime: state.lightTime }));
   } catch (e) { /* storage unavailable: fine */ }

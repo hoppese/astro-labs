@@ -15,9 +15,9 @@ import { getCard } from './dock.js';
 import { initShadow, drawShadow } from './shadow.js';
 import { initStopwatch, mark } from './stopwatch.js';
 import { initCorrections, setFx } from './corrections.js';
-import { initEvents, ev } from './events.js';
+import { initEvents } from './events.js';
 import { initCompare, drawCompare } from './compare.js';
-import { initTrails, drawTrail, startTrail, stopTrail, trail, canTrail } from './trails.js';
+import { initTrails, drawTrail, startTrail, stopTrail, trail, canTrail, trailDefaults } from './trails.js';
 import { initLabs, openLabsList, startLab, lab, labLink } from './labs.js';
 import { applySetup, describeView, setupFromQuery } from './setup.js';
 import { labById } from './presets.js';
@@ -117,7 +117,6 @@ export function initLabsSuite() {
 
   // ---- URL parameters ----
   const q = new URLSearchParams(location.search);
-  if (q.get('instructor') === '1') ev.instructor = true;
   const extra = setupFromQuery(q);
   const id = q.get('lab');
   if (id && labById(id)) startLab(id, { extra });
@@ -131,7 +130,7 @@ export function initLabsSuite() {
   const startTrailFor = (target, opts = {}) => {
     const id = typeof target === 'string' ? target : target && target.kind === 'body' ? target.id : null;
     if (!canTrail(id)) return false;
-    startTrail({ ...opts, body: id });
+    startTrail({ ...trailDefaults(id), ...Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)), body: id });
     getCard('trails').open();
     return true;
   };

@@ -275,7 +275,7 @@ export function drawSkyImages(ctx) {
     note.hidden = !xs.skySurvey;
   }
   // say whose picture it is whenever one is on screen
-  const txt = survey ? 'Imagery: Digitized Sky Survey (STScI), colour CDS, via ESASky' : pics.shown.size ? 'Imagery: Digitized Sky Survey (STScI), colour CDS' + (pics.by ? '; ' + pics.by + ' (CC BY 4.0)' : '') : xs.skySurvey && pics.survey ? 'Sky survey images: the server is not answering' : '';
+  const txt = survey ? 'Imagery: Digitized Sky Survey (STScI), color CDS, via ESASky' : pics.shown.size ? 'Imagery: Digitized Sky Survey (STScI), color CDS' + (pics.by ? '; ' + pics.by + ' (CC BY 4.0)' : '') : xs.skySurvey && pics.survey ? 'Sky survey images: the server is not answering' : '';
   if (txt !== creditText) {
     creditText = txt;
     if (!credit) { credit = document.createElement('div'); credit.className = 'imgcredit'; document.body.appendChild(credit); }

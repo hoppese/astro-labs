@@ -5,7 +5,7 @@
 //  - the "Tracking …" chip, and on a phone the lines of things at the top of the sky, get places clear of each other.
 
 import { state, on } from './state.js';
-import { cam, projectHor, unproject, update } from './camera.js';
+import { cam, projectHor, onScreen, unproject, update } from './camera.js';
 import { aimCentre, centerOn, flyTo, select, stopTracking, isAnimating } from './nav.js';
 import { getFrame } from './skyframe.js';
 import { getBodies } from './ephem.js';
@@ -38,7 +38,30 @@ function panels() {
   if (small) { add('.infopanel'); add('.labsdock', (el) => !!el.querySelector('.lcard:not([hidden])')); add('.measurepanel'); }
   return out;
 }
+/** Where a notice can go without covering the object panel (or the panels on the right): --free-l, --free-r = the sides of the free strip under the top bar. */
+function strip() {
+  const b = document.body.getBoundingClientRect(); let l = 12, r = 12;
+  if (window.innerWidth > 560) for (const el of document.querySelectorAll('.infopanel, .xpanel:not(.peek), .labsdock .lcard, .drawer, .nbpanel')) {
+    if (!shown(el)) continue;
+    const q = el.getBoundingClientRect(); if (q.top - b.top > 130 || q.bottom - b.top < 56 || q.width < 40) continue;
+    if ((q.left + q.right) / 2 < (b.left + b.right) / 2) l = Math.max(l, q.right - b.left + 10); else r = Math.max(r, b.right - q.left + 10);
+  }
+  if (b.width - l - r < 200) r = 12;                  // no room between: rather over the right-hand panel's title than over the object panel
+  if (b.width - l - r < 200) l = 12;
+  for (const [k, v] of [['--free-l', l + 'px'], ['--free-r', r + 'px']]) if (document.documentElement.style.getPropertyValue(k) !== v) document.documentElement.style.setProperty(k, v);
+}
+/** Is the followed object outside the window? The chip then says so. */
+function chipState() {
+  if (chip.hidden) return;
+  const frame = getFrame(), ref = state.trackRef, h = ref && refHorApparent(ref, frame, getBodies(frame)), p = [0, 0];
+  const b = ref && ref.kind === 'body' ? getBodies(frame).byId[ref.id] : null;
+  const away = !!h && !isAnimating() && !(projectHor(h, p) && onScreen(p, b ? b.angRadius * cam.pxPerDeg : 0));
+  if (chip.classList.contains('away') === away) return;
+  chip.classList.toggle('away', away);
+  chip.querySelector('.tc-off').textContent = away ? ' is off screen: click to bring it back' : '';
+}
 function measure(atOnce) {
+  if (canvas && chip) { strip(); chipState(); }
   if (!canvas || !canvas.clientWidth) return;
   if (document.documentElement.classList.contains('kb')) return;      // the keyboard is up: the sky waits where it is
   // the sky reaches under the notch and the home indicator; the bars do not
@@ -81,7 +104,7 @@ function stack() {
 export function initLayout(el) {
   canvas = el;
   chip = document.createElement('div'); chip.className = 'trackchip'; chip.hidden = true; chip.setAttribute('role', 'status');
-  chip.innerHTML = '<button type="button" class="tc-go"><span class="tc-w">Tracking </span><b></b></button><button type="button" class="tc-x" aria-label="Stop tracking">&times;</button>';
+  chip.innerHTML = '<button type="button" class="tc-go"><span class="tc-w">Tracking </span><b></b><span class="tc-off"></span></button><button type="button" class="tc-x" aria-label="Stop tracking">&times;</button>';
   document.body.appendChild(chip); chipName = chip.querySelector('b');
   chip.querySelector('.tc-go').addEventListener('click', () => { const ref = state.trackRef; if (ref) { select(ref); centerOn(ref); } });
   chip.querySelector('.tc-x').addEventListener('click', stopTracking);
@@ -94,6 +117,7 @@ export function initLayout(el) {
   on('selection', sync); sync();
   on('selection', () => setTimeout(() => measure(), 0)); on('measure', () => setTimeout(() => measure(), 0));
   for (const ev of ['labs-cards']) document.addEventListener(ev, () => setTimeout(() => measure(), 0));
+  document.addEventListener('app-notice', strip);
   window.addEventListener('resize', () => setTimeout(() => measure(true), 0));
   setInterval(() => measure(), 200);
   measure(true);

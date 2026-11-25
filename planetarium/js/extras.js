@@ -27,7 +27,8 @@ export const XICON = {
   milkyWay: S(`<path d="M3 18C7 10 14 5.500 21 4.500"/><path d="M5.500 20.500C9 13.500 15 9 21.500 8" opacity=".55"/>${dot(8, 9)}${dot(15.5, 14.5)}${dot(18.5, 18.5, 1.1)}${dot(4.5, 6, 1.1)}`),
   list: S(`<path d="M9 6.500h11M9 12h11M9 17.500h11"/><ellipse cx="4.800" cy="6.500" rx="2" ry="1.200" transform="rotate(-25 4.800 6.500)"/><circle cx="4.800" cy="12" r="1.500" stroke-dasharray="1.600 1.300"/><rect x="3.400" y="16.100" width="2.800" height="2.800"/>`),
   hubble: S(`<path d="M4 4v16h16"/><path d="M4 20 19 7" stroke-dasharray="2.600 2.400"/>${dot(8, 15.5, 1.6)}${dot(11.5, 14, 1.6)}${dot(14, 10.2, 1.6)}${dot(17.5, 9.2, 1.6)}`),
-  quiz: S(`<circle cx="12" cy="12" r="9"/><path d="M9.300 9.300a2.800 2.800 0 1 1 4.200 2.500c-.9.600-1.500 1.100-1.500 2.200"/>${dot(12, 17, 1.1)}`),
+  quiz: S(`<path d="M2.500 9.500 12 5l9.500 4.500L12 14z"/><path d="M6.500 11.700V16c1.600 1.500 3.500 2.200 5.500 2.200s3.900-.700 5.500-2.200v-4.300"/><path d="M21.500 9.800v5.400"/>`),
+  help: S(`<circle cx="12" cy="12" r="9"/><path d="M9.300 9.300a2.800 2.800 0 1 1 4.200 2.500c-.9.600-1.500 1.100-1.500 2.200"/>${dot(12, 17, 1.1)}`),
   night: S(`<path d="M19.500 14.500A8 8 0 0 1 9.500 4.500a8 8 0 1 0 10 10z"/>`),
   camera: S(`<path d="M4 8h3.200l1.500-2.200h6.600L16.800 8H20v10.500H4z"/><circle cx="12" cy="13" r="3.300"/>`),
   more: S(`${dot(6, 12, 1.7)}${dot(12, 12, 1.7)}${dot(18, 12, 1.7)}`),
@@ -51,6 +52,8 @@ export function initExtras({ canvas }) {
   buildMoreSheet();
   polishTips();
   setNight(xs.night, true);
+  lastSync = ''; syncActions();          // the toggles built above were not there for the first one
+  on('display-reset', () => { Object.assign(xs, { milkyWay: true, images: true, skySurvey: false }); loadMilkyWay(); setNight(false, true); toast('The display is back to its defaults.'); });
   window.addEventListener('keydown', onKey, true);
   on('catalog', onCatalog);
   firstRunHint(canvas);
@@ -73,6 +76,7 @@ const ACTIONS = [
   null,
   { id: 'xNight', icon: 'night', label: 'Night mode (red)', k: 'N', run: () => setNight(!xs.night), on: () => xs.night },
   { id: 'xShot', icon: 'camera', label: 'Save a screenshot', k: 'Ctrl S', run: screenshot },
+  { id: 'xHelp', icon: 'help', label: 'Help and shortcuts', k: '?', run: () => $('mInfo').click(), barOnly: true },      // (the menu has it already)
 ];
 function buildActions() {
   const bar = document.querySelector('.top-actions'), first = $('settingsBtn');
@@ -83,6 +87,7 @@ function buildActions() {
     addTip(b, a.label, a.k);
     b.addEventListener('click', a.run);
     bar.insertBefore(b, first);
+    if (a.barOnly) continue;
     const m = el('button', 'xmenu-item', `<span class="ico">${XICON[a.icon]}</span><span>${esc(a.label)}</span>${a.k ? `<kbd>${esc(a.k)}</kbd>` : ''}`);
     m.type = 'button'; m.dataset.act = a.id;
     m.addEventListener('click', () => { menu.hidden = true; a.run(); });
@@ -140,7 +145,7 @@ function buildDrawerExtras() {
   box.appendChild(l);
   l.querySelector('input').addEventListener('change', (e) => setMilkyWay(e.target.checked));
   for (const [id, label, k, fn] of [['xImgChk', 'Deep-sky pictures', 'I', setPictures], ['xSurvChk', 'Sky survey images (online)', '', setSurvey]]) {
-    const c = el('label', 'check', `<input type="checkbox" id="${id}"> ${label} <span class="k">${k}</span>`);
+    const c = el('label', 'check', `<input type="checkbox" id="${id}"> ${label}${k ? ` <span class="k">${k}</span>` : ''}`);
     box.appendChild(c);
     c.querySelector('input').addEventListener('change', (e) => fn(e.target.checked));
   }
@@ -235,7 +240,7 @@ function onKey(e) {
     const p = openPanel();
     if (!coreOpen && p) {
       if (typing) { t.blur(); $('sky').focus({ preventScroll: true }); }
-      else p.close();
+      else p.close(true);
       e.stopPropagation();
     }
     return;

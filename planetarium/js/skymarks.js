@@ -42,7 +42,18 @@ export function strokeConstellation(ctx, c, { bounds = true, lines = false, colo
   }
 }
 
+/** A moon that cannot be seen because its planet hides or darkens it: say so where it is. */
+function drawHidden(R) {
+  for (const ref of [state.selected, state.tracking ? state.trackRef : null]) {
+    const b = ref && ref.kind === 'body' ? R.bodies.byId[ref.id] : null;
+    if (!b || b.kind !== 'satellite' || !(b.occulted || b.light < 0.5)) continue;
+    if (!projEqj([b.u[0] - R.frame.beta[0], b.u[1] - R.frame.beta[1], b.u[2] - R.frame.beta[2]], p)) continue;
+    R.labels.add(p[0], p[1], b.occulted ? `${b.id} is behind ${b.parent}` : `${b.id} is in ${b.parent}’s shadow`, 'planet', 900, { anchor: 'below', gap: Math.max(13, b.angRadius * cam.pxPerDeg + 8) + 4 });
+    return;
+  }
+}
 export function drawSkyMarks(ctx, R) {
+  drawHidden(R);
   const sel = state.selected && state.selected.kind === 'con' ? constellations.find((c) => c.id === state.selected.id) : null;
   const hov = state.show.conBounds && pointer.inside && pointer.con ? conById(pointer.con) : null;
   if (sel || hov) {

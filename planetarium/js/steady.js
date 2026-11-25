@@ -5,7 +5,8 @@
 // The user's own switches (state.show, state.mount) are not touched: every module asks `eff` (state.js) what is in force now.
 
 import { state, eff, emit, on, toggle } from './state.js';
-import { cam, update, lookAtHor, centerHor } from './camera.js';
+import { cam, update, lookAtHor, centerHor, setAxes } from './camera.js';
+import { refractHor, unrefractHor } from './astro.js';
 import { rateWords, rateCap } from './clock.js';
 import { running } from './labs/hidden.js';
 import { see } from './notebook/seeing.js';
@@ -24,7 +25,8 @@ function wanted() {
     // paused after running fast: keep the view as it was, so that what was being watched does not vanish into daylight or the ground
     if (!state.playing && eff.steady === 'full') return 'full';
   }
-  if (state.playing && r >= FREE_RATE) return 'sky';
+  // not following: in the equatorial mount the horizon itself would go round the view many times a second, so it is left out too
+  if (state.playing && r >= FREE_RATE) return state.mount === 'eq' ? 'full' : 'sky';
   return '';
 }
 
@@ -50,9 +52,12 @@ export function stepSteady(now, frame, canvas) {
       fadeAt = now;
     } catch (e) { fadeAt = -1e9; }
     update(frame);
-    const h = centerHor(), before = eff.mount;
+    // what is in the middle stays there, and the picture stays the same way up: refraction coming or going would move it (half a degree near the
+    // horizon: 115 px of a 9 arcminute field), and the other mount's up is reached by easing the roll (nav.js), not by a jump
+    const h = centerHor(), V = cam.V.slice(), refr = eff.refraction, before = eff.mount;
     eff.steady = w;
-    if (eff.mount !== before) { update(frame); lookAtHor(h); update(frame); }
+    if (eff.mount !== before) { update(frame); setAxes(V, frame); }
+    if (eff.refraction !== refr) { lookAtHor(eff.refraction ? refractHor(h) : unrefractHor(h)); update(frame); }
     emit('steady');
   }
   return now - fadeAt < FADE_MS + 40;

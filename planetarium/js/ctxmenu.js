@@ -20,7 +20,7 @@ import { skyAt, conLabel } from './cursor.js';
 import { marks, isMarked, toggleMark, clearMarks } from './skymarks.js';
 import { linksFor } from './links.js';
 import { rowHidden } from './labs/hidden.js';
-import { trail, startTrail, stopTrail, canTrail } from './labs/trails.js';
+import { trail, startTrail, stopTrail, canTrail, trailDefaults } from './labs/trails.js';
 
 const GAL = new Set(['G', 'GPair', 'GTrpl', 'GGroup']);
 let menu = null, canvas = null, deps = null, swallowUntil = 0, swallowTouch = false, ctx = null;
@@ -107,7 +107,7 @@ function openAt(x, y, clientX, clientY) {
   const sep = () => { if (items.length && !items[items.length - 1].sep) items.push({ sep: true }); };
 
   if (ref) {
-    add(`Centre on ${name}`, () => { select(ref); centerOn(ref); }, { key: 'Space' });
+    add(`Center on ${name}`, () => { select(ref); centerOn(ref); }, { key: 'Space' });
     if (obj) {
       const tracking = state.tracking && sameRef(state.trackRef, ref);
       add(tracking ? `Stop tracking ${name}` : `Track ${name}`, () => { select(ref); toggleTracking(!tracking); }, { key: 'T' });
@@ -115,7 +115,7 @@ function openAt(x, y, clientX, clientY) {
     add(`Zoom to ${name}`, () => { select(ref); centerOn(ref, true); });
     add('More info', () => select(ref));
   } else {
-    add('Centre here', () => flyTo(s.app));
+    add('Center here', () => flyTo(s.app));
   }
   sep();
   add(obj ? `Measure angle from ${name}` : 'Measure angle from here', () => { toggleMeasure(true); measureClick(x, y, obj); }, { key: 'R' });
@@ -128,7 +128,7 @@ function openAt(x, y, clientX, clientY) {
       if (running) { stopTrail(); return; }
       // through the labs handle when it exists, so the "Path of an object" card opens with the trail's controls
       const L = window.planetarium && window.planetarium.labs;
-      if (!(L && L.startTrailFor && L.startTrailFor(obj.id))) startTrail({ body: obj.id });
+      if (!(L && L.startTrailFor && L.startTrailFor(obj.id))) startTrail({ ...trailDefaults(obj.id), body: obj.id });
     });
   } else add(obj ? `Start trail of ${name}` : 'Start trail here', () => {}, { disabled: true, note: 'Sun, Moon and planets only' });
   sep();
