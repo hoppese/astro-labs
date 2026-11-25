@@ -15,9 +15,9 @@ export function loadLinks() {
     .then((j) => { links.data = j; emit('links'); }).catch((e) => console.warn('links.json', e));
 }
 const enc = (s) => encodeURIComponent(s).replace(/%20/g, '+');
-// The CDS in Strasbourg runs SIMBAD; the Center for Astrophysics (Harvard & Smithsonian) keeps a copy of it, which answers when Strasbourg does not.
-const simbad = (query) => [{ label: 'SIMBAD', url: 'https://simbad.cds.unistra.fr/simbad/' + query, title: 'SIMBAD astronomical database (CDS, Strasbourg)' },
-  { label: 'SIMBAD (US copy)', url: 'https://simbad.cfa.harvard.edu/simbad/' + query, title: 'The copy of SIMBAD at the Center for Astrophysics, for when Strasbourg is not answering' }];
+// The CDS in Strasbourg runs SIMBAD; the Center for Astrophysics (Harvard & Smithsonian) keeps a copy of it. The copy comes first: Strasbourg's servers went partly offline in November 2026 (a security incident).
+const simbad = (query) => [{ label: 'SIMBAD', url: 'https://simbad.cfa.harvard.edu/simbad/' + query, title: 'SIMBAD astronomical database: the copy at the Center for Astrophysics' },
+  { label: 'SIMBAD (France)', url: 'https://simbad.cds.unistra.fr/simbad/' + query, title: 'SIMBAD itself (CDS, Strasbourg); its page has been unavailable since late 2026' }];
 const simId = (id) => simbad('sim-id?Ident=' + enc(id));
 const simCoo = (ra, dec, r, unit) => simbad(`sim-coo?Coord=${enc(`${ra.toFixed(5)}d${dec < 0 ? '-' : '+'}${Math.abs(dec).toFixed(5)}d`)}&CooFrame=ICRS&Radius=${r}&Radius.unit=${unit}`);
 const ned = (name) => ({ label: 'NED', url: 'https://ned.ipac.caltech.edu/byname?objname=' + enc(name), title: 'NASA/IPAC Extragalactic Database' });
