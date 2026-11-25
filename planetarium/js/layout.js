@@ -40,9 +40,12 @@ function panels() {
 }
 function measure(atOnce) {
   if (!canvas || !canvas.clientWidth) return;
-  const bar = document.querySelector('.bottombar').offsetHeight, free = freeSky(canvas.clientWidth, canvas.clientHeight, panels(), 52, bar);
+  if (document.documentElement.classList.contains('kb')) return;      // the keyboard is up: the sky waits where it is
+  // the sky reaches under the notch and the home indicator; the bars do not
+  const c = canvas.getBoundingClientRect(), s = document.body.getBoundingClientRect(), top = 52 + Math.max(0, s.top - c.top);
+  const bar = document.querySelector('.bottombar').offsetHeight + Math.max(0, c.bottom - s.bottom), free = freeSky(canvas.clientWidth, canvas.clientHeight, panels(), top, bar);
   // beside a tall panel the view moves sideways only: the bars have never counted
-  const x = free ? (free.l + free.r) / 2 - canvas.clientWidth / 2 : 0, banded = free && (free.t > 52 || free.b < canvas.clientHeight - bar);
+  const x = free ? (free.l + free.r) / 2 - canvas.clientWidth / 2 : 0, banded = free && (free.t > top || free.b < canvas.clientHeight - bar);
   const y = banded ? (free.t + free.b) / 2 - canvas.clientHeight / 2 : 0;
   const key = Math.round(x) + ',' + Math.round(y);
   if (key !== lastKey) { lastKey = key; aimCentre(Math.round(x), Math.round(y), atOnce); }

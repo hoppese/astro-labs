@@ -4,14 +4,15 @@
 
 import { A, DEG, RAD, AU_KM, LY_PER_PC, mod, mulMV, toSph, horToAzAlt, fmtRA, fmtDMS, fmtHA, fmtAngle, fmtMag } from './astro.js';
 import { see } from './notebook/seeing.js';
-import { state, on, emit, eff } from './state.js';
+import { state, on, emit, eff, toggle } from './state.js';
+import { setTime } from './clock.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, MOON_PARENT, SMALL } from './ephem.js';
 import { starRecord, dso, constellations, DSO_TYPES, ASTROMETRY } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
 import { deepRecord, PROVIDER } from './deepstars.js';
-import { fmtClock } from './timeutil.js';
+import { fmtClock, wallParts } from './timeutil.js';
 import { linksFor, loadLinks } from './links.js';
 import { BODY_ART } from './bodydata.js';
 import { bodyAxes, subPoint, figure, jupiterSystems, grsLongitude, nextGrsTransit } from './orient.js';
@@ -24,6 +25,7 @@ import { smallWindow } from './layout.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
 let trailing = null;
+const pxPerDeg = () => (window.planetarium && window.planetarium.cam ? window.planetarium.cam.pxPerDeg : 1);
 const perfFov = () => (window.planetarium && window.planetarium.cam ? window.planetarium.cam.fov : 90);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ND = '<span class="nodata">no data</span>';
@@ -48,6 +50,8 @@ export function initInfo(el) {
     else if (act === 'center') centerOn(state.selected);
     else if (act === 'zoom') centerOn(state.selected, true);
     else if (act === 'track') toggleTracking();
+    else if (act === 'noground') { toggle('ground', false); centerOn(state.selected); }
+    else if (act === 'whenup') { const u = upNext(state.selected); if (u) { setTime(u.go); centerOn(state.selected); } }
     else if (act === 'sunpanel') openSunPanel();
     else if (act === 'parent') { select({ kind: 'body', id: b.dataset.id }); }
   });
@@ -168,6 +172,32 @@ function riseTransitSet(ref, frame, eqjUnit) {
   return events;
 }
 
+// ---- behind the ground --------------------------------------------------------------------
+let upKey = '', up = null;
+/** For something below the horizon: {rise (ms), go: 90 minutes later, or the highest point if that comes first}; null when it never rises here. */
+function upNext(ref) {
+  const frame = getFrame(), key = jpl.version + refKey(ref) + '|' + frame.loc.lat + '|' + frame.loc.lon;
+  if (key === upKey && up && up.rise > frame.timeMs && up.asked <= frame.timeMs && up.rise - frame.timeMs < 1.05 * 86400000) return up;
+  if (key === upKey && !up && Math.abs(upNext.at - frame.timeMs) < 1800000) return null;
+  upKey = key; up = null; upNext.at = frame.timeMs;
+  try {
+    let body = ref.kind === 'body' ? MOON_PARENT[ref.id] || ref.id : null;
+    if (!body || !A.Body[body] || body === 'Earth') { const s = toSph(refEqj(ref, frame, getBodies(frame))); A.DefineStar(A.Body.Star1, s.lon / 15, s.lat, 1000); body = A.Body.Star1; }
+    const rise = A.SearchRiseSet(body, frame.obs, +1, frame.time, 2);
+    if (!rise) return null;
+    const tr = A.SearchHourAngle(body, frame.obs, 0, rise, +1), r = rise.date.getTime();
+    up = { rise: r, go: Math.min(r + 90 * 60000, tr.time.date.getTime()), asked: frame.timeMs };
+  } catch (e) { up = null; }
+  return up;
+}
+const dayWord = (ms, tz) => { const a = wallParts(getFrame().timeMs, tz), b = wallParts(ms, tz); return a.day === b.day && a.month === b.month ? '' : 'tomorrow '; };
+/** The line "Jupiter is below the horizon (rises 23:26)" with its buttons, or ''. */
+function belowHtml(ref, name, alt, tz) {
+  if (!eff.ground || alt > -0.02 || ref.kind === 'con') return '';
+  const u = upNext(ref), secret = rowHidden('Rise / Set') || rowHidden('Transit') || rowHidden('Hour angle'), t = (ms) => dayWord(ms, tz) + fmtClock(ms, tz);
+  return `<div class="below"><span><b>${esc(name)}</b> is below the horizon${secret ? '' : u ? ` (rises ${t(u.rise)})` : ' and never rises here'}. The ground hides it.</span>` +
+    `<div class="below-acts"><button class="btn" data-act="noground">Hide the ground</button>${u && !running.id ? `<button class="btn" data-act="whenup" title="Set the clock to ${t(u.go)}, when it is up">Go to ${fmtClock(u.go, tz)}</button>` : ''}</div></div>`;
+}
 function moonPhaseName(elong) {
   const names = ['New Moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full Moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'];
   const e = mod(elong, 360);
@@ -261,7 +291,7 @@ function render(force) {
     if (art) { if (art.note && !(b.id === 'Sun' && (!state.show.sunspots || running.id))) note += (note ? ' ' : '') + art.note + (b.id === 'Sun' ? ' Each group is drawn with an SDO/HMI photograph of a real group of about the recorded area, not of that very group; its place and size are the record’s.' : ''); pic = art.credit; }
     else if (b.kind === 'comet') note += 'Magnitude: the whole comet, from JPL’s parameters, very uncertain. Its nucleus (about 15 × 8 km, photographed by Giotto in 1986) is far too small to see, and no tail is drawn.';
     else if (SMALL.some((x) => x.id === b.id) && b.kind === 'dwarf') note += 'Never imaged as more than a point or a few blurred pixels: drawn as a plain disc of its measured size' + (b.id === 'Haumea' ? ' (an ellipsoid 2,322 × 1,704 × 1,026 km; which way it is turned is not modelled).' : '.');
-    if (b.kind === 'satellite') note += (note ? ' ' : '') + 'Magnitude ignores the phase and any eclipse by the planet’s shadow.';
+    if (b.kind === 'satellite') note += (note ? ' ' : '') + 'Magnitude ignores the phase and any eclipse by the planet’s shadow.' + (b.transit && b.angRadius * pxPerDeg() < 1.6 ? ' The dot on the disc is larger than the moon would look at this scale, so that it can be followed.' : '');
   } else if (ref.kind === 'dso') {
     const o = dso.rows[ref.idx];
     const ids = [];
@@ -316,8 +346,8 @@ function render(force) {
   const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + (pic ? `<div class="note">Picture: ${pic}.</div>` : '');
   // The numbers change several times a second, the buttons and links hardly ever: they live in boxes of their own, each touched
   // only when it changes. (A button replaced between press and release never gets its click.)
-  if (!panel.querySelector('.ip-main')) { panel.innerHTML = '<button class="ip-grip" type="button" data-act="grip"><i></i><span></span></button><button class="close" data-act="close" aria-label="Deselect">&times;</button><div class="ip-main"></div><div class="ip-look"></div><div class="ip-acts"></div>'; partHtml = {}; syncSheet(); }
-  for (const [k, h] of [['main', html], ['look', look], ['acts', acts]]) {
+  if (!panel.querySelector('.ip-main')) { panel.innerHTML = '<button class="ip-grip" type="button" data-act="grip"><i></i><span></span></button><button class="close" data-act="close" aria-label="Deselect">&times;</button><div class="ip-below"></div><div class="ip-main"></div><div class="ip-look"></div><div class="ip-acts"></div>'; partHtml = {}; syncSheet(); }
+  for (const [k, h] of [['below', belowHtml(ref, title, aa.alt, tz)], ['main', html], ['look', look], ['acts', acts]]) {
     if (partHtml[k] === h) continue;
     partHtml[k] = h;
     const box = panel.querySelector('.ip-' + k), keepFocus = box.contains(document.activeElement) ? document.activeElement.dataset.act : null;

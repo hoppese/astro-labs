@@ -4,7 +4,7 @@ A Stellarium-inspired web planetarium for astro-labs. Static files, no build ste
 Spec: the lead's `SPEC.md` (Tiers 1-3) and `SPEC-LABS.md` (Tier 4, classic measurements). This file is the
 hand-over: architecture, data provenance, what is done, what is left, known issues. Keep it current.
 
-Last updated 2026-11-23: five sections, one per agent; the last ("Deep stars: Gaia DR3") is the most recent and overrides earlier statements about faint stars, star limits and the Tycho-2 tiles. 2026-11-24: "Bright-star astrometry" (near the end) overrides what is said here about the HYG star files, their record and their proper motion.
+Last updated 2026-11-24 (late): "Saturn's moons in front; the installed app" at the end. 2026-11-23: five sections, one per agent; the last ("Deep stars: Gaia DR3") is the most recent and overrides earlier statements about faint stars, star limits and the Tycho-2 tiles. 2026-11-24: "Bright-star astrometry" (near the end) overrides what is said here about the HYG star files, their record and their proper motion.
 
 ## Run / test
 - Served at `http://127.0.0.1:8111/planetarium/` (repo root is served). Relative URLs only, so it also
@@ -1223,3 +1223,31 @@ Opens short (name, type, magnitude, distance, az/alt, rise/set, buttons); grip, 
 ## Numbers (check.mjs section 25, headless Chrome 157 with CDP mouse and touch)
 Drift of the dragged object 256 cases ≤ 7e-10 px; in the page (Jupiter, Moon, Sun, Vega at the zenith, Polaris, Betelgeuse, Neptune, labs; ×1 to ×10⁶) ≤ 2e-9 px. Vega through 89.96°: picture turns 0.0014° (refraction).
 Not tested: a real phone or finger, Safari, Firefox, `touchcancel` by the system.
+
+# Saturn's moons in front; the installed app (2026-11-24, night)
+
+## Moons over a disc (`render/planets.js drawMoonOf`, `render/globe.js`)
+- **Cause of "they only go behind"**: one line dropped every moon within the planet's equatorial radius + 1.5 px unless its own radius was >= 1.2 px. Galilean moons pass that test at ordinary zooms, Saturn's (1/110 to 1/300 of the
+  planet) do not, so they vanished in front exactly as behind. The near/far sign, the z-order and the ephemeris were right; the motion fade was not involved (0.002 turn a frame at x10^4). Frames drawn inside 14 transits: 0 of 11 each before
+  (Titan, Ariel, Charon alone were drawn), 11 of 11 after; Dione at x100 / x1000 / x10,000: 0 % of frames -> 100 %.
+- Now: the limb is the flattened one (`m.inLimb`, `m.transit` from `hiddenFraction`); an unresolved moon over the disc is an opaque dot, >= 1.6 px radius, with a dark edge (`drawMark`), cross-faded from the star-like point over 3 px at the limb; never
+  culled by magnitude there. Resolved moons under 7 px get a fading dark edge. Ice over Saturn's clouds is drawn 35 % brighter (albedo 1 against 0.5). A resolved moon half behind the limb is no longer dropped. Labels and picks work over the disc
+  (`picks.js`: the small thing under the pointer wins over the disc).
+- Depth sign is enough for the rings: a moon outside the rings on the near side cannot be behind them, nor a far one before them. What is behind the rings (stars, moons) is now dimmed by their opacity pixel by pixel (`veil` in globe.js).
+- Shadows: `shadowAt()`, umbra, penumbra and antumbra (Phobos' shadow is never fully dark: 37 %; Deimos' 1 %, invisible), at least 1.3 px radius on big discs (`uMinSh`, darkness not exaggerated), also on Saturn's rings (2025-05-19 11:30: Rhea's).
+- Not modelled: the rings' shadow on a moon (Iapetus, inner moons near equinox); atmosphere of Saturn/Titan at the edges; the Sun's light bent in them.
+## Events (`labs/jovian.js` now takes `{planet}`; Events finder: Jupiter, Saturn, Mars, Uranus, Neptune, Pluto)
+`tools/moon-events-truth.json` (35 windows from Horizons vectors and the IAU figures, computed independently in Python; Horizons' own visibility codes use a sphere and were used only as a check of that program), `tools/check-moons.mjs`
+(check.mjs 26; includes "the renderer draws it"). All 1,527 windows compared once (Saturn Nov-Dec 2026, May 2025; Titan 2024-25; Uranus Aug-Sep 2007; Pluto 1988; Phobos): worst Mimas 45 s, Enceladus 14, Tethys 16, Dione 22, Rhea 34, Titan 119,
+Phobos 8, Miranda 14, Ariel 32, Umbriel 110, Titania 443, Oberon 517 (grazing), Charon 1. Nov-Dec 2026: Mimas 65 transits, Enceladus 45, Tethys 33, Dione 22 (5 shadows); Rhea and Titan none. June 2017, June 2032, and Uranus, Neptune, Pluto now: none.
+## The window (`js/viewport.js`, css `--sat --sab --sal --sar --ww --wh`)
+- **Cause**: the search field had 14 px letters; Safari on a phone zooms the page by 16/14 when such a field gets the focus and stays there. At that scale on a 390 px phone the ground toggle, "More", play and the clock are outside the screen, and <body>
+  (fixed, so not scrollable) could not be moved back. Also: nothing followed the visual viewport, only the bottom inset was honoured, two bars wrapped to three rows.
+- **Rules**: `<body>` IS the safe rectangle of the visual viewport; `#sky` reaches past it. Place chrome in body coordinates with plain `top: 58px`; never use vw / vh (use `var(--ww)`, `var(--wh)`), never `position: fixed` for something that must stay
+  in the safe area; `canvas` coordinates are not body coordinates when there is a notch. `html.kb` = keyboard up (bars away, sky keeps its size). Text fields 16 px on touch screens. In an iframe none of it is measured.
+- maximum-scale=1, user-scalable=no; pinch, double tap, ctrl-wheel and rubber band are stopped outside the canvas (browser zoom, Cmd +, still works). Opening the date box or the place list no longer opens the keyboard on a touch screen.
+- `manifest.webmanifest`, `icons/` (drawn for this app), relative URLs, no service worker: an installed copy has no store of its own and takes what the server sends (GitHub Pages: up to 10 minutes old). iOS keeps a suspended app in memory: to get a new
+  version, swipe it away and open it. Home Screen apps have their own localStorage.
+- The below-horizon note (`info.js belowHtml`): when the ground is drawn and the object is under it. A lab that hides rise/set or the hour angle hides its time; no "Go to" during a lab.
+- Emulated (headless Chrome 157): touch, sizes 320x568 to 1440x800, safe-area insets (Emulation.setSafeAreaInsetsOverride), page scale, a mocked visualViewport (keyboard, 24 px left-over shift, stuck zoom), forced scroll, rotation.
+  **Not tested: a real iPhone or Android, Safari, the installed window itself, VoiceOver.**

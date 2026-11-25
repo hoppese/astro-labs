@@ -73,10 +73,11 @@ export const CATEGORIES = [
     }
     return all.sort((a, b) => a.t - b.t).slice(0, n);
   } },
-  { id: 'jovian', label: 'Jupiter: moons, shadows, Red Spot', span: 1, list(t0, n) {
-    return jovianEvents(t0, n).map((e) => ({ t: e.kind === 'mutual' || e.kind === 'spot' ? e.t : e.t + Math.min(600000, (e.end - e.t) / 2), clock: e.t, text: e.text, target: 'Jupiter', fov: e.kind === 'spot' ? 0.03 : 0.06,
-      detail: e.end ? `${hms(e.t)} – ${hms(e.end)} UTC` : `${hms(e.t)} UTC` }));
-  } },
+  ...[['Jupiter', 'moons, shadows, Red Spot', 0.06], ['Saturn', 'moons and their shadows', 0.03], ['Mars', 'moons and their shadows', 0.02], ['Uranus', 'moons and their shadows', 0.015], ['Neptune', 'Triton', 0.01], ['Pluto', 'Charon', 0.001]].map(([planet, what, fov]) => ({
+    id: planet === 'Jupiter' ? 'jovian' : 'moons-' + planet, label: `${planet}: ${what}`, span: planet === 'Jupiter' ? 1 : 3, short: true, list(t0, n) {
+      return jovianEvents(t0, n, { planet }).map((e) => ({ t: e.end ? e.t + Math.min(600000, (e.end - e.t) / 2) : e.t, clock: e.t, text: e.text, target: planet, fov: e.kind === 'spot' ? 0.03 : fov,
+        detail: e.end ? `${hms(e.t)} – ${hms(e.end)} UTC` : `${hms(e.t)} UTC` }));
+    }, empty: `None in the 40 days from this date: the moons pass above and below ${planet}, as they do whenever its orbit is tipped wide open toward us.` })),
   { id: 'phases', label: 'Moon phases', span: 7.4, list(t0, n) {
     const out = []; let q = A.SearchMoonQuarter(at(t0));
     const names = ['New Moon', 'First quarter', 'Full Moon', 'Last quarter'];
@@ -163,6 +164,7 @@ function refresh() {
   let rows = [], error = '';
   try { rows = cat.list(ev.anchor, N, ev.planet); } catch (e) { error = 'No events found from this date (the search range of the ephemeris ends).'; }
   ev.rows = rows;
+  if (!rows.length && !error) error = cat.empty || 'No events found from this date.';
   const head = `<div class="row"><select id="evCat" aria-label="Kind of event">${CATEGORIES.map((c) => `<option value="${c.id}"${c.id === ev.cat ? ' selected' : ''}>${c.label}</option>`).join('')}</select></div>` +
     (cat.planet ? `<div class="row"><select id="evPlanet" aria-label="Planet">${PLANETS.map((p) => `<option${p === ev.planet ? ' selected' : ''}>${p}</option>`).join('')}</select></div>` : '') +
     `<div class="row"><button class="btn" data-act="earlier" title="Earlier events">&#9664; Earlier</button><button class="btn" data-act="now" title="List from the date on the clock">From clock date</button><button class="btn" data-act="later" title="Later events">Later &#9654;</button></div>`;
@@ -176,7 +178,7 @@ function refresh() {
         (ev.instructor && e.detail ? `<span class="more">${esc(e.detail)}</span>` : '') + '</button></li>';
     }).join('') + '</ul>';
   }
-  const foot = `<label class="chk" style="margin-top:6px"><input type="checkbox" id="evInst"${ev.instructor ? ' checked' : ''}><span>Instructor: show times and contact times<small>${ev.cat === 'jovian' ? 'Dates and times are those of the place’s clock.' : 'Dates are UTC.'} Click an event to set the clock to its middle; measure the rest yourself.</small></span></label>`;
+  const foot = `<label class="chk" style="margin-top:6px"><input type="checkbox" id="evInst"${ev.instructor ? ' checked' : ''}><span>Instructor: show times and contact times<small>${cat.short ? 'Dates and times are those of the place’s clock.' : 'Dates are UTC.'} Click an event to set the clock to its middle; measure the rest yourself.</small></span></label>`;
   card.body.innerHTML = head + list + foot;
 }
 export function initEvents() {
@@ -190,7 +192,7 @@ export function initEvents() {
     const b = e.target.closest('button'); if (!b) return;
     const cat = CATEGORIES.find((c) => c.id === ev.cat);
     if (b.dataset.act === 'now') { ev.anchor = state.timeMs; refresh(); }
-    else if (b.dataset.act === 'later') { if (ev.rows.length) { ev.anchor = ev.rows[ev.rows.length - 1].t + DAY; refresh(); } }
+    else if (b.dataset.act === 'later') { if (!ev.rows.length) { ev.anchor += (cat.short ? 40 : cat.span) * DAY; refresh(); } else { ev.anchor = ev.rows[ev.rows.length - 1].t + (CATEGORIES.find((c) => c.id === ev.cat).short ? 60000 : DAY); refresh(); } }
     else if (b.dataset.act === 'earlier') {
       // back by as much time as the page on show covers (the fixed "typical interval x 8" overshot by years in mixed
       // lists such as Mercury + Venus elongations); searches only run forward, so this is the previous page, near enough

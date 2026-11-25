@@ -1,5 +1,5 @@
 /* labs.css: the measurement tools and labs (js/labs/). Loaded by js/labs/index.js. */
-.labsdock { position: absolute; right: 12px; top: 58px; width: 326px; max-width: calc(100vw - 24px); max-height: calc(100% - 58px - var(--bar-h) - 136px);
+.labsdock { position: absolute; right: 12px; top: 58px; width: 326px; max-width: calc(var(--ww) - 24px); max-height: calc(100% - 58px - var(--bar-h) - 136px);
   overflow: auto; z-index: 18; display: flex; flex-direction: column; gap: 8px; pointer-events: none; scrollbar-width: thin; }
 .labsdock > * { pointer-events: auto; }
 .lcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; flex: none; }
@@ -99,9 +99,9 @@
 /* A teaching panel (deep-sky list, Hubble lab, quiz) docks at the right too: the cards move over beside it
    instead of disappearing underneath (integration pass). On a phone both are bottom strips; see above. */
 @media (min-width: 561px) {
-  body:has(.xpanel:not([hidden])) .labsdock { right: calc(min(404px, 100vw - 24px) + 20px); max-width: calc(100vw - min(404px, 100vw - 24px) - 32px); }
-  body:has(.xpanel.wide:not([hidden])) .labsdock { right: calc(min(600px, 62vw) + 20px); max-width: calc(100vw - min(600px, 62vw) - 32px); }
-  body:has(.xpanel.card:not([hidden])) .labsdock { right: 392px; max-width: calc(100vw - 404px); }
+  body:has(.xpanel:not([hidden])) .labsdock { right: calc(min(404px, var(--ww) - 24px) + 20px); max-width: calc(var(--ww) - min(404px, var(--ww) - 24px) - 32px); }
+  body:has(.xpanel.wide:not([hidden])) .labsdock { right: calc(min(600px, calc(var(--ww) * 0.62)) + 20px); max-width: calc(var(--ww) - min(600px, calc(var(--ww) * 0.62)) - 32px); }
+  body:has(.xpanel.card:not([hidden])) .labsdock { right: 392px; max-width: calc(var(--ww) - 404px); }
 }
 
 /* small embeds (a Moodle iframe of about 800 x 560): narrower info panel and cards, so the object stays visible between them */

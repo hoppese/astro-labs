@@ -89,7 +89,7 @@ function refresh() {
     let x = pointer.x + 18, y = pointer.y + 22;
     if (x + w > r.width - 8) x = pointer.x - w - 14;
     if (y + h > r.height - 8) y = pointer.y - h - 14;
-    box.style.transform = `translate(${Math.round(r.left + Math.max(6, x))}px, ${Math.round(r.top + Math.max(6, y))}px)`;
+    box.style.transform = `translate(${Math.round(r.left - document.body.offsetLeft + Math.max(6, x))}px, ${Math.round(r.top - document.body.offsetTop + Math.max(6, y))}px)`;
   }
 }
 const schedule = () => { if (!pending) { pending = true; requestAnimationFrame(refresh); } };

@@ -2,6 +2,7 @@
 // real telescope measurements, another sim, a textbook table. No planetarium, so no Record button.
 // URL: ?slot=<name> keeps separate notebooks apart; ?instructor=1 shows the least-squares button; ?predict=0 starts
 // with the "bigger or smaller?" prediction off.
+import '../viewport.js';
 import { createNotebook } from './ui.js';
 
 const q = new URLSearchParams(location.search);

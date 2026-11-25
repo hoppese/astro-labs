@@ -67,6 +67,7 @@ const SAT_PHYS = {
   Iapetus: { radiusKm: 734.5, v10: 1.5, color: '#c8b8a0' },
 };
 export const MOON_PARENT = {};
+export const MOON_DEFS = OTHER_MOONS;
 export const MOON_PERIOD = { Io: 1.769, Europa: 3.551, Ganymede: 7.155, Callisto: 16.689, Phoebe: 550.5 };
 for (const id in MOON_ORBITS) MOON_PERIOD[id] = 2 * Math.PI / MOON_ORBITS[id].p[10];
 for (const m of OTHER_MOONS) Object.assign(m, SAT_PHYS[m.id]);
@@ -224,7 +225,10 @@ export function compute(frame, lightTime, aberration = true) {
     const occ = hiddenFraction(rel, parent.u, pole, parent, def.radiusKm);
     m.occulted = occ.depth > 0 && occ.frac < 0.5;
     m.occFrac = occ.frac;
-    m.transit = !m.behind && sep < parent.angRadius;
+    // in front of it: over the flattened disc, not merely within its equatorial radius
+    const tra = hiddenFraction(rel, scale(parent.u, -1), pole, parent, def.radiusKm);
+    m.transit = tra.depth > 0 && tra.frac < 0.5;
+    m.inLimb = (parent.radiusKm - occ.perp) / parent.radiusKm;      // how far the moon's centre is inside the disc's edge, planet radii (< 0: outside)
     // in the planet's shadow: umbra narrows and penumbra widens with distance behind the planet
     const dSun = len(parent.helioVec) * AU_KM;
     const ecl = hiddenFraction(rel, unit(parent.helioVec), pole, parent, def.radiusKm, (695700 - parent.radiusKm) / dSun, (695700 + parent.radiusKm) / dSun);

@@ -18,6 +18,8 @@ import { measure, toggleMeasure } from './measure.js';
 import { INFO_HTML, CREDITS_HTML } from './about.js';
 import { deep, netUsable, netWhy, depthNow, deepSource } from './deepstars.js';
 
+/** A finger: do not open the keyboard unasked. */
+const touchy = () => window.matchMedia('(pointer: coarse)').matches;
 const $ = (id) => document.getElementById(id);
 
 // label, state.show key (or action), keyboard key
@@ -109,7 +111,7 @@ function buildTimeBar() {
   $('tPlay').addEventListener('click', togglePlay);
   $('tNow').addEventListener('click', setNow);
   const pop = $('timePop');
-  const openPop = (open) => { pop.hidden = !open; if (open) { fillEditor(true); $('dtYear').focus(); } };
+  const openPop = (open) => { pop.hidden = !open; if (open) { fillEditor(true); (touchy() ? $('timeClose') : $('dtYear')).focus({ preventScroll: true }); } };
   $('clockBtn').addEventListener('click', () => openPop(pop.hidden));
   $('timeClose').addEventListener('click', () => openPop(false));
   $('dtNow').addEventListener('click', setNow);
@@ -182,7 +184,7 @@ const PRESETS = [['Dark site', 2], ['Rural', 4], ['Suburban', 6], ['City', 8]];
 
 export function openDrawer(open, section) {
   $('drawer').hidden = !open;
-  if (open) { fillLocation(); (section ? $(section) : $('drawerClose')).scrollIntoView({ block: 'start' }); (section === 'secLocation' ? $('citySearch') : $('drawerClose')).focus(); }
+  if (open) { fillLocation(); (section ? $(section) : $('drawerClose')).scrollIntoView({ block: 'start' }); (section === 'secLocation' && !touchy() ? $('citySearch') : $('drawerClose')).focus({ preventScroll: true }); }
 }
 function buildDrawer() {
   $('settingsBtn').addEventListener('click', () => openDrawer($('drawer').hidden));

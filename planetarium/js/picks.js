@@ -20,6 +20,11 @@ export function pickAt(x, y, slop = 12) {
     const score = d / reach + 0.04 * (it.mag ?? 10) + (d <= it.r ? -0.5 : 0);
     if (score < bestScore) { bestScore = score; best = it; }
   }
+  // a moon in front of the disc: the small thing under the pointer, not the big one behind it
+  if (best && best.ref.kind === 'body' && best.r >= 9) {
+    let bd = Math.max(8, slop * 0.6);
+    for (const it of items) if (it.ref && it.ref.kind === 'body' && it.r < best.r / 3) { const d = Math.hypot(it.x - x, it.y - y); if (d <= Math.max(bd, it.r)) { bd = d; best = it; } }
+  }
   return best ? best.ref : null;
 }
 export const allPicks = () => items;

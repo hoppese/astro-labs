@@ -1,6 +1,7 @@
 // main.js: start-up. Loads the catalogues, then wires the modules together.
 
-import './focus.js';           // first: its key listener must run before everyone else's
+import './viewport.js';        // the visible part of the page is the app's window
+import './focus.js';           // before everyone else's: its key listener
 import { A } from './astro.js';
 import { state, load, on, emit } from './state.js';
 import { loadCore, stars, dso, constellations } from './catalog.js';
@@ -54,9 +55,10 @@ async function start() {
   const inset = () => {
     const h = bar.offsetHeight;
     document.documentElement.style.setProperty('--bar-h', h + 'px');      // panels sit just above the bar, however it wraps
-    setLabelInset(4, 50, 4, h + 4);
+    const c = canvas.getBoundingClientRect(), r = document.body.getBoundingClientRect();
+    setLabelInset(4 + r.left - c.left, 50 + r.top - c.top, 4 + c.right - r.right, h + 4 + Math.max(0, c.bottom - r.bottom));
   };
-  inset(); new ResizeObserver(inset).observe(bar);
+  inset(); new ResizeObserver(inset).observe(bar); new ResizeObserver(inset).observe(canvas); window.addEventListener('app-viewport', inset);
   initRenderer(canvas);
   loading.classList.add('done');
   setTimeout(() => loading.remove(), 600);

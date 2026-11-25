@@ -9,7 +9,7 @@
 .menu .xmenu-item kbd { margin-left: auto; }
 .menu .xmenu-item[aria-pressed="true"] { color: var(--on); }
 .menu .xmenu-sep { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 5px 4px; }
-.menu { max-height: calc(100vh - 70px); overflow: auto; }
+.menu { max-height: calc(var(--wh) - 70px); overflow: auto; }
 .menu a:focus-visible, .menu button:focus-visible, .citylist button:focus-visible, .search-list .opt:focus-visible { outline-offset: -2px; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
@@ -23,10 +23,10 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 26px; 
 .xtip { z-index: 95; }
 
 /* ---------- panels ---------- */
-.xpanel { position: absolute; top: 58px; right: 12px; bottom: calc(var(--bar-h) + 12px); width: min(404px, calc(100vw - 24px)); z-index: 30; display: flex; flex-direction: column;
+.xpanel { position: absolute; top: 58px; right: 12px; bottom: calc(var(--bar-h) + 12px); width: min(404px, calc(var(--ww) - 24px)); z-index: 30; display: flex; flex-direction: column;
   background: rgba(13, 20, 31, 0.94); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5); overflow: hidden; }
-.xpanel.wide { width: min(600px, 62vw, calc(100vw - 24px)); }
-.xpanel.card { bottom: auto; max-height: calc(100% - 58px - var(--bar-h) - 24px); width: min(372px, calc(100vw - 24px)); }
+.xpanel.wide { width: min(600px, calc(var(--ww) * 0.62), calc(var(--ww) - 24px)); }
+.xpanel.card { bottom: auto; max-height: calc(100% - 58px - var(--bar-h) - 24px); width: min(372px, calc(var(--ww) - 24px)); }
 .xp-head { display: flex; align-items: center; gap: 8px; padding: 9px 10px 9px 14px; border-bottom: 1px solid var(--line); flex: none; }
 .xp-head h2 { margin: 0; font: 600 16.500px 'Source Serif 4', Georgia, serif; white-space: nowrap; }
 .xp-sub { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -184,7 +184,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 26px; 
 @media (pointer: coarse) { .xcursor { display: none; } }
 
 /* ---------- right-click menu ---------- */
-.xctx { position: fixed; z-index: 85; min-width: 232px; max-width: min(320px, calc(100vw - 12px)); max-height: calc(100vh - 12px); overflow: auto; background: #162130; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 11px; padding: 5px;
+.xctx { position: fixed; overscroll-behavior: contain; z-index: 85; min-width: 232px; max-width: min(320px, calc(var(--ww) - 12px)); max-height: calc(var(--wh) - 12px); overflow: auto; background: #162130; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 11px; padding: 5px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6); }
 .xctx-head { display: flex; flex-direction: column; gap: 1px; padding: 6px 9px 7px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 4px; }
 .xctx-head b { font: 600 14px 'Source Serif 4', Georgia, serif; color: #ffe2a8; }
@@ -198,7 +198,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 26px; 
 .xctx-sep { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 4px 4px; }
 
 /* ---------- toast, hint ---------- */
-.xtoast { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 70; max-width: min(560px, calc(100vw - 24px)); background: #0f1826; border: 1px solid var(--line-strong); border-left: 3px solid var(--on); border-radius: 9px;
+.xtoast { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 70; max-width: min(560px, calc(var(--ww) - 24px)); background: #0f1826; border: 1px solid var(--line-strong); border-left: 3px solid var(--on); border-radius: 9px;
   padding: 8px 13px; font-size: 13px; line-height: 1.45; color: var(--text); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55); text-align: left; overflow-wrap: anywhere; }
 .xtoast.warn { border-left-color: var(--accent); }
 .xtoast.err { border-left-color: #e0806a; }
@@ -320,8 +320,8 @@ kbd { white-space: nowrap; }
 
 /* a toast is centred over the sky that is left beside an open side panel, not over the panel's title (integration pass) */
 @media (min-width: 561px) {
-  body:has(.xpanel:not([hidden])) .xtoast { left: calc((100vw - min(404px, 100vw - 24px)) / 2); max-width: min(560px, calc(100vw - min(404px, 100vw - 24px) - 36px)); }
-  body:has(.xpanel.wide:not([hidden])) .xtoast { left: calc((100vw - min(600px, 62vw)) / 2); max-width: min(560px, calc(100vw - min(600px, 62vw) - 36px)); }
+  body:has(.xpanel:not([hidden])) .xtoast { left: calc((var(--ww) - min(404px, var(--ww) - 24px)) / 2); max-width: min(560px, calc(var(--ww) - min(404px, var(--ww) - 24px) - 36px)); }
+  body:has(.xpanel.wide:not([hidden])) .xtoast { left: calc((var(--ww) - min(600px, calc(var(--ww) * 0.62))) / 2); max-width: min(560px, calc(var(--ww) - min(600px, calc(var(--ww) * 0.62)) - 36px)); }
 }
 
 /* ---- object links, imagery credit (js/links.js, js/skyimages.js) ---- */
@@ -332,10 +332,10 @@ kbd { white-space: nowrap; }
 .infopanel .look a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .imgcredit { position: absolute; left: 12px; bottom: calc(var(--bar-h) + 8px); z-index: 4; font: 400 10.5px var(--font); color: #a9b7c8; opacity: 0.8; pointer-events: none; text-shadow: 0 1px 3px #000; }
 .imgcredit[hidden] { display: none; }
-@media (max-width: 560px) { .imgcredit { max-width: 60vw; } }
+@media (max-width: 560px) { .imgcredit { max-width: calc(var(--ww) * 0.60); } }
 
 /* steady.js: the notice while day and night are held */
-.steady-note { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 12; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); padding: 5px 6px 5px 13px; border-radius: 10px; background: rgba(13, 20, 31, 0.93); border: 1px solid rgba(255, 255, 255, 0.10); color: #b4c0cf; font: 500 12px var(--font); }
+.steady-note { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 12; display: flex; align-items: center; gap: 12px; max-width: calc(var(--ww) - 32px); padding: 5px 6px 5px 13px; border-radius: 10px; background: rgba(13, 20, 31, 0.93); border: 1px solid rgba(255, 255, 255, 0.10); color: #b4c0cf; font: 500 12px var(--font); }
 .steady-note[hidden] { display: none; }
 .steady-note .btn { padding: 3px 9px; font-size: 11.5px; white-space: nowrap; }
 @media (max-width: 560px) { .steady-note { top: 54px; font-size: 11px; } }
@@ -346,7 +346,7 @@ kbd { white-space: nowrap; }
 #sunPanel .xp-body { display: block; padding: 10px 14px 14px; }
 
 /* ---- following: the chip; the object panel on a small screen (js/layout.js, js/info.js) ---- */
-.trackchip { position: absolute; right: 12px; bottom: calc(var(--bar-h) + 16px + var(--ro-h, 0px)); z-index: 14; display: flex; align-items: stretch; max-width: min(230px, 60vw); border-radius: 9px; overflow: hidden;
+.trackchip { position: absolute; right: 12px; bottom: calc(var(--bar-h) + 16px + var(--ro-h, 0px)); z-index: 14; display: flex; align-items: stretch; max-width: min(230px, calc(var(--ww) * 0.60)); border-radius: 9px; overflow: hidden;
   background: rgba(13, 20, 31, 0.93); border: 1px solid rgba(232, 184, 106, 0.45); font: 500 12px var(--font); color: #cfd9e5; }
 .trackchip[hidden] { display: none; }
 .trackchip button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; padding: 4px 4px 4px 9px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -372,8 +372,8 @@ html.quizzing .trackchip { display: none; }
 @media (min-width: 561px) {
   .infopanel.small .acts .btn { padding-left: 6px; padding-right: 6px; }
   .infopanel.mini td:last-child { white-space: nowrap; letter-spacing: -0.35px; font-size: 11px; }
-  body:has(.xpanel:not([hidden])) .trackchip { right: calc(min(404px, 100vw - 24px) + 20px); }
-  body:has(.xpanel.wide:not([hidden])) .trackchip { right: calc(min(600px, 62vw) + 20px); }
+  body:has(.xpanel:not([hidden])) .trackchip { right: calc(min(404px, var(--ww) - 24px) + 20px); }
+  body:has(.xpanel.wide:not([hidden])) .trackchip { right: calc(min(600px, calc(var(--ww) * 0.62)) + 20px); }
   html.nb-over .trackchip { right: calc(var(--nb-w) + 12px); }
 }
 @media (min-width: 561px) and (max-height: 520px) {
@@ -385,7 +385,7 @@ html.quizzing .trackchip { display: none; }
   .steady-note { top: var(--sn-top, 56px); } .measurepanel { top: var(--mpt, 56px); } .readout { top: var(--ro-top, 56px); }
   body:has(.trackchip:not([hidden])) .readout { max-width: calc(100% - 24px - var(--chip-w, 0px)); }
   .steady-note:not(.survey-note) { left: 8px; right: 8px; transform: none; max-width: none; justify-content: space-between; }
-  .trackchip { bottom: auto; top: var(--ro-top, 56px); right: auto; left: 8px; max-width: 46vw; }
+  .trackchip { bottom: auto; top: var(--ro-top, 56px); right: auto; left: 8px; max-width: calc(var(--ww) * 0.46); }
   .trackchip .tc-w { display: none; } .trackchip .tc-go::before { content: '\25CE\00A0'; color: var(--accent); }
   .trackchip button { min-height: 40px; } .trackchip .tc-x { min-width: 40px; font-size: 18px; }
   .infopanel.small { max-height: 48%; }
@@ -397,3 +397,36 @@ html.quizzing .trackchip { display: none; }
   html body:has(.infopanel:not([hidden])) .labsdock { max-height: 18%; }
   body:has(.labsdock .lcard:not([hidden])) .infopanel.small:not(.mini) { max-height: 32%; }
 }
+
+/* ---- the searched object is behind the ground (js/info.js) ---- */
+.ip-below:empty { display: none; }
+.below { margin: 9px 0 0; padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(232, 184, 106, 0.5); background: rgba(232, 184, 106, 0.1); font-size: 12.5px; line-height: 1.4; color: #f0e2c8; }
+.below-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.below-acts .btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+.below > span { display: block; padding-right: 30px; }
+.infopanel .below { margin-top: 0; margin-bottom: 8px; }
+@media (max-width: 560px) {
+  .infopanel.small.mini:has(.below) { max-height: 310px; }
+  .infopanel.small:has(.below) { max-height: 60%; }
+}
+@media (max-height: 520px) { .infopanel .below { padding: 5px 8px; } .below-acts .btn { min-height: 34px; padding-top: 3px; padding-bottom: 3px; } }
+/* the panel's buttons stay in sight while its numbers scroll */
+.infopanel .ip-acts { position: sticky; bottom: -12px; background: #0d141f; padding-bottom: 10px; margin-bottom: -10px; z-index: 1; }
+@media (max-width: 360px) {
+  .brand .beta { display: none; }
+  .topbar { gap: 6px; padding: 8px 6px; } .top-actions { gap: 4px; } .search { min-width: 0; padding: 0 8px; gap: 6px; }
+}
+/* "All display toggles" is there whenever the row of toggles is too long to show whole */
+@media (max-width: 1240px), (max-height: 520px) { .tool.x-more { display: inline-flex; } }
+@media (min-width: 561px) and (max-width: 1240px), (min-width: 561px) and (max-height: 520px) { .tool.x-more { order: -2; } .tool[data-key="ground"], .tool[data-key="atmosphere"] { order: -1; } .xsheet { max-width: 560px; margin: 0 auto; border-radius: 14px 14px 0 0; max-height: 78%; } }
+/* a phone on its side: one row, and the row of toggles gives way */
+@media (min-width: 561px) and (max-height: 520px) {
+  .bottombar { flex-wrap: nowrap; padding-top: 5px; padding-bottom: 5px; gap: 6px; min-height: 0; }
+  .toolbar { order: 0; flex: 1 1 130px; justify-content: flex-start; }
+  .place { padding: 0 9px; flex: none; } .place .txt, .place .sub { display: none; }
+  .timebox { margin-left: 0; flex: none; gap: 2px; } .tbtn { width: 34px; }
+  .clock { flex-direction: column; align-items: flex-end; justify-content: center; gap: 0; line-height: 1.15; padding: 0 9px; } .clock .wd, .clock .tz { display: none; } .clock .date { font-size: 10px; } .clock .time { min-width: 0; font-size: 12px; }
+  .rate { width: 60px; min-width: 0; overflow: hidden; line-height: 1.15; } .rate small { white-space: normal; font-size: 9px; } .rate.rt { width: auto; min-width: 30px; }
+  .infopanel.mini:has(.below) table { display: none; }
+}
+@media (min-width: 561px) and (max-width: 640px) and (max-height: 520px) { .readout { display: none; } .trackchip { right: 8px; bottom: calc(var(--bar-h) + 8px); max-width: 130px; } }

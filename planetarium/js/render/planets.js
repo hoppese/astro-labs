@@ -126,9 +126,17 @@ function drawFromMap(ctx, b, pl, r, extra = {}) {
   if (b.moons && b.moons.length && b.toSun && r > 3) {
     const km = b.radiusKm / AU_KM, dSun = len(b.toSun);
     o.alphaSun = 695700 / AU_KM / dSun;
-    // only moons on the sunward side whose shadow can reach the globe
-    const list = [];
-    for (const m of b.moons) { if (moonFade(m.periodDays, sRate.ms) < 0.5) continue; const p = vscale(va.map(m.rel), 1 / km), h = dot(p, S); if (h <= 0) continue; if (len([p[0] - h * S[0], p[1] - h * S[1], p[2] - h * S[2]]) < 1.1) list.push([p[0], p[1], p[2], m.radiusKm / b.radiusKm]); }
+    // only moons on the sunward side whose shadow can reach the globe or, at Saturn, the rings
+    const list = [], ringed = b.id === 'Saturn' && Math.abs(S[2]) > 1e-4;
+    for (const m of b.moons) {
+      if (moonFade(m.periodDays, sRate.ms) < 0.5) continue;
+      const p = vscale(va.map(m.rel), 1 / km), h = dot(p, S), w = m.radiusKm / b.radiusKm;
+      let hit = h > 0 && len([p[0] - h * S[0], p[1] - h * S[1], p[2] - h * S[2]]) < 1.1;
+      if (!hit && ringed) { const t = p[2] / S[2]; hit = t > 0 && Math.abs(Math.hypot(p[0] - t * S[0], p[1] - t * S[1]) - 1.75) < 0.55 + Math.min(1, (w + t * o.alphaSun) / Math.abs(S[2])); }
+      if (hit) list.push([p[0], p[1], p[2], w]);
+    }
+    list.sort((p, q) => q[3] - p[3]);
+    o.minShadow = Math.min(1.3, rr / 18);
     o.shadows = list;
   }
   if (b.mutual && r > 1.5) { const km = b.radiusKm / AU_KM; o.alphaSun = 695700 / AU_KM / len(b.toSun); o.shadows = b.mutual.map((m) => { const p = vscale(va.map(m.rel), 1 / km); return [p[0], p[1], p[2], m.km / b.radiusKm]; }); }
@@ -284,21 +292,36 @@ function drawPointFaded(ctx, x, y, dm, bv, k) {
   ctx.save(); ctx.beginPath(); const r = starSize(dm), half = r / 0.34; ctx.globalAlpha = k; ctx.drawImage(starSprite(bv), x - half, y - half, 2 * half, 2 * half); ctx.restore();
   return r;
 }
+/** A moon in front of a disc, too small to show its own: an opaque dot in its own light, never under 3 px across, with a thin dark edge so that it can be told
+ *  from the clouds behind it and followed across. (An unresolved moon has no other honest picture: the object panel says the mark is larger than the moon.) */
+const MARK_R = 1.6;
+function drawMark(ctx, x, y, r, colour, light, alpha) {
+  const c = [1, 3, 5].map((k) => Math.round(parseInt(colour.slice(k, k + 2), 16) * (0.15 + 0.85 * light)));
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(20,12,4,0.72)'; ctx.beginPath(); ctx.arc(x, y, r + 0.9, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = `rgb(${c})`; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+  ctx.restore();
+}
 function drawMoonOf(ctx, parent, m, ppl, prpx, lim, ext) {
   const fade = moonFade(m.periodDays, sRate.ms); if (fade < 0.02) return;
-  if (m.occulted || m.light <= 0.002) return;              // behind the disc, or deep in the planet's shadow
+  if (m.light <= 0.002) return;                             // deep in the planet's shadow
   const pl = place(m.hor);
   if (!pl) return;
   const sepPx = Math.hypot(pl.x - ppl.x, pl.y - ppl.y);
   const rpx = m.angRadius * pl.scale;
+  const dIn = m.inLimb * prpx;                              // px inside the limb (flattened as it is); negative outside
+  const bigDisc = prpx >= 5;                                // the planet shows a disc: which side of it a moon is on can be seen
+  if (!bigDisc && sepPx < 5) return;                        // all one point of light
+  if (m.behind && dIn > 0 && (rpx >= 1.6 ? m.occFrac <= 0 : m.occulted)) return;      // hidden by the disc (a part still showing is covered by the disc drawn after it)
+  const over = m.behind ? 0 : smooth(-1.5, 1.5, dIn + (rpx >= 1.6 ? rpx : 0));          // 1: in front of the disc
   const dm = lim - (m.mag + ext);
-  if (dm <= 0 && rpx < 1.6) return;
-  if (sepPx < Math.max(prpx + 1.5, 5) && !(rpx >= 1.2 && (m.transit || m.behind))) return;     // lost in the planet's glare (a resolved moon behind is simply covered by the disc drawn after it)
+  if (dm <= 0 && rpx < 1.6 && over <= 0) return;
   let r = 0;
   if (rpx >= 1.6) {
     // in the planet's shadow: sunlight goes, a trace of coppery light stays so the disc can still be found when zoomed in
     const lit = m.light ?? 1;
-    r = drawFromMap(ctx, m, pl, rpx, { eclDim: Math.max(0.02, lit) * fade });
+    if (over > 0.02 && rpx < 7) { ctx.strokeStyle = `rgba(20,12,4,${0.6 * over * fade * (1 - smooth(4, 7, rpx))})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(pl.x, pl.y, rpx + 0.4, 0, 2 * Math.PI); ctx.stroke(); }
+    r = drawFromMap(ctx, m, pl, rpx, { eclDim: Math.max(0.02, lit) * fade, ...(over > 0 && parent.id === 'Saturn' && BODY_ART[m.id] && BODY_ART[m.id].light === 'icy' ? { gain: BODY_ART[m.id].gain * (1 + 0.35 * over) } : {}) });      // ice (albedo about 1) beside Saturn's clouds (0.5): the brighter of the two
     if (!r) { ctx.globalAlpha = Math.max(0.03, lit) * fade; ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(pl.x, pl.y, rpx, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1; r = rpx; }
   }
   else {
@@ -306,10 +329,12 @@ function drawMoonOf(ctx, parent, m, ppl, prpx, lim, ext) {
     // its planet's shadow is seen to fade out over the few minutes that takes, instead of staying at full size.
     const dim = (m.light < 1 ? 2.5 * Math.log10(Math.max(m.light, 1e-6)) : 0) + (fade < 1 ? 2.5 * Math.log10(fade) : 0);
     const dmPoint = Math.min(dm - dim, 6) + dim;
-    if (dmPoint <= 0) return;
-    r = drawStarPoint(ctx, pl.x, pl.y, dmPoint, 0.7);
+    if (dmPoint > 0 && over < 0.99) { if (over > 0.01) { ctx.save(); ctx.globalAlpha = 1 - over; } r = over > 0.01 ? drawPointAt(ctx, pl.x, pl.y, dmPoint, 0.7) : drawStarPoint(ctx, pl.x, pl.y, dmPoint, 0.7); if (over > 0.01) ctx.restore(); }
+    if (over > 0.01) { const mr = Math.max(rpx, Math.min(MARK_R, prpx / 14)); drawMark(ctx, pl.x, pl.y, mr, m.color, m.light, over * fade); r = Math.max(r * (1 - over), mr + 0.9); }
+    if (!r) return;
   }
   addPick(pl.x, pl.y, Math.max(r, 3), m.mag, { kind: 'body', id: m.id });
-  if (state.show.planetNames && sepPx > 14 && fade > 0.6) R.labels.add(pl.x, pl.y, m.name, 'moon', 90 - m.mag, { gap: r + 4 });
+  if (state.show.planetNames && fade > 0.6 && sepPx > 14 && !(over > 0.5 && prpx < 30)) R.labels.add(pl.x, pl.y, m.name, 'moon', 90 - m.mag + (over > 0.5 ? 40 : 0), { gap: r + 4 });
 }
+function drawPointAt(ctx, x, y, dm, bv) { const r = starSize(dm), half = r / 0.34; ctx.drawImage(starSprite(bv), x - half, y - half, 2 * half, 2 * half); return r; }
 export { AU_KM };

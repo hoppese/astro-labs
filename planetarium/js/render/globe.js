@@ -20,13 +20,20 @@ uniform float uMix, uHas, uRelief, uLonOff, uGraphic, uGain, uDay, uSpin, uLimbU
 uniform int uLight, uKind, uNSh, uRings;
 uniform vec3 uTint, uAmb, uBody;
 uniform vec4 uSh[8];                      // shadows of moons: position (equatorial radii, body frame), radius
-uniform float uAlphaSun, uSunSin, uEclDim;
+uniform float uAlphaSun, uEclDim, uMinSh;
 uniform sampler2D uSpot; uniform int uNSp; uniform vec4 uSp[160]; uniform vec2 uSpSize;      // sunspot groups: 4 vec4 each (direction + strength; tile x, y, w, h; centre x, y, px per radius, flip; cos, sin)
 const float PI = 3.14159265359;
 vec3 toLin(vec3 c){ return pow(c, vec3(2.2)); }
 float ringTau(float r){ float u = (r*60268. - 74000.)/63000.; if(u<0.||u>1.) return 0.; float t = texture(uRing, vec2(u,0.75)).r; return t*t*3.5; }
 vec3 ringCol(float r, float row){ float u = (r*60268. - 74000.)/63000.; if(u<0.||u>1.) return vec3(0.); return texture(uRing, vec2(u,row)).rgb; }
 vec3 tex2(sampler2D t, vec2 uv, vec2 dx, vec2 dy){ return textureGrad(t, uv, dx, dy).rgb; }
+// sunlight left at P beside one moon's shadow. Umbra, penumbra and, where the shadow's point falls short of the surface (Phobos), the pale antumbra.
+// A shadow too small for the screen is drawn uMinSh device pixels in radius, never darker than it is.
+float shadowAt(vec4 m, vec3 P){
+  vec3 d = m.xyz - P; float h = dot(d,uS); if (h < 0.) return 1.;
+  float r = length(d - h*uS), k = h*uAlphaSun, w = max(m.w, uMinSh/uPx), dep = min(1., m.w*m.w/max(k*k, 1e-12));
+  return 1. - dep*(1. - smoothstep(-1., 1., (r - max(w, k))/max(min(w, k), 0.75/uPx)));
+}
 void main(){
   float e = uQ.x*s.x*s.x + uQ.y*s.x*s.y + uQ.z*s.y*s.y;                    // < 1 inside the outline
   vec2 g = vec2(2.*uQ.x*s.x + uQ.y*s.y, 2.*uQ.z*s.y + uQ.y*s.x);
@@ -98,9 +105,7 @@ void main(){
       else L = mix(2.*m/(m + mu), m, 0.6)*lit;                             // bright ice
       L = min(L, 1.7);
       for (int i=0;i<uNSh;i++) {                                           // moons' shadows
-        vec3 d = uSh[i].xyz - P; float h = dot(d,uS); if (h < 0.) continue;
-        float r = length(d - h*uS), k = h*uAlphaSun;
-        L *= smoothstep(-1., 1., clamp((r - uSh[i].w)/max(k, 0.75/uPx), -1., 1.)) ;
+        L *= shadowAt(uSh[i], P);
       }
       if (uRings > 0 && abs(uS.z) > 1e-4) { float t2 = -P.z/uS.z; if (t2 > 0.) { float r = length((P + t2*uS).xy), w = min(fwidth(r), 0.3), T = 0.; for (int i=0;i<15;i++) T += exp(-ringTau(r + w*1.4*((float(i)+0.5)/15. - 0.5))/max(abs(uS.z), 0.02)); L *= T/15.; } }
       lin *= L*uGain*uEclDim; lin += toLin(col)*uAmb;
@@ -124,6 +129,7 @@ void main(){
         // planet's shadow on the rings
         vec3 Q = P; float a2 = dot(uS*M,uS), b2 = dot(Q*M,uS), c2 = dot(Q*M,Q) - 1.; 
         float sh = 1.; if (b2 < 0.) { float d2 = c2 - b2*b2/a2; sh = smoothstep(-0.006, 0.006, d2); }
+        for (int i=0;i<uNSh;i++) sh *= shadowAt(uSh[i], P);                // moons' shadows on the rings
         c *= sh*uGain*1.25*min(1., abs(uS.z)*30.);
         ring = vec4(min(pow(c, vec3(1./2.2))*uTint, vec3(1.)), al*mix(1., 0.4, uDay)); ring.rgb *= mix(1., 0.6, uDay);
         ring.rgb = min(ring.rgb, vec3(1.));
@@ -134,8 +140,8 @@ void main(){
   O = globe;
 }`;
 
-let gl = null, cv = null, prog = null, loc = null, failed = false;
-const U = ['uBox', 'uR', 'uU', 'uV', 'uS', 'uAx', 'uQ', 'uPx', 'uT0', 'uT1', 'uN', 'uRing', 'uMix', 'uHas', 'uRelief', 'uLonOff', 'uGraphic', 'uGain', 'uDay', 'uSpin', 'uLight', 'uKind', 'uNSh', 'uRings', 'uTint', 'uAmb', 'uBody', 'uSh', 'uAlphaSun', 'uEclDim', 'uSpot', 'uNSp', 'uSp', 'uSpSize'];
+let veil = null, gl = null, cv = null, prog = null, loc = null, failed = false;
+const U = ['uBox', 'uR', 'uU', 'uV', 'uS', 'uAx', 'uQ', 'uPx', 'uT0', 'uT1', 'uN', 'uRing', 'uMix', 'uHas', 'uRelief', 'uLonOff', 'uGraphic', 'uGain', 'uDay', 'uSpin', 'uLight', 'uKind', 'uNSh', 'uRings', 'uTint', 'uAmb', 'uBody', 'uSh', 'uAlphaSun', 'uEclDim', 'uMinSh', 'uSpot', 'uNSp', 'uSp', 'uSpSize'];
 function init() {
   if (gl || failed) return !!gl;
   if (typeof WebGL2RenderingContext === 'undefined') { failed = true; return false; }      // (also the Node checks)
@@ -241,11 +247,19 @@ export function drawGlobe(ctx, o, dpr, W, H) {
   gl.uniform1i(loc.uLight, { lunar: 0, gas: 1, icy: 2, sun: 3, mars: 4 }[o.light] ?? 0); gl.uniform1i(loc.uKind, o.kind === 'front' ? 1 : 0);
   set3('uTint', o.tint || [1, 1, 1]); set3('uAmb', o.amb || [0, 0, 0]); set3('uBody', o.body || [0.6, 0.6, 0.6]);
   const sh = o.shadows || [], n = Math.min(8, sh.length), a = new Float32Array(32); for (let i = 0; i < n; i++) a.set(sh[i], 4 * i);
-  gl.uniform1i(loc.uNSh, n); gl.uniform4fv(loc.uSh, a); gl.uniform1f(loc.uAlphaSun, o.alphaSun || 0); gl.uniform1f(loc.uEclDim, o.eclDim ?? 1);
+  gl.uniform1i(loc.uNSh, n); gl.uniform4fv(loc.uSh, a); gl.uniform1f(loc.uAlphaSun, o.alphaSun || 0); gl.uniform1f(loc.uEclDim, o.eclDim ?? 1); gl.uniform1f(loc.uMinSh, (o.minShadow || 0) * dpr);
   gl.uniform1i(loc.uNSp, o.spots ? o.spots.n : 0); if (o.spots) { gl.uniform4fv(loc.uSp, o.spots.data); gl.uniform2f(loc.uSpSize, o.spots.w, o.spots.h); }
   gl.uniform1i(loc.uRings, o.rings ? 1 : 0);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  if (o.light !== 'sun') {      // hide what is behind: the sky again, inside the outline (an ellipse from the same quadratic form)
+  if (o.rings) {      // translucent: what is behind (stars, moons) is dimmed by the rings' own opacity, pixel by pixel, and the sky's light in front is put back
+    if (!veil) veil = document.createElement('canvas');
+    if (veil.width < w || veil.height < h) { veil.width = Math.max(veil.width, grow(w)); veil.height = Math.max(veil.height, grow(h)); }
+    const v = veil.getContext('2d');
+    v.setTransform(1, 0, 0, 1, 0, 0); v.globalCompositeOperation = 'source-over'; v.clearRect(0, 0, w + 2, h + 2); v.imageSmoothingEnabled = false;
+    v.drawImage(cv, 0, cv.height - h, w, h, 0, 0, w, h);
+    v.globalCompositeOperation = 'source-in'; v.setTransform(dpr, 0, 0, dpr, -x0, -y0); repaintSky(v, o.sky); v.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(veil, 0, 0, w, h, x0 / dpr, y0 / dpr, w / dpr, h / dpr);
+  } else if (o.light !== 'sun') {      // hide what is behind: the sky again, inside the outline (an ellipse from the same quadratic form)
     const A = M2[0], B = M2[1] / 2, C = M2[2], th = 0.5 * Math.atan2(2 * B, A - C), l1 = A * Math.cos(th) ** 2 + 2 * B * Math.sin(th) * Math.cos(th) + C * Math.sin(th) ** 2, l2 = A + C - l1;
     ctx.save(); ctx.beginPath(); ctx.ellipse(o.x, o.y, o.r / Math.sqrt(l1), o.r / Math.sqrt(l2), -th, 0, 2 * Math.PI); ctx.clip(); repaintSky(ctx, o.sky); ctx.restore();
   }
