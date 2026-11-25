@@ -193,8 +193,8 @@ function drawSun(ctx, b, pl, rpx) {
   } : null;
   if (frac < 0.004) drawCorona(ctx, b, pl, r, 1 - frac / 0.004);
   const quiet = !state.show.sunspots || !!running.id;    // labs time the limbs of real planets: no unrelated spots on the disc
-  const air = airTint(pl.alt), glare = 1 + (1.2 + 0.8 * day) * clamp(14 / r, 0, 1);      // reddened, never dimmed below the sky; dazzling when small
-  if (r >= 8 && drawFromMap(ctx, b, pl, r, { spots: quiet ? null : sunSpots(b, r), day: 0, body: [1.0 * glare, 0.875 * glare, 0.64 * glare], tint: [1, air[1] / air[0], air[2] / air[0]], gain: 1, spin: 0 })) return r;
+  const air = airTint(pl.alt), glare = 1 + (1.2 + 0.8 * day) * clamp((46 - r) / 32, 0, 1);      // reddened, never dimmed below the sky; dazzling when small
+  if (r >= 8 && drawFromMap(ctx, b, pl, r, { spots: quiet ? null : sunSpots(b, r), day: 0, body: [1.06 * glare, 0.95 * glare, 0.68 * glare], tint: [1, air[1] / air[0], air[2] / air[0]], gain: 1, spin: 0 })) return r;
   // redden toward the horizon when there is an atmosphere
   const low = R.atmo ? clamp(1 - pl.alt / 12, 0, 1) : 0;
   const core = `rgb(255,${Math.round(250 - 70 * low)},${Math.round(232 - 150 * low)})`;

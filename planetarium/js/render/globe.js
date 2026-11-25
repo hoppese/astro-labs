@@ -79,7 +79,8 @@ void main(){
     vec3 lin = toLin(col); float L = 0.;
     float term = max(1.5*fwidth(mu0), 0.004);
     if (uLight == 3) {                                                     // the Sun: photosphere limb darkening, V band (Pierce & Slaughter form)
-      float I = 0.30 + 0.93*mu - 0.23*mu*mu;
+      // the power is the contrast of a solar picture (as for the spots below): a screen's own gamma would flatten the measured law almost to nothing
+      float I = pow(0.30 + 0.93*mu - 0.23*mu*mu, 1.45);
       lin = uBody*I*mix(1., 1. + (col.r - 0.502)*1.42*uHas, 1.); L = 1.;
       vec3 Px = dFdx(P), Py = dFdy(P);
       for (int i=0;i<uNSp;i++) {                                           // spots: photographs of groups laid on the sphere, multiplied
@@ -96,7 +97,7 @@ void main(){
       }
       lin = max(lin, 0.);
       // redder toward the limb
-      lin *= vec3(1., 1. - 0.10*(1.-mu)*(1.-mu), 1. - 0.25*(1.-mu)*(1.-mu));
+      lin *= vec3(1., 1. - 0.22*(1.-mu)*(1.-mu), 1. - 0.50*(1.-mu)*(1.-mu));
     } else {
       float lit = smoothstep(-term, term, mu0), m = max(mu0, 0.);
       if (uLight == 0) L = 2.*m/(m + mu)*lit;                              // Lommel-Seeliger (dark, rough surfaces: the full disc is flat)
