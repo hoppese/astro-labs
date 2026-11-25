@@ -721,6 +721,7 @@ export function createNotebook(root, opts = {}) {
     });
     showFit();
   }
+  const endsHtml = (m, key) => { const [lo, hi] = m.r[key]; return `<i>${esc(fmtNum(lo, 4))}</i><i>${esc(fmtNum(hi, 4))}</i>`; };
   function partHtml(m, k, M) {
     const g = nb.graph; let html = `<div class="nb-eq">${M.eq(axisVars())}</div>`;
     if (M.needsT) html += `<label class="nb-ax">Time of each point: column <select data-g2="t"><option value="">choose a column</option>${numericCols().map((c) => `<option value="${c.id}"${g.t === c.id ? ' selected' : ''}>${esc(colFull(c))}</option>`).join('')}</select></label> `;
@@ -736,8 +737,8 @@ export function createNotebook(root, opts = {}) {
     html += `<div class="nb-pars${M.params.length > 5 ? ' many' : ''}">` + M.params.map((p) => {
       const [lo, hi] = m.r[p.key], v = m.p[p.key], u = parUnit(p.unit);
       return `<div class="nb-par"><span class="desc" title="${esc(p.label)}"><b class="sym">${p.sym}</b> ${esc(p.label)}</span>
-        <input type="range" data-p="${k}:${p.key}" min="${lo}" max="${hi}" step="${(hi - lo) / 2000 || 1e-9}" value="${v}" aria-label="${esc(p.label)}">
-        <input type="text" inputmode="decimal" autocomplete="off" data-n="${k}:${p.key}" value="${parText(v, m.r[p.key])}" aria-label="${esc(p.label)}, number"><span class="un">${esc(u)}</span><span class="zoom"><button data-z="${k}:${p.key}:in" title="Finer: narrow this slider around its value" aria-label="Finer slider for ${esc(p.label)}">&#8853;</button><button data-z="${k}:${p.key}:out" title="Wider slider range" aria-label="Wider slider for ${esc(p.label)}">&#8854;</button><button data-use="${k}:${p.key}" title="Use this value: put it in the table as a column of its own, to calculate or convert with" aria-label="Use the value of ${esc(p.label)} in the table">use</button></span></div>`;
+        <span class="nb-sl"><button data-nudge="${k}:${p.key}:-1" title="A little less (hold to keep going; Shift: ten times finer)" aria-label="Less ${esc(p.label)}">&minus;</button><input type="range" data-p="${k}:${p.key}" min="${lo}" max="${hi}" step="${(hi - lo) / 2000 || 1e-9}" value="${v}" aria-label="${esc(p.label)}"><button data-nudge="${k}:${p.key}:1" title="A little more (hold to keep going; Shift: ten times finer)" aria-label="More ${esc(p.label)}">+</button><small data-ends="${k}:${p.key}">${endsHtml(m, p.key)}</small></span>
+        <input type="text" inputmode="decimal" autocomplete="off" data-n="${k}:${p.key}" value="${parText(v, m.r[p.key])}" aria-label="${esc(p.label)}, number"><span class="un">${esc(u)}</span><span class="zoom"><button data-z="${k}:${p.key}:in" title="Narrow this slider to a third, around its value, for a finer setting. The value stays." aria-label="Narrow the slider for ${esc(p.label)}">narrow</button><button data-z="${k}:${p.key}:out" title="Make this slider reach three times as far, around its value. The value stays." aria-label="Widen the slider for ${esc(p.label)}">widen</button><button data-use="${k}:${p.key}" title="Use this value: put it in the table as a column of its own, to calculate or convert with" aria-label="Use the value of ${esc(p.label)} in the table">use</button></span></div>`;
     }).join('') + '</div>';
     return html;
   }
@@ -812,7 +813,7 @@ export function createNotebook(root, opts = {}) {
       if (Number.isNaN(parseNum(t.value))) { if (t.value.trim()) status(`“${t.value.trim()}” is not a number: type the number only (its unit is beside the box).`, 'warn'); if (Number.isFinite(t._was)) { m.p[key] = t._was; drawGraph(); } }
       t._was = m.p[key];
       const v = m.p[key]; t.value = t.defaultValue = parText(v, m.r[key]); t.classList.remove('bad');
-      if (sl && Number.isFinite(v)) { if (v < +sl.min) { sl.min = v; m.r[key][0] = v; } if (v > +sl.max) { sl.max = v; m.r[key][1] = v; } sl.step = (sl.max - sl.min) / 2000; sl.value = v; }
+      if (sl && Number.isFinite(v)) { if (v < +sl.min) { sl.min = v; m.r[key][0] = v; } if (v > +sl.max) { sl.max = v; m.r[key][1] = v; } sl.step = (sl.max - sl.min) / 2000; sl.value = v; } showPar(k, key);
       remember(); S.save(nb); return;
     }
     if (t.dataset.p) { remember(); S.save(nb); return; }
@@ -829,11 +830,43 @@ export function createNotebook(root, opts = {}) {
       changed();
     } else if (t.dataset.g2) { nb.graph.t = t.value || null; for (const m of [nb.model, nb.model2]) if (m.type && MODEL[m.type].needsT) { m.p = {}; m.r = {}; setRanges(m, false); } changed(); }
   });
+  /** A parameter's slider, number and ends as they now are, without redrawing the panel. */
+  function showPar(k, key) {
+    const m = mOf(k), [lo, hi] = m.r[key], v = m.p[key], id = `${k}:${key}`, sl = modelBox.querySelector(`[data-p="${id}"]`), box = modelBox.querySelector(`[data-n="${id}"]`), ends = modelBox.querySelector(`[data-ends="${id}"]`);
+    if (sl) { sl.min = lo; sl.max = hi; sl.step = (hi - lo) / 2000 || 1e-9; sl.value = v; }
+    if (box) { box.value = box.defaultValue = parText(v, m.r[key]); box.classList.remove('bad'); }
+    if (ends) ends.innerHTML = endsHtml(m, key);
+  }
+  // − and +: one tidy step (about 1/100 of the slider; Shift: ten times finer), again and again while held
+  let held = 0;
+  const nudge = (id, fine) => {
+    const [k, key, d] = id.split(':'), m = mOf(k), r = m.r[key], raw = (r[1] - r[0]) / (fine ? 1000 : 100), ten = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 5, 10].reduce((x, y) => (Math.abs(y * ten - raw) < Math.abs(x * ten - raw) ? y : x)) * ten;
+    const v = +(m.p[key] + d * step).toPrecision(12); if (!Number.isFinite(v)) return;
+    m.p[key] = v; (m.moved = m.moved || {})[key] = true; if (v < r[0]) r[0] = v; if (v > r[1]) r[1] = v;
+    showPar(k, key); S.touch(nb); drawGraph();
+  };
+  const letGo = () => { if (!held) return; clearTimeout(held); held = 0; remember(); S.save(nb); };
+  modelBox.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-nudge]'); if (!b || e.button) return;
+    e.preventDefault(); b.focus({ preventScroll: true });
+    const fine = e.shiftKey, again = (ms) => { held = setTimeout(() => { nudge(b.dataset.nudge, fine); again(70); }, ms); };
+    letGo(); nudge(b.dataset.nudge, fine); again(420);
+  });
+  for (const t of ['pointerup', 'pointercancel', 'blur']) window.addEventListener(t, letGo);
+  modelBox.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-nudge]')) e.preventDefault(); });
   modelBox.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.nudge) { if (e.detail === 0) { nudge(b.dataset.nudge, e.shiftKey); remember(); S.save(nb); } return; }          // (from the keyboard; the mouse was handled when it went down)
     if (b.dataset.about) openAbout(root, mOf(b.dataset.about).type, axisVars(), mOf(b.dataset.about));
     else if (b.dataset.use) { const [k, key] = b.dataset.use.split(':'); useDialog(k, key); }
-    else if (b.dataset.z) { const [k, key, dir] = b.dataset.z.split(':'), m = mOf(k), [lo, hi] = m.r[key], v = m.p[key], half = (hi - lo) / 2 * (dir === 'in' ? 0.25 : 2); m.r[key] = [v - half, v + half]; (m.zoom = m.zoom || {})[key] = true; if (lo >= 0 && m.r[key][0] < 0 && ['A', 'a', 'P', 'D'].includes(key)) m.r[key] = [0, 2 * half]; changed(); }
+    else if (b.dataset.z) {
+      // the value stays; only how far the slider reaches changes (in place: the buttons are not redrawn under the pointer)
+      const [k, key, dir] = b.dataset.z.split(':'), m = mOf(k), [lo, hi] = m.r[key], v = m.p[key], half = (hi - lo) / 2 * (dir === 'in' ? 1 / 3 : 3);
+      if (dir === 'in' && half < 1e-9 * Math.max(Math.abs(v), 1e-12)) { status('That slider is as narrow as it goes.'); return; }
+      m.r[key] = lo >= 0 && v - half < 0 && ['A', 'a', 'P', 'D'].includes(key) ? [0, 2 * half] : [v - half, v + half];
+      (m.zoom = m.zoom || {})[key] = true; showPar(k, key); S.touch(nb); remember(); S.save(nb);
+      const c = b.closest('.nb-par'); c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+    }
     else if (b.dataset.best != null && opts.instructor) { const m = mOf(b.dataset.best), md = modelData(m); if (md) { const scale = {}; for (const p of md.M.params) scale[p.key] = (m.r[p.key][1] - m.r[p.key][0]) / 20; let f = bestFit(md.M, m.p, md.pts, md.c, { scale }); f = bestFit(md.M, f.p, md.pts, md.c); m.p = f.p; setRanges(m, true); changed(); } }
   });
 

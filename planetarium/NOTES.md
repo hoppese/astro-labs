@@ -1347,3 +1347,4 @@ Hooks elsewhere: `eff.pointing` (state.js: alt-az, refraction on, no steady sky)
 - **Not tested: any real phone.** Signs of the screen angles, the heading's behavior, drift, the camera's axis against the phone's (expected 1-2 deg, taken up by the tilt part; its sideways part goes into the direction), prompts, Home Screen app, wake lock.
 
 - Angle tool (2026-11-25): each measurement has an x, the first point can be taken back, and the position angle is written out; pressing it (or pointing at the row) draws north, east and the turn on the sky (equator of date, `fromNorth`).
+- Sliders (2026-11-25): − and + beside each slider change the VALUE (a tidy step of about 1/100 of its reach; Shift ten times finer; hold to repeat; keyboard works); “narrow” / “widen” change the slider's reach by 3, in place, exact inverses. (The old ⊕ / ⊖ changed the reach and were read as value buttons.)
