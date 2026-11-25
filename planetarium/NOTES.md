@@ -1268,3 +1268,32 @@ Checks: `tools/check-student.mjs` (check.mjs 27). Overrides: a new place no long
 - **Notices** sit in the strip between the panels (`--free-l`, `--free-r`, layout.js). Phone: an open side panel hides the object sheet instead of lying over it.
 - **Left**: drags near the zenith (an alt-az mount would have to roll, and easing that back would spin the view: explained in Help); M31's and M32's cores are clipped in the baked pictures; a moon's name over its planet's disc; "Virgin" for Virgo; British spelling in
   `labs/presets.js` and `js/notebook/` (other owner).
+
+---
+
+# Lab notebook: fixes after a student test (2026-11-25)
+
+Overrides the layout and Record paragraphs of "Lab notebook (2026-11-24)".
+
+- **The plot comes first.** `chart.js` `MIN_PLOT` = 180: the residual strip is squeezed, then left out (the strip under the graph says so), before the
+  plot goes under it. Wide (700 px and up): sliders over table on the left, graph right, all in sight. Narrow: the graph is sticky at the top of its
+  tab (`--nb-ch`, half the notebook's height, 250 to 430) and the sliders scroll under it. rms, "curve does not exist at n points" (no rms then), points
+  a log axis cannot show, and Reset sliders are in `.nb-fit` under the graph. 800 x 560 split: only the graph fits, so Big notebook is one click.
+- **Big notebook** (`html.nb-big`, host.js): the panel takes the window and `body` is `visibility: hidden`, so nothing is laid out again. The lab's steps
+  are in the notebook (`.nbp-lab`) whenever the card has no room (big, slim, over).
+- **Undo / redo** (ui.js `remember`, `travel`): whole-notebook copies, one step per `changed()` and per slider drag; not the seed or the observing
+  conditions; kept until the page is left. A text box with unfinished typing keeps the browser's undo. host.js passes the keys on when the focus fell to `body`.
+- **Menus are not rebuilt while used** (`axesHtml`, `heads`): typing in a closed list works. Each shape keeps its own sliders (`m.mem`).
+- **Slider ranges follow the data** (`followData`, `m.ext`): not a slider the student narrowed (`m.zoom`); one never moved (`m.moved`) starts over.
+- **Waves**: phase as an angle (default) or a moment: `models.js variant()` and `switchPhase()`. Notebooks saved before keep the moment.
+- **Circle** (`closed: true`, `path`, `gap`) and a mark at the origin that the student names. `use` beside a slider makes a `const` column (snapshot, labelled).
+  Mean / count under a column, move column, practice data (`practice.js`, labelled everywhere).
+- **Paste**: `delimiterOf()`: tabs, semicolons, commas, spaces; "1,249" alone is asked about. A heading row names columns. Cells that are not numbers are
+  underlined and explained in words (`whyNotNumber`).
+- **Formulas**: small letters are columns; bare `c` with a column C is refused in the dialog (`letterTrap`); the speed of light is written `c_light`.
+- Relations have no default column. Columns need a name (the dialogs ask; a pasted or imported one may be blank).
+- **Coming back** (`labs/resume.js`): a reload returns to the lab's step, date and view; opening the lab again offers it. Notebook labs only.
+- Barnard / Proxima: date chip named, a step with a diagram for the east and north parts (words, no formula); the formula left the About text too.
+- **parallax-lab's `tools/sync-notebook.mjs`** needs: `practice.js` in FILES; the patch on `nb.recordClear = b.querySelector('[name=clear]').checked` dropped
+  (the box is read only when present). CSS: `.nb-stick`, `.nb-foot`, `.nb-fit`, `.nb-bad` use colours it already maps.
+- Not tested: touch, Safari, Firefox, the file chooser itself, the second curve, text columns in Record.

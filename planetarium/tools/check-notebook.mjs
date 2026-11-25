@@ -5,11 +5,12 @@
 //       Proxima Centauri (parallax ellipse + proper motion), how much annual aberration and refraction change a small
 //       separation, what the simulated measurement noise does, and what scatter two students should expect.
 
-import { fmtNum, parseNum, colLetter } from '../js/notebook/format.js';
+import { fmtNum, fmtColumn, plainNum, whyNotNumber, parseNum, colLetter } from '../js/notebook/format.js';
 import { UNITS, UNIT, convert, convertRule, predictReason, compatible, RELATION, PC_M, AU_M, LY_M } from '../js/notebook/units.js';
-import { parse, analyse, evaluate, pretty, FormulaError } from '../js/notebook/formula.js';
-import { MODELS, MODEL, extent, anchors, residuals, bestFit } from '../js/notebook/models.js';
+import { parse, analyse, evaluate, pretty, letterTrap, FormulaError } from '../js/notebook/formula.js';
+import { MODELS, MODEL, variant, switchPhase, extent, anchors, residuals, bestFit } from '../js/notebook/models.js';
 import * as S from '../js/notebook/store.js';
+import { PRACTICE, practiceData } from '../js/notebook/practice.js';
 
 let n = 0;
 function ok(cond, what) { n++; if (!cond) throw new Error('notebook check failed: ' + what); }
@@ -94,7 +95,7 @@ export function checkNotebookUnits({ line }) {
     ok(r.rms < 1e-12 && r.n === 25, 'residuals vanish on the true curve');
     const f = bestFit(MODEL.sine, { A: 1.5, P: 3.2, x0: 0.5, y0: 8.8 }, pts, anchors(d));
     ok(Math.abs(f.p.A - 1.7) < 1e-4 && Math.abs(f.p.P - 3.3) < 1e-4, 'least squares recovers the sine'); }
-  ok(MODELS.length === 8 && MODELS.every((m) => typeof m.eq({ x: 'x', y: 'y', t: 't' }) === 'string' && m.params.length && (m.f || m.xy)), 'eight generic shapes, each with a formula');
+  ok(MODELS.length === 9 && MODELS.every((m) => typeof m.eq({ x: 'x', y: 'y', t: 't' }) === 'string' && m.params.length && (m.f || m.xy || m.path)), 'nine generic shapes, each with a formula');
   // ---- the notebook itself: chains, refusals, CSV out and back ----
   const nb = S.newNotebook('check');
   const a = S.addColumn(nb, { kind: 'data', name: 'separation', unit: 'arcsec' }), b = S.addColumn(nb, { kind: 'convert', name: 'separation', src: a.id, unit: 'deg' }), cc = S.addColumn(nb, { kind: 'convert', name: 'separation', src: b.id, unit: 'rad' });
@@ -113,7 +114,34 @@ export function checkNotebookUnits({ line }) {
   ok(/unit,″,°,rad,pc,AU,km,km,km/.test(csv) && /convert A from ″ to °: ÷ 3600 \(1° = 3600″\)/.test(csv) && /seed 4242/.test(csv), 'the CSV carries units, rules and the seed');
   const plain = S.fromCSV('d (Mpc),v (km/s),galaxy\n1.2,90,NGC 1\n3.4,250,NGC 2\n');
   ok(plain.cols[0].unit === 'Mpc' && plain.cols[1].unit === 'km/s' && plain.cols[2].kind === 'text' && plain.rows.length === 2, 'a plain CSV becomes typed columns with units');
-  line(`  ${n} assertions passed: ${UNITS.length} units, ${pairs} conversion pairs (worst round-trip error ${worst.toExponential(1)}), 8 model shapes, formulas with units, CSV round trip`);
+  // ---- fixes from the student tester (2026-11-24) ----
+  // pasting: tabs win over commas (thousands stay whole), ambiguity is asked about
+  { const tab = '13.8\t1,249\n2.1\t140'; ok(S.delimiterOf(tab) === '\t' && S.parseCSV(tab, '\t')[0][1] === '1,249' && parseNum('1,249') === 1249, 'tab paste keeps 1,249 whole');
+    ok(S.delimiterOf('1,249\n2,310\n870') === 'ask' && S.delimiterOf('1.2,90\n3.4,250') === ',' && S.delimiterOf('1.2;90\n3.4;250') === ';' && S.delimiterOf('0.2 0.21\n0.4 0.76') === ' ' && S.delimiterOf('1 000\n2 000') === '' && S.delimiterOf('"1,249"\t3\n') === '\t', 'delimiters');
+    const big = S.fromCSV('d (Mpc)\tv (km/s)\n13.8\t1,249\n20\t1,400\n'); ok(S.values(big, big.cols[1].id)[0] === 1249 && big.cols[1].unit === 'km/s', 'a pasted spreadsheet block with commas and headings'); }
+  ok(whyNotNumber('3,14').includes('3.14') && whyNotNumber('5 m').includes('unit') && whyNotNumber('=2') && whyNotNumber('1/2') && whyNotNumber('12:30') && whyNotNumber('abc') && !whyNotNumber('1,000') && !whyNotNumber(''), 'bad cells are explained in words');
+  ok(plainNum(35.550000000000004) === '35.55' && plainNum(2461193.51234) === '2461193.51234', 'CSV numbers without binary tails');
+  { const f = fmtColumn([-9.066, 1.213, -0.7823], 4); ok(f(-9.066) === '−9.066' && f(-0.7823) === '−0.782' && f(1.213) === '1.213' && f(0.0001) === fmtNum(0.0001, 2), 'one number of decimals down a column'); }
+  ok(run('a*sin(b)').v === 30 && letterTrap('B*c', (L) => L === 'C') && !letterTrap('B*c', () => false) && !letterTrap('B*C', () => true) && run('C/c_light').unitId === 's', 'small letters mean columns; bare c is asked about; c_light is the speed of light');
+  ok(/taken to be in km\/s/.test(run('C/E + 1').note) && !run('C/E').note, 'a bare number added to a quantity is said to take its unit');
+  ok(MODEL.circle.gap(3 + 5, 4, { x0: 3, y0: 4, D: 10 }) === 0 && MODEL.circle.path({ x0: 1, y0: 2, D: 4 }).every(([x, y]) => close(Math.hypot(x - 1, y - 2), 2, 1e-12)) && residuals(MODEL.circle, { x0: 0, y0: 0, D: 2 }, [{ x: 3, y: 0 }, { x: 0, y: -1 }], c).max === 2, 'circle: centre and diameter');
+  for (const id of ['sine', 'sineline', 'tilt']) { // phase as an angle is the same curve
+    const cc2 = { x1: 10 }, m = { type: id, p: { A: 2, P: 3, x0: 11.3, y0: 1, m: 0.2, b: 4, i: 20 }, r: {}, phase: 'moment' }, y = [10, 11.7, 19].map((x) => MODEL[id].f(x, m.p, cc2));
+    switchPhase(MODEL[id], m, cc2, 'angle'); const V = variant(MODEL[id], m);
+    ok('phi' in m.p && !('x0' in m.p) && m.p.phi >= 0 && m.p.phi < 360 && [10, 11.7, 19].every((x, i) => close(V.f(x, m.p, cc2), y[i], 1e-9)) && V.params.some((q) => q.key === 'phi') && /φ/.test(V.eq({ x: 'x', y: 'y' })), id + ': phase as an angle');
+    switchPhase(MODEL[id], m, cc2, 'moment'); ok([10, 11.7, 19].every((x, i) => close(MODEL[id].f(x, m.p, cc2), y[i], 1e-9)), id + ': and back'); }
+  ok(MODEL.tilt.knots({ P: 4, x0: 1 }, c, 0, 8).join() === '1,3,5,7', 'tilt: its cusps are sampled');
+  { const m2 = S.newNotebook('move'), A1 = S.addColumn(m2, { kind: 'data', name: 'a', unit: 'km' }), B1 = S.addColumn(m2, { kind: 'data', name: 'b', unit: 's' }), C1 = S.addColumn(m2, { kind: 'calc', name: 'v', formula: 'A / B' });
+    S.addRow(m2, { [A1.id]: 10, [B1.id]: 4 }); S.addRow(m2, { [A1.id]: 30, [B1.id]: 4 });
+    S.moveColumn(m2, B1.id, -1); ok(C1.formula === 'B / A' && S.values(m2, C1.id)[0] === 2.5, 'moving a column rewrites the formulas'); S.moveColumn(m2, C1.id, -1);
+    ok(C1.formula === 'C / A' && S.values(m2, C1.id)[0] === 2.5 && !S.moveColumn(m2, B1.id, -1), 'twice, and the edge');
+    ok(S.flow(m2).length === 1 && S.flow(m2)[0].from.length === 2, 'the flow strip shows a two-input formula once');
+    const f1 = S.footOf(m2, C1); ok(f1.n === 2 && f1.mean === 5, 'mean and count of a column');
+    const K = S.addColumn(m2, { kind: 'const', name: 'p', unit: 'arcsec', value: 0.5, sig: 3 }), D1 = S.addColumn(m2, { kind: 'relation', name: 'd', rel: 'parallax-distance', in: { p: K.id } });
+    ok(S.values(m2, D1.id)[1] === 2 && S.unitInfo(m2, D1).id === 'pc', 'a fitted value used as a column feeds a relation');
+    ok(S.unitInfo(m2, S.addColumn(m2, { kind: 'const', name: 'm', parts: { arcsec: 1, yr: -1 }, value: 2 })).label === '″/yr' && S.toCSV(S.fromCSV(S.toCSV(m2, { when: new Date(0) }), 'move'), { when: new Date(0) }) === S.toCSV(m2, { when: new Date(0) }), 'compound units, and the CSV round trip'); }
+  for (const P of PRACTICE) { const a1 = practiceData(P.id, 5), b1 = practiceData(P.id, 6); ok(/^PRACTICE DATA/.test(a1.title) && a1.rows.length > 8 && a1.rows.flat().every(Number.isFinite) && JSON.stringify(a1) !== JSON.stringify(b1) && JSON.stringify(a1) === JSON.stringify(practiceData(P.id, 5)) && a1.cols.every(([, u]) => UNIT[u]), 'practice data ' + P.id); }
+  line(`  ${n} assertions passed: ${UNITS.length} units, ${pairs} conversion pairs (worst round-trip error ${worst.toExponential(1)}), 9 model shapes, formulas with units, CSV round trip`);
   line(`  1 pc = ${fmtNum(convert(1, 'pc', 'AU'), 9)} AU; 1 AU = ${fmtNum(convert(1, 'AU', 'km'), 0)} km; 1 ly = ${fmtNum(convert(1, 'ly', 'km'), 5)} km; 1 AU/yr = ${fmtNum(convert(1, 'AU/yr', 'km/s'), 7)} km/s; 1 M_J = ${fmtNum(convert(1, 'Mjup', 'kg'), 5)} kg`);
 }
 

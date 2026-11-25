@@ -9,13 +9,21 @@ import { clearMarks } from './stopwatch.js';
 import { el, esc } from './util.js';
 import { running } from './hidden.js';
 import { fmtLat, fmtLon } from '../astro.js';
+import { rememberLab, forgetLab, savedLab, resumeText } from './resume.js';
 
 export const lab = { current: null };
 let card = null, modal = null, step = 0;
 
-export async function startLab(id, { extra = null } = {}) {
+export const labStep = () => step;
+export function setLabStep(k) { if (!lab.current) return; offer = null; step = Math.max(0, Math.min(lab.current.steps.length - 1, k)); renderCard(); rememberLab(lab.current.id, step); emit('labstep'); }
+/** The offer to go back is still on the card and nothing has been done yet: what it would go back to must not be overwritten. */
+let starting = false;             // a lab is being set up: the sky is not at its date yet, nothing to remember
+export const offerOpen = () => starting || !!offer && Math.abs(state.timeMs - Date.parse(lab.current.setup.t)) < 1000;
+let offer = null;                 // where this student was the last time, when that is not where the lab starts
+export async function startLab(id, { extra = null, at = 0, fresh = false } = {}) {
   const L = labById(id);
   if (!L) return false;
+  starting = true; offer = null;
   lab.current = L; running.id = L.id; state.keepTracked = false;
   clearMarks();
   // start clean: no leftovers from another lab
@@ -27,7 +35,7 @@ export async function startLab(id, { extra = null } = {}) {
   await applySetup(s);
   if (extra) await applySetup(extra);
   emit('lab', L);                 // js/notebook/host.js opens the lab's notebook and sets its observing conditions
-  step = 0; renderCard();
+  step = Math.max(0, Math.min(L.steps.length - 1, at)); offer = at || extra || fresh ? null : savedLab(id); starting = false; renderCard(); emit('labstep');
   card.open();
   // on a phone or in a small embed the prompt would hide the sky: start it folded (its title bar still names the lab)
   if (window.innerWidth <= 560 || window.innerHeight < (L.notebook ? 640 : 560)) card.root.classList.add('min');
@@ -43,7 +51,7 @@ function renderCard() {
   card.title.textContent = (L.notebook ? '' : 'Lab · ') + L.title;
   card.body.innerHTML = `<h3>${esc(L.title)}</h3><div class="who">${esc(L.who)}</div>` +
     // a lab with the notebook beside it: one step at a time, so that the prompt leaves the sky free
-    (L.notebook ? `<div class="lab-step">${L.steps[step]}</div><div class="lab-nav"><button class="btn" data-act="prev" aria-label="Previous step"${step ? '' : ' disabled'}>&lsaquo;</button><span>Step ${step + 1} of ${L.steps.length}</span><button class="btn" data-act="next" aria-label="Next step"${step < L.steps.length - 1 ? '' : ' disabled'}>&rsaquo;</button></div>`
+    (L.notebook ? (offer ? `<p class="lab-offer">You were here before: ${esc(resumeText(offer))}. <button class="btn" data-act="resume">Go back there</button></p>` : '') + `<div class="lab-nav"><button class="btn" data-act="prev" aria-label="Previous step"${step ? '' : ' disabled'}>&lsaquo;</button><span>Step ${step + 1} of ${L.steps.length}</span><button class="btn" data-act="next" aria-label="Next step"${step < L.steps.length - 1 ? '' : ' disabled'}>&rsaquo;</button></div><div class="lab-step">${L.steps[step]}</div>`
       : `<ol>${L.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`) +
     (L.notebook ? '<details><summary>About this measurement, restart, links</summary><p>' + L.about + '</p>' : `<details><summary>About this measurement</summary><p>${L.about}</p></details>`) +
     `<div class="row"><button class="btn" data-act="restart" title="Put the date, place and view back to the start of this lab">Restart lab</button><button class="btn" data-act="list">All labs</button><button class="btn" data-act="link" title="Copy a link that opens this lab">Copy lab link</button></div>` + (L.notebook ? '</details>' : '');
@@ -73,11 +81,12 @@ export function openLabsList() {
   const f = modal.querySelector('.close'); if (f) f.focus();
 }
 export function initLabs() {
-  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { lab.current = null; running.id = null; emit('lab', null); emit('selection'); } });
+  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { forgetLab(); lab.current = null; running.id = null; emit('lab', null); emit('selection'); } });
   card.body.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.act === 'restart' && lab.current) startLab(lab.current.id);
-    else if (b.dataset.act === 'prev' || b.dataset.act === 'next') { const a = b.dataset.act; step = Math.max(0, Math.min(lab.current.steps.length - 1, step + (a === 'next' ? 1 : -1))); renderCard(); const n = card.body.querySelector(`[data-act="${a}"]:not(:disabled)`); if (n) n.focus({ preventScroll: true }); }
+    if (b.dataset.act === 'restart' && lab.current) startLab(lab.current.id, { fresh: true });
+    else if (b.dataset.act === 'resume' && offer) startLab(lab.current.id, { extra: offer.setup, at: offer.step });
+    else if (b.dataset.act === 'prev' || b.dataset.act === 'next') { const a = b.dataset.act; setLabStep(step + (a === 'next' ? 1 : -1)); const n = card.body.querySelector(`[data-act="${a}"]:not(:disabled)`); if (n) n.focus({ preventScroll: true }); }
     else if (b.dataset.act === 'list') openLabsList();
     else if (b.dataset.act === 'link' && lab.current && navigator.clipboard) navigator.clipboard.writeText(labLink(lab.current.id)).then(() => { b.textContent = 'Link copied'; setTimeout(() => { b.textContent = 'Copy lab link'; }, 1600); }, () => {});
   });

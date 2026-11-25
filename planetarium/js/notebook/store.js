@@ -3,26 +3,28 @@
 //
 // A notebook:
 //   { v: 1, slot, title, cols: [column], rows: [{<colId>: text | number}], graph: {...}, model: {...}, model2: {...},
+//     student, practice, foot per column ({mean, count}),
 //     seed, obs: {seeing, noise}, predict: bool, recordMap: [{raw, col}], nextId }
 // A column is one of
 //   { id, kind: 'data', name, unit, sig, raw? }             typed, pasted or recorded numbers
 //   { id, kind: 'text', name, raw? }                        words (object names, dates as text)
 //   { id, kind: 'convert', name, src, unit, sig, guess?, shown }   the source column in another unit (units.js rule)
 //   { id, kind: 'relation', name, rel, in: {key: colId}, sig }     physics: d = 1/p, s = d·θ ... (units.js RELATIONS)
+//   { id, kind: 'const', name, unit | parts, value, from }  one number in every row: a fitted value the student chose to use
 //   { id, kind: 'calc', name, formula, sig }                a formula of other columns, written with their letters
 // Columns are lettered A, B, C ... in order; computed columns may only use columns that exist (no cycles).
 
-import { fmtNum, parseNum, plainNum, colLetter } from './format.js';
+import { fmtNum, fmtColumn, parseNum, plainNum, colLetter } from './format.js';
 import { UNIT, convertRule, RELATION, unitSym } from './units.js';
-import { parse, analyse, evaluate, pretty, columnsUsed, serialize, partsLabel, unitParts, FormulaError } from './formula.js';
-import { MODEL } from './models.js';
+import { parse, analyse, evaluate, pretty, columnsUsed, serialize, partsLabel, partsUnitId, unitParts, FormulaError } from './formula.js';
+import { MODEL, variant } from './models.js';
 
 const KEY = 'astro-labs.planetarium.notebook.v1:';
-export const blankGraph = () => ({ x: null, y: null, y2: null, err: null, t: null, xLabel: '', yLabel: '', title: '', logX: false, logY: false, flipX: false, flipY: false, connect: false, equal: false, resid: true });
-export const blankModel = () => ({ type: null, p: {}, r: {} });
+export const blankGraph = () => ({ x: null, y: null, y2: null, err: null, t: null, xLabel: '', yLabel: '', title: '', logX: false, logY: false, flipX: false, flipY: false, connect: false, equal: false, resid: true, mark: false, markLabel: '' });
+export const blankModel = () => ({ type: null, p: {}, r: {}, phase: 'angle' });
 
 export function newNotebook(slot = 'free') {
-  return { v: 1, slot, title: '', cols: [], rows: [], graph: blankGraph(), model: blankModel(), model2: blankModel(), seed: 0, obs: null, predict: true, recordMap: [], nextId: 1 };
+  return { v: 1, slot, title: '', student: '', practice: false, cols: [], rows: [], graph: blankGraph(), model: blankModel(), model2: blankModel(), seed: 0, obs: null, predict: true, recordMap: [], nextId: 1 };
 }
 let rev = 0;
 /** Call after any change: drops the cached column values. */
@@ -43,6 +45,17 @@ export function depsOf(nb, col) {
   if (col.kind === 'relation') return Object.values(col.in || {});
   if (col.kind === 'calc') { try { return [...columnsUsed(parse(col.formula, (L) => !!colByLetter(nb, L)))].map((L) => colByLetter(nb, L).id); } catch (e) { return []; } }
   return [];
+}
+/** Move a column one place left (-1) or right (+1). Formulas keep meaning the same columns: their letters are rewritten. */
+export function moveColumn(nb, id, dir) {
+  const i = nb.cols.findIndex((c) => c.id === id), k = i + dir;
+  if (i < 0 || k < 0 || k >= nb.cols.length) return false;
+  const trees = new Map(nb.cols.filter((c) => c.kind === 'calc').map((c) => { try { return [c, parse(c.formula, (L) => !!colByLetter(nb, L))]; } catch (e) { return [c, null]; } }));
+  const was = nb.cols.map((c) => c.id);
+  [nb.cols[i], nb.cols[k]] = [nb.cols[k], nb.cols[i]];
+  const map = Object.fromEntries(was.map((cid, j) => [colLetter(j), colLetter(nb.cols.findIndex((c) => c.id === cid))]));
+  for (const [c, t] of trees) if (t) c.formula = serialize(t, (L) => map[L] || L);
+  touch(nb); return true;
 }
 export const dependents = (nb, id) => nb.cols.filter((c) => depsOf(nb, c).includes(id));
 /** Remove a column. Refused (returns the reason) while another column is computed from it. */
@@ -71,6 +84,7 @@ export function unitInfo(nb, col, seen = new Set()) {
   seen = new Set(seen).add(col.id);
   if (col.kind === 'text') return { id: null, label: '', parts: {}, text: true };
   if (col.kind === 'data' || col.kind === 'convert') return { id: UNIT[col.unit] ? col.unit : null, label: unitSym(col.unit), parts: unitParts(col.unit) };
+  if (col.kind === 'const') { const parts = col.parts || unitParts(col.unit), id = partsUnitId(parts) || (UNIT[col.unit] ? col.unit : null); return { id, label: id ? unitSym(id) : partsLabel(parts), parts }; }
   if (col.kind === 'relation') {
     const R = RELATION[col.rel], u = {};
     for (const inp of R.inputs) { const c = colById(nb, col.in[inp.key]); const ui = unitInfo(nb, c, seen); if (!ui.id || UNIT[ui.id].dim !== inp.dim) return { id: null, label: '', parts: {}, error: `${inp.label} must be a column with ${inp.dim === 'angle' ? 'an angle' : 'a ' + inp.dim} unit.` }; u[inp.key] = ui.id; }
@@ -92,6 +106,7 @@ export function values(nb, id, seen = new Set()) {
   if (!col || seen.has(id) || col.kind === 'text') return out;
   seen = new Set(seen).add(id);
   if (col.kind === 'data') { for (let i = 0; i < n; i++) out[i] = parseNum(nb.rows[i][id]); }
+  else if (col.kind === 'const') out.fill(+col.value);
   else if (col.kind === 'convert') {
     const su = unitInfo(nb, colById(nb, col.src));
     if (su.id && UNIT[col.unit] && UNIT[su.id].dim === UNIT[col.unit].dim && col.shown !== false) { const f = convertRule(su.id, col.unit).factor, s = values(nb, col.src, seen); for (let i = 0; i < n; i++) out[i] = s[i] * f; }
@@ -113,7 +128,7 @@ export function ruleOf(nb, col) {
   const L = (id) => letterOf(nb, id);
   if (col.kind === 'convert') {
     const su = unitInfo(nb, colById(nb, col.src));
-    try { const r = convertRule(su.id, col.unit); return { kind: 'convert', head: `${L(col.src)} → ${r.to.sym}`, rule: r.text, why: r.why, text: `convert ${L(col.src)} from ${r.from.sym} to ${r.to.sym}: ${r.text}${r.why ? ' (' + r.why + ')' : ''}` }; }
+    try { const r = convertRule(su.id, col.unit); return { kind: 'convert', head: `${L(col.src)} → ${/^[a-z]{1,2}$/i.test(r.to.sym) ? r.to.name : r.to.sym}`, rule: r.text, why: r.why, text: `convert ${L(col.src)} from ${r.from.sym} to ${r.to.sym}: ${r.text}${r.why ? ' (' + r.why + ')' : ''}` }; }
     catch (e) { return { kind: 'convert', head: `${L(col.src)} → ${unitSym(col.unit)}`, rule: '', why: '', error: su.id ? e.message : `Column ${L(col.src)} has no unit to convert from.`, text: 'convert (not possible)' }; }
   }
   if (col.kind === 'relation') {
@@ -126,6 +141,7 @@ export function ruleOf(nb, col) {
     const p = ui.tree ? pretty(ui.tree) : col.formula;
     return { kind: 'formula', head: '= ' + p, rule: '', why: ui.warn || '', error: ui.error, warn: ui.warn, text: `calculated: ${p}` };
   }
+  if (col.kind === 'const') return { kind: 'const', head: '', rule: '', why: '', text: `fixed value: ${col.from || 'typed in'}` };
   if (col.raw) return { kind: 'recorded', head: '', rule: '', why: '', text: `recorded: ${col.rawLabel || col.raw}` };
   return { kind: 'typed', head: '', rule: '', why: '', text: 'typed in' };
 }
@@ -136,6 +152,16 @@ export function chains(nb) {
   return nb.cols.filter((c) => !depsOf(nb, c).length && dependents(nb, c.id).length).map((c) => ({ id: c.id, kids: kids(c.id, 0) }));
 }
 
+/** The same, with every computed column shown once: [{from: [ids], to: id, kids: [...]}]. A column fed by two others is
+ *  listed under both of its inputs together instead of once under each. */
+export function flow(nb) {
+  const computed = nb.cols.filter((c) => depsOf(nb, c).length), one = (c) => new Set(depsOf(nb, c)).size === 1;
+  const kids = (id, depth) => (depth > 12 ? [] : computed.filter((c) => one(c) && depsOf(nb, c)[0] === id).map((c) => ({ id: c.id, kids: kids(c.id, depth + 1) })));
+  const out = nb.cols.filter((c) => !depsOf(nb, c).length).map((c) => ({ from: [c.id], kids: kids(c.id, 0) })).filter((t) => t.kids.length);
+  for (const c of computed) if (!one(c)) out.push({ from: [...new Set(depsOf(nb, c))], kids: [{ id: c.id, kids: kids(c.id, 0) }] });
+  return out;
+}
+
 // ---- rows -------------------------------------------------------------------------------------------------------------
 export function addRow(nb, cells = {}) { nb.rows.push({ ...cells }); touch(nb); return nb.rows.length - 1; }
 export function removeRow(nb, i) { nb.rows.splice(i, 1); touch(nb); }
@@ -144,8 +170,13 @@ export function setCell(nb, i, id, text) { while (nb.rows.length <= i) nb.rows.p
 export function cellText(nb, col, i) {
   if (col.kind === 'data' || col.kind === 'text') { const v = nb.rows[i][col.id]; return v == null ? '' : typeof v === 'number' ? fmtNum(v, col.sig) : String(v); }
   if (col.kind === 'convert' && col.shown === false) return '?';
-  return fmtNum(values(nb, col.id)[i], col.sig);
+  if (col.kind === 'const') return fmtNum(+col.value, col.sig);
+  if (!nb._cache) nb._cache = {};
+  const k = 'fmt:' + col.id + ':' + col.sig;
+  return (nb._cache[k] || (nb._cache[k] = fmtColumn(values(nb, col.id), col.sig)))(values(nb, col.id)[i]);
 }
+/** {n, mean} of the numbers in a column: for the row under the table that the student can switch on per column. */
+export function footOf(nb, col) { const v = values(nb, col.id).filter(Number.isFinite); return { n: v.length, mean: v.length ? v.reduce((a, b) => a + b, 0) / v.length : NaN }; }
 
 // ---- the points on the graph ---------------------------------------------------------------------------------------------
 /** [{x, y, t, e, i}] for the rows where both plotted columns hold a number. which = 'y' | 'y2'. */
@@ -171,6 +202,7 @@ function repair(o, slot) {
   nb.model = { ...blankModel(), ...(o.model || {}) }; nb.model2 = { ...blankModel(), ...(o.model2 || {}) };
   if (nb.model.type && !MODEL[nb.model.type]) nb.model = blankModel();
   if (nb.model2.type && !MODEL[nb.model2.type]) nb.model2 = blankModel();
+  for (const [m, was] of [[nb.model, o.model], [nb.model2, o.model2]]) if (was && was.type && !was.phase) m.phase = 'moment';       // saved before phases could be angles
   nb.rows = Array.isArray(o.rows) ? o.rows : []; nb.recordMap = Array.isArray(o.recordMap) ? o.recordMap : [];
   nb.nextId = Math.max(nb.nextId || 1, 1 + Math.max(0, ...nb.cols.map((c) => +String(c.id).slice(1) || 0)));
   return nb;
@@ -185,11 +217,13 @@ export function toCSV(nb, { when = new Date() } = {}) {
   const L = [];
   L.push('# Lab notebook (Astro Labs planetarium)');
   if (nb.title) L.push('# title,' + q(nb.title));
+  if (nb.student) L.push('# name,' + q(nb.student));
+  if (nb.practice) L.push('# PRACTICE DATA,made up by the notebook: not a measurement');
   L.push('# exported,' + when.toISOString());
   if (nb.obs) L.push('# observing conditions,' + q(`seeing ${nb.obs.seeing} arcsec; simulated measurement noise ${nb.obs.noise} arcsec per star image (not real data); seed ${nb.seed}`));
   const g = nb.graph, nm = (id) => { const c = colById(nb, id); return c ? `${letterOf(nb, id)} ${c.name}` : ''; };
   if (g.x && g.y) L.push('# graph,' + q(`horizontal: ${nm(g.x)}; vertical: ${nm(g.y)}${g.y2 ? '; second series: ' + nm(g.y2) : ''}${g.t ? '; time of each point: ' + nm(g.t) : ''}; title: ${g.title}; axis labels: ${g.xLabel} | ${g.yLabel}`));
-  for (const [m, tag] of [[nb.model, 'model'], [nb.model2, 'second curve']]) if (m.type && MODEL[m.type]) L.push(`# ${tag} (fitted by hand),` + q(MODEL[m.type].name + ': ' + MODEL[m.type].params.map((p) => `${p.sym.replace(/<[^>]+>/g, '')} = ${plainNum(m.p[p.key])}`).join('; ')));
+  for (const [m, tag] of [[nb.model, 'model'], [nb.model2, 'second curve']]) if (m.type && MODEL[m.type]) L.push(`# ${tag} (fitted by hand),` + q(MODEL[m.type].name + ': ' + variant(MODEL[m.type], m).params.map((p) => `${p.sym.replace(/<[^>]+>/g, '')} = ${plainNum(m.p[p.key])}`).join('; ')));
   L.push('# notebook-json,' + q(JSON.stringify(strip(nb))));
   L.push(['column', ...nb.cols.map((c, i) => colLetter(i))].join(','));
   L.push(['name', ...nb.cols.map((c) => q(c.name))].join(','));
@@ -204,14 +238,29 @@ export function toTSV(nb) {
   const head = nb.cols.map((c) => { const u = unitInfo(nb, c).label; return (c.name || letterOf(nb, c.id)) + (u ? ` (${u})` : ''); });
   return [head.join('\t'), ...nb.rows.map((r, i) => nb.cols.map((c) => cellText(nb, c, i)).join('\t'))].join('\n');
 }
-export function parseCSV(text) {
+/** How a block of text is cut into cells: tabs win (a spreadsheet's copy: the commas in it are part of the numbers), then
+ *  semicolons, then commas; with none of them, runs of spaces when every line has the same number of numbers.
+ *  'ask' = commas that could be thousands (1,249) as well as two columns: only the student knows. */
+export function delimiterOf(text) {
+  const bare = String(text).replace(/"[^"]*"/g, ''), lines = bare.split(/[\r\n]+/).filter((l) => l.trim() && l[0] !== '#');
+  if (bare.includes('\t')) return '\t';
+  if (lines.length && lines.every((l) => l.includes(';'))) return ';';
+  if (bare.includes(',')) { const body = lines.filter((l) => /^[\s\d.,+−-]+$/.test(l)), th = /^\s*[-+−]?\d{1,3}(,\d{3})+(\.\d+)?\s*$/; return body.length && body.every((l) => th.test(l) || !l.includes(',')) && body.some((l) => th.test(l)) ? 'ask' : ','; }
+  const n = lines.map((l) => l.trim().split(/\s+/)), th = /^\s*[-+−]?\d{1,3}( \d{3})+(\.\d+)?\s*$/;
+  if (n.length && n[0].length > 1 && n.every((c) => c.length === n[0].length) && n.some((c) => c.every((x) => !Number.isNaN(parseNum(x)))) && !lines.every((l) => th.test(l))) return ' ';
+  return '';
+}
+/** Cells of a text. delim: ',' (commas and tabs, as before), or what delimiterOf() found. */
+export function parseCSV(text, delim = ',') {
+  if (delim === ' ') return String(text).split(/[\r\n]+/).filter((l) => l.trim()).map((l) => l.trim().split(/\s+/));
+  const cut = (ch) => (delim === ',' ? ch === ',' || ch === '\t' : delim !== '' && ch === delim);
   const rows = []; let row = [], cell = '', inQ = false;
   const s = String(text).replace(/^﻿/, '');
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (inQ) { if (ch === '"') { if (s[i + 1] === '"') { cell += '"'; i++; } else inQ = false; } else cell += ch; }
     else if (ch === '"' && cell === '') inQ = true;
-    else if (ch === ',' || ch === '\t') { row.push(cell); cell = ''; }
+    else if (cut(ch)) { row.push(cell); cell = ''; }
     else if (ch === '\n' || ch === '\r') { if (ch === '\r' && s[i + 1] === '\n') i++; row.push(cell); cell = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = []; }
     else cell += ch;
   }
@@ -220,8 +269,9 @@ export function parseCSV(text) {
 }
 /** Read a CSV back. One of ours (it carries its notebook-json line) comes back exactly; any other table becomes
  *  plain data columns: first row = names, "name (unit)" understood, a column with words in it becomes a text column. */
-export function fromCSV(text, slot = 'free') {
-  const rows = parseCSV(text);
+export function fromCSV(text, slot = 'free', delim = null) {
+  const found = /^# notebook-json/m.test(text) ? ',' : delim == null ? delimiterOf(text) : delim;
+  const rows = parseCSV(text, found === 'ask' ? ',' : found);
   const j = rows.find((r) => r[0] === '# notebook-json');
   if (j) { const o = JSON.parse(j[1]); if (o && o.v === 1 && Array.isArray(o.cols)) return touch(repair(o, slot)); }
   const body = rows.filter((r) => !/^#/.test(r[0]));

@@ -22,6 +22,7 @@ import { initLabs, openLabsList, startLab, lab, labLink } from './labs.js';
 import { applySetup, describeView, setupFromQuery } from './setup.js';
 import { labById } from './presets.js';
 import { allTargets } from './targets.js';
+import { reloadedLab, initResume } from './resume.js';
 import { marks } from './stopwatch.js';
 import { initNotebookHost, toggleNotebook, notebookOpen } from '../notebook/host.js';
 
@@ -119,7 +120,10 @@ export function initLabsSuite() {
   const q = new URLSearchParams(location.search);
   const extra = setupFromQuery(q);
   const id = q.get('lab');
-  if (id && labById(id)) startLab(id, { extra });
+  const back = reloadedLab();       // a reload: back to the step, the date and the view (not only to the notebook)
+  initResume();
+  if (back && (id ? back.id === id : !extra)) startLab(back.id, back.atStart ? {} : { extra: back.setup, at: back.step });
+  else if (id && labById(id)) startLab(id, { extra });
   else if (extra) applySetup(extra);
   else if (id === 'list') openLabsList();
 

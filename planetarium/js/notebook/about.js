@@ -3,7 +3,7 @@
 // argument Seth asked for: why a nearby star's yearly parallax path is an ELLIPSE with semi-axes p (along ecliptic
 // longitude) and p·sin β (along latitude), not the back-and-forth line of the usual sketch, and what proper motion adds.
 
-import { MODEL } from './models.js';
+import { MODEL, variant } from './models.js';
 
 const TAU = 2 * Math.PI, DEG = Math.PI / 180;
 const INK = '#e4ebf3', MUTED = '#94a3b5', GRID = 'rgba(255,255,255,0.14)', BLUE = '#3987e5', ORANGE = '#d95926', GOLD = '#e8b86a';
@@ -24,6 +24,9 @@ const TEXT = {
     <p>Where it turns up: one coordinate of a nearby star against time. The line is its proper motion; the yearly wave is parallax (see “Ellipse with a steady drift” for the two-dimensional picture and why the wave’s size depends on direction).</p>`,
   tilt: (v) => `<p>The separation between a body and the thing it orbits, for a circular orbit of radius <i>A</i> tipped by the angle <i>tilt</i> toward us. Edge-on (tilt 0°) the separation falls to zero twice each orbit, when the body passes in front and behind. Tipped up, it only closes to A · sin(tilt). Face-on (90°) the separation never changes.</p>
     <p>A separation is never negative, so this curve bounces where a sine wave would cross zero: use it when you measured distances, not signed offsets.</p>`,
+  circle: (v) => `<p>A circle on the graph: the centre (x<sub>c</sub>, y<sub>c</sub>) and the diameter <i>D</i> (twice the radius). Both axes must be the same kind of quantity in the same unit, with <b>Same scale on both axes</b> switched on, or it is drawn as an oval.</p>
+    <p>The rms under the graph is the spread of the points about the <b>rim</b>, so it means something only when the points ought to lie on a circle. For a cloud of points that fills a disc, judge the centre by eye: as many points to the left as to the right, above as below.</p>
+    <p>Where it turns up: the middle of a swarm of star clusters seen from inside the Galaxy, the orbit of something seen face-on, the rim of a crater. Graph options can mark the origin (0, 0); what stands there is for you to say.</p>`,
   ellipse: (v) => `<p>A point going round an ellipse (half-axes <i>a</i> and <i>b</i>, long axis turned by θ from your horizontal axis) once every <i>P</i>, while the whole ellipse slides at the steady rate (v<sub>x</sub>, v<sub>y</sub>). It needs three columns: horizontal, vertical, and the <b>time</b> of each point, because the curve is traced in time.</p>
     <h4>Where it turns up: a nearby star against distant ones</h4>
     <p>As the Earth goes round the Sun we look at a nearby star from a slightly different place each month, so it appears to shift against the far background. The star always appears displaced toward the Sun’s side of the sky, by an angle set by how far sideways the Earth has moved, as seen from the star. With the star at ecliptic longitude λ and latitude β, and the Sun at longitude λ<sub>☉</sub>:</p>
@@ -39,8 +42,8 @@ const TEXT = {
 
 let raf = 0;
 /** Open the panel over the notebook `root`. vars = {x, y, t}: the student's names for the plotted columns. */
-export function openAbout(root, id, vars) {
-  const M = MODEL[id]; if (!M) return;
+export function openAbout(root, id, vars, setup = null) {
+  const M = variant(MODEL[id], setup); if (!M) return;
   closeAbout(root);
   const box = document.createElement('div'); box.className = 'nb-about';
   box.innerHTML = `<div class="nb-about-in"><h3>About this model: ${M.name}<button class="nb-x" data-close aria-label="Close">&times;</button></h3>
@@ -79,6 +82,10 @@ function diagram(id, canvas, ctl) {
   const dot = (x, y, r, col) => { c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); };
   const line = (x0, y0, x1, y1, col, w = 1, dash = []) => { c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash); c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); };
   let get = {}, draw;
+  if (id === 'circle') {
+    get.D = slider(ctl, 'Diameter', 0.2, 1, 0.7); get.x = slider(ctl, 'Centre, horizontal', -0.6, 0.6, 0.3);
+    draw = () => { const s = H * 0.42, cx = W / 2 + get.x() * s, cy = H * 0.46, R = get.D() * s; line(20, H / 2 + 20, W - 20, H / 2 + 20, GRID); line(W / 2, 8, W / 2, H - 8, GRID); text('(0, 0)', W / 2 - 6, H / 2 + 31, MUTED, 'right'); c.strokeStyle = ORANGE; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke(); dot(cx, cy, 4, GOLD); text('centre', cx, cy - 12, GOLD); line(cx - R, cy, cx + R, cy, MUTED, 1, [3, 3]); text('D', cx + R / 2, cy + 11, INK, 'center', 13); };
+  } else
   if (id === 'ellipse') {
     get.beta = slider(ctl, 'Ecliptic latitude of the star, β', 0, 90, 30, '°');
     get.drift = check(ctl, 'Add a steady drift (proper motion)', false);
