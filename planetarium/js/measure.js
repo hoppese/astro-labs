@@ -20,7 +20,8 @@ import { openLoupe, closeLoupe, loupeOpen } from './notebook/loupe.js';
 
 // byEye (lab notebook, js/notebook/host.js): stars and other point sources are NOT snapped to; a magnifier opens and the
 // student places the point on the image by eye (discs still snap to centre and limb). onRecord: the notebook's Record.
-export const measure = { active: false, list: [], pending: null, hover: null, snap: true, byEye: false, onRecord: null };
+// showPa: the measurement whose position angle is drawn on the sky (a press on the angle keeps it, pointing at the row shows it)
+export const measure = { showPa: null, overPa: null, active: false, list: [], pending: null, hover: null, snap: true, byEye: false, onRecord: null };
 let panel = null;
 
 /** J2000 direction under a screen point (refraction removed). */
@@ -141,6 +142,14 @@ export function separation(a, b, frame) {
   const pa = mod(Math.atan2(Math.sin(dra) * Math.cos(d2), Math.cos(d1) * Math.sin(d2) - Math.sin(d1) * Math.cos(d2) * Math.cos(dra)) * RAD, 360);
   return { sep, pa };
 }
+const TOWARD = ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'];
+export const towardOf = (pa) => TOWARD[Math.round(mod(pa, 360) / 45) % 8];
+/** The J2000 direction at distance rho (deg) from a, toward position angle pa counted from north of date (as separation() counts it). */
+export function fromNorth(a, rho, pa, frame) {
+  const pole = [frame.Mjd[6], frame.Mjd[7], frame.Mjd[8]], e = unit(cross(pole, a)), n = cross(a, e);
+  const cr = Math.cos(rho * DEG), sr = Math.sin(rho * DEG), cp = Math.cos(pa * DEG), sp = Math.sin(pa * DEG);
+  return unit([0, 1, 2].map((k) => a[k] * cr + (n[k] * cp + e[k] * sp) * sr));
+}
 /** Full precision: 0.0001 deg and 0.1 arcsec above an arcminute, 0.01 arcsec below. */
 export function fmtSep(sep) {
   const dms = fmtDMS(sep, { sign: false, dp: 1 });
@@ -166,7 +175,9 @@ function dropStale() { if (measure.pending && measure.pending.byEye && moved(mea
 /** "Moon edge to Sun edge" (or to its center): an edge and a point of another body never make a diameter. */
 export const mixedLimbs = (m) => (m.a.limb != null || m.b.limb != null) && !!m.a.body && !!m.b.body && m.a.body !== m.b.body;
 const partOf = (p) => nameOf(p).replace(/ limb$/, '') + (p.limb == null ? ' center' : ' edge');
-export function clearMeasures() { measure.list.length = 0; measure.pending = null; updatePanel(); emit('measure'); }
+/** Delete one finished measurement. */
+function removeMeasure(m) { const i = measure.list.indexOf(m); if (i < 0) return; measure.list.splice(i, 1); if (measure.showPa === m) measure.showPa = null; if (measure.overPa === m) measure.overPa = null; updatePanel(); emit('measure'); emit('render'); }
+export function clearMeasures() { measure.list.length = 0; measure.showPa = measure.overPa = null; measure.pending = null; updatePanel(); emit('measure'); }
 
 /** Called by input.js for every click on the sky; returns true when the click was used. */
 export function measureClick(x, y, ref) {
@@ -183,11 +194,12 @@ export function measureClick(x, y, ref) {
   commit(p);
   return true;
 }
+let serial = 0;
 function commit(p) {
   p.t = state.timeMs; dropped = false; measure.hover = null;      // (the old end of the rubber band is not the new one)
   dropStale();
   if (!measure.pending) measure.pending = p;
-  else { measure.list.push({ a: measure.pending, b: p, t: p.t }); measure.pending = null; if (measure.list.length > 12) measure.list.shift(); }
+  else { measure.list.push({ a: measure.pending, b: p, t: p.t, n: ++serial }); measure.pending = null; if (measure.list.length > 12) { const x = measure.list.shift(); if (measure.showPa === x) measure.showPa = null; } }
   updatePanel(); emit('measure');
 }
 /** Name of the object whose image is under a by-eye point (a label for the record only: the point itself stays free). */
@@ -216,16 +228,23 @@ export function initMeasure(canvas, panelEl) {
   });
   panel.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
-    if (b.dataset.act === 'clear') clearMeasures();
+    const m = measure.list.find((x) => x.n === +b.dataset.n);
+    if (b.dataset.act === 'del') removeMeasure(m);
+    else if (b.dataset.act === 'undo') { measure.pending = null; measure.hover = null; closeLoupe(); updatePanel(); emit('measure'); emit('render'); }
+    else if (b.dataset.act === 'pa') { measure.showPa = measure.showPa === m ? null : m; updatePanel(); emit('render'); }
+    else if (b.dataset.act === 'clear') clearMeasures();
     else if (b.dataset.act === 'done') toggleMeasure(false);
     else if (b.dataset.act === 'snap') { measure.snap = !measure.snap; updatePanel(); }
     else if (b.dataset.act === 'record' && measure.onRecord) measure.onRecord();
   });
+  const over = (e) => { const r = e && e.target.closest && e.target.closest('.mp-row[data-n]'), m = (r && measure.list.find((x) => x.n === +r.dataset.n)) || null; if (m !== measure.overPa) { measure.overPa = m; emit('render'); } };
+  panel.addEventListener('pointerover', (e) => { if (e.pointerType === 'mouse') over(e); }); panel.addEventListener('pointerleave', () => over(null));
   on('time', updatePanel);
   on('notebook', updatePanel);          // the lab notebook opened or closed: Record button, by-eye hint
   setInterval(() => { if (measure.list.length && !panel.hidden) updatePanel(); }, 1000);
 }
 
+let lastCount = 0;
 function updatePanel() {
   if (!panel) return;
   dropStale();
@@ -233,19 +252,47 @@ function updatePanel() {
   const frame = getFrame(), bodies = getBodies(frame);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let html = '<div class="mp-head">Angular distance</div>';
-  if (measure.active) html += `<div class="mp-hint">${dropped ? '<b>The clock has moved</b>, so the first point was dropped: click it again.' : measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?)' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the center of the image by eye.' + (measure.snap ? ' Discs still snap to center and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
-  const rows = measure.list.slice(-5).map((m) => {
+  if (measure.active) html += `<div class="mp-hint">${dropped ? '<b>The clock has moved</b>, so the first point was dropped: click it again.' : measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?) <button class="mp-x" data-act="undo" title="Take back the first point" aria-label="Take back the first point">&times;</button>' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the center of the image by eye.' + (measure.snap ? ' Discs still snap to center and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
+  const rows = measure.list.map((m) => {
     const a = eqjOf(m.a, frame, bodies), b = eqjOf(m.b, frame, bodies);
     if (!a || !b) return '';
     const s = separation(a, b, frame), old = isStale(m);
-    if (old) return `<div class="mp-row old"><span class="mp-names">${esc(nameOf(m.a))} → ${esc(nameOf(m.b))}</span><span class="mp-warn">The clock has moved since: measure again.</span></div>`;
+    const names = `${nameOf(m.a)} → ${nameOf(m.b)}`, del = `<button class="mp-x" data-act="del" data-n="${m.n}" title="Delete this measurement" aria-label="Delete the measurement ${esc(names)}">&times;</button>`;
+    if (old) return `<div class="mp-row old"><span class="mp-names">${esc(names)}</span><span></span>${del}<span class="mp-warn">The clock has moved since: measure again.</span></div>`;
     const mix = mixedLimbs(m) ? `<span class="mp-warn">${esc(partOf(m.a))} to ${esc(partOf(m.b))}: two different bodies, so not a diameter.</span>` : '';
-    return `<div class="mp-row"><span class="mp-names">${esc(nameOf(m.a))} → ${esc(nameOf(m.b))}</span><span class="mp-val">${fmtSep(s.sep)}</span><span class="mp-pa">PA ${s.pa.toFixed(s.sep < 5 / 60 ? 3 : 1)}°</span>${mix}</div>`;
+    const shown = measure.showPa === m, deg = s.pa.toFixed(s.sep < 5 / 60 ? 3 : 1);
+    return `<div class="mp-row" data-n="${m.n}"><span class="mp-names" title="${esc(names)}">${esc(names)}</span><span class="mp-val">${fmtSep(s.sep)}</span>${del}<button class="mp-pa" data-act="pa" data-n="${m.n}" aria-expanded="${shown}" title="The direction of the line: show it on the sky">Position angle <b>${deg}°</b> (toward the ${towardOf(s.pa)}) <i>${shown ? 'hide' : 'what is this?'}</i></button>`
+      + (shown ? `<span class="mp-why">The direction of your line. Stand at the first point (${esc(nameOf(m.a))}): turn from celestial <b>north</b> (0°) through <b>east</b> (90°) until you face the second. It is drawn on the sky. East is to the left of north, because we look up at the sky, not down at a map.</span>` : '') + `${mix}</div>`;
   }).join('');
-  html += rows;
-  html += `<div class="mp-acts">${measure.onRecord ? `<button class="btn rec" data-act="record" title="Copy this reading into your notebook"${measure.list.length ? '' : ' disabled'}>Record</button>` : ''}${measure.list.length ? '<button class="btn" data-act="clear">Clear</button>' : ''}${measure.active ? `<button class="btn${measure.snap ? ' on' : ''}" data-act="snap" aria-pressed="${measure.snap}" title="Snap clicks to objects and limbs">Snap</button><button class="btn" data-act="done">Done <kbd>R</kbd></button>` : ''}</div>`;
-  if (html !== panel.dataset.html) { panel.innerHTML = html; panel.dataset.html = html; }
+  html += `<div class="mp-list">${rows}</div>`;
+  html += `<div class="mp-acts">${measure.onRecord ? `<button class="btn rec" data-act="record" title="Copy this reading into your notebook"${measure.list.length ? '' : ' disabled'}>Record</button>` : ''}${measure.list.length ? '<button class="btn" data-act="clear">Clear all</button>' : ''}${measure.active ? `<button class="btn${measure.snap ? ' on' : ''}" data-act="snap" aria-pressed="${measure.snap}" title="Snap clicks to objects and limbs">Snap</button><button class="btn" data-act="done">Done <kbd>R</kbd></button>` : ''}</div>`;
+  if (html !== panel.dataset.html) {
+    const L = panel.querySelector('.mp-list'), st = L ? L.scrollTop : 0, count = measure.list.length, f = panel.contains(document.activeElement) ? document.activeElement.dataset : null, sel = f && f.act ? `[data-act="${f.act}"]${f.n ? `[data-n="${f.n}"]` : ''}` : '';
+    panel.innerHTML = html; panel.dataset.html = html;
+    const N = panel.querySelector('.mp-list'); N.scrollTop = count > lastCount ? 1e6 : st; lastCount = count;          // a new one is in sight
+    if (sel) { const b = panel.querySelector(sel); if (b) b.focus({ preventScroll: true }); }
+  }
   panel.hidden = false;
+}
+
+/** At the first point: the way to celestial north, the way to east, and the turn from north through east to the line. */
+function drawPa(ctx, a, pa, frame, toHor, proj) {
+  const at = (rho, ang) => { const s = [0, 0]; return proj(toHor(fromNorth(a, rho, ang, frame)), s) ? s : null; };
+  const px = Math.max(cam.pxPerDeg, 1e-6), long = Math.min(70 / px, 25), o = at(0, 0); if (!o) return;
+  const line = (p) => { if (!p) return; ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(p[0], p[1]); ctx.stroke(); };
+  const word = (p, t) => { if (!p) return; const d = Math.hypot(p[0] - o[0], p[1] - o[1]) || 1, x = p[0] + (p[0] - o[0]) / d * 11, y = p[1] + (p[1] - o[1]) / d * 11; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(2,6,14,0.85)'; ctx.strokeText(t, x, y); ctx.fillText(t, x, y); };
+  ctx.save(); ctx.font = "600 13px 'Source Sans 3', system-ui, sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const [w, c] of [[3.6, 'rgba(2,6,14,0.7)'], [1.4, '#9fc2ff']]) {
+    ctx.lineWidth = w; ctx.strokeStyle = c; ctx.setLineDash([5, 4]); line(at(long, 0)); line(at(long, 90)); ctx.setLineDash([]);
+    ctx.beginPath(); let pen = false; const n = Math.max(2, Math.ceil(pa / 4));
+    for (let i = 0; i <= n; i++) { const p = at(long * 0.5, pa * i / n); if (!p) { pen = false; continue; } if (pen) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); pen = true; }
+    ctx.stroke();
+    const p1 = at(long * 0.5, pa), p0 = at(long * 0.5, pa - Math.min(8, pa * 0.4));      // an arrowhead: which way it is counted
+    if (p0 && p1 && pa > 12) { const g = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]); ctx.beginPath(); ctx.moveTo(p1[0] - 8 * Math.cos(g - 0.45), p1[1] - 8 * Math.sin(g - 0.45)); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p1[0] - 8 * Math.cos(g + 0.45), p1[1] - 8 * Math.sin(g + 0.45)); ctx.stroke(); }
+  }
+  ctx.fillStyle = '#cfe0ff'; word(at(long, 0), 'N'); word(at(long, 90), 'E');
+  const mid = at(long * 0.5, pa / 2); if (mid && pa > 25) word(mid, pa.toFixed(0) + '°');
+  ctx.restore();
 }
 
 // ---- drawing (registered as a renderer overlay) ---------------------------------------
@@ -301,6 +348,7 @@ export function drawMeasures(ctx) {
     if (!a || !b || isStale(m)) continue;
     const s = angleBetween(a, b);
     arc(toHor(a), toHor(b), fmtArc(s));
+    if (m === measure.showPa || m === measure.overPa) drawPa(ctx, a, separation(a, b, frame).pa, frame, toHor, proj);
   }
   if (measure.pending) {
     const a = eqjOf(measure.pending, frame, bodies);

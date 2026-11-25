@@ -1345,3 +1345,5 @@ Hooks elsewhere: `eff.pointing` (state.js: alt-az, refraction on, no steady sky)
 - Place rounded to 0.1 deg (at most 0.07 deg of sky), in memory only, dropped on leaving.
 - By day only the Moon is offered, at least 30 deg from the Sun; a star or planet selected beforehand is offered whenever judge() allows it.
 - **Not tested: any real phone.** Signs of the screen angles, the heading's behavior, drift, the camera's axis against the phone's (expected 1-2 deg, taken up by the tilt part; its sideways part goes into the direction), prompts, Home Screen app, wake lock.
+
+- Angle tool (2026-11-25): each measurement has an x, the first point can be taken back, and the position angle is written out; pressing it (or pointing at the row) draws north, east and the turn on the sky (equator of date, `fromNorth`).
