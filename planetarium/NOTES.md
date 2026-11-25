@@ -1322,3 +1322,26 @@ Touch; Safari and Firefox; the phone layout only in a 390 x 760 iframe with a mo
 - The "How the columns follow" strip is gone: the chain is in each column's dialog, and pointing at a header marks the columns it is made from (solid) and those made from it (dashed). `S.flow` still builds it.
 - The fit strip leads with the sum of squared residuals (`residuals().ss`), then rms.
 - Side by side (>= 700 px): all table buttons over the table, everything of the graph (axes, graph, fit strip, sliders) on the other side, `.nb-split` between them (drag, arrow keys, double-click to reset; remembered as `astro-labs.notebook.split`). Low windows: the graph sticks and the sliders scroll under it.
+
+# Point at the sky: a phone held up (2026-11-25)
+
+`js/point/`: `math.js` (quaternions, W3C angles, screen angle, heading rules, fix, one-euro filter), `fusion.js` (relative attitude + one azimuth offset; pure, times passed in), `wmm.js` + `wmm-data.js` (WMM2025, 90 rows, public domain),
+`targets.js`, `sensors.js` (events, capability, permission), `eye.js` (camera), `index.js` (UI, view), `sim.js` (`?pointsim=1`: pretend phone; iOS / Android / no compass). `css/point.css`. Tests: `tools/check-point.mjs` (check.mjs 29; also alone), `tools/wmm-truth.json` (NOAA's 100 test values).
+Hooks elsewhere: `eff.pointing` (state.js: alt-az, refraction on, no steady sky), `state.homeLoc` (the place that is saved while the phone's own is shown), `nav.setDriver / driven / releaseDriver` (whoever else moves the view releases it), `lab-start` (labs.js) and `quiz-start` events.
+
+## API facts (looked up 2026-11-25)
+- W3C DeviceOrientation (CR draft 2026-11-18): intrinsic Z-X'-Y'', device axes do not turn with the screen; secure context; policies accelerometer, gyroscope (+ magnetometer for absolute), default 'self'; requestPermission(absolute) needs transient activation; events only while visible; nulls when there is no sensor.
+- iOS (WebKit source, WebCoreMotionManager.mm): attitude from `startDeviceMotionUpdates` with no reference frame = arbitrary zero of azimuth, restarts when the last listener goes; webkitCompassHeading = CLHeading.magneticHeading (MAGNETIC), accuracy = headingAccuracy (negative = invalid).
+  Apple: heading of the portrait top edge (headingOrientation default, WebKit does not set it). What it does once the top edge passes the vertical is documented nowhere: such readings are not used (`headingOffset`).
+- Permission (WebDeviceOrientationAndMotionAccessController): decisions are held in memory per origin, refusals too, so they last until the browser process ends. In a cross-origin frame WebKit wants allow="accelerometer; gyroscope; magnetometer".
+- Android Chrome (Chromium source): deviceorientation = TYPE_GAME_ROTATION_VECTOR (no north), deviceorientationabsolute = TYPE_ROTATION_VECTOR; Android: y toward the geomagnetic pole; W3C Orientation Sensor: magnetic north. No accuracy is given to the page.
+- getUserMedia in iOS Home Screen apps: WebKit bug 185448, fixed 13.4. Wake lock in them: bug 254545, works from iOS 18.4 (bug 303885, second hand).
+
+## Rules worth keeping
+- The phone's azimuth comes from the relative attitude + one offset. Calibrated: offset frozen at the fix; not corrected by the compass; "recalibrate" after 10 min or when the compass has wandered by 12 deg.
+  Sensors restarted (page hidden, 3 s gap): the frame has a new zero, the fix survives only as "compass + last correction" (status `stale`); with no compass it is lost.
+- The tilt correction is a constant turn of the device frame about the axis that was level at the fix. A fix uses the half second that ENDED 0.09 s before the tap.
+- Compass alone without a compass: no direction is claimed, the view is not driven.
+- Place rounded to 0.1 deg (at most 0.07 deg of sky), in memory only, dropped on leaving.
+- By day only the Moon is offered, at least 30 deg from the Sun; a star or planet selected beforehand is offered whenever judge() allows it.
+- **Not tested: any real phone.** Signs of the screen angles, the heading's behavior, drift, the camera's axis against the phone's (expected 1-2 deg, taken up by the tilt part; its sideways part goes into the direction), prompts, Home Screen app, wake lock.

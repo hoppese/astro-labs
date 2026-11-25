@@ -98,6 +98,7 @@ const pool = () => (opt.mode === 'star' ? starPool() : conPool());
 
 // ---- flow ----------------------------------------------------------------------------------------
 function start() {
+  emit('quiz-start');           // js/point/: the phone lets go of the view first
   const p = pool();
   if (p.list.length < 4) { q.note = 'Too few to make a quiz right now. Choose a bigger set, or “Whole sky”.'; renderPanel(); return; }
   saveJSON(OPT_KEY, opt);

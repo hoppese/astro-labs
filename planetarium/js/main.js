@@ -25,6 +25,7 @@ import { initSteady } from './steady.js';
 import { initLayout } from './layout.js';
 import { initLabsSuite } from './labs/index.js';
 import { initDeepStars, deep } from './deepstars.js';
+import { initPoint } from './point/index.js';
 import { fieldAdjust } from './render/density.js';
 
 async function start() {
@@ -69,6 +70,7 @@ async function start() {
   setTimeout(() => globesWork(), 400);      // compile the shader before it is needed, not at the first moonrise (0.1 - 0.7 s)
   initLayout(canvas);           // the middle of the free sky, the "Tracking" chip (js/layout.js); before a lab or a link sets the view
   initLabsSuite();              // measuring tools, labs menu, URL parameters (js/labs/index.js)
+  initPoint();                  // pointing a phone at the sky (js/point/)
   addOverlay(drawMeasures);     // last: over the Earth's shadow and the second observer's circles
 }
 start();

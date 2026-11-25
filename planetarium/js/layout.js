@@ -4,7 +4,7 @@
 //  - an object that was tapped (not followed) and now lies under the sheet is brought out from under it;
 //  - the "Tracking …" chip, and on a phone the lines of things at the top of the sky, get places clear of each other.
 
-import { state, on } from './state.js';
+import { state, eff, on } from './state.js';
 import { cam, projectHor, onScreen, unproject, update } from './camera.js';
 import { aimCentre, centerOn, flyTo, select, stopTracking, isAnimating } from './nav.js';
 import { getFrame } from './skyframe.js';
@@ -80,7 +80,7 @@ function uncover(free) {
   const key = refKey(state.selected);
   if (key === seen || Math.hypot(cam.ox, cam.oy) === 0 && lastKey !== '0,0') return;
   seen = key;
-  if (!state.selected || state.tracking || !free || isAnimating() || (window.innerWidth > 900 && window.innerHeight > 600)) return;
+  if (!state.selected || state.tracking || eff.pointing || !free || isAnimating() || (window.innerWidth > 900 && window.innerHeight > 600)) return;
   const frame = getFrame(), h = refHorApparent(state.selected, frame, getBodies(frame)), p = [0, 0];
   update(frame);
   const [ax, ay] = lastKey.split(',').map(Number), ddx = cam.w / 2 + ax - cam.cx, ddy = cam.h / 2 + ay - cam.cy;      // where the sky is sliding to
@@ -96,6 +96,7 @@ function stack() {
   set('--ro-w', (shown(ro) ? ro.offsetWidth : 0) + 'px');
   set('--chip-w', (shown(chip) ? chip.offsetWidth : 0) + 'px');
   let y = 56;
+  const pb = document.querySelector('.ptbar'); if (shown(pb)) y += pb.offsetHeight + 6;
   set('--sn-top', y + 'px'); if (shown(note)) y += note.offsetHeight + 6;
   set('--mpt', y + 'px'); if (shown(mp)) y += mp.offsetHeight + 6;
   set('--ro-top', y + 'px');

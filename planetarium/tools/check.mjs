@@ -434,3 +434,5 @@ line(); line('== 27. What students type and click (tools/check-student.mjs; a fa
 await (await import('./check-student.mjs')).checkStudent({ line });
 line(); line('== 28. Labs: prompts, stopwatch, angle tool, what gives answers away (tools/check-labs.mjs; a failure throws) ==');
 await (await import('./check-labs.mjs')).checkLabs({ line });
+line(); line('== 29. Pointing a phone at the sky: attitude, compass, calibration, WMM2025, targets (tools/check-point.mjs; a failure throws) ==');
+await (await import('./check-point.mjs')).checkPoint({ line });

@@ -21,6 +21,7 @@ export const state = {
   playing: true,
   // --- place ---
   loc: { ...DEFAULT_LOCATION },
+  homeLoc: null,           // the place the user chose, while pointing borrows the phone's own (js/point/): that one is never stored
   // --- view ---
   mount: 'altaz',          // 'altaz' | 'eq'
   bortle: 4,               // 1 (pristine) .. 9 (inner city)
@@ -53,10 +54,11 @@ export const SHOW_DEFAULTS = { ...state.show };
 /** What is in force NOW: the user's switches, less what steady.js holds off while time runs fast. Read these, not state.show, when drawing or projecting. */
 export const eff = {
   steady: '',              // '' | 'sky' | 'full'
+  pointing: false,         // a phone is being pointed at the sky (js/point/): its own attitude is the view, apparent places, no steady sky
   get atmosphere() { return state.show.atmosphere && !this.steady; },
-  get refraction() { return state.show.refraction && this.steady !== 'full'; },
+  get refraction() { return this.pointing || (state.show.refraction && this.steady !== 'full'); },
   get ground() { return state.show.ground && this.steady !== 'full'; },
-  get mount() { return this.steady === 'full' ? 'eq' : state.mount; },
+  get mount() { return this.pointing ? 'altaz' : this.steady === 'full' ? 'eq' : state.mount; },
 };
 
 /** Toggle one of the state.show flags. */
@@ -77,7 +79,7 @@ export function save() {
   if (state.ephemeral || state.holdSave) return;      // (holdSave: a quiz has switched things off for the time being)
   // a lab preset or a shared link is showing: do not overwrite the viewer's own settings
   try {
-    localStorage.setItem(KEY, JSON.stringify({ loc: state.loc, mount: state.mount, bortle: state.bortle, show: state.show, lightTime: state.lightTime }));
+    localStorage.setItem(KEY, JSON.stringify({ loc: state.homeLoc || state.loc, mount: state.mount, bortle: state.bortle, show: state.show, lightTime: state.lightTime }));
   } catch (e) { /* storage unavailable: fine */ }
 }
 export function load() {

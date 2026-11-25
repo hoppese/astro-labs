@@ -29,6 +29,7 @@ export async function startLab(id, { extra = null, at = 0, fresh = false, marks 
   const L = labById(id);
   if (!L) return false;
   starting = true; offer = null;
+  emit('lab-start', L);           // js/point/: a phone held at the sky lets go, with everything put back, before the lab sets its own
   lab.current = L; running.id = L.id; state.keepTracked = false;
   clearMarks(); closePanels(); closeBoxes();
   // start clean: no leftovers from another lab

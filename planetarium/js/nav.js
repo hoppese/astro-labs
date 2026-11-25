@@ -8,6 +8,13 @@ import { getBodies } from './ephem.js';
 import { refHorApparent, sameRef } from './objects.js';
 import { dso } from './catalog.js';
 
+// Something else may hold the view (a phone pointed at the sky, js/point/). It gets the camera first, once a frame; whatever here wants to move the
+// view makes it let go.
+let driver = null;     // {step(now, frame) -> moved, release(why), clampFov(f)}
+export function setDriver(d) { driver = d; if (d) { anim = null; hold = null; } }
+export const driven = () => driver;
+export function releaseDriver(why) { if (driver) driver.release(why); }
+
 let anim = null;       // {t0, dur, fromFov, toFov, fromHor, ref | null, toHor, v0 (a followed object gliding back to the middle)}
 
 // ---- following -----------------------------------------------------------------
@@ -63,6 +70,7 @@ function placeHeld(frame, h, dt) {
 }
 /** Begin to follow (in the middle, unless it is being followed already). */
 export function track(ref) {
+  releaseDriver('view');
   if (!state.tracking || !sameRef(ref, state.trackRef)) hold = null;
   state.tracking = true; state.trackRef = ref;
   emit('selection');
@@ -121,6 +129,7 @@ export function skyUnder(x, y) {
 
 /** Glide to an object (ref) or a fixed apparent HOR direction. Going anywhere but the followed object ends following. */
 export function flyTo(target, { fov = null, dur = 700 } = {}) {
+  releaseDriver('view');
   const frame = getFrame();
   const ref = Array.isArray(target) ? null : target;
   if (state.tracking && !(ref && sameRef(ref, state.trackRef))) stopTracking();
@@ -142,6 +151,7 @@ export function zoomAnim(factor) {
 export function stepNav(now, frame) {
   const dt = clamp(now - lastNow, 1, 100); lastNow = now;
   const sliding = stepCentre(dt);
+  if (driver) return driver.step(now, frame) || sliding;
   if (anim) {
     const bodies = getBodies(frame);
     const to = anim.ref ? refHorApparent(anim.ref, frame, bodies) : anim.toHor;

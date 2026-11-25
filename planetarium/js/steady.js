@@ -17,7 +17,7 @@ export const FREE_RATE = 50000;       // not following: only the light of the sk
 
 /** Which kind of steadiness the present state asks for: '' | 'sky' (light only) | 'full' (also ground, refraction, orientation). */
 function wanted() {
-  if (!state.show.steady || running.id || see.on) return '';
+  if (eff.pointing || !state.show.steady || running.id || see.on) return '';
   const r = Math.abs(state.rate);
   if (state.tracking && state.trackRef) {
     const close = cam.fov < (eff.steady === 'full' ? 8 : 5);

@@ -71,7 +71,7 @@ function uiBlocks() {
   if (blockCache && now - blockAt < 400) return blockCache;
   blockAt = now; blockCache = [];
   const c = canvas.getBoundingClientRect();
-  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.steady-note', '.imgcredit', '.trackchip']) {
+  for (const sel of ['.brand', '.search', '.top-actions', '.infopanel', '.bottombar', '.readout', '.measurepanel', '.xcursor:not(.follow)', '.xpanel', '.xhint', '.steady-note', '.imgcredit', '.trackchip', '.ptbar', '.ptgo']) {
     const el = document.querySelector(sel);
     if (!el || el.hidden) continue;
     const r = el.getBoundingClientRect();

@@ -1,0 +1,58 @@
+/* Pointing a phone at the sky (js/point/). Everything sits in <body>, the safe rectangle; the camera picture reaches the real edges. */
+.ptgo { position: absolute; right: 12px; bottom: calc(var(--bar-h) + 44px); z-index: 13; display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px 0 12px; border-radius: 23px; border: 1px solid rgba(232, 184, 106, 0.7);
+  background: rgba(16, 24, 37, 0.94); color: #ffe2a8; font: 600 14.5px var(--font); cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); -webkit-user-select: none; user-select: none; }
+.ptgo svg { width: 22px; height: 22px; }
+.ptgo[hidden], .ptbar[hidden], .ptcard[hidden], .pteye[hidden], .ptitem[hidden] { display: none; }
+.ptitem:disabled { opacity: 0.6; cursor: default; } .ptitem .pt-why { margin-left: auto; padding-left: 10px; color: var(--muted); font-size: 11px; }
+body:has(.ptgo:not([hidden])) .xhint { bottom: calc(var(--bar-h) + 100px); }
+html.quizzing .ptgo { display: none; }
+body:has(.xpanel:not([hidden])) .ptgo, body:has(.xsheet:not([hidden])) .ptgo, body:has(.popover:not([hidden])) .ptgo, body:has(.labsdock .lcard:not([hidden])) .ptgo { display: none; }
+
+.ptbar { position: absolute; top: 56px; left: calc((var(--free-l, 12px) + 100% - var(--free-r, 12px)) / 2); transform: translateX(-50%); z-index: 17; display: flex; align-items: stretch; max-width: calc(100% - 16px); height: 42px; border-radius: 21px; overflow: hidden;
+  background: rgba(13, 20, 31, 0.95); border: 1px solid var(--line-strong); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45); }
+.ptbar button { border: 0; background: none; color: #ffe2a8; font: 600 13.5px var(--font); padding: 0 11px; min-width: 40px; cursor: pointer; white-space: nowrap; }
+.ptbar button + button { border-left: 1px solid var(--line); }
+.ptbar button[hidden] { display: none; }
+.ptbar .pb-status { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; color: #d5dee9; font-weight: 500; padding-left: 14px; text-align: left; }
+.ptbar .pb-text { white-space: normal; line-height: 1.12; overflow: hidden; max-height: 2.3em; }
+.ptbar i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #8d9aab; }
+.ptbar.good i { background: #7fd08a; } .ptbar.rough i, .ptbar.old i { background: #e8b86a; } .ptbar.bad i { background: #e0806a; }
+.ptbar .pb-x { font-size: 19px; color: #b4c0cf; padding: 0 13px 0 9px; }
+html.pointing .readout, html.pointing .xhint, html.pointing .steady-note { display: none; }
+body:has(.ptbar:not([hidden])) .xtoast { top: 106px; }
+body:has(.ptbar:not([hidden])) .readout { display: none; }
+
+.ptcard { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(440px, calc(100% - 16px)); max-height: calc(100% - 20px); z-index: 60; display: flex; flex-direction: column; border-radius: 16px; background: #101927; border: 1px solid var(--line-strong);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65); font-size: 14.5px; line-height: 1.42; }
+.ptcard header { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 0 16px; } .ptcard h2 { margin: 0; font-size: 17px; }
+.ptcard .close { width: 40px; height: 40px; font-size: 20px; }
+.ptcard .pc-body { overflow: auto; overscroll-behavior: contain; padding: 0 16px 12px; } .ptcard p { margin: 6px 0 9px; }
+.ptcard .btn, .pteye .btn { min-height: 44px; padding: 8px 16px; font-size: 14.5px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.ptcard .pt-main, .pteye .pt-main { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.ptcard .pt-acts { display: flex; flex-wrap: wrap; gap: 8px; } .ptcard .pt-acts .pt-main { flex: 1 1 auto; } .ptcard .pt-acts.wide .btn { flex: 1 1 100%; }
+.ptcard .btn[hidden] { display: none; }
+.pt-small { font-size: 12.5px; color: #a9b7c8; }
+.pt-sun { color: #ffb08f; }
+.ptcard fieldset { border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; padding: 2px 12px 6px; } .ptcard legend { font-size: 12.5px; color: var(--muted); padding: 0 4px; }
+.ptcard fieldset label { display: block; padding: 7px 0 5px 28px; position: relative; } .ptcard fieldset input { position: absolute; left: 0; top: 7px; width: 19px; height: 19px; margin: 0; accent-color: var(--accent); }
+.ptcard small { display: block; color: #a9b7c8; font-size: 12px; line-height: 1.35; }
+.pt-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; } .pt-list .btn { flex-direction: column; align-items: flex-start; padding: 6px 12px; line-height: 1.25; text-align: left; } .pt-list span { font-size: 12px; color: #a9b7c8; }
+
+.pteye { position: absolute; inset: 0; z-index: 90; color: #fff; font-size: 15px; line-height: 1.35; -webkit-user-select: none; user-select: none; }
+.pteye::before { content: ''; position: absolute; background: #000; }
+.pteye::before, .pteye video { position: absolute; left: calc(-1 * var(--sal)); top: calc(-1 * var(--sat)); width: calc(100% + var(--sal) + var(--sar)); height: calc(100% + var(--sat) + var(--sab)); }
+.pteye video { object-fit: cover; }
+/* the cross is in the middle of the PICTURE, which reaches past the safe rectangle */
+.pe-cross { position: absolute; left: calc(50% + (var(--sar) - var(--sal)) / 2); top: calc(50% + (var(--sab) - var(--sat)) / 2); width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; border: 1.5px solid rgba(255, 226, 168, 0.9); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(#ffe2a8, #ffe2a8) 50% 50% / 1.5px 100% no-repeat, linear-gradient(#ffe2a8, #ffe2a8) 50% 50% / 100% 1.5px no-repeat; }
+.pteye.edge video, .pteye.edge .pe-cross, .pteye:not(.edge) .pe-ruler { display: none; }
+.pe-ruler { position: absolute; right: 0; top: 0; bottom: 0; width: 5px; background: var(--accent); } .pe-ruler::before { content: ''; position: absolute; right: 0; top: 0; border: 12px solid transparent; border-bottom: 20px solid var(--accent); border-top: 0; }
+.pe-top { position: absolute; left: 8px; right: 8px; top: 8px; max-width: 520px; margin: 0 auto; background: rgba(8, 12, 20, 0.8); border-radius: 12px; padding: 8px 14px; } .pe-top p { margin: 0; } .pe-top .pt-sun { font-size: 13px; } .pe-msg { color: #ffd98f; font-weight: 600; }
+.pe-acts { position: absolute; left: 8px; right: 8px; bottom: 10px; display: flex; gap: 10px; justify-content: center; } .pe-acts .pt-main { flex: 1 1 auto; max-width: 340px; min-height: 56px; font-size: 17px; } .pteye .pe-acts .btn:not(.pt-main) { background: rgba(8, 12, 20, 0.85); min-height: 56px; }
+@media (max-width: 560px) { .ptbar { width: calc(100% - 16px); left: 50%; } }
+@media (max-height: 520px) and (min-width: 561px) {
+  .ptgo { bottom: calc(var(--bar-h) + 10px); right: auto; left: 12px; }
+  .ptcard { bottom: 4px; width: min(620px, calc(100% - 16px)); max-height: calc(100% - 8px); font-size: 14px; } .pt-list { grid-template-columns: repeat(4, 1fr); } .ptcard .pt-acts.wide .btn { flex: 1 1 auto; }
+  .ptcard fieldset { display: flex; gap: 18px; } .ptcard fieldset label { flex: 1; }
+}
+.ptsim { position: absolute; left: 4px; top: 110px; z-index: 99; background: rgba(0, 0, 0, 0.8); font: 11px var(--mono); padding: 4px; border-radius: 6px; } .ptsim label { display: flex; gap: 4px; align-items: center; } .ptsim input[type=range] { width: 90px; }

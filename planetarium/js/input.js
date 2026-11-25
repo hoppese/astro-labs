@@ -9,7 +9,7 @@ import { sameRef } from './objects.js';
 import { getFrame } from './skyframe.js';
 import { pickAt } from './picks.js';
 import { takeEaten } from './clickguard.js';
-import { select, centerOn, flyTo, cancelAnim, zoomAnim, takeView, moveSky, zoomTracked, skyUnder, hasOffset, holdCentre } from './nav.js';
+import { select, centerOn, flyTo, cancelAnim, zoomAnim, takeView, moveSky, zoomTracked, skyUnder, hasOffset, holdCentre, driven, releaseDriver } from './nav.js';
 
 const CLICK_SLOP = 5, TAP_SLOP = 12;      // px a mouse / a finger may wander and still have clicked
 const DOUBLE_MS = 320, DOUBLE_PX = 34;     // two taps this close are a double tap
@@ -19,7 +19,7 @@ export function initInput(canvas, { onClickSky } = {}) {
   let grab = null, moved = 0, downAt = null, pinch = null, lastTap = null, lastType = 'mouse';
 
   const pos = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const userMoves = () => { if (state.tracking) takeView(); else cancelAnim(); };
+  const userMoves = () => { releaseDriver('drag'); if (state.tracking) takeView(); else cancelAnim(); };
 
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
@@ -62,6 +62,7 @@ export function initInput(canvas, { onClickSky } = {}) {
     } else if (pointers.size === 2 && pinch) {
       const [a, b] = [...pointers.values()];
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1;
+      if (driven()) { pinch.mx = mx; pinch.my = my; cam.fov = driven().clampFov(cam.fov * pinch.last / d); pinch.last = d; emit('render'); return; }      // pointing: the phone holds the view, two fingers only zoom
       if (!pinch.began) { pinch.began = true; pinch.offset = hasOffset() || grabbedAway(); if (!state.tracking || pinch.offset) userMoves(); else cancelAnim(); pinch.fov = cam.fov; }
       if (state.tracking && !pinch.offset) zoomAt(pinch.last / d, cam.cx, cam.cy, frame, true);       // the followed object stays in the middle
       else if (state.tracking) zoomTracked(pinch.last / d, pinch.mx, pinch.my, mx, my, pinch.scratch);
@@ -112,6 +113,7 @@ export function initInput(canvas, { onClickSky } = {}) {
   /** Two taps: center what the first one was on; on empty sky, zoom in about the place. */
   function doubleTap(p, ref) {
     lastTap = null;
+    if (driven()) { if (ref) select(ref); return; }
     if (ref) { select(ref); centerOn(ref); return; }
     if (state.tracking) { if (hasOffset()) zoomTracked(0.5, p[0], p[1]); else zoomAt(0.5, p[0], p[1], getFrame(), true); emit('render'); }
     else { update(getFrame()); flyTo(unproject(cam.cx + (p[0] - cam.cx) / 2, cam.cy + (p[1] - cam.cy) / 2), { fov: cam.fov / 2, dur: 260 }); }
@@ -149,7 +151,7 @@ export function navKey(e) {
       moveSky(a, cam.cx + px * Math.sign(dl), cam.cy + px * Math.sign(db), {});
       return;
     }
-    cancelAnim();
+    releaseDriver('drag'); cancelAnim();
     cam.lon += dl / Math.max(Math.cos(cam.lat * Math.PI / 180), 0.15); cam.lat += db; update(frame); emit('render');
   };
   // on screen, +lon is to the left in both mounts (east is left of north when looking up at the sky)
