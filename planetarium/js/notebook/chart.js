@@ -4,9 +4,11 @@
 
 import { fmtNum } from './format.js';
 
+/** The least height of the plot itself, px. */
+export const MIN_PLOT = 180;
 export const THEMES = {
-  dark: { bg: '#0d141f', ink: '#e4ebf3', muted: '#94a3b5', faint: '#66768a', grid: 'rgba(255,255,255,0.08)', axis: 'rgba(255,255,255,0.3)', s1: '#3987e5', s2: '#d95926', m1: '#f0efec', m2: '#199e70', ring: '#0d141f' },
-  light: { bg: '#ffffff', ink: '#0b0b0b', muted: '#52514e', faint: '#8a8984', grid: 'rgba(0,0,0,0.09)', axis: 'rgba(0,0,0,0.45)', s1: '#2a78d6', s2: '#eb6834', m1: '#0b0b0b', m2: '#1baf7a', ring: '#ffffff' },
+  dark: { bg: '#0d141f', ink: '#e4ebf3', muted: '#94a3b5', faint: '#66768a', grid: 'rgba(255,255,255,0.08)', axis: 'rgba(255,255,255,0.3)', s1: '#3987e5', s2: '#d95926', m1: '#f0efec', m2: '#199e70', mark: '#e8b86a', ring: '#0d141f' },
+  light: { bg: '#ffffff', ink: '#0b0b0b', muted: '#52514e', faint: '#8a8984', grid: 'rgba(0,0,0,0.09)', axis: 'rgba(0,0,0,0.45)', s1: '#2a78d6', s2: '#eb6834', m1: '#0b0b0b', m2: '#1baf7a', mark: '#9a6a12', ring: '#ffffff' },
 };
 const FONT = "'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif";
 
@@ -20,7 +22,7 @@ function linTicks(lo, hi, target) {
   return { ticks: out, step };
 }
 function logTicks(lo, hi) {
-  const out = [], a = Math.floor(Math.log10(lo) + 1e-9), b = Math.ceil(Math.log10(hi) - 1e-9), few = b - a <= 2;
+  const out = [], a = Math.floor(Math.log10(lo) + 1e-9), b = Math.ceil(Math.log10(hi) - 1e-9), few = Math.log10(hi / lo) < 3.2;
   const narrow = hi / lo < 12;         // under about a decade: more marks, or the axis has one label
   for (let e = a; e <= b; e++) for (const m of narrow ? [1, 1.5, 2, 3, 4, 5, 7] : few ? [1, 2, 5] : [1]) { const v = m * Math.pow(10, e); if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9)) out.push(v); }
   return { ticks: out, step: 0 };
@@ -48,6 +50,7 @@ function rangeOf(vals, log) {
  *    xLabel, yLabel, title, logX, logY, flipX, flipY, connect, equal, placeholders: bool,
  *    curves: [{pts: [[x, y], ...], name, ties?: [[x, y, mx, my], ...]}]   model curves, already sampled
  *    resid: {pts: [{x, r, r2?}], xLabel, label} | null   residual strip (r2 = second component, drawn hollow)
+ *    mark: the student's label for the origin ('' = unlabelled mark) | null,  foot: [lines under the saved picture],
  *    empty: text shown instead of a plot }
  *  w, h in CSS pixels. Returns {plot: {x, y, w, h}, sx, sy, hit: [{px, py, s, i, x, y}]} for hover. */
 export function drawChart(canvas, spec, { theme = 'dark', w, h, dpr = 1 } = {}) {
@@ -62,19 +65,31 @@ export function drawChart(canvas, spec, { theme = 'dark', w, h, dpr = 1 } = {}) 
     wrapText(ctx, spec.empty, w / 2, h / 2, Math.min(w - 40, 420), 19);
     return out;
   }
-  const small = w < 420;
-  const hasResid = !!(spec.resid && spec.resid.pts.length);
+  const small = w < 420, foot = spec.foot || [], footH = foot.length ? foot.length * 18 + 8 : 0;
+  h -= footH;
+  const wantResid = !!(spec.resid && spec.resid.pts.length);
   const fs = small ? 11 : 12;
-  const mt = (spec.title || spec.placeholders ? 30 : 12) + (legendItems(spec).length > 1 ? 20 : 0), mb = 46, mr = 16;
+  const low = h < 300, legend = legendItems(spec).length > 1;
+  const mt = (spec.title || (spec.placeholders && !low && !small) ? 30 : 12) + (legend && !low ? 20 : 0), mb = low ? 40 : 46, mr = 16;
   // ---- ranges and ticks (ticks first: the left margin depends on the widest tick label) ----
   const all = spec.series.flatMap((s) => s.pts);
   const xs = all.map((p) => p.x), ys = all.flatMap((p) => (Number.isFinite(p.e) && p.e > 0 ? [p.y - p.e, p.y + p.e, p.y] : [p.y]));
+  if (spec.mark != null) { if (!spec.logX) xs.push(0); if (!spec.logY) ys.push(0); }
   let [x0, x1] = rangeOf(xs, spec.logX), [y0, y1] = rangeOf(ys, spec.logY);
-  const residH = hasResid ? Math.max(64, Math.round(h * 0.2)) : 0, residGap = hasResid ? (spec.resid.ownX ? 44 : 14) : 0;
-  let ph = h - mt - mb - residH - residGap;
+  // the plot itself comes first: the residual strip is squeezed, then left out, before the plot goes under MIN_PLOT
+  const residGap = wantResid ? (spec.resid.ownX ? 52 : 14) : 0, room = h - mt - mb - residGap - MIN_PLOT;
+  let residH = wantResid ? Math.min(Math.max(64, Math.round(h * 0.2)), room) : 0;
+  const hasResid = residH >= 44; out.residLeftOut = wantResid && !hasResid;
+  if (!hasResid) residH = 0;
+  const ph = h - mt - mb - residH - (hasResid ? residGap : 0);
   const yt0 = spec.logY ? logTicks(y0, y1) : linTicks(y0, y1, Math.max(3, Math.round(ph / 52)));
   ctx.font = `400 ${fs}px ${FONT}`;
-  let ml = Math.max(...yt0.ticks.map((v) => ctx.measureText(tickText(v, yt0.step)).width), 20) + 34;
+  // the vertical label: as many lines as it needs to stay beside the plot (never over the residual strip)
+  ctx.font = `600 13px ${FONT}`; let yFont = 13, yLines = spec.yLabel ? lines(ctx, spec.yLabel, ph) : [''];
+  if (yLines.length > 1) { yFont = 11.5; ctx.font = `600 11.5px ${FONT}`; yLines = lines(ctx, spec.yLabel, ph); }
+  if (yLines.length > 3) { yLines = yLines.slice(0, 3); yLines[2] += '…'; }
+  ctx.font = `400 ${fs}px ${FONT}`;
+  let ml = Math.max(...yt0.ticks.map((v) => ctx.measureText(tickText(v, yt0.step)).width), 20) + 34 + (yLines.length - 1) * 14;
   let pw = w - ml - mr;
   if (spec.equal && !spec.logX && !spec.logY) {
     // the same number of pixels per unit on both axes (a path on the sky keeps its shape)
@@ -95,22 +110,23 @@ export function drawChart(canvas, spec, { theme = 'dark', w, h, dpr = 1 } = {}) 
   for (const v of yt.ticks) { const Y = Math.round(fy(v)) + 0.5; ctx.moveTo(px0, Y); ctx.lineTo(px0 + pw, Y); }
   ctx.stroke();
   ctx.strokeStyle = T.axis; ctx.strokeRect(px0 + 0.5, py0 + 0.5, pw, ph);
-  const xTickY = hasResid && !spec.resid.ownX ? py0 + ph + residGap + residH + 6 : py0 + ph + 6;
+  const ownX = hasResid && spec.resid.ownX, xTickY = hasResid && !spec.resid.ownX ? py0 + ph + residGap + residH + 6 : py0 + ph + 6;
   let lastR = -1e9;
   for (const v of (spec.flipX ? xt.ticks.slice().reverse() : xt.ticks)) { const s = tickText(v, xt.step), X = fx(v), wd = ctx.measureText(s).width; if (X - wd / 2 < lastR + 8) continue; ctx.fillText(s, X, xTickY); lastR = X + wd / 2; }
   ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-  for (const v of yt.ticks) ctx.fillText(tickText(v, yt.step), px0 - 7, fy(v));
+  let lastY = -1e9;
+  for (const v of (spec.flipY ? yt.ticks : yt.ticks.slice().reverse())) { const Y = fy(v); if (Y - lastY < fs + 2) continue; ctx.fillText(tickText(v, yt.step), px0 - 7, Y); lastY = Y; }
 
   // ---- labels and title: the student's own words, or a faint prompt on screen (never in the saved picture) ----
   const label = (text, hint, x, y, rot, size = 13, weight = 600) => {
     if (!text && !spec.placeholders) return;
     ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(-Math.PI / 2);
     ctx.font = text ? `${weight} ${size}px ${FONT}` : `italic 400 ${size - 1}px ${FONT}`; ctx.fillStyle = text ? T.ink : T.faint; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text || hint, 0, 0, rot ? ph + residH + 30 : w - 20); ctx.restore();
+    ctx.fillText(text || hint, 0, 0, rot ? ph + mt : w - 20); ctx.restore();
   };
-  label(spec.xLabel, 'horizontal axis: no label yet', px0 + pw / 2, h - 13, false);
-  label(spec.yLabel, 'vertical axis: no label yet', 13, py0 + ph / 2, true);
-  label(spec.title, 'no title yet', w / 2, 16, false, 14.5, 600);
+  label(spec.xLabel, 'horizontal axis: no label yet', px0 + pw / 2, ownX ? py0 + ph + 32 : h - 13, false);
+  if (spec.yLabel) yLines.forEach((l, i) => label(l, '', 13 + i * 14, py0 + ph / 2, true, yFont)); else label('', 'vertical axis: no label yet', 13, py0 + ph / 2, true);
+  if (spec.title || !(low || small)) label(spec.title, 'no title yet', w / 2, 16, false, 14.5, 600);
 
   // ---- clip to the plot for curves and points ----
   ctx.save(); ctx.beginPath(); ctx.rect(px0, py0, pw, ph); ctx.clip();
@@ -141,9 +157,15 @@ export function drawChart(canvas, spec, { theme = 'dark', w, h, dpr = 1 } = {}) 
   });
   ctx.restore();
 
+  if (spec.mark != null && !spec.logX && !spec.logY) {          // the origin, with the student's own word for it
+    const X = fx(0), Y = fy(0);
+    ctx.strokeStyle = T.mark; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 7); ctx.moveTo(X - 11, Y); ctx.lineTo(X + 11, Y); ctx.moveTo(X, Y - 11); ctx.lineTo(X, Y + 11); ctx.stroke();
+    if (spec.mark) { ctx.font = `600 12.5px ${FONT}`; ctx.textAlign = X > px0 + pw * 0.8 ? 'right' : 'left'; ctx.textBaseline = 'bottom'; ctx.lineWidth = 4; ctx.strokeStyle = T.bg; const tx = X + (X > px0 + pw * 0.8 ? -10 : 10); ctx.strokeText(spec.mark, tx, Y - 6); ctx.fillStyle = T.mark; ctx.fillText(spec.mark, tx, Y - 6); }
+  }
+
   // ---- legend (only when there is more than one thing to tell apart) ----
   const items = legendItems(spec);
-  if (items.length > 1) {
+  if (items.length > 1 && !low) {
     ctx.font = `400 ${fs}px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     let X = px0, Y = mt - 12;
     for (const it of items) {
@@ -166,7 +188,6 @@ export function drawChart(canvas, spec, { theme = 'dark', w, h, dpr = 1 } = {}) 
     ctx.strokeStyle = T.grid; ctx.beginPath(); ctx.moveTo(px0, Math.round(ry0(0)) + 0.5); ctx.lineTo(px0 + pw, Math.round(ry0(0)) + 0.5); ctx.stroke();
     ctx.fillStyle = T.muted; ctx.font = `400 ${fs - 1}px ${FONT}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     ctx.fillText('+' + fmtNum(m / 1.25, 2), px0 - 7, ry0(m / 1.25)); ctx.fillText('0', px0 - 7, ry0(0)); ctx.fillText(fmtNum(-m / 1.25, 2), px0 - 7, ry0(-m / 1.25));
-    ctx.save(); ctx.translate(13, ry + residH / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText(R.label || 'residual', 0, 0); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(px0, ry, pw, residH); ctx.clip();
     for (const p of R.pts) {
       const X = rx(p.x);
@@ -178,9 +199,11 @@ export function drawChart(canvas, spec, { theme = 'dark', w, h, dpr = 1 } = {}) 
       const [a, b] = rangeOf(R.pts.map((p) => p.x), false), t = linTicks(a, b, Math.max(3, Math.round(pw / 96)));
       ctx.fillStyle = T.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `400 ${fs}px ${FONT}`;
       for (const v of t.ticks) ctx.fillText(tickText(v, t.step), rx(v), ry + residH + 5);
-      if (R.note) { ctx.textAlign = 'left'; ctx.fillStyle = T.faint; ctx.font = `400 ${fs - 1}px ${FONT}`; ctx.fillText(R.note, px0 + 4, ry + 3); }
+      if (R.xLabel) ctx.fillText(R.xLabel, px0 + pw / 2, ry + residH + 22);
     }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = T.faint; ctx.font = `400 ${fs - 1}px ${FONT}`; ctx.fillText((R.label || 'residual') + (R.note ? '   ' + R.note : ''), px0 + 5, ry + 3, pw - 10);
   }
+  if (foot.length) { ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = `400 12.5px ${FONT}`; foot.forEach((l, i) => { ctx.fillStyle = /^PRACTICE/.test(l) ? T.mark : T.muted; ctx.fillText(l, 14, h + 6 + i * 18, w - 28); }); }
   return out;
 }
 function legendItems(spec) {
@@ -190,6 +213,7 @@ function legendItems(spec) {
   return out;
 }
 function clipText(ctx, s, max) { if (ctx.measureText(s).width <= max) return s; while (s.length > 3 && ctx.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; }
+function lines(ctx, text, max) { const words = text.split(' '), out = []; let line = ''; for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (ctx.measureText(t).width > max && line) { out.push(line); line = wd; } else line = t; } return [...out, line]; }
 function wrapText(ctx, text, x, y, max, lh) {
   const words = text.split(' '), lines = []; let line = '';
   for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (ctx.measureText(t).width > max && line) { lines.push(line); line = wd; } else line = t; }

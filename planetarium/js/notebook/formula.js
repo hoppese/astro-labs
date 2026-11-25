@@ -55,6 +55,8 @@ export function parse(src, isColumn = () => true) {
       if (k.v === 'AU') return { t: 'const', id: 'AUkm' };
       if (FUNCS.includes(low)) { expect('('); const e = expr(); expect(')'); return { t: 'fn', name: low, a: e }; }
       if (/^[A-Z]{1,2}$/.test(k.v) && isColumn(k.v)) return { t: 'col', id: k.v };
+      if (k.v === 'c_light') return { t: 'const', id: 'c' };
+      if (/^[a-z]$/.test(k.v) && !CONSTANTS[k.v] && isColumn(k.v.toUpperCase())) return { t: 'col', id: k.v.toUpperCase() };          // a small letter means the column
       if (CONSTANTS[k.v]) return { t: 'const', id: k.v };
       if (low === 'pi') return { t: 'const', id: 'pi' };
       if (/^[A-Z]{1,2}$/.test(k.v)) throw new FormulaError(`There is no column ${k.v}.`);
@@ -117,6 +119,7 @@ const kindOf = (p) => {
 /** Work out the unit of the result and check the formula makes sense. unitOfCol(letter) -> unit id | parts | ''.
  *  Returns {parts, label, unitId, warn}. Throws FormulaError with a plain explanation. Annotates trig nodes. */
 export function analyse(tree, unitOfCol) {
+  let note = '';
   function go(n) {
     switch (n.t) {
       case 'num': return {};
@@ -150,8 +153,7 @@ export function analyse(tree, unitOfCol) {
         if (n.op === '/') return mulParts(a, b, -1);
         // + and −: like with like. A bare number takes the unit of what it is added to (A − 2451545).
         if (sameParts(a, b)) return a;
-        if (isPureNumber(n.a)) return b;
-        if (isPureNumber(n.b)) return a;
+        for (const [num, other] of [[n.a, b], [n.b, a]]) if (isPureNumber(num)) { if (partsLabel(other)) note = `The bare number ${pretty(num)} is taken to be in ${partsLabel(other)}.`; return other; }
         const verb = n.op === '+' ? ['add', 'to'] : ['subtract', 'from'];
         const [x, y] = n.op === '+' ? [a, b] : [b, a];
         const da = dimsOf(a), db = dimsOf(b);
@@ -162,7 +164,7 @@ export function analyse(tree, unitOfCol) {
     return {};
   }
   const parts = go(tree);
-  return { parts, label: partsLabel(parts), unitId: partsUnitId(parts), warn: mixedWarning(parts) };
+  return { parts, label: partsLabel(parts), unitId: partsUnitId(parts), warn: mixedWarning(parts), note };
 }
 
 /** Numeric value for one row. valueOfCol(letter) -> number (NaN when blank). Run analyse() first (trig needs it). */
@@ -224,11 +226,18 @@ export function serialize(n, map = (l) => l) {
   switch (n.t) {
     case 'num': return String(n.v);
     case 'col': { const l = map(n.id); return l === 'G' || l === 'AU' ? '[' + l + ']' : l; }
-    case 'const': return n.id === 'Gconst' ? 'G' : n.id === 'AUkm' ? 'AU' : n.id;
+    case 'const': return n.id === 'Gconst' ? 'G' : n.id === 'AUkm' ? 'AU' : n.id === 'c' ? 'c_light' : n.id;
     case 'neg': return '-' + serialize(n.a, map);
     case 'par': return '(' + serialize(n.a, map) + ')';
     case 'fn': return n.name + '(' + serialize(n.a, map) + ')';
     case 'bin': return serialize(n.a, map) + (n.op === '^' ? '^' : ' ' + n.op + ' ') + serialize(n.b, map);
   }
+  return '';
+}
+/** What a typed letter was taken to be, when it could be mistaken: small c and capital G are constants, and may be meant as columns. */
+export function letterTrap(src, isColumn) {
+  const ids = tokenize(src).filter((k) => k.t === 'id' && !k.col).map((k) => k.v);
+  if (ids.includes('c') && isColumn('C')) return '“c” could be column C or the speed of light. For the column write a capital C; for the speed of light press its button (it writes c_light).';
+  if (ids.includes('G') && isColumn('G')) return 'A bare G is the gravitational constant. For column G press its button (it writes [G]).';
   return '';
 }

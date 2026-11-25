@@ -20,13 +20,14 @@ import { marks } from '../labs/stopwatch.js';
 import { createNotebook } from './ui.js';
 import { see } from './seeing.js';
 import { rowHidden } from '../labs/hidden.js';
+import { lab, labStep, setLabStep } from '../labs/labs.js';
 
 const q = new URLSearchParams(location.search);
 const num = (k) => { const v = parseFloat(q.get(k)); return Number.isFinite(v) ? v : null; };
 const URLOPT = { seeing: num('seeing'), noise: num('noise'), seed: num('seed'), predict: q.get('predict') !== '0', snapAll: q.get('snap') === '1', template: q.get('template') === '1', instructor: q.get('instructor') === '1' };
 export const DEFAULT_OBS = { seeing: 0.8, noise: 0.02 };
 
-let panel = null, body = null, tabBtn = null, sub = null, api = null, active = false, collapsed = false, userW = null, slotNow = 'free', labNow = null;
+let panel = null, body = null, tabBtn = null, sub = null, api = null, active = false, collapsed = false, big = false, userW = null, slotNow = 'free', labNow = null;
 const root = document.documentElement;
 const r3 = (v, n) => +v.toFixed(n);
 
@@ -38,9 +39,9 @@ function readings() {
   out.push({ key: 'year', group: 'Clock', label: 'Date as a decimal year', unit: 'yr', kind: 'data', value: (2000 + (jd - 2451545) / 365.25).toFixed(5), sig: 0 });
   out.push({ key: 'jd', group: 'Clock', label: 'Julian Date', unit: 'd', kind: 'data', value: jd.toFixed(5), sig: 0 });
   out.push({ key: 'utc', group: 'Clock', label: 'Date and time (UTC), as words', kind: 'text', value: fmtDate(p) + ' ' + fmtTime(p) });
-  const m = lastMeasure(), why = 'the angle tool has no finished measurement (press R and click two points)';
-  out.push({ key: 'sep', group: 'Angle tool (last measurement)', label: 'Separation', unit: 'arcsec', kind: 'data', value: m ? (m.sep * 3600).toFixed(2) : null, sig: 0, why });
-  out.push({ key: 'sepdeg', group: 'Angle tool (last measurement)', label: 'Separation', unit: 'deg', kind: 'data', value: m ? m.sep.toFixed(4) : null, sig: 0, why });
+  const m = lastMeasure(), why = measure.active ? 'the angle tool has no finished measurement yet: click near each of two objects on the sky' : 'the angle tool is closed: press R, then click near each of two objects on the sky';
+  out.push({ key: 'sep', group: 'Angle tool (last measurement)', label: 'Separation in arcseconds', unit: 'arcsec', kind: 'data', value: m ? (m.sep * 3600).toFixed(2) : null, sig: 0, why });
+  out.push({ key: 'sepdeg', group: 'Angle tool (last measurement)', label: 'Separation in degrees', unit: 'deg', kind: 'data', value: m ? m.sep.toFixed(4) : null, sig: 0, why });
   out.push({ key: 'pa', group: 'Angle tool (last measurement)', label: 'Position angle (north through east)', unit: 'deg', kind: 'data', value: m ? m.pa.toFixed(m.sep < 5 / 60 ? 3 : 1) : null, sig: 0, why });
   out.push({ key: 'from', group: 'Angle tool (last measurement)', label: 'Measured from (name)', kind: 'text', value: m ? m.from : null, why });
   out.push({ key: 'to', group: 'Angle tool (last measurement)', label: 'Measured to (name)', kind: 'text', value: m ? m.to : null, why });
@@ -89,7 +90,7 @@ function conditionsDialog() {
 // Registered when this module loads, so that it runs before every other key listener of the app.
 let mine = false;
 document.addEventListener('pointerdown', (e) => { mine = !!panel && panel.contains(e.target); }, true);
-window.addEventListener('keydown', (e) => { if (mine && panel && !panel.hidden && e.target === document.body && e.key !== 'Escape') { panel.focus({ preventScroll: true }); e.stopImmediatePropagation(); } }, true);
+window.addEventListener('keydown', (e) => { if (mine && panel && !panel.hidden && e.target === document.body && e.key !== 'Escape') { if (api.undoKey(e)) { e.stopImmediatePropagation(); return; } panel.focus({ preventScroll: true }); e.stopImmediatePropagation(); } }, true);
 
 // ---- the panel ---------------------------------------------------------------------------------------------------------------
 const mode = () => (window.innerWidth >= 1180 ? 'split' : 'over');
@@ -104,9 +105,19 @@ function layout() {
   root.classList.toggle('nb-tight', shown && m === 'split' && window.innerWidth - w < 1010);
   root.classList.toggle('nb-slim', shown && m === 'split' && window.innerWidth - w < 800);          // the notebook has been dragged wide: a strip of sky is left
   root.classList.toggle('nb-folded', active && collapsed);
+  root.classList.toggle('nb-big', shown && big);
+  const bb = panel.querySelector('[data-a=big]'); bb.textContent = big ? 'Back to the sky' : 'Big notebook'; bb.title = big ? 'Put the notebook back beside the sky' : 'The whole window for the notebook: a large graph, with the table and the sliders beside it. The sky keeps everything.';
+  showLab();
   panel.hidden = !shown; tabBtn.hidden = !(active && collapsed);
   window.dispatchEvent(new Event('resize'));          // the sky canvas re-measures itself
   emit('render');
+}
+/** The lab's steps inside the notebook, for when the card on the sky has no room (big, dragged wide, small window). */
+function showLab() {
+  const box = panel && panel.querySelector('.nbp-lab'); if (!box) return;
+  const L = lab.current && lab.current.notebook ? lab.current : null; if (!L) { box.innerHTML = ''; return; }
+  const k = labStep(), n = L.steps.length;
+  box.innerHTML = `<summary><span>Lab: step ${k + 1} of ${n}</span><button type="button" class="nav" data-step="-1" aria-label="Previous step"${k ? '' : ' disabled'}>&lsaquo;</button><button type="button" class="nav" data-step="1" aria-label="Next step"${k < n - 1 ? '' : ' disabled'}>&rsaquo;</button></summary><div class="in">${L.steps[k]}</div>`;
 }
 function subtitle() {
   if (!api) return;
@@ -117,11 +128,13 @@ function subtitle() {
 function build() {
   panel = document.createElement('section'); panel.className = 'nbpanel'; panel.id = 'nbPanel'; panel.hidden = true; panel.setAttribute('aria-label', 'Lab notebook');
   panel.innerHTML = '<div class="nbp-drag" title="Drag to resize"></div><header class="nbp-head"><h2>Lab notebook</h2><span class="sub"></span>' +
-    '<button type="button" data-a="collapse" title="Fold the notebook away (it keeps recording)" aria-label="Collapse the notebook">&#8250;</button><button type="button" data-a="close" title="Close the notebook" aria-label="Close the notebook">&times;</button></header><div class="nbp-body"></div>';
+    '<button type="button" class="big" data-a="big">Big notebook</button><button type="button" data-a="collapse" title="Fold the notebook away (it keeps recording)" aria-label="Collapse the notebook">&#8250;</button><button type="button" data-a="close" title="Close the notebook" aria-label="Close the notebook">&times;</button></header><details class="nbp-lab"></details><div class="nbp-body"></div>';
   tabBtn = document.createElement('button'); tabBtn.className = 'nbtab'; tabBtn.type = 'button'; tabBtn.hidden = true; tabBtn.title = 'Open the lab notebook';
   root.append(panel, tabBtn);                           // beside <body>, not inside it: in split view the body is the sky's (narrower) window
   body = panel.querySelector('.nbp-body'); sub = panel.querySelector('.sub');
-  panel.querySelector('.nbp-head').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.a === 'collapse') { collapsed = true; layout(); } else closeNotebook(); });
+  panel.querySelector('.nbp-head').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.a === 'big') { big = !big; layout(); } else if (b.dataset.a === 'collapse') { collapsed = true; big = false; layout(); } else closeNotebook(); });
+  panel.querySelector('.nbp-lab').addEventListener('click', (e) => { const b = e.target.closest('[data-step]'); if (b) { e.preventDefault(); setLabStep(labStep() + +b.dataset.step); panel.querySelector('.nbp-lab').open = true; } });
+  on('labstep', showLab);
   tabBtn.addEventListener('click', () => { collapsed = false; layout(); });
   // typing in the notebook must not drive the sky; Escape is left to the notebook's own dialogs
   panel.addEventListener('keydown', (e) => { if (e.key !== 'Escape') e.stopPropagation(); });
@@ -138,7 +151,7 @@ function build() {
   window.addEventListener('resize', () => { if (mode() !== lastMode) { lastMode = mode(); layout(); } });
   const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL('../../css/notebook.css', import.meta.url).href; document.head.appendChild(link);
   api = createNotebook(body, { slot: 'free', instructor: URLOPT.instructor, onChange: subtitle,
-    host: { readings, conditions: conditionsDialog, afterRecord: ({ clear }) => { if (clear && measure.byEye) clearMeasures(); } } });
+    host: { readings, big: () => { big = !big; layout(); }, conditions: conditionsDialog, afterRecord: ({ clear }) => { if (clear && measure.byEye) clearMeasures(); } } });
 }
 
 /** Open the notebook (and switch the planetarium into notebook mode). slot: which saved notebook; obs: conditions to set. */
@@ -162,7 +175,7 @@ export function openNotebook({ slot = slotNow, obs, lab = null, template = null,
 }
 export function closeNotebook() {
   if (!active) return;
-  active = false; measure.byEye = false; measure.onRecord = null; see.enabled = false;
+  active = false; big = false; measure.byEye = false; measure.onRecord = null; see.enabled = false;
   layout(); emit('notebook'); emit('measure'); emit('selection');
 }
 export const notebookOpen = () => active;

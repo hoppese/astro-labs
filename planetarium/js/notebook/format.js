@@ -31,7 +31,7 @@ export function fmtNum(x, sig = 4) {
   return (neg ? '−' : '') + out;
 }
 /** Plain machine form for CSV: shortest text that reads back as the same number. */
-export const plainNum = (x) => (typeof x === 'number' && Number.isFinite(x) ? String(x) : '');
+export const plainNum = (x) => (typeof x === 'number' && Number.isFinite(x) ? String(+x.toPrecision(14)) : '');      // 14 figures: never 35.550000000000004
 
 /** Read what a student may type or paste: 1.5e8, 1.5E8, "1.5 x 10^8", "1.50 × 10⁸", "−3", "1,234.5". NaN if not a number. */
 export function parseNum(s) {
@@ -46,6 +46,26 @@ export function parseNum(s) {
   if (/^[-+]?(\d{1,3}(,\d{3})+)(\.\d*)?$/.test(t)) t = t.replace(/,/g, '');
   if (!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return NaN;
   return Number(t);
+}
+/** In words, why what was typed is not a number ('' when it is one, or blank). */
+export function whyNotNumber(s) {
+  const t = String(s == null ? '' : s).trim();
+  if (!t || !Number.isNaN(parseNum(t))) return '';
+  if (/^[-+−]?\d+,\d+$/.test(t)) return `“${t}”: write the decimal point as a point, ${t.replace(',', '.')}`;
+  if (t[0] === '=') return `“${t}”: a cell holds a number; for a formula use Add Column, Calculate`;
+  if (/^\d+\s*\/\s*\d+$/.test(t)) return `“${t}”: type the decimal value instead of a fraction`;
+  if (/^\d+:\d+/.test(t)) return `“${t}”: a clock time is not one number; change it to decimal hours or days`;
+  if (/^[-+−]?[\d.,]+\s*[^\d\s].*$/.test(t)) return `“${t}”: type the number only; the unit belongs in the column’s heading`;
+  return `“${t}” is not a number`;
+}
+/** A column of numbers with the same number of decimals down the column (so that the points line up): `sig` figures for the
+ *  largest, and any value that would lose its last figure that way is written out on its own. Falls back to fmtNum. */
+export function fmtColumn(vals, sig) {
+  const fin = vals.filter((v) => Number.isFinite(v) && v !== 0).map(Math.abs);
+  if (!sig || fin.length < 2) return (v) => fmtNum(v, sig);
+  const hi = Math.max(...fin), e = Math.floor(Math.log10(hi)), d = sig - 1 - e;
+  if (e >= 6 || e <= -4 || d <= 0 || fin.filter((v) => v < 10 ** (1 - d)).length > fin.length / 3) return (v) => fmtNum(v, sig);
+  return (v) => { if (!Number.isFinite(v)) return ''; const a = Math.abs(v); if (a !== 0 && a < 0.5 * 10 ** -d) return fmtNum(v, 2); const [i, f] = a.toFixed(d).split('.'); return (v < 0 ? '−' : '') + group(i) + (f ? '.' + f : ''); };
 }
 /** Spreadsheet column letter: 0 -> A, 25 -> Z, 26 -> AA. */
 export function colLetter(i) { let s = ''; i++; while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); } return s; }

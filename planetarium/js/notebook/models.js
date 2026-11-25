@@ -4,6 +4,7 @@
 //
 // A model: { id, name, blurb, params: [{key, sym, label, unit}], eq(v) -> HTML of the formula in the student's own
 // variable names, f(x, p, c) -> y   or, for a curve traced in time, xy(t, p, c) -> [x, y] with needsT = true,
+// closed: path(p) -> the outline, gap(x, y, p) -> signed distance from it (the circle); wave: variant() can give its phase as an angle;
 // ranges(d) -> {key: [min, max, start]} from the extent of the data (so the sliders cover the plot; never a fit) }.
 // c = {x1, t1}: the smallest x (or t) in the table, used as the zero of "time since the first point".
 // param.unit: how the parameter's unit follows from the axes: 'y', 'x', 't', 'y/x', 'y/x2', 'y/t', 'x/t', 'deg', ''.
@@ -35,25 +36,32 @@ export const MODELS = [
     eq: (v) => `${it(v.y)} = y₀ + A · (${it(v.x)} − x₀)<sup>n</sup>`,
     f: (x, p) => (p.y0 || 0) + p.A * Math.pow(x - (p.x0 || 0), p.n),
     ranges: (d) => { const xr = span(d.xmin, d.xmax), yr = span(d.ymin, d.ymax); return { A: [0, 2 * Math.max(Math.abs(d.ymax), Math.abs(d.ymin)), Math.abs(d.ymax) / 2], n: [-3, 4, 1], x0: [-xr, xr, 0], y0: [-yr, yr, 0] }; } },
-  { id: 'sine', name: 'Sine wave', blurb: 'Something that repeats: amplitude, period, when it crosses the middle going up, and the middle value.',
+  { id: 'sine', name: 'Sine wave', wave: true, phase0: 'crossing the middle, going up', blurb: 'Something that repeats: amplitude, period, when it crosses the middle going up, and the middle value.',
     params: [{ key: 'A', sym: 'A', label: 'amplitude (half the full swing)', unit: 'y' }, { key: 'P', sym: 'P', label: 'period', unit: 'x' },
       { key: 'x0', sym: 'x₀', label: 'a moment it crosses the middle, going up', unit: 'x' }, { key: 'y0', sym: 'y₀', label: 'middle value', unit: 'y' }],
     eq: (v) => `${it(v.y)} = y₀ + A · sin( 2π (${it(v.x)} − x₀) / P )`,
     f: (x, p) => p.y0 + p.A * Math.sin(TAU * (x - p.x0) / p.P),
     ranges: (d) => { const xr = span(d.xmin, d.xmax), yr = span(d.ymin, d.ymax); return { A: [0, yr, yr / 4], P: [xr / 40, 2 * xr, xr / 2], x0: [d.xmin - xr / 2, d.xmax, d.xmin], y0: [d.ymin - yr / 2, d.ymax + yr / 2, (d.ymin + d.ymax) / 2] }; } },
-  { id: 'sineline', name: 'Sine wave on a sloping line', blurb: 'A steady drift with a repeating wobble on top of it.',
+  { id: 'sineline', name: 'Sine wave on a sloping line', wave: true, phase0: 'the wobble crossing zero, going up', blurb: 'A steady drift with a repeating wobble on top of it.',
     params: [{ key: 'A', sym: 'A', label: 'amplitude of the wobble', unit: 'y' }, { key: 'P', sym: 'P', label: 'period of the wobble', unit: 'x' },
       { key: 'x0', sym: 'x₀', label: 'a moment the wobble crosses zero, going up', unit: 'x' }, { key: 'm', sym: 'm', label: 'slope of the line (drift rate)', unit: 'y/x' },
       { key: 'b', sym: 'b', label: 'value of the line at the first point', unit: 'y' }],
     eq: (v) => `${it(v.y)} = b + m · (${it(v.x)} − x₁) + A · sin( 2π (${it(v.x)} − x₀) / P )<span class="nb-eqnote">x₁ = your smallest ${it(v.x)}</span>`,
     f: (x, p, c) => p.b + p.m * (x - c.x1) + p.A * Math.sin(TAU * (x - p.x0) / p.P),
     ranges: (d) => { const xr = span(d.xmin, d.xmax), yr = span(d.ymin, d.ymax), s = yr / xr; return { A: [0, yr / 2, yr / 10], P: [xr / 40, 2 * xr, xr / 2], x0: [d.xmin - xr / 2, d.xmax, d.xmin], m: [-3 * s, 3 * s, 0], b: [d.ymin - yr / 2, d.ymax + yr / 2, (d.ymin + d.ymax) / 2] }; } },
-  { id: 'tilt', name: 'Sine wave with tilt (separation of something on a tilted circular orbit)', blurb: 'The distance between a body and what it circles, seen from the side: it swings out to A, and closes to A·sin(tilt) instead of zero when the orbit is tipped toward us.',
+  { id: 'tilt', name: 'Sine wave with tilt (separation of something on a tilted circular orbit)', wave: true, phase0: 'closest approach on the sky', blurb: 'The distance between a body and what it circles, seen from the side: it swings out to A, and closes to A·sin(tilt) instead of zero when the orbit is tipped toward us.',
     params: [{ key: 'A', sym: 'A', label: 'greatest separation (the orbit’s radius)', unit: 'y' }, { key: 'P', sym: 'P', label: 'period of the orbit', unit: 'x' },
       { key: 'x0', sym: 'x₀', label: 'a moment of closest approach on the sky', unit: 'x' }, { key: 'i', sym: 'tilt', label: 'tilt of the orbit toward us (0° = edge-on, 90° = face-on)', unit: 'deg' }],
-    eq: (v) => `${it(v.y)} = A · √( sin²φ + cos²φ · sin²(tilt) ),&ensp; φ = 2π (${it(v.x)} − x₀) / P`,
+    eq: (v) => `${it(v.y)} = A · √( sin²α + cos²α · sin²(tilt) ),&ensp; α = 2π (${it(v.x)} − x₀) / P`,
+    knots: (p, c, lo, hi) => { const out = [], h = p.P / 2; if (!(h > 0) || (hi - lo) / h > 4000) return out; for (let k = Math.ceil((lo - p.x0) / h); p.x0 + k * h <= hi; k++) out.push(p.x0 + k * h); return out; },
     f: (x, p) => { const ph = TAU * (x - p.x0) / p.P, s = Math.sin(ph), c = Math.cos(ph) * Math.sin(p.i * DEG); return p.A * Math.sqrt(s * s + c * c); },
-    ranges: (d) => { const xr = span(d.xmin, d.xmax); return { A: [0, 2 * Math.max(Math.abs(d.ymax), Math.abs(d.ymin)), Math.abs(d.ymax) / 2], P: [xr / 40, 2 * xr, xr / 2], x0: [d.xmin - xr / 2, d.xmax, d.xmin], i: [0, 90, 0] }; } },
+    ranges: (d) => { const xr = span(d.xmin, d.xmax); return { A: [0, 2 * Math.max(Math.abs(d.ymax), Math.abs(d.ymin)), Math.abs(d.ymax) * 0.8], P: [xr / 40, 2 * xr, xr / 2], x0: [d.xmin - xr / 2, d.xmax, d.xmin], i: [0, 90, 0] }; } },
+  { id: 'circle', name: 'Circle', closed: true, blurb: 'A circle drawn on the graph: where its centre is and how wide it is. No time column. Both axes must be the same kind of quantity, on the same scale.',
+    params: [{ key: 'x0', sym: 'x<sub>c</sub>', label: 'centre, horizontal', unit: 'x' }, { key: 'y0', sym: 'y<sub>c</sub>', label: 'centre, vertical', unit: 'y' }, { key: 'D', sym: 'D', label: 'diameter (twice the radius)', unit: 'y' }],
+    eq: (v) => `(${it(v.x)} − x<sub>c</sub>)<sup>2</sup> + (${it(v.y)} − y<sub>c</sub>)<sup>2</sup> = (D / 2)<sup>2</sup>`,
+    path: (p) => Array.from({ length: 241 }, (_, i) => [p.x0 + p.D / 2 * Math.cos(TAU * i / 240), p.y0 + p.D / 2 * Math.sin(TAU * i / 240)]),
+    gap: (x, y, p) => Math.hypot(x - p.x0, y - p.y0) - p.D / 2,
+    ranges: (d) => { const xr = span(d.xmin, d.xmax), yr = span(d.ymin, d.ymax), R = Math.max(xr, yr); return { x0: [d.xmin - xr / 2, d.xmax + xr / 2, (d.xmin + d.xmax) / 2], y0: [d.ymin - yr / 2, d.ymax + yr / 2, (d.ymin + d.ymax) / 2], D: [0, 3 * R, R / 2] }; } },
   { id: 'ellipse', name: 'Ellipse with a steady drift', needsT: true, blurb: 'A point that goes round an ellipse once every period while the whole ellipse slides along at a steady rate. Needs a third column: the time of each point.',
     params: [{ key: 'a', sym: 'a', label: 'half the long axis of the ellipse', unit: 'y' }, { key: 'b', sym: 'b', label: 'half the short axis (negative = going round the other way)', unit: 'y' },
       { key: 'th', sym: 'θ', label: 'direction of the long axis, anticlockwise from the horizontal axis', unit: 'deg' },
@@ -70,6 +78,26 @@ export const MODELS = [
         x0: [d.xmin - xr / 2, d.xmax + xr / 2, (d.xmin + d.xmax) / 2], y0: [d.ymin - yr / 2, d.ymax + yr / 2, (d.ymin + d.ymax) / 2] }; } },
 ];
 export const MODEL = Object.fromEntries(MODELS.map((m) => [m.id, m]));
+
+/** The model as the student has set it up. A wave's place along the horizontal axis can be given as a moment (x₀) or as
+ *  a phase angle φ at the first point (the plain "phase" slider); m.phase says which. Everything else is unchanged. */
+export function variant(M, m) {
+  if (!M || !M.wave || !m || m.phase !== 'angle') return M;
+  const at = (p, c) => ({ ...p, x0: c.x1 - (p.phi || 0) / 360 * p.P });
+  return { ...M,
+    params: M.params.map((q) => (q.key === 'x0' ? { key: 'phi', sym: 'φ', label: `phase at your first point (0° = ${M.phase0})`, unit: 'deg' } : q)),
+    eq: (v) => M.eq(v).replace(/2π \((.*?) − x₀\) \/ P/, (s, x) => `2π (${x} − x₁) / P + φ`) + (/class="nb-eqnote"/.test(M.eq(v)) ? '' : `<span class="nb-eqnote">x₁ = your smallest ${it(v.x)}</span>`),
+    f: (x, p, c) => M.f(x, at(p, c), c),
+    knots: M.knots && ((p, c, lo, hi) => M.knots(at(p, c), c, lo, hi)),
+    ranges: (d) => { const r = { ...M.ranges(d) }; delete r.x0; r.phi = [0, 360, 0]; return r; } };
+}
+/** Change a wave between moment and angle without moving the curve. */
+export function switchPhase(M, m, c, to) {
+  const p = m.p;
+  if (to === 'angle') { if (Number.isFinite(p.x0) && p.P) p.phi = ((c.x1 - p.x0) / p.P % 1 + 1) % 1 * 360; delete p.x0; delete m.r.x0; }
+  else { if (Number.isFinite(p.phi) && p.P) p.x0 = c.x1 - p.phi / 360 * p.P; delete p.phi; delete m.r.phi; }
+  m.phase = to;
+}
 
 /** Extent of the plotted data: {n, xmin, xmax, ymin, ymax, tmin, tmax}. pts = [{x, y, t?}] (finite values only). */
 export function extent(pts) {
@@ -91,7 +119,8 @@ export function residuals(model, p, pts, c) {
     if (model.needsT) {
       if (!Number.isFinite(q.t)) { res.push(NaN); dx.push(NaN); dy.push(NaN); continue; }
       const m = model.xy(q.t, p, c); dx.push(q.x - m[0]); dy.push(q.y - m[1]); r = Math.hypot(q.x - m[0], q.y - m[1]);
-    } else r = q.y - model.f(q.x, p, c);
+    } else if (model.closed) r = model.gap(q.x, q.y, p);
+    else r = q.y - model.f(q.x, p, c);
     res.push(r);
     if (Number.isFinite(r)) { ss += r * r; mx = Math.max(mx, Math.abs(r)); n++; }
   }

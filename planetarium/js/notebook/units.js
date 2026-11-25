@@ -30,9 +30,9 @@ export const UNITS = [
   U('arcmin', '′', 'arcminutes', 'angle', PI / 10800, '1° = 60′ and 1′ = 60″', { piFrac: 10800 }),
   U('deg', '°', 'degrees', 'angle', PI / 180, '360° = one full turn = 2π rad', { piFrac: 180 }),
   U('rad', 'rad', 'radians', 'angle', 1, 'π rad = 180°: the angle whose arc is as long as the radius', { piFrac: null }),
-  U('hRA', 'h', 'hours of right ascension', 'angle', PI / 12, '24 h of RA = 360°, so 1 h = 15°', { piFrac: 12 }),
-  U('mRA', 'm (RA)', 'minutes of right ascension', 'angle', PI / 720, '1 h of RA = 60 m, so 1 m = 15′', { piFrac: 720 }),
-  U('sRA', 's (RA)', 'seconds of right ascension', 'angle', PI / 43200, '1 m of RA = 60 s, so 1 s = 15″ (on the celestial equator)', { piFrac: 43200 }),
+  U('hRA', 'h', 'RA hours (right ascension)', 'angle', PI / 12, '24 h of RA = 360°, so 1 h = 15°', { piFrac: 12 }),
+  U('mRA', 'm (RA)', 'RA minutes (right ascension)', 'angle', PI / 720, '1 h of RA = 60 m, so 1 m = 15′', { piFrac: 720 }),
+  U('sRA', 's (RA)', 'RA seconds (right ascension)', 'angle', PI / 43200, '1 m of RA = 60 s, so 1 s = 15″ (on the celestial equator)', { piFrac: 43200 }),
 
   U('s', 's', 'seconds', 'time', 1, 'the SI second'),
   U('min', 'min', 'minutes', 'time', 60, '1 min = 60 s'),
@@ -41,6 +41,7 @@ export const UNITS = [
   U('sidday', 'sidereal d', 'sidereal days', 'time', 86164.0905, '1 sidereal day = 86,164.0905 s = 23 h 56 min 4.09 s (one turn of the Earth against the stars)'),
   U('yr', 'yr', 'years (Julian)', 'time', JULIAN_YEAR_S, '1 Julian year = 365.25 d exactly = 31,557,600 s'),
 
+  U('cm', 'cm', 'centimetres', 'length', 0.01, '1 m = 100 cm'),
   U('m', 'm', 'metres', 'length', 1, 'the SI metre'),
   U('km', 'km', 'kilometres', 'length', 1000, '1 km = 1000 m'),
   U('Rearth', 'R⊕', 'Earth radii', 'length', 6.3781e6, '1 R⊕ = 6378.1 km (IAU 2015 nominal equatorial radius)', { sig: 5 }),
@@ -125,7 +126,7 @@ export function predictReason(from, to) {
   const r = convertRule(from, to), a = r.from, b = r.to;
   const whole = Math.abs(r.ratio - Math.round(r.ratio)) < 1e-9 * r.ratio;
   const n = whole && r.ratio < 1e9 ? fmtNum(Math.round(r.ratio), 0) : 'about ' + (r.ratio >= 1000 && r.ratio < 1e6 ? fmtNum(Math.round(r.ratio), 0) : fmtNum(r.ratio, r.ratio < 10 ? 4 : 3));
-  const one = (u) => { const w = singular(u.name); return (/^([aeiou]|hour)/i.test(w) ? 'an ' : 'a ') + w; };
+  const one = (u) => { const w = singular(u.name); return (/^([aeiou]|hour|RA )/i.test(w) ? 'an ' : 'a ') + w; };
   if (r.factor === 1) return 'The same: these two units are the same size.';
   return r.bigger
     ? `Bigger: ${one(b)} is ${n} times smaller than ${one(a)}, so it takes more of them.`
@@ -134,7 +135,7 @@ export function predictReason(from, to) {
 function singular(name) {
   return name.replace(/^(\S+?)s( \(|$| of | per )/, (m, w, rest) => (w === 'radian' ? 'radian' : w.endsWith('ie') ? w.slice(0, -2) + 'y' : w) + rest)
     
-    .replace(/^sidereal days/, 'sidereal day').replace(/^Earth radii/, 'Earth radius').replace(/^solar radii/, 'solar radius').replace(/^metres per/, 'metre per').replace(/^kilometres per/, 'kilometre per')
+    .replace(/^RA (hour|minute|second)s.*/, 'RA $1').replace(/^sidereal days/, 'sidereal day').replace(/^Earth radii/, 'Earth radius').replace(/^solar radii/, 'solar radius').replace(/^metres per/, 'metre per').replace(/^kilometres per/, 'kilometre per')
     .replace(/^astronomical units/, 'astronomical unit').replace(/^speeds of light/, 'speed of light').replace(/masses$/, 'mass');
 }
 
@@ -142,6 +143,7 @@ function singular(name) {
 // Each takes named input columns (with a required kind of unit) and gives a result in a stated unit.
 export const RELATIONS = [
   { id: 'parallax-distance', name: 'Distance from parallax', uses: 'd = 1 / p', words: 'distance in parsecs = 1 ÷ (parallax in arcseconds)',
+    caution: 'The parallax p is the size of the star’s own yearly swing (half of its full width), found from a fit. A separation between two stars is not a parallax.',
     inputs: [{ key: 'p', label: 'parallax p', dim: 'angle' }], out: () => 'pc',
     f: (v, u) => 1 / convert(v.p, u.p, 'arcsec'), note: (u) => (u.p === 'arcsec' ? '' : `p is first converted from ${unitSym(u.p)} to ″`) },
   { id: 'distance-parallax', name: 'Parallax from distance', uses: 'p = 1 / d', words: 'parallax in arcseconds = 1 ÷ (distance in parsecs)',
