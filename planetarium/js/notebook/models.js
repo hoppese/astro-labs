@@ -110,7 +110,7 @@ export function extent(pts) {
 /** The constants a model may use: the smallest x and t of the data. */
 export const anchors = (d) => ({ x1: d.xmin, t1: d.tmin });
 
-/** Residuals of the points from the model: {res: [...], rms, max, n}. For a curve traced in time, each residual is
+/** Residuals of the points from the model: {res: [...], ss (sum of squares), rms, max, n}. For a curve traced in time, each residual is
  *  the distance on the graph between the point and where the model is at that point's time (dx, dy are kept too). */
 export function residuals(model, p, pts, c) {
   const res = [], dx = [], dy = []; let ss = 0, mx = 0, n = 0;
@@ -124,7 +124,7 @@ export function residuals(model, p, pts, c) {
     res.push(r);
     if (Number.isFinite(r)) { ss += r * r; mx = Math.max(mx, Math.abs(r)); n++; }
   }
-  return { res, dx, dy, rms: n ? Math.sqrt(ss / n) : NaN, max: n ? mx : NaN, n };
+  return { res, dx, dy, ss: n ? ss : NaN, rms: n ? Math.sqrt(ss / n) : NaN, max: n ? mx : NaN, n };
 }
 
 /** Least-squares parameters by Nelder–Mead from a starting guess. For the instructor switch and the checks ONLY:

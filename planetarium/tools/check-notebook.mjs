@@ -93,6 +93,7 @@ export function checkNotebookUnits({ line }) {
     const truth = { A: 1.7, P: 3.3, x0: 0.4, y0: 9 }, pts = []; for (let k = 0; k < 25; k++) { const x = k * 0.37; pts.push({ x, y: MODEL.sine.f(x, truth) }); }
     const d = extent(pts), r = residuals(MODEL.sine, truth, pts, anchors(d));
     ok(r.rms < 1e-12 && r.n === 25, 'residuals vanish on the true curve');
+    ok(Math.abs(r.ss - r.rms * r.rms * r.n) < 1e-18, 'sum of squares goes with the rms');
     const f = bestFit(MODEL.sine, { A: 1.5, P: 3.2, x0: 0.5, y0: 8.8 }, pts, anchors(d));
     ok(Math.abs(f.p.A - 1.7) < 1e-4 && Math.abs(f.p.P - 3.3) < 1e-4, 'least squares recovers the sine'); }
   ok(MODELS.length === 9 && MODELS.every((m) => typeof m.eq({ x: 'x', y: 'y', t: 't' }) === 'string' && m.params.length && (m.f || m.xy || m.path)), 'nine generic shapes, each with a formula');

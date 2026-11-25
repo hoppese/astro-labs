@@ -33,7 +33,7 @@ const parText = (v, r) => { const d = Math.max(v ? 5 - Math.floor(Math.log10(Mat
 export function createNotebook(root, opts = {}) {
   const host = opts.host || null;
   let nb = S.load(opts.slot || 'free') || S.touch(S.newNotebook(opts.slot || 'free'));
-  let tab = 'table', wide = false, saveT = 0, layout = null, statusT = 0, past = [], future = [], snap = '', chainOpen = null;
+  let tab = 'table', wide = false, saveT = 0, layout = null, statusT = 0, past = [], future = [], snap = '';
   if (!nb.seed) nb.seed = 1 + Math.floor(Math.random() * 999998);
 
   root.classList.add('nb');
@@ -42,9 +42,9 @@ export function createNotebook(root, opts = {}) {
     <div class="nb-bar">
       <input class="nb-title" type="text" placeholder="Title of this notebook (yours to write)" aria-label="Notebook title" maxlength="120">
       <div class="nb-btns">
-        ${host ? '<button class="nb-btn primary" data-act="record" title="Copy the readings now on screen into a new row">Record</button>' : ''}
-        <button class="nb-btn t" data-act="addrow">Add Row</button>
-        <button class="nb-btn t" data-act="addcol" aria-haspopup="true">Add Column</button>
+        ${host ? '<button class="nb-btn primary tb" data-act="record" title="Copy the readings now on screen into a new row">Record</button>' : ''}
+        <button class="nb-btn t tb" data-act="addrow">Add Row</button>
+        <button class="nb-btn t tb" data-act="addcol" aria-haspopup="true">Add Column</button>
         <button class="nb-btn g" data-act="labels">Edit Chart Labels</button>
         <button class="nb-btn g" data-act="png">Save Graph</button>
         <button class="nb-btn" data-act="more" aria-haspopup="true" aria-label="More: export, import, settings" title="Export, import, settings">&#8943;</button>
@@ -52,9 +52,10 @@ export function createNotebook(root, opts = {}) {
     </div>
     <div class="nb-tabs" role="tablist"><button role="tab" data-tab="table">Table</button><button role="tab" data-tab="graph">Graph and model</button></div>
     <div class="nb-main">
-      <div class="nb-left"><div class="nb-slot-model"></div><div class="nb-chain" hidden></div><div class="nb-tablewrap" tabindex="-1"></div><div class="nb-bad" role="status" hidden></div></div>
+      <div class="nb-left"><div class="nb-pbar"><h4>Table</h4><div class="nb-btns" data-slot="t"></div></div><div class="nb-tablewrap" tabindex="-1"></div><div class="nb-bad" role="status" hidden></div></div>
+      <div class="nb-split" role="separator" aria-orientation="vertical" aria-label="Divider between the table and the graph" tabindex="0" title="Drag to give the table or the graph more room (double-click: back to the usual widths)"></div>
       <div class="nb-right">
-        <div class="nb-axes"></div>
+        <div class="nb-pbar nb-gbar"><h4>Graph</h4><div class="nb-axes"></div><div class="nb-btns" data-slot="g"></div></div>
         <div class="nb-stick"><div class="nb-chartwrap"><canvas class="nb-chart" role="img" aria-label="Your graph"></canvas><div class="nb-tip" hidden></div></div><div class="nb-fit" hidden></div></div>
         <div class="nb-slot-model2"></div>
       </div>
@@ -66,7 +67,7 @@ export function createNotebook(root, opts = {}) {
     <input type="file" class="nb-file" accept=".csv,.tsv,.txt,text/csv" hidden>`;
   const $ = (sel) => root.querySelector(sel);
   const modelBox = h('div', { class: 'nb-model' }, '<div class="nb-part" data-part="0"><div class="nb-mhead"></div><div class="nb-mbody"></div></div><div class="nb-part nb-m2" data-part="1"><div class="nb-mhead"></div><div class="nb-mbody"></div></div>');
-  const titleIn = $('.nb-title'), tableWrap = $('.nb-tablewrap'), chainBox = $('.nb-chain'), axesBox = $('.nb-axes'), fitBox = $('.nb-fit'), badBox = $('.nb-bad'), canvas = $('.nb-chart'), tip = $('.nb-tip');
+  const titleIn = $('.nb-title'), tableWrap = $('.nb-tablewrap'), axesBox = $('.nb-axes'), fitBox = $('.nb-fit'), badBox = $('.nb-bad'), canvas = $('.nb-chart'), tip = $('.nb-tip');
   const modal = $('.nb-modal'), dialog = $('.nb-dialog'), pop = $('.nb-pop'), statusBox = $('.nb-status');
 
   // ---- small services ---------------------------------------------------------------------------------------------------
@@ -174,7 +175,7 @@ export function createNotebook(root, opts = {}) {
   function headHtml(c, i) {
     const ui = S.unitInfo(nb, c), r = S.ruleOf(nb, c);
     const waiting = c.kind === 'convert' && c.shown === false;
-    return `<th data-col="${c.id}" class="k-${c.kind}${r.error ? ' bad' : ''}" tabindex="0" title="Click to rename, change the format, or delete this column">` +
+    return `<th data-col="${c.id}" class="k-${c.kind}${r.error ? ' bad' : ''}" tabindex="0" title="Click to change this column: its name, its unit or rule, its figures">` +
       `<div class="nb-h1"><span class="L">${colLetter(i)}</span><span class="nm">${esc(c.name) || '<i>unnamed</i>'}</span>${ui.label ? `<span class="u">(${esc(ui.label)})</span>` : ''}</div>` +
       (c.kind === 'const' ? `<div class="nb-h2">= <b>${esc(fmtNum(+c.value, c.sig))}</b></div><div class="nb-h3">${esc(c.from || '')}</div>` : '') + (r.head ? `<div class="nb-h2">${esc(r.head)}${r.rule && !waiting ? ` <b>${esc(r.rule)}</b>` : ''}</div>` : r.kind === 'recorded' ? `<div class="nb-h2 rec">${esc(r.text)}</div>` : '') +
       (r.error ? `<div class="nb-h3 err">${esc(r.error)}</div>` : waiting ? '<div class="nb-h3"><button class="nb-link" data-predict="' + c.id + '">bigger or smaller? tap to fill</button></div>' : r.why ? `<div class="nb-h3${r.warn ? ' err' : ''}">${esc(r.why)}</div>` : '') + '</th>';
@@ -185,7 +186,7 @@ export function createNotebook(root, opts = {}) {
         <p><button class="nb-btn primary" data-act="addcol" aria-haspopup="true">Add Column</button>${host ? ' <button class="nb-btn" data-act="recsetup">Choose what Record copies</button>' : ''} <button class="nb-btn" data-act="import">Open a CSV file</button></p>
         <p class="nb-hint">You can also paste a block of cells here. To try the graph and the sliders first: <button class="nb-link" data-act="practice" aria-haspopup="true">practice data</button> (made up).</p>
         <p class="nb-hint">Later you can add columns that convert units (arcseconds → degrees → radians) or calculate from other columns; the notebook shows the rule it uses.</p></div>`;
-      chainBox.hidden = true; return;
+      return;
     }
     let html = '<table class="nb-table"><thead><tr><th class="rn"></th>' + nb.cols.map(headHtml).join('') + '<th class="rx"></th></tr></thead><tbody>';
     nb.rows.forEach((row, i) => {
@@ -198,7 +199,7 @@ export function createNotebook(root, opts = {}) {
     html += '</tbody></table>' + (nb.rows.length ? '' : '<div class="nb-hint pad">No rows yet. Press <b>Add Row</b> and type' + (host ? ', or <b>Record</b> to copy a reading from the sky' : '') + '. You can also paste a block of cells.</div>');
     const was = [tableWrap.scrollLeft, tableWrap.scrollTop];
     tableWrap.innerHTML = html; tableWrap.scrollLeft = was[0]; tableWrap.scrollTop = was[1];
-    refreshComputed(); renderChain();
+    refreshComputed();
   }
   // a typed cell keeps exactly what was typed; a recorded number is shown with the column's figures
   const cellShown = (c, i) => { const v = nb.rows[i][c.id]; return v == null ? '' : typeof v === 'number' ? (c.kind === 'data' ? fmtNum(v, c.sig) : String(v)) : String(v); };
@@ -215,16 +216,22 @@ export function createNotebook(root, opts = {}) {
     });
     badBox.hidden = !bad.length; badBox.textContent = bad.slice(0, 2).join(' ') + (bad.length > 2 ? ` And ${bad.length - 2} more cell${bad.length > 3 ? 's' : ''} underlined.` : '') + (bad.length ? ' Left out of the graph until corrected.' : '');
   }
-  function renderChain() {
-    const flow = S.flow(nb);
-    if (!flow.length) { chainBox.hidden = true; return; }
-    const node = (id, full = true) => { const c = S.colById(nb, id), u = S.unitInfo(nb, c).label; return `<span class="nb-node k-${c.kind}" data-col="${id}"><b>${S.letterOf(nb, id)}</b>${full ? ` ${esc(c.name)}${u ? ` <i>(${esc(u)})</i>` : ''}` : ''}</span>`; };
+  /** Where a column comes from and what is made from it, as the arrow chain shown in that column's own dialog. */
+  function chainHtml(id) {
+    const node = (nid, full = true) => { const c = S.colById(nb, nid), u = S.unitInfo(nb, c).label; return `<button type="button" class="nb-node k-${c.kind}${nid === id ? ' me' : ''}" data-col="${nid}"><b>${S.letterOf(nb, nid)}</b>${full ? ` ${esc(c.name)}${u ? ` <i>(${esc(u)})</i>` : ''}` : ''}</button>`; };
     const kid = (k) => { const kc = S.colById(nb, k.id), r = S.ruleOf(nb, kc); return `<span class="nb-kid"><span class="nb-arrow"><i>${esc(kc.kind === 'convert' && kc.shown === false ? '?' : r.kind === 'convert' ? r.rule : r.kind === 'physics' ? r.rule.replace('uses ', '') : 'formula')}</i></span>${node(k.id)}${k.kids.length ? `<span class="nb-kids">${k.kids.map(kid).join('')}</span>` : ''}</span>`; };
-    const open = chainOpen == null ? flow.length <= 2 && root.clientHeight > 560 : chainOpen;
-    chainBox.innerHTML = `<details${open ? ' open' : ''}><summary class="nb-chain-ttl">How the columns follow from each other</summary>` + flow.map((t) => `<div class="nb-chainrow">${t.from.map((id) => node(id, t.from.length === 1)).join(' ')}<span class="nb-kids">${t.kids.map(kid).join('')}</span></div>`).join('') + '</details>';
-    chainBox.querySelector('summary').addEventListener('click', () => { chainOpen = !chainBox.querySelector('details').open; });
-    chainBox.hidden = false;
+    const has = (k) => k.id === id || k.kids.some(has);
+    const rows = S.flow(nb).filter((t) => t.from.includes(id) || t.kids.some(has));
+    return rows.length ? `<div class="nb-chain">${rows.map((t) => `<div class="nb-chainrow">${t.from.map((x) => node(x, t.from.length === 1)).join(' ')}<span class="nb-kids">${t.kids.map(kid).join('')}</span></div>`).join('')}</div>` : '';
   }
+  /** Pointing at a column's header marks the columns it is made from (solid) and the ones made from it (dashed). */
+  function showLinks(th) {
+    const id = th && th.dataset.col, c = id && S.colById(nb, id), from = c ? S.depsOf(nb, c) : [], to = c ? S.dependents(nb, id).map((x) => x.id) : [];
+    tableWrap.querySelectorAll('th[data-col]').forEach((t) => { t.classList.toggle('src', from.includes(t.dataset.col)); t.classList.toggle('made', to.includes(t.dataset.col)); });
+  }
+  const overTh = (e) => showLinks(e.target.closest && e.target.closest('th[data-col]'));
+  tableWrap.addEventListener('pointerover', overTh); tableWrap.addEventListener('focusin', overTh);
+  tableWrap.addEventListener('pointerleave', () => showLinks(null)); tableWrap.addEventListener('focusout', () => showLinks(null));
   tableWrap.addEventListener('change', (e) => {
     const inp = e.target; if (!inp.matches('td.in input')) return;
     S.setCell(nb, +inp.dataset.r, inp.dataset.c, inp.value.trim() === '' ? undefined : inp.value.trim());
@@ -290,7 +297,7 @@ export function createNotebook(root, opts = {}) {
   tableWrap.addEventListener('keydown', (e) => { const th = e.target.closest && e.target.closest('th[data-col]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); columnDialog(S.colById(nb, th.dataset.col)); } });
   // the last change is still waiting for its timer when the page is left
   window.addEventListener('pagehide', () => { if (saveT) { clearTimeout(saveT); saveT = 0; S.save(nb); } });
-  chainBox.addEventListener('click', (e) => { const n = e.target.closest('[data-col]'); if (n) { const th = tableWrap.querySelector(`th[data-col="${n.dataset.col}"]`); if (th) { th.scrollIntoView({ block: 'nearest', inline: 'center' }); th.classList.add('flash'); setTimeout(() => th.classList.remove('flash'), 900); } } });
+
 
   // ---- column dialogs ---------------------------------------------------------------------------------------------------------
   const sigSelect = (v) => `<label class="nb-f">Figures shown <select name="sig">${SIGS.map(([n, t]) => `<option value="${n}"${n === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>`;
@@ -440,6 +447,11 @@ export function createNotebook(root, opts = {}) {
     b.querySelector('.nb-fnum').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); b.querySelector('[data-num]').click(); } });
     text.addEventListener('input', check); check();
   }
+  /** The columns a conversion may start from: those with a unit, except itself and anything made from it. */
+  function convertSources(col) {
+    const below = new Set([col.id]); for (let grew = true; grew;) { grew = false; for (const c of nb.cols) if (!below.has(c.id) && S.depsOf(nb, c).some((d) => below.has(d))) { below.add(c.id); grew = true; } }
+    return nb.cols.filter((c) => { const u = S.unitInfo(nb, c).id; return c.id === col.src || (!below.has(c.id) && u && compatible(u).length); });
+  }
   function columnDialog(col) {
     if (!col) return;
     const r = S.ruleOf(nb, col), L = S.letterOf(nb, col.id);
@@ -447,18 +459,29 @@ export function createNotebook(root, opts = {}) {
       <label class="nb-f">Name <input name="name" type="text" maxlength="60" value="${esc(col.name)}" placeholder="your own words"></label>
       ${col.kind === 'data' ? `<label class="nb-f">Unit <select name="unit">${unitOptions(col.unit, { blank: 'no unit (a pure number)' })}${col.unit && !UNIT[col.unit] ? `<option value="${esc(col.unit)}" selected>${esc(col.unit)}</option>` : ''}</select></label>` : ''}
       ${col.kind !== 'text' ? sigSelect(col.sig) + `<div class="nb-f">Under the table: &ensp;<label class="nb-check"><input type="checkbox" name="mean"${col.foot && col.foot.mean ? ' checked' : ''}> the mean</label> &ensp;<label class="nb-check"><input type="checkbox" name="count"${col.foot && col.foot.count ? ' checked' : ''}> how many numbers</label></div>` : ''}
-      <p class="nb-def">${esc(r.text)}${r.error ? ` — <span class="nb-err">${esc(r.error)}</span>` : ''}</p>
+      ${col.kind === 'convert' ? `<label class="nb-f">Convert which column? <select name="csrc">${convertSources(col).map((c) => `<option value="${c.id}"${c.id === col.src ? ' selected' : ''}>${esc(colFull(c))}</option>`).join('')}</select></label>
+      <label class="nb-f">Into which unit? <select name="cto"></select></label><p class="nb-def" data-cdef></p>` : ''}
+      ${chainHtml(col.id)}
+      <p class="nb-def" data-rule>${esc(r.text)}${r.error ? ` — <span class="nb-err">${esc(r.error)}</span>` : ''}</p>
       <div class="nb-row"><button class="nb-btn primary" data-ok>Save</button>${col.kind === 'calc' ? '<button class="nb-btn" data-formula>Edit formula…</button>' : ''}<button class="nb-btn" data-move="-1" title="Move this column one place left"${nb.cols[0] === col ? ' disabled' : ''}>&#8592; Move</button><button class="nb-btn" data-move="1" title="Move this column one place right"${nb.cols[nb.cols.length - 1] === col ? ' disabled' : ''}>Move &#8594;</button><button class="nb-btn danger" data-del>Delete column</button><button class="nb-btn" data-close>Cancel</button></div>
       <p class="nb-err" data-err hidden></p>`);
+    const cs = b.querySelector('[name=csrc]'), ct = b.querySelector('[name=cto]');
+    if (cs) {
+      const say = () => { const moved = cs.value !== col.src || ct.value !== col.unit; b.querySelector('[data-cdef]').textContent = UNIT[ct.value] ? `${UNIT[ct.value].name}: ${UNIT[ct.value].def}` : ''; b.querySelector('[data-rule]').hidden = moved; };
+      const fill = () => { ct.innerHTML = unitOptions(ct.value || col.unit, { blank: '', only: compatible(S.unitInfo(nb, S.colById(nb, cs.value)).id).map((x) => x.id) }); say(); };
+      cs.addEventListener('change', fill); ct.addEventListener('change', say); fill();
+    }
     b.querySelector('[data-ok]').addEventListener('click', () => {
-      const u = b.querySelector('[name=unit]'), name = b.querySelector('[name=name]').value.trim();
+      const u = b.querySelector('[name=unit]') || ct, name = b.querySelector('[name=name]').value.trim();
       if (complain(b, nameTrouble(name, u ? u.value : S.unitInfo(nb, col).label, col))) return;
-      col.name = name; if (u) col.unit = u.value;
+      const redo = cs && (cs.value !== col.src || ct.value !== col.unit);
+      col.name = name; if (u) col.unit = u.value; if (redo) { col.src = cs.value; col.shown = !nb.predict; delete col.guess; }
       const mean = b.querySelector('[name=mean]'); if (mean) col.foot = { mean: mean.checked, count: b.querySelector('[name=count]').checked };
       const s = b.querySelector('[name=sig]'); if (s) col.sig = +s.value;
       closeDialog(); changed({ structure: true });
+      if (redo && nb.predict) askPrediction(col);
     });
-    b.addEventListener('click', (e) => { const m = e.target.closest('[data-move]'); if (m && S.moveColumn(nb, col.id, +m.dataset.move)) { changed({ structure: true }); columnDialog(col); } });
+    b.addEventListener('click', (e) => { const m = e.target.closest('[data-move]'); const n = e.target.closest('.nb-node[data-col]'); if (n && n.dataset.col !== col.id) { columnDialog(S.colById(nb, n.dataset.col)); return; } if (m && S.moveColumn(nb, col.id, +m.dataset.move)) { changed({ structure: true }); columnDialog(col); } });
     const f = b.querySelector('[data-formula]'); if (f) f.addEventListener('click', () => calcDialog(col));
     b.querySelector('[data-del]').addEventListener('click', () => {
       const why = S.removeColumn(nb, col.id);
@@ -627,7 +650,7 @@ export function createNotebook(root, opts = {}) {
   function pngFoot() {
     const out = []; if (nb.practice) out.push('PRACTICE DATA (made up by the notebook): not a measurement');
     if (nb.student || nb.title) out.push([nb.student, nb.title].filter(Boolean).join(' · '));
-    [nb.model, nb.model2].forEach((m) => { const md = m.type && modelData(m); if (!md || !md.pts.length) return; const r = residuals(md.M, m.p, md.pts, md.c); out.push(`Fitted by hand, ${md.M.name.replace(/ \(.*/, '').toLowerCase()}: ` + md.M.params.map((p) => `${p.sym.replace(/<[^>]+>/g, '')} = ${withUnit(fmtNum(m.p[p.key], 5), parUnit(p.unit))}`).join(', ') + (r.n === md.pts.length ? `; rms ${withUnit(fmtNum(r.rms, 3), parUnit('y'))}` : '')); });
+    [nb.model, nb.model2].forEach((m) => { const md = m.type && modelData(m); if (!md || !md.pts.length) return; const r = residuals(md.M, m.p, md.pts, md.c); out.push(`Fitted by hand, ${md.M.name.replace(/ \(.*/, '').toLowerCase()}: ` + md.M.params.map((p) => `${p.sym.replace(/<[^>]+>/g, '')} = ${withUnit(fmtNum(m.p[p.key], 5), parUnit(p.unit))}`).join(', ') + (r.n === md.pts.length ? `; sum of squared residuals ${fmtNum(r.ss, 4)}, rms ${withUnit(fmtNum(r.rms, 3), parUnit('y'))}` : '')); });
     return out;
   }
   function savePng() {
@@ -712,7 +735,7 @@ export function createNotebook(root, opts = {}) {
     if (tools.length) html += `<div class="nb-mtools">${tools.join(' ')}</div>`;
     html += `<div class="nb-pars${M.params.length > 5 ? ' many' : ''}">` + M.params.map((p) => {
       const [lo, hi] = m.r[p.key], v = m.p[p.key], u = parUnit(p.unit);
-      return `<div class="nb-par"><span class="desc"><b class="sym">${p.sym}</b> ${esc(p.label)}</span>
+      return `<div class="nb-par"><span class="desc" title="${esc(p.label)}"><b class="sym">${p.sym}</b> ${esc(p.label)}</span>
         <input type="range" data-p="${k}:${p.key}" min="${lo}" max="${hi}" step="${(hi - lo) / 2000 || 1e-9}" value="${v}" aria-label="${esc(p.label)}">
         <input type="text" inputmode="decimal" autocomplete="off" data-n="${k}:${p.key}" value="${parText(v, m.r[p.key])}" aria-label="${esc(p.label)}, number"><span class="un">${esc(u)}</span><span class="zoom"><button data-z="${k}:${p.key}:in" title="Finer: narrow this slider around its value" aria-label="Finer slider for ${esc(p.label)}">&#8853;</button><button data-z="${k}:${p.key}:out" title="Wider slider range" aria-label="Wider slider for ${esc(p.label)}">&#8854;</button><button data-use="${k}:${p.key}" title="Use this value: put it in the table as a column of its own, to calculate or convert with" aria-label="Use the value of ${esc(p.label)} in the table">use</button></span></div>`;
     }).join('') + '</div>';
@@ -725,8 +748,8 @@ export function createNotebook(root, opts = {}) {
     [nb.model, nb.model2].forEach((m, k) => {
       const md = m.type && modelData(m); if (!md || !md.pts.length || (md.M.needsT && !g.t) || !md.M.params.every((p) => Number.isFinite(m.p[p.key]))) return;
       const r = residuals(md.M, m.p, md.pts, md.c), u = parUnit('y'), all = S.points(nb, 'y').length;
-      const what = (k ? '2nd curve: ' : '') + (md.M.closed ? 'rms distance<span class="long"> of the points</span> from the circle' : 'rms<span class="long"> of residuals</span>');
-      out.push(`<span data-rms="${k}">${what} ${r.n < md.pts.length ? `<b>none</b>: the curve does not exist at ${md.pts.length - r.n} of your ${md.pts.length} points` : `<b>${esc(withUnit(fmtNum(r.rms, 3), u))}</b><span class="long"> · largest ${esc(withUnit(fmtNum(r.max, 3), u))}</span> · ${r.n} point${r.n === 1 ? '' : 's'}`}${md.pts.length < all ? ` (${all - md.pts.length} without a time left out)` : ''}</span><button class="nb-btn sm" data-reset="${k}" title="Put the sliders back to a neutral start that covers your data (not a fit)">Reset sliders</button>`);
+      const what = k ? '2nd curve: ' : '', u2 = u && (/[/·]/.test(u) ? `(${u})²` : u + '²'), each = md.M.closed ? 'distance from the circle' : 'residual';
+      out.push(`<span data-rms="${k}">${what} ${r.n < md.pts.length ? `<b>none</b>: the curve does not exist at ${md.pts.length - r.n} of your ${md.pts.length} points` : `<span class="ss" title="Square every ${each} and add them up. The smaller this is, the closer the curve lies to your points. (R² is 1 minus this, divided by the same sum for a flat line at the mean: it is largest when this is smallest.)">Sum of squared ${md.M.closed ? 'distances<span class="long"> from the circle</span>' : 'residuals'} <b>${esc(withUnit(fmtNum(r.ss, 4), u2))}</b></span> <span class="rms" title="The root of the mean square: a typical ${each}">rms ${esc(withUnit(fmtNum(r.rms, 3), u))}</span><span class="long"> · largest ${esc(withUnit(fmtNum(r.max, 3), u))}</span> · ${r.n} point${r.n === 1 ? '' : 's'}`}${md.pts.length < all ? ` (${all - md.pts.length} without a time left out)` : ''}</span><button class="nb-btn sm" data-reset="${k}" title="Put the sliders back to a neutral start that covers your data (not a fit)">Reset sliders</button>`);
     });
     const pts = S.points(nb, 'y').concat(g.y2 ? S.points(nb, 'y2') : []), lost = pts.filter((p) => (g.logX && p.x <= 0) || (g.logY && p.y <= 0)).length;
     if (lost) out.push(`<span class="warn">${lost} point${lost > 1 ? 's are' : ' is'} not shown: zero and negative values have no place on a log scale.</span>`);
@@ -886,15 +909,35 @@ export function createNotebook(root, opts = {}) {
     else if (name === 'redo') redo();
     else if (name === 'practice') practiceMenu(anchor);
   }
-  $('.nb-bar').addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act, b); });
+  root.querySelectorAll('.nb-bar, .nb-pbar').forEach((bar) => bar.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act, b); }));
   $('.nb-foot').addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act, b); });
   titleIn.addEventListener('change', () => { nb.title = titleIn.value.trim(); titleIn.defaultValue = titleIn.value; changed(); });
   $('.nb-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab); });
   function setTab(t) { tab = t; root.dataset.tab = t; root.querySelectorAll('.nb-tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t))); requestAnimationFrame(() => { drawGraph(); if (t === 'graph' && root.classList.contains('nb-short') && nb.graph.x && nb.graph.y) $('.nb-right').scrollTop = axesBox.offsetHeight; }); }
+  // ---- the divider between the table and the graph (side by side only); where it stands is remembered in this browser ----
+  const split = $('.nb-split'), SPLIT = 'astro-labs.notebook.split';
+  let frac = 0; try { frac = +localStorage.getItem(SPLIT) || 0; } catch (e) { /* fine */ }
+  function setSplit() {
+    const w = $('.nb-main').clientWidth, lo = 220, hi = Math.max(lo, w - 340), px = Math.round(Math.max(lo, Math.min(hi, (frac || 0.4) * w)));
+    root.style.setProperty('--nb-left', px + 'px'); split.setAttribute('aria-valuenow', Math.round(px / w * 100)); split.setAttribute('aria-valuemin', Math.round(lo / w * 100)); split.setAttribute('aria-valuemax', Math.round(hi / w * 100));
+  }
+  const moveSplit = (px) => { const w = $('.nb-main').clientWidth; frac = Math.max(220, Math.min(w - 340, px)) / w; setSplit(); };
+  const keepSplit = () => { try { if (frac) localStorage.setItem(SPLIT, frac.toFixed(4)); else localStorage.removeItem(SPLIT); } catch (e) { /* fine */ } };
+  split.addEventListener('pointerdown', (e) => { if (e.button) return; e.preventDefault(); split.setPointerCapture(e.pointerId); split.classList.add('on'); });
+  split.addEventListener('pointermove', (e) => { if (split.classList.contains('on')) moveSplit(e.clientX - $('.nb-main').getBoundingClientRect().left); });
+  for (const t of ['pointerup', 'pointercancel']) split.addEventListener(t, () => { if (split.classList.contains('on')) { split.classList.remove('on'); keepSplit(); } });
+  split.addEventListener('mousedown', (e) => e.preventDefault());          // no text selection while dragging
+  split.addEventListener('dblclick', () => { frac = 0; setSplit(); keepSplit(); });
+  split.addEventListener('keydown', (e) => { const d = e.key === 'ArrowLeft' ? -24 : e.key === 'ArrowRight' ? 24 : 0; if (!d) return; e.preventDefault(); e.stopPropagation(); moveSplit($('.nb-left').offsetWidth + d); keepSplit(); });
   function place() {
     const w = root.clientWidth, hh = root.clientHeight; if (!w) return;
     const nowWide = w >= 700;
-    if (nowWide !== wide || !modelBox.parentElement) { wide = nowWide; root.classList.toggle('nb-wide', wide); (wide ? $('.nb-slot-model') : $('.nb-slot-model2')).appendChild(modelBox); }
+    if (nowWide !== wide || !modelBox.parentElement) { wide = nowWide; root.classList.toggle('nb-wide', wide); $('.nb-slot-model2').appendChild(modelBox);
+      // side by side, each half has its own buttons over it; one above the other, all are in the bar at the top
+      const bar = $('.nb-bar .nb-btns'), more = bar.querySelector('[data-act=more]') || root.querySelector('[data-act=more]');
+      root.querySelectorAll('.nb-btn.tb, .nb-btn.g').forEach((x) => (wide ? $(`[data-slot=${x.classList.contains('g') ? 'g' : 't'}]`).append(x) : bar.insertBefore(x, more)));
+    }
+    if (wide) setSplit();
     root.classList.toggle('nb-short', hh < 520);
     // narrow: the graph keeps a height at which it can be fitted by eye; what does not fit under it scrolls under it
     root.style.setProperty('--nb-ch', Math.round(Math.max(250, Math.min(430, hh * 0.5))) + 'px');

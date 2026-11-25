@@ -25,7 +25,7 @@ const TEXT = {
   tilt: (v) => `<p>The separation between a body and the thing it orbits, for a circular orbit of radius <i>A</i> tipped by the angle <i>tilt</i> toward us. Edge-on (tilt 0°) the separation falls to zero twice each orbit, when the body passes in front and behind. Tipped up, it only closes to A · sin(tilt). Face-on (90°) the separation never changes.</p>
     <p>A separation is never negative, so this curve bounces where a sine wave would cross zero: use it when you measured distances, not signed offsets.</p>`,
   circle: (v) => `<p>A circle on the graph: the center (x<sub>c</sub>, y<sub>c</sub>) and the diameter <i>D</i> (twice the radius). Both axes must be the same kind of quantity in the same unit, with <b>Same scale on both axes</b> switched on, or it is drawn as an oval.</p>
-    <p>The rms under the graph is the spread of the points about the <b>rim</b>, so it means something only when the points ought to lie on a circle. For a cloud of points that fills a disc, judge the center by eye: as many points to the left as to the right, above as below.</p>
+    <p>The sum under the graph adds up the squared distances of the points from the <b>rim</b>, so it means something only when the points ought to lie on a circle. For a cloud of points that fills a disc, judge the center by eye: as many points to the left as to the right, above as below.</p>
     <p>Where it turns up: the middle of a swarm of star clusters seen from inside the Galaxy, the orbit of something seen face-on, the rim of a crater. Graph options can mark the origin (0, 0); what stands there is for you to say.</p>`,
   ellipse: (v) => `<p>A point going round an ellipse (half-axes <i>a</i> and <i>b</i>, long axis turned by θ from your horizontal axis) once every <i>P</i>, while the whole ellipse slides at the steady rate (v<sub>x</sub>, v<sub>y</sub>). It needs three columns: horizontal, vertical, and the <b>time</b> of each point, because the curve is traced in time.</p>
     <h4>Where it turns up: a nearby star against distant ones</h4>
@@ -51,7 +51,7 @@ export function openAbout(root, id, vars, setup = null) {
     <table class="nb-units">${M.params.map((p) => `<tr><td><b>${p.sym}</b></td><td>${p.label}</td></tr>`).join('')}</table>
     <div class="nb-diagram"><canvas width="10" height="10" aria-label="Live diagram"></canvas><div class="nb-dctl"></div></div>
     ${TEXT[id]({ x: `<i>${vars.x}</i>`, y: `<i>${vars.y}</i>`, t: `<i>${vars.t}</i>` })}
-    <p class="nb-hint">The sliders do not fit for you, and the notebook does not tell you the answer: a good fit is one where the residuals are small and scattered evenly above and below zero.</p></div>`;
+    <p class="nb-hint">The sliders do not fit for you, and the notebook does not tell you the answer: a good fit is one where the residuals are small and scattered evenly above and below zero. The number under the graph adds up their squares: move the sliders to make it as small as you can.</p></div>`;
   root.appendChild(box);
   box.addEventListener('click', (e) => { if (e.target === box || e.target.closest('[data-close]')) closeAbout(root); });
   box.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAbout(root); e.stopPropagation(); } });

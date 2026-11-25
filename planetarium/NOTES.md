@@ -1316,3 +1316,9 @@ Overrides the layout and Record paragraphs of "Lab notebook (2026-11-24)".
 
 ## Not tested
 Touch; Safari and Firefox; the phone layout only in a 390 x 760 iframe with a mouse. `jupiter-mass` was opened and one reading taken, not repeated. The two parallax notebook labs were only opened.
+
+## Notebook: Seth's review, 2026-11-25
+- A conversion column's source and unit can be changed in its dialog (the prediction is asked again). Descendants are not offered as the source.
+- The "How the columns follow" strip is gone: the chain is in each column's dialog, and pointing at a header marks the columns it is made from (solid) and those made from it (dashed). `S.flow` still builds it.
+- The fit strip leads with the sum of squared residuals (`residuals().ss`), then rms.
+- Side by side (>= 700 px): all table buttons over the table, everything of the graph (axes, graph, fit strip, sliders) on the other side, `.nb-split` between them (drag, arrow keys, double-click to reset; remembered as `astro-labs.notebook.split`). Low windows: the graph sticks and the sliders scroll under it.
