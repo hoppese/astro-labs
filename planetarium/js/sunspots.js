@@ -42,7 +42,7 @@ function decade(d) {
   return h;
 }
 export const loadDecade = (d) => decade(d).promise;
-/** Carrington longitude of the disc centre, degrees (good to a few hundredths; used only to tell which limb a group is at). */
+/** Carrington longitude of the disc center, degrees (good to a few hundredths; used only to tell which limb a group is at). */
 const L0 = (tt) => mod(carr(tt), 360);
 function carr(tt) {      // Meeus ch. 29, as in tools/build_bodies.py
   const jd = tt + 2451545, T = tt / 36525, L = 280.46646 + 36000.76983 * T, M = (357.52911 + 35999.05029 * T) * DEG;
@@ -182,7 +182,7 @@ export function groupsAt(tt) {
   }
   memoKey = key; memo = { kind, list }; return memo;
 }
-/** Groups on the disc: those within 90 deg of the disc centre (lon0, lat0). */
+/** Groups on the disc: those within 90 deg of the disc center (lon0, lat0). */
 export function onDisc(list, lon0, lat0, tt) {
   return list.filter((g) => Math.sin(g.lat * DEG) * Math.sin(lat0 * DEG) + Math.cos(g.lat * DEG) * Math.cos(lat0 * DEG) * Math.cos((g.lon - lon0) * DEG) > 0.02);
 }

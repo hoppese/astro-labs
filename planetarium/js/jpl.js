@@ -125,9 +125,9 @@ export function moon(tt, vel) {
   if (e < 200) { const f = farMoon(tt, vel); if (f) { const w = e / 200, k = w * w * (3 - 2 * w); return n.map((v, i) => f[i] + k * (v - f[i])); } }
   return n;
 }
-/** Sun from the solar-system barycentre. */
+/** Sun from the solar-system barycenter. */
 export function sunBary(tt, vel) { return raw(want(tt), 'Sun', tt, vel); }
-/** Heliocentric place of a planet's SYSTEM (its barycentre; the Earth's is its own centre). */
+/** Heliocentric place of a planet's SYSTEM (its barycenter; the Earth's is its own center). */
 export function helio(id, tt, vel) {
   const set = want(tt); if (!set) return null;
   if (id === 'Earth' || id === 'EMB') { const e = raw(set, 'EMB', tt, vel); if (!e || id === 'EMB') return e; const m = moon(tt, vel); return m ? plus(e, m, -1 / (1 + EMRAT)) : null; }

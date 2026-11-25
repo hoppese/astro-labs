@@ -25,7 +25,7 @@ function loadIndex() {
   fetch(new URL('index.json', DIR)).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((j) => {
     const byId = new Map(dso.rows.map((o) => [o.id, o])), list = [];
     for (const [key, [file, size, n, ra, dec, by]] of Object.entries(j.items)) {
-      const id = key.split('|')[0], o = byId.get(id); if (!o) continue;       // "|core": the ESO picture of a showpiece's middle, with its own centre
+      const id = key.split('|')[0], o = byId.get(id); if (!o) continue;       // "|core": the ESO picture of a showpiece's middle, with its own center
       const vec = ra == null ? o.vec : [Math.cos(dec * DEG) * Math.cos(ra * DEG), Math.cos(dec * DEG) * Math.sin(ra * DEG), Math.sin(dec * DEG)];
       list.push({ id, idx: o.idx, file, size, n, vec, by: by || '', base: null, img: null, state: 0, mesh: null, at: 0 });
     }
@@ -57,7 +57,7 @@ function extinction(h, sky) {
 
 // ---- drawing a patch of sky from a picture ------------------------------------------------------
 const tmp = [0, 0];
-/** Direction (J2000, as catalogued) -> screen, without the "is it in view" test; false only when nearly behind the camera. */
+/** Direction (J2000, as cataloged) -> screen, without the "is it in view" test; false only when nearly behind the camera. */
 function toScreen(v, out) {
   let h = R.frame.starHor(v);
   if (R.refr) h = refractHor(h);

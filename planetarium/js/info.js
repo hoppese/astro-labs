@@ -20,7 +20,8 @@ import { moonError } from './moons.js';
 import { jpl, covered } from './jpl.js';
 import { sun, initSun, groupsAt, onDisc, cycleFacts } from './sunspots.js';
 import { openSunPanel } from './sunpanel.js';
-import { rowHidden, running } from './labs/hidden.js';
+import { rowHidden, running, groundStays } from './labs/hidden.js';
+import { moonLight } from './labs/shadow.js';
 import { smallWindow } from './layout.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
@@ -193,7 +194,7 @@ function upNext(ref) {
 const dayWord = (ms, tz) => { const a = wallParts(getFrame().timeMs, tz), b = wallParts(ms, tz); return a.day === b.day && a.month === b.month ? '' : 'tomorrow '; };
 /** The line "Jupiter is below the horizon (rises 23:26)" with its buttons, or ''. */
 function belowHtml(ref, name, alt, tz) {
-  if (!eff.ground || alt > -0.02 || ref.kind === 'con') return '';
+  if (!eff.ground || alt > -0.02 || ref.kind === 'con' || groundStays()) return '';      // (a lab about the horizon keeps it)
   const u = upNext(ref), secret = rowHidden('Rise / Set') || rowHidden('Transit') || rowHidden('Hour angle'), t = (ms) => dayWord(ms, tz) + fmtClock(ms, tz);
   return `<div class="below"><span><b>${esc(name)}</b> is below the horizon${secret ? '' : u ? ` (rises ${t(u.rise)})` : ' and never rises here'}. The ground hides it.</span>` +
     `<div class="below-acts"><button class="btn" data-act="noground">Hide the ground</button>${u && !running.id ? `<button class="btn" data-act="whenup" title="Set the clock to ${t(u.go)}, when it is up">Go to ${fmtClock(u.go, tz)}</button>` : ''}</div></div>`;
@@ -254,9 +255,9 @@ function render(force) {
     }
     row('Proper motion', s.pmra == null || s.pmdec == null ? ND : `${Math.hypot(s.pmra, s.pmdec).toFixed(r ? 0 : 2)} mas/yr (RA ${s.pmra.toFixed(r ? 0 : 2)}, Dec ${s.pmdec.toFixed(r ? 0 : 2)})`);
     if (s.rv != null) row('Radial velocity', s.rv.toFixed(1) + ' km/s');
-    note = 'Gaia DR3 (ESA/Gaia/DPAC), ' + (s.src === 'online' ? `fetched from ${PROVIDER.short} for this field. ` : s.src === 'hosted' ? 'from the deep star tiles (G 12 to 17). ' : 'from the bundled catalogue. ') +
+    note = 'Gaia DR3 (ESA/Gaia/DPAC), ' + (s.src === 'online' ? `fetched from ${PROVIDER.short} for this field. ` : s.src === 'hosted' ? 'from the deep star tiles (G 12 to 17). ' : 'from the bundled catalog. ') +
       (s.exact ? `Full record from ${PROVIDER.short}.` : s.lookup === 'pending' ? 'Looking up the full record…' :
-        s.lookup === 'none' ? 'The online look-up found no matching source; values are the catalogue tile’s, rounded.' :
+        s.lookup === 'none' ? 'The online look-up found no matching source; values are the catalog tile’s, rounded.' :
         s.src === 'online' ? '' : 'Values rounded as stored in the tile; the source number and exact values need the online look-up' + (s.lookup === 'failed' ? ', which did not answer.' : s.lookup === 'off' ? ', which is off or unavailable.' : '.'));
   } else if (ref.kind === 'body') {
     const b = bodies.byId[ref.id];
@@ -265,7 +266,7 @@ function render(force) {
     else if (b.kind === 'moon') type = "Earth's moon";
     else if (b.kind === 'satellite') type = `Moon of <button class="btn" style="padding:1px 7px;font-size:11.5px" data-act="parent" data-id="${b.parent}">${b.parent}</button>`;
     else type = b.kind === 'dwarf' ? 'Dwarf planet' : b.kind === 'asteroid' ? 'Asteroid' : b.kind === 'comet' ? 'Comet' : 'Planet';
-    row('Magnitude', fmtMag(b.mag));
+    { const f = b.id === 'Moon' ? moonLight(frame, b) : 1; row('Magnitude', f > 0.9995 ? fmtMag(b.mag) : (f < 1e-3 ? 'about ' : '') + fmtMag(b.mag - 2.5 * Math.log10(f), f < 1e-3 ? 0 : 1) + ' (in the Earth’s shadow)'); }
     if (b.kind === 'moon') row('Distance', Math.round(b.dist * AU_KM).toLocaleString('en-US') + ' km');
     else row('Distance', b.dist.toFixed(b.dist < 2 ? 4 : 3) + ' au');
     if (b.kind !== 'satellite') row('Angular diameter', fmtAngle(2 * b.angRadius));
@@ -308,9 +309,9 @@ function render(force) {
     row('Redshift z', o.z != null ? o.z.toFixed(6) : ND);
     if (o.z != null) row('c × z', Math.round(o.z * 299792.458).toLocaleString('en-US').replace('-', '−') + ' km/s');
     row('Radial velocity', o.rv != null ? Math.round(o.rv).toLocaleString('en-US') + ' km/s' : ND);
-    note = 'Catalogue values from OpenNGC. No distance is listed there.';
+    note = 'Catalog values from OpenNGC. No distance is listed there.';
     if (doubt) note += ' <b>Doubtful magnitude:</b> ' + doubt;
-    if (o.rv != null && o.z != null && Math.abs(o.rv - o.z * 299792.458) >= 2) note += ' Two velocities: c × z is the one used for Hubble’s law; the catalogue’s own “radial velocity” is worked out from the same redshift with the relativistic Doppler formula, which gives a little less.';
+    if (o.rv != null && o.z != null && Math.abs(o.rv - o.z * 299792.458) >= 2) note += ' Two velocities: c × z is the one used for Hubble’s law; the catalog’s own “radial velocity” is worked out from the same redshift with the relativistic Doppler formula, which gives a little less.';
   } else if (ref.kind === 'con') {
     const c = constellations.find((x) => x.id === ref.id);
     title = c.name; type = 'Constellation'; aka = `${c.id} · genitive ${c.gen}`;
@@ -323,7 +324,7 @@ function render(force) {
   // zoomed far in (labs: aberration, parallax, proper motion) the coordinates are given to 0.01 arcsec
   // (not while a notebook lab simulates measurement noise: the catalogue place to 0.01 arcsec would be an answer key beside the noisy image)
   const fine = perfFov() < 0.5 && !(see.enabled && see.noise > 0), raDp = fine ? 3 : 1, decDp = fine ? 2 : 0;
-  row('<span title="J2000 axes, as seen now: proper motion, aberration and parallax are included when switched on (Labs, Corrections), so it can differ from a catalogue by up to about 20 arcseconds">RA / Dec (J2000)</span>', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
+  row('<span title="J2000 axes, as seen now: proper motion, aberration and parallax are included when switched on (Labs, Corrections), so it can differ from a catalog by up to about 20 arcseconds">RA / Dec (J2000)</span>', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
   row('RA / Dec (of date)', fmtRA(d.lon, raDp) + '&ensp;' + fmtDMS(d.lat, { dp: decDp }));
   { const ecl = toSph(mulMV(frame.Mjt, eqj)); row('Ecliptic lon / lat', ecl.lon.toFixed(fine ? 4 : 2) + '°&ensp;' + (ecl.lat >= 0 ? '+' : '−') + Math.abs(ecl.lat).toFixed(fine ? 4 : 2) + '° (of date)'); }
   row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (eff.refraction ? '' : ' (no refraction)'));

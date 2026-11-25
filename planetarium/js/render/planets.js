@@ -13,6 +13,7 @@ import { BODY_ART } from '../bodydata.js';
 import { bodyAxes, toBody, subPoint, figure, spinRate, grsEast, GRS_MAP_EAST } from '../orient.js';
 import { drawGlobe, pickMap, getTex, photo, globesWork, pumpTextures } from './globe.js';
 import { running } from '../labs/hidden.js';
+import { moonLight } from '../labs/shadow.js';
 import { moonFade } from '../steady.js';
 import { sun, initSun, groupsAt, tileFor, centralMeridian } from '../sunspots.js';
 
@@ -215,9 +216,9 @@ const CORONA_WIDTH = 4.4;                                  // the picture's widt
 function drawMoon(ctx, b, pl, rpx, sunU) {
   const r = Math.max(rpx, 5);
   // soft glow scaled by how much of the disc is lit
-  const gr = r + 10 + 14 * b.phaseFrac;
+  const gr = r + 10 + 14 * b.phaseFrac, inShadow = moonLight(R.frame, b);      // eclipsed: no glow left
   const g = ctx.createRadialGradient(pl.x, pl.y, r, pl.x, pl.y, gr);
-  g.addColorStop(0, `rgba(225,230,240,${0.20 * b.phaseFrac * (R.atmo ? 1 - smooth(-9, -2, R.sky.sunAlt) : 1)})`); g.addColorStop(1, 'rgba(225,230,240,0)');
+  g.addColorStop(0, `rgba(225,230,240,${0.20 * inShadow * b.phaseFrac * (R.atmo ? 1 - smooth(-9, -2, R.sky.sunAlt) : 1)})`); g.addColorStop(1, 'rgba(225,230,240,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pl.x, pl.y, gr, 0, 2 * Math.PI); ctx.fill();
   // the unlit part: faint earthshine at night, lost in the blue by day
   // ... except in front of the Sun, where the dark Moon is what makes the eclipse
@@ -266,7 +267,10 @@ export function drawBodies(ctx) {
       if (onSun) {
         drawnR = Math.max(rpx, 0.9);
         ctx.save(); ctx.beginPath(); ctx.arc(pl.x, pl.y, drawnR, 0, 2 * Math.PI); ctx.clip(); repaintSky(ctx, sky); ctx.restore();      // dark: what we see there is our own sky
-      } else if (dm <= 0 && !resolved) visible = false;
+        if (nearSide(b) < 1) darkOutline(ctx, pl, rpx, 1 - nearSide(b));      // the same before, at and after the contacts: nothing but the edges themselves gives the instant away
+      // beside the Sun its dark side faces us (the sunlit part left is a hair): no star-like glow, and a faint outline so that its way to the Sun's edge can be followed
+      } else if (nearSide(b) < 1) drawnR = drawDarkSide(ctx, b, pl, rpx, dm, resolved);
+      else if (dm <= 0 && !resolved) visible = false;
       else {
         // a point of light that shrinks into the disc as the disc outgrows it
         if (dm > 0) { const ss = starSize(dm), k = resolved ? 1 - smooth(0.45, 1.1, rpx / ss) : 1; if (k > 0.02) drawnR = drawPointFaded(ctx, pl.x, pl.y, dm, POINT_BV[b.id] ?? 0.7, k); }
@@ -282,11 +286,21 @@ export function drawBodies(ctx) {
     addPick(pl.x, pl.y, Math.max(drawnR, 4), b.mag, { kind: 'body', id: b.id });
     // no star or deep-sky label on the face of the Sun or Moon (the stars behind are hidden; their names were not)
     if ((b.kind === 'sun' || b.kind === 'moon') && drawnR >= 10) labels.blockDisc(pl.x, pl.y, drawnR, ['star', 'starDim', 'dso']);
-    if (state.show.planetNames) labels.add(pl.x, pl.y, b.name, 'planet', 120 - b.mag * 0.5, { gap: Math.min(drawnR, 600) + 6 });
+    if (state.show.planetNames) labels.add(pl.x, pl.y, b.name, 'planet', state.selected && state.selected.kind === 'body' && state.selected.id === b.id ? 200 : 120 - b.mag * 0.5, { gap: Math.min(drawnR, 600) + 6 });
   }
   if (glareLast) glareLast();
 }
 
+/** 0: Mercury or Venus within about 1.5 degrees of passing between us and the Sun; 1: ordinary. */
+const nearSide = (b) => (b.dist < R.bodies.sun.dist && (b.id === 'Venus' || b.id === 'Mercury') ? smooth(0.0015, 0.005, b.phaseFrac) : 1);
+function darkOutline(ctx, pl, rpx, a) { ctx.strokeStyle = `rgba(150,168,192,${0.6 * a})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(pl.x, pl.y, Math.max(rpx, 2), 0, 2 * Math.PI); ctx.stroke(); }
+function drawDarkSide(ctx, b, pl, rpx, dm, resolved) {
+  const k = nearSide(b); let r = 0;
+  if (dm > 0 && k > 0.02) r = drawPointFaded(ctx, pl.x, pl.y, dm, POINT_BV[b.id] ?? 0.7, k * (resolved ? 1 - smooth(0.45, 1.1, rpx / starSize(dm)) : 1));
+  if (resolved) { const d = drawFromMap(ctx, b, pl, rpx); if (!d) drawPhaseDisc(ctx, pl.x, pl.y, rpx, 0, 180, '#14181f', '#14181f', 1); }
+  darkOutline(ctx, pl, rpx, 1 - k);
+  return Math.max(r, rpx, 2);
+}
 function drawPointFaded(ctx, x, y, dm, bv, k) {
   if (k >= 0.999) return drawStarPoint(ctx, x, y, dm, bv);
   ctx.save(); ctx.beginPath(); const r = starSize(dm), half = r / 0.34; ctx.globalAlpha = k; ctx.drawImage(starSprite(bv), x - half, y - half, 2 * half, 2 * half); ctx.restore();

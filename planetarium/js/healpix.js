@@ -26,7 +26,7 @@ export function vec2pix(order, x, y, z) {
   return face * ns * ns + spread(ix) + 2 * spread(iy);
 }
 
-/** Centre of nested pixel `ipix` at `order`, as a unit vector written into out[0..2]. */
+/** Center of nested pixel `ipix` at `order`, as a unit vector written into out[0..2]. */
 export function pix2vec(order, ipix, out) {
   const ns = 1 << order, npf = ns * ns, face = Math.floor(ipix / npf), ipf = ipix - face * npf;
   const ix = squeeze(ipf), iy = squeeze(ipf >> 1);
@@ -43,7 +43,7 @@ export function pix2vec(order, ipix, out) {
   return out;
 }
 
-/** An upper bound on the angle (radians) from a pixel's centre to any point of it. The farthest corner is at
+/** An upper bound on the angle (radians) from a pixel's center to any point of it. The farthest corner is at
  *  most PIX_REACH times the pixel's mean side, sqrt(4 pi / (12 * 4^order)) (measured with 3 million random points an order). */
 export const PIX_REACH = 1.15;        // measured: 0.82 (order 0), 0.94 (1), 1.01 (3), 1.02 (5)
 export const pixRadius = (order) => PIX_REACH * Math.sqrt(Math.PI / 3) / (1 << order);

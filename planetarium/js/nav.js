@@ -231,7 +231,7 @@ function baseFov(ref) {
   if (ref.kind === 'gaia') { const m = ref.t.mag[ref.i]; return m <= 12 ? 2 : m <= 15 ? 0.6 : m <= 18 ? 0.2 : 0.08; }      // a field in which the star is well above the limit
   return 6;
 }
-/** Centre on an object, and HOLD it there (as Stellarium's Space does): with the clock running the sky turns 15 arcsec a second, so a
+/** Center on an object, and HOLD it there (as Stellarium's Space does): with the clock running the sky turns 15 arcsec a second, so a
  *  one-off centring was already 19 arcsec stale when the glide ended. A drag afterwards keeps following, with an offset.
  *  zoom: true = to the field that frames it, in or out; 'arrive' = only out, when the present field is too narrow for it (search). */
 export function centerOn(ref, zoom = false) {

@@ -10,7 +10,7 @@ let NF = 13;                                      // floats per star = stars.jso
 // ra + dra is good to a microarcsecond. pmra (times cos dec), pmdec: mas/yr at epoch 2000.0. rv: km/s (0 = unknown).
 // src: where position and proper motion come from (ASTROMETRY below). See tools/build_stars.py.
 export const F = { ra: 0, dec: 1, mag: 2, bv: 3, hip: 4, hd: 5, dist: 6, pmra: 7, pmdec: 8, dra: 9, ddec: 10, rv: 11, src: 12 };
-export const ASTROMETRY = ['HYG catalogue (no cross-identification: place may be several arcseconds out)', 'Hipparcos, the new reduction (van Leeuwen 2007)',
+export const ASTROMETRY = ['HYG catalog (no cross-identification: place may be several arcseconds out)', 'Hipparcos, the new reduction (van Leeuwen 2007)',
   'Gaia DR3', 'Gaia DR3 (identified by position and brightness)'];
 
 /** Star tiers, brightest first. tier = {file, n, magMin, magMax, data, vec, loaded, loading}. */
@@ -170,7 +170,7 @@ function addDsoRows(file) {
     dso.rows.push(o);
   }
 }
-/** Why a galaxy's catalogue magnitude should not be trusted, in words, or ''. The value itself is never changed: IC 127 is listed in OpenNGC's own file
+/** Why a galaxy's catalog magnitude should not be trusted, in words, or ''. The value itself is never changed: IC 127 is listed in OpenNGC's own file
  *  with V 9.20 beside B 14.83, J 10.94 (V comes from its source 2). Tests: B − V outside what galaxies have, or too bright for the size listed. */
 export function dsoDoubt(o) {
   if (!/^G/.test(o.type) || o.mag == null) return '';

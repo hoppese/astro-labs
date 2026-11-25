@@ -9,8 +9,8 @@ import { makeCard } from './dock.js';
 
 const ROWS = [
   ['fx', 'aberration', 'Annual aberration', 'Starlight seems to come from slightly ahead of the moving Earth: every star traces a yearly ellipse 20.5″ in half-width.'],
-  ['fx', 'parallax', 'Annual parallax', 'Nearby stars shift against distant ones as the Earth goes round the Sun (from the catalogue distances; under 1″).'],
-  ['fx', 'properMotion', 'Proper motion', 'Each star drifts at its catalogued rate. Off = stars stay at their J2000 places.'],
+  ['fx', 'parallax', 'Annual parallax', 'Nearby stars shift against distant ones as the Earth goes round the Sun (from the catalog distances; under 1″).'],
+  ['fx', 'properMotion', 'Proper motion', 'Each star drifts at its cataloged rate. Off = stars stay at their J2000 places.'],
   ['show', 'refraction', 'Atmospheric refraction', 'Lifts everything near the horizon (about 0.5° at the horizon). Turn off to time risings and settings cleanly.'],
   ['lt', 'lightTime', 'Light-travel time', 'On = planets and moons where we see them. Off = where they are at this instant.'],
   ['fx', 'earthShadow', "Outline of the Earth's shadow", 'Umbra and penumbra at the Moon’s distance (opposite the Sun), so they can be measured.'],

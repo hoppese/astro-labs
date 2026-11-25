@@ -56,8 +56,8 @@ export const MODELS = [
     knots: (p, c, lo, hi) => { const out = [], h = p.P / 2; if (!(h > 0) || (hi - lo) / h > 4000) return out; for (let k = Math.ceil((lo - p.x0) / h); p.x0 + k * h <= hi; k++) out.push(p.x0 + k * h); return out; },
     f: (x, p) => { const ph = TAU * (x - p.x0) / p.P, s = Math.sin(ph), c = Math.cos(ph) * Math.sin(p.i * DEG); return p.A * Math.sqrt(s * s + c * c); },
     ranges: (d) => { const xr = span(d.xmin, d.xmax); return { A: [0, 2 * Math.max(Math.abs(d.ymax), Math.abs(d.ymin)), Math.abs(d.ymax) * 0.8], P: [xr / 40, 2 * xr, xr / 2], x0: [d.xmin - xr / 2, d.xmax, d.xmin], i: [0, 90, 0] }; } },
-  { id: 'circle', name: 'Circle', closed: true, blurb: 'A circle drawn on the graph: where its centre is and how wide it is. No time column. Both axes must be the same kind of quantity, on the same scale.',
-    params: [{ key: 'x0', sym: 'x<sub>c</sub>', label: 'centre, horizontal', unit: 'x' }, { key: 'y0', sym: 'y<sub>c</sub>', label: 'centre, vertical', unit: 'y' }, { key: 'D', sym: 'D', label: 'diameter (twice the radius)', unit: 'y' }],
+  { id: 'circle', name: 'Circle', closed: true, blurb: 'A circle drawn on the graph: where its center is and how wide it is. No time column. Both axes must be the same kind of quantity, on the same scale.',
+    params: [{ key: 'x0', sym: 'x<sub>c</sub>', label: 'center, horizontal', unit: 'x' }, { key: 'y0', sym: 'y<sub>c</sub>', label: 'center, vertical', unit: 'y' }, { key: 'D', sym: 'D', label: 'diameter (twice the radius)', unit: 'y' }],
     eq: (v) => `(${it(v.x)} − x<sub>c</sub>)<sup>2</sup> + (${it(v.y)} − y<sub>c</sub>)<sup>2</sup> = (D / 2)<sup>2</sup>`,
     path: (p) => Array.from({ length: 241 }, (_, i) => [p.x0 + p.D / 2 * Math.cos(TAU * i / 240), p.y0 + p.D / 2 * Math.sin(TAU * i / 240)]),
     gap: (x, y, p) => Math.hypot(x - p.x0, y - p.y0) - p.D / 2,
@@ -67,7 +67,7 @@ export const MODELS = [
       { key: 'th', sym: 'θ', label: 'direction of the long axis, anticlockwise from the horizontal axis', unit: 'deg' },
       { key: 'P', sym: 'P', label: 'period: time for once round', unit: 't' }, { key: 't0', sym: 't₀', label: 'a time when the point is at the end of the long axis', unit: 't' },
       { key: 'vx', sym: 'v<sub>x</sub>', label: 'drift rate along the horizontal axis', unit: 'x/t' }, { key: 'vy', sym: 'v<sub>y</sub>', label: 'drift rate along the vertical axis', unit: 'y/t' },
-      { key: 'x0', sym: 'x<sub>c</sub>', label: 'centre of the ellipse at the first time, horizontal', unit: 'x' }, { key: 'y0', sym: 'y<sub>c</sub>', label: 'centre of the ellipse at the first time, vertical', unit: 'y' }],
+      { key: 'x0', sym: 'x<sub>c</sub>', label: 'center of the ellipse at the first time, horizontal', unit: 'x' }, { key: 'y0', sym: 'y<sub>c</sub>', label: 'center of the ellipse at the first time, vertical', unit: 'y' }],
     eq: (v) => `${it(v.x)} = x<sub>c</sub> + v<sub>x</sub> · (${it(v.t)} − t₁) + a · cos φ · cos θ − b · sin φ · sin θ<br>${it(v.y)} = y<sub>c</sub> + v<sub>y</sub> · (${it(v.t)} − t₁) + a · cos φ · sin θ + b · sin φ · cos θ<br>φ = 2π (${it(v.t)} − t₀) / P<span class="nb-eqnote">t₁ = your smallest ${it(v.t)}</span>`,
     xy: (t, p, c) => {
       const ph = TAU * (t - p.t0) / p.P, cp = Math.cos(ph), sp = Math.sin(ph), ct = Math.cos(p.th * DEG), st = Math.sin(p.th * DEG), dt = t - c.t1;

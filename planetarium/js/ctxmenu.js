@@ -148,7 +148,7 @@ function openAt(x, y, clientX, clientY) {
     add('Show in Deep-sky list', () => deps.dsoList.reveal(ref.idx));
     if (GAL.has(d.type)) {
       const inTable = deps.hubble.has(d.idx);
-      if (d.z == null) add('Add to Hubble table', () => {}, { disabled: true, note: 'no redshift in the catalogue' });
+      if (d.z == null) add('Add to Hubble table', () => {}, { disabled: true, note: 'no redshift in the catalog' });
       else add(inTable ? 'Remove from Hubble table' : 'Add to Hubble table', () => { if (inTable) deps.hubble.remove(d.idx); else deps.hubble.add(d.idx, true); });
     }
   }

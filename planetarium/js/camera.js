@@ -21,7 +21,7 @@ export const cam = {
   M: IDENTITY.slice(),        // mount -> HOR
   Mt: IDENTITY.slice(),       // HOR -> mount
   zMin: -1,                   // view-space z below which nothing can be on screen
-  pxPerDeg: 1,                // screen scale at the centre of the view
+  pxPerDeg: 1,                // screen scale at the center of the view
 };
 
 export function resize(w, h) { cam.w = w; cam.h = h; cam.cx = w / 2 + cam.ox; cam.cy = h / 2 + cam.oy; }
@@ -76,7 +76,7 @@ export function lookAtHor(h) {
   const m = toSph(mulMV(cam.Mt, h));
   cam.lon = m.lon; cam.lat = m.lat;
 }
-/** The apparent HOR direction at the centre of the view. */
+/** The apparent HOR direction at the center of the view. */
 export const centerHor = () => [cam.V[6], cam.V[7], cam.V[8]];
 
 /** Turn the camera so that mount-frame point `g` ({lon, lat}) sits under screen position (x, y).
@@ -158,7 +158,7 @@ export function zoomAt(factor, x, y, frame, keepCentre = false) {
   if (g) bringUnder(g, x, y, frame);
 }
 
-/** Switch mounts without moving the centre of the view. */
+/** Switch mounts without moving the center of the view. */
 export function setMount(mount, frame) {
   const h = centerHor();
   state.mount = mount; cam.roll = 0;

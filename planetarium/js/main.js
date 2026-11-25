@@ -37,7 +37,7 @@ async function start() {
     await Promise.all([loadCore(), ensureEphem((t || state.timeMs) / 86400000 - 10957.5)]);
   } catch (e) {
     console.error(e);
-    loading.textContent = 'Could not load the star catalogue (' + e.message + '). Reload to try again.';
+    loading.textContent = 'Could not load the star catalog (' + e.message + '). Reload to try again.';
     loading.classList.add('err');
     return;
   }
@@ -48,7 +48,6 @@ async function start() {
   initInfo(document.getElementById('infoPanel'));
   initUI({ search });
   initMeasure(canvas, document.getElementById('measurePanel'));
-  addOverlay(drawMeasures);
   initInput(canvas, { onClickSky: (x, y, ref) => extrasClick(x, y, ref) || measureClick(x, y, ref) });
   // keep grid labels clear of the top bar and the bottom bar
   const bar = document.querySelector('.bottombar');
@@ -70,5 +69,6 @@ async function start() {
   setTimeout(() => globesWork(), 400);      // compile the shader before it is needed, not at the first moonrise (0.1 - 0.7 s)
   initLayout(canvas);           // the middle of the free sky, the "Tracking" chip (js/layout.js); before a lab or a link sets the view
   initLabsSuite();              // measuring tools, labs menu, URL parameters (js/labs/index.js)
+  addOverlay(drawMeasures);     // last: over the Earth's shadow and the second observer's circles
 }
 start();

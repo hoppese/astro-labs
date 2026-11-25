@@ -28,7 +28,7 @@ import { getCard, openCards } from './dock.js';
 import { setFx } from './corrections.js';
 import { cmp, setObserver2, setAlign } from './compare.js';
 import { trail, startTrail, stopTrail } from './trails.js';
-import { ev } from './events.js';
+import { resetEvents } from './events.js';
 
 export const FX_DEFAULTS = { ...state.fx };
 
@@ -47,7 +47,7 @@ async function resolveTarget(target) {
   return hit && hit.ref ? hit.ref : null;
 }
 
-/** Apply a setup. Returns a promise (a faint star may need its catalogue tier first). */
+/** Apply a setup. Returns a promise (a faint star may need its catalog tier first). */
 export async function applySetup(s, { ephemeral = true } = {}) {
   if (ephemeral) state.ephemeral = true;
   cancelAnim();
@@ -67,7 +67,7 @@ export async function applySetup(s, { ephemeral = true } = {}) {
   if (s.mount === 'eq' || s.mount === 'altaz') { setMount(s.mount, getFrame()); emit('mount'); }
   if ('obs2' in s) setObserver2(s.obs2 ? { region: '', elev: 0, tz: zoneFromLongitude(s.obs2.lon), ...s.obs2 } : null);
   if (s.align) setAlign(s.align);
-  if (s.events) ev.cat = s.events;
+  if (s.closeOthers || s.events) resetEvents(s.events, ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(s.target) ? s.target : '');
   if (s.tools) {
     for (const id of ['stopwatch', 'events', 'compare', 'trails', 'corrections']) { const c = getCard(id); if (!c) continue; if (s.tools.includes(id)) c.open(); else if (s.closeOthers) c.close(); }
     if (s.tools.includes('measure') !== measure.active) toggleMeasure(s.tools.includes('measure'));

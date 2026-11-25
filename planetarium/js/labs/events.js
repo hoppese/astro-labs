@@ -17,7 +17,7 @@ import { esc } from './util.js';
 import { jovianEvents } from './jovian.js';
 import { ensure, jpl } from '../jpl.js';
 import { fmtClock } from '../timeutil.js';
-import { running, INSTRUCTOR } from './hidden.js';
+import { running, INSTRUCTOR, eventsHidden } from './hidden.js';
 
 const DAY = 86400000;
 const ms = (t) => t.date.getTime();
@@ -137,7 +137,7 @@ export const ev = { cat: 'lunar', planet: 'Mars', anchor: null, instructor: INST
 let card = null, pending = '';
 const N = 8;
 
-/** Go to an event: clock (paused), target selected and centred. */
+/** Go to an event: clock (paused), target selected and centerd. */
 export function jumpTo(e) {
   state.playing = false; emit('rate');
   setTime(e.t);
@@ -155,6 +155,17 @@ function altitudeHere(e) {
     return horToAzAlt(refractHor(b.hor)).alt;
   } catch (err) { return null; }
 }
+/** Solar eclipses anywhere on Earth: is any of it seen from here? (The Sun being up is not enough: the Moon's shadow has to reach this place.) */
+function seenHere(e) {
+  if (ev.cat !== 'solar') return null;
+  try {
+    const obs = new A.Observer(state.loc.lat, state.loc.lon, state.loc.elev || 0), q = A.SearchLocalSolarEclipse(at(e.t - 0.6 * DAY), obs);
+    if (Math.abs(ms(q.peak.time) - e.t) > 0.5 * DAY || Math.max(q.partial_begin.altitude, q.peak.altitude, q.partial_end.altitude) < 0) return 'no eclipse at your place';
+    return q.kind === 'partial' ? 'only partial at your place' : q.kind + ' at your place';
+  } catch (err) { return null; }
+}
+/** A lab begins: its own list, from its own date, whatever was shown before. */
+export function resetEvents(cat, planet) { ev.cat = cat || 'lunar'; ev.planet = planet || 'Mars'; ev.anchor = null; ev.rows = []; pending = ''; refresh(); }
 let later = 0;
 /** The lists and buttons stay in place while the results change: rebuilding them under somebody typing in a list sent the rest of the word to the sky. */
 function refresh(soon = false) {
@@ -176,7 +187,7 @@ function refresh(soon = false) {
   else {
     list = '<ul class="ev-list">' + rows.map((e, i) => {
       const alt = altitudeHere(e);
-      const vis = alt == null ? '' : alt > 0 ? ' · up here' : ' · below the horizon here';
+      const vis = alt == null ? '' : ' · ' + (seenHere(e) ?? (alt > 0 ? `${e.target} above your horizon` : `${e.target} below your horizon`));
       // an event that lasts: when it starts and, for who may know, its middle; what has one instant: that
       const local = (t) => fmtClock(t, state.loc.tz), times = !e.clock ? '' : running.id && !ev.instructor ? '' : e.end ? ` <small>starts</small> ${local(e.clock)} <small>middle</small> ${local(e.t)}` : ` <small>at</small> ${local(e.clock)}`;
       return `<li><button data-i="${i}" title="Set the clock to ${e.end ? 'the middle of this event' : esc((cat.sets || 'this instant').split(/[(;.]/)[0].trim())}"><span class="when">${fmtDate(e.clock ? wallParts(e.clock, state.loc.tz) : wallParts(e.t, 'UTC'))}${times}</span><span class="what">${esc(e.text)}<span style="color:var(--muted)">${vis}</span></span>` +
@@ -198,6 +209,7 @@ function head() {
   const q = (id) => card.body.querySelector('#' + id);
   if (q('evCat').value !== ev.cat) q('evCat').value = ev.cat;
   if (q('evPlanet').value !== ev.planet) q('evPlanet').value = ev.planet;
+  for (const o of q('evCat').options) o.hidden = o.disabled = eventsHidden(o.value);      // a list that answers the running lab's question
   q('evPlanetRow').hidden = !cat.planet;
   if (q('evInst')) q('evInst').checked = ev.instructor;
 }

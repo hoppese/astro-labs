@@ -11,6 +11,7 @@ import { beginPicks } from './picks.js';
 import { refHorApparent } from './objects.js';
 import { projectHor } from './camera.js';
 import { R } from './render/proj.js';
+import { loupeOpen } from './notebook/loupe.js';
 import { LabelLayer } from './render/labels.js';
 import { skyConditions, drawSkyBackground } from './render/sky.js';
 import { drawStars, stats as starStats } from './render/stars.js';
@@ -104,14 +105,14 @@ function draw(frame, now) {
   drawGrids(ctx); lap('grids');
   drawConstellations(ctx); lap('constellations');
   drawStars(ctx); lap('stars');
-  drawDeepStars(ctx); lap('deep');         // Gaia DR3, bundled tiles + online: the stars fainter than the base catalogue holds (js/deepstars.js)
+  drawDeepStars(ctx); lap('deep');         // Gaia DR3, bundled tiles + online: the stars fainter than the base catalog holds (js/deepstars.js)
   drawDso(ctx); lap('dso');
   drawBodies(ctx); lap('bodies');
   drawGround(ctx); lap('ground');
   drawSelection(frame, bodies);
   for (const fn of overlays) fn(ctx, R);
   lap('overlays');
-  labels.flush(ctx, cam.w, cam.h, sky.day > 0.4 ? `rgba(16,38,82,${0.35 + 0.2 * (1 - sky.day)})` : 'rgba(2,6,14,0.85)');
+  if (!loupeOpen()) labels.flush(ctx, cam.w, cam.h, sky.day > 0.4 ? `rgba(16,38,82,${0.35 + 0.2 * (1 - sky.day)})` : 'rgba(2,6,14,0.85)');
   drawSteadyFade(ctx, now);
   lap('labels');
 
@@ -128,7 +129,7 @@ function drawSelection(frame, bodies) {
   const h = refHorApparent(ref, frame, bodies);
   if (!h || !projectHor(h, sp)) return;
   // lab notebook: with simulated measurement noise on, the marker sits on the star's IMAGE in this exposure, not on its true place
-  if (see.on && see.noMarker && ref.kind !== 'body') return;          // measuring by eye: brackets round the image would do the centring for the student
+  if (see.on && see.noMarker && ref.kind !== 'body') return;          // measuring by eye: brackets round the image would do the centering for the student
   if (see.on && (ref.kind === 'star' || ref.kind === 'gaia')) { for (const it of allPicks()) if (it.ref && it.ref.kind === ref.kind && sameRef(it.ref, ref)) { sp[0] = it.x; sp[1] = it.y; break; } }
   let r = 13;
   if (ref.kind === 'body') { const b = bodies.byId[ref.id]; if (b) r = Math.max(r, b.angRadius * cam.pxPerDeg * (b.id === 'Saturn' ? 2.4 : 1) + 8); }

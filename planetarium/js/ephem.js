@@ -103,21 +103,21 @@ export function hiddenFraction(rel, axis, pole, parent, moonKm, inner = 0, outer
   return { depth, perp, frac: Math.max(0, Math.min(1, (perp - lo) / (hi - lo))) };
 }
 
-/** Sun-centred place (au, EQJ) of a body's own centre at `time`. */
+/** Sun-centerd place (au, EQJ) of a body's own center at `time`. */
 function helioOf(id, time) {
   if (id === 'Sun') return [0, 0, 0];
   if (id === 'Moon') { const e = vecOf(A.HelioVector(A.Body.Earth, time)), m = vecOf(A.GeoMoon(time)); return add(e, m); }
   const v = vecOf(A.HelioVector(id, time)), o = centreOffset(id, time);
   return o ? add(v, o) : v;
 }
-/** From the barycentre of a planet and its moons (what the ephemeris gives) to the planet's own centre. The moons' masses are JPL's (GM / GM of the system). */
+/** From the barycenter of a planet and its moons (what the ephemeris gives) to the planet's own center. The moons' masses are JPL's (GM / GM of the system). */
 function centreOffset(id, time) {
   if (id === 'Jupiter') { const j = A.JupiterMoons(time), o = [0, 0, 0]; for (const [k, f] of [['io', 4.70333e-5], ['europa', 2.52756e-5], ['ganymede', 7.80336e-5], ['callisto', 5.66580e-5]]) { o[0] -= f * j[k].x; o[1] -= f * j[k].y; o[2] -= f * j[k].z; } return o; }
   if (id === 'Saturn') { const t = moonVector('Titan', time.tt); return t && scale(t, -2.36637e-4); }
   if (id === 'Pluto') { const t = moonVector('Charon', time.tt); return t && scale(t, -0.108762); }
   return null;
 }
-const sunB = (time) => { const s = A.HelioVector('SSB', time); return [-s.x, -s.y, -s.z]; };      // Sun from the barycentre
+const sunB = (time) => { const s = A.HelioVector('SSB', time); return [-s.x, -s.y, -s.z]; };      // Sun from the barycenter
 const SCHW = 2 * 1.32712440018e11 / 299792.458 ** 2 / AU_KM;                                       // 2 GM(Sun) / c^2, au
 /** Direction and distance of a body from the observer: {seen: where its light comes from (light time, bending by the Sun, aberration), geo: where it is now}.
  *  Done in the barycentric frame like JPL's "airless apparent" place: light left body(t - tau), the observer is where they are at t. */
@@ -228,7 +228,7 @@ export function compute(frame, lightTime, aberration = true) {
     // in front of it: over the flattened disc, not merely within its equatorial radius
     const tra = hiddenFraction(rel, scale(parent.u, -1), pole, parent, def.radiusKm);
     m.transit = tra.depth > 0 && tra.frac < 0.5;
-    m.inLimb = (parent.radiusKm - occ.perp) / parent.radiusKm;      // how far the moon's centre is inside the disc's edge, planet radii (< 0: outside)
+    m.inLimb = (parent.radiusKm - occ.perp) / parent.radiusKm;      // how far the moon's center is inside the disc's edge, planet radii (< 0: outside)
     // in the planet's shadow: umbra narrows and penumbra widens with distance behind the planet
     const dSun = len(parent.helioVec) * AU_KM;
     const ecl = hiddenFraction(rel, unit(parent.helioVec), pole, parent, def.radiusKm, (695700 - parent.radiusKm) / dSun, (695700 + parent.radiusKm) / dSun);
@@ -252,7 +252,7 @@ export function compute(frame, lightTime, aberration = true) {
   for (const b of list) if (b.moons.length > 1) mutualShadows(b);
 
   // --- asteroids, dwarf planets, Halley: light-time corrected (two passes), aberration as for everything else ---
-  const ssb = small.data ? vecOf(A.HelioVector('SSB', time)) : null;      // Sun -> barycentre (its change over the light time is under 0.01 arcsec for all of these)
+  const ssb = small.data ? vecOf(A.HelioVector('SSB', time)) : null;      // Sun -> barycenter (its change over the light time is under 0.01 arcsec for all of these)
   if (small.data) for (const def of SMALL) {
     if (!smallCovers(def.id, time.tt)) continue;
     const at = (t) => smallHelio(def.id, t, ssb);

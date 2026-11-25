@@ -11,8 +11,17 @@ export function getDock() {
     dock = el('div', { class: 'labsdock', id: 'labsDock' }); document.body.appendChild(dock);
     // --dock-h = the height the open cards take (0 when none): on a phone the object-info sheet sits above the
     // cards instead of underneath them (css/labs.css)
-    const sync = () => document.documentElement.style.setProperty('--dock-h', (dock.querySelector('.lcard:not([hidden])') ? dock.offsetHeight + 6 : 0) + 'px');
+    // --dock-l = the strip at the right that the cards take (0 when none, and on a phone): the date box and the read-out stand beside it, never over it
+    const sync = () => {
+      const open = !!dock.querySelector('.lcard:not([hidden])') && dock.offsetHeight > 0, root = document.documentElement, set = (k, v) => { if (root.style.getPropertyValue(k) !== v) root.style.setProperty(k, v); };
+      set('--dock-h', (open ? dock.offsetHeight + 6 : 0) + 'px');
+      const b = document.body.getBoundingClientRect(), left = open && window.innerWidth > 560 ? Math.round(b.right - dock.getBoundingClientRect().left) + 8 : 0;
+      set('--dock-l', left + 'px');
+      root.classList.toggle('pop-wide', left > 0 && b.width - left >= 660);
+    };
     new ResizeObserver(sync).observe(dock);
+    window.addEventListener('resize', () => requestAnimationFrame(sync));
+    setInterval(sync, 400);             // a side panel that opens moves the cards without resizing them
     document.addEventListener('labs-cards', () => requestAnimationFrame(sync));
   }
   return dock;

@@ -35,7 +35,7 @@ export function bodyAxes(id, tt) {
   return p && axesFrom(p.ra, p.dec, p.w);
 }
 export const toBody = (ax, v) => [dot(ax.x, v), dot(ax.y, v), dot(ax.z, v)];
-/** Sub-point of direction v (EQJ, from the body's centre): {lon east 0-360, lat planetocentric, latG planetographic}, degrees. */
+/** Sub-point of direction v (EQJ, from the body's center): {lon east 0-360, lat planetocentric, latG planetographic}, degrees. */
 export function subPoint(ax, v, radii) {
   const b = toBody(ax, unit(v)), h = Math.hypot(b[0], b[1]);
   const f = radii ? (radii[0] / radii[2]) ** 2 : 1;

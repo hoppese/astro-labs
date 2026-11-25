@@ -119,7 +119,7 @@ function pickHtml() {
     <div class="hb-count"><span>${list.length.toLocaleString('en-US')} galaxies match</span><span>Tick a box to add a galaxy to your table. Click a name to see it.</span></div>
     ${list.length ? `<div class="hb-scroll"><table class="hb-table"><thead><tr><th class="ck"></th>${th('name', 'Galaxy', 'nm')}<th class="ty">Type</th>${th('mag', 'Mag', 'n')}${th('size', 'Size ′', 'n')}${th('z', 'z', 'n')}<th class="n">cz km/s</th></tr></thead><tbody>${body}</tbody></table>${more}</div>`
     : '<div class="xp-empty">No galaxy matches these filters. <button class="btn" data-act="reset">Reset filters</button></div>'}
-    <div class="xp-foot">Magnitude is V where OpenNGC has it, otherwise B (marked <sup>B</sup>); <sup>?</sup> = a doubtful value, left as the catalogue has it (point at it for the reason). Size is the catalogue's major axis in arcminutes. cz = c × z.</div>`;
+    <div class="xp-foot">Magnitude is V where OpenNGC has it, otherwise B (marked <sup>B</sup>); <sup>?</sup> = a doubtful value, left as the catalog has it (point at it for the reason). Size is the catalog's major axis in arcminutes. cz = c × z.</div>`;
 }
 
 // ---- step 2: my table and the plot -----------------------------------------------------------
@@ -226,7 +226,7 @@ function aboutHtml() {
   const far = withZ.filter((o) => cz(o) > 1500).length, blue = withZ.filter((o) => o.z < 0).length;
   const loaded = dso.deepLoaded;
   return `<div class="hb-about">
-    <h3>What the catalogue gives you</h3>
+    <h3>What the catalog gives you</h3>
     <p>For each galaxy, <a href="https://github.com/mattiaverga/OpenNGC" target="_blank" rel="noopener">OpenNGC</a> lists an apparent magnitude, an angular size (major and minor axis, arcminutes) and a redshift <i>z</i>. The velocity column here is <b>cz</b>, the speed of light (299,792.458 km/s) times that <i>z</i>.</p>
     <p><b>Redshift coverage.</b> OpenNGC has ${ONGC.galaxies.toLocaleString('en-US')} galaxies, and ${ONGC.withZ.toLocaleString('en-US')} of them (${(100 * ONGC.withZ / ONGC.galaxies).toFixed(0)}%) have a redshift. This app carries the brighter ones (to about magnitude 14): ${loaded ? `<b>${withZ.length.toLocaleString('en-US')}</b> galaxies with a redshift out of ${gal.length.toLocaleString('en-US')} loaded; ${far.toLocaleString('en-US')} of those have cz above 1,500 km/s and ${blue} are blueshifted (negative z).` : 'the list is still loading.'} The largest redshift in the list is about z = 0.06.</p>
     <h3>What it does not give you: distance</h3>
@@ -381,7 +381,7 @@ function fillFromSize() {
     r.d = String(+(D / 1000 / theta).toPrecision(3)); r.src = 'size'; r.D = String(D); n++;
   }
   save(); render();
-  toast(`${n} distance${n === 1 ? '' : 's'} computed as d = ${D} kpc ÷ angular size.` + (skipped ? ` ${skipped} skipped: no size in the catalogue.` : ''), { ms: 5000 });
+  toast(`${n} distance${n === 1 ? '' : 's'} computed as d = ${D} kpc ÷ angular size.` + (skipped ? ` ${skipped} skipped: no size in the catalog.` : ''), { ms: 5000 });
 }
 
 function ensureData() {

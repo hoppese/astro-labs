@@ -63,6 +63,8 @@ export class LabelLayer {
       placed.push(r);
       ctx.font = st.font;
       if ('letterSpacing' in ctx) ctx.letterSpacing = st.spacing || '0px';
+      // on the face of the Sun or the Moon a halo is not enough: a dark plate behind the words
+      if (soft.some((sb) => sb.block.length === 3 && Math.hypot((r[0] + r[2]) / 2 - sb.block[0], yc - sb.block[1]) < sb.block[2] + (r[2] - r[0]) / 4)) { ctx.fillStyle = 'rgba(8,13,22,0.8)'; ctx.beginPath(); ctx.roundRect(r[0] - 1, r[1] - 1, r[2] - r[0] + 2, r[3] - r[1] + 2, 4); ctx.fill(); }
       ctx.strokeStyle = haloColor; ctx.lineWidth = 3;
       ctx.strokeText(text, x0, yc);
       ctx.fillStyle = it.color || st.color;

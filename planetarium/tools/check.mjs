@@ -432,3 +432,5 @@ line(); line('== 26. Moons crossing their planets, their shadows, occultations a
 await (await import('./check-moons.mjs')).checkMoons(line);
 line(); line('== 27. What students type and click (tools/check-student.mjs; a failure throws) ==');
 await (await import('./check-student.mjs')).checkStudent({ line });
+line(); line('== 28. Labs: prompts, stopwatch, angle tool, what gives answers away (tools/check-labs.mjs; a failure throws) ==');
+await (await import('./check-labs.mjs')).checkLabs({ line });

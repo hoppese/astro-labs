@@ -106,7 +106,7 @@ export const deep = {
 let inFlight = 0, cachedStars = 0, indexTries = 0;
 const queue = [];
 
-/** Colour sprite for a Gaia BP-RP colour. The atlas is indexed by B-V, so BP-RP is turned into an approximate
+/** Color sprite for a Gaia BP-RP color. The atlas is indexed by B-V, so BP-RP is turned into an approximate
  *  B-V with the two polynomials of the Gaia DR3 documentation (table 5.9, Johnson-Cousins): B-V = (G-V) - (G-B).
  *  Used for the tint of the disc only; the info panel shows Gaia's own BP-RP. */
 export function bprpToBv(x) {
@@ -657,7 +657,7 @@ function netCollect(lim, f0, f1, f2, now, visible) {
   const settled = viewSettled(f0, f1, f2, now);
   net.settled = settled;
   if (lim <= NET_LEVELS[0][0] + 0.1 || !deep.map || !deep.map.data) return false;
-  if (state.show.netStars === false) return false;      // switched off: the built-in catalogue only, even if online stars are still in memory
+  if (state.show.netStars === false) return false;      // switched off: the built-in catalog only, even if online stars are still in memory
   if (!levelOrder) prepareNet();
   const off = offline(), host = deep.host;
   // our own tiles: until their manifest has answered (or failed) nobody is asked for anything

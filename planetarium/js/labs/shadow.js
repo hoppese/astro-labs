@@ -29,7 +29,7 @@ export function earthShadow(frame, lightTime = true) {
     time = time.AddDays(-d0 / C_AU_PER_DAY);
   }
   const sun = vecOf(A.GeoVector('Sun', time, true));
-  const dir = scale(sun, -1);                                   // from the Sun through the Earth's centre
+  const dir = scale(sun, -1);                                   // from the Sun through the Earth's center
   const moon = vecOf(A.GeoMoon(time));
   let k = dot(dir, moon) / dot(dir, dir);                       // where along the axis the Moon is
   // Away from full Moon (more than 60 degrees from the anti-solar point) the Moon is nowhere near the shadow:
@@ -49,6 +49,28 @@ export function earthShadow(frame, lightTime = true) {
     penumbra: Math.atan(penumbraKm / AU_KM / dist) * RAD,
     moonOffKm: len(sub(axisPt, moon)) * AU_KM,
   };
+}
+
+/** How much of the full Moon's light is left in the Earth's shadow (1 = all). The umbra itself keeps about 1/60,000 (sunlight bent through our air):
+ *  a typical total eclipse, magnitude near -0.5; real ones run from about -3 to +4 with the dust in the air. */
+export const UMBRA_LIGHT = 1.6e-5;
+export function shadowLight(sep, r, umbra, penumbra) {
+  if (sep > penumbra + r) return 1;
+  let sum = 0, n = 0;
+  for (let i = -11; i <= 11; i++) for (let j = -11; j <= 11; j++) {
+    const x = i / 11.5, y = j / 11.5; if (x * x + y * y > 1) continue;
+    const d = Math.hypot(sep + x * r, y * r), t = (d - umbra) / (penumbra - umbra);
+    sum += t <= 0 ? UMBRA_LIGHT : t >= 1 ? 1 : UMBRA_LIGHT + (1 - UMBRA_LIGHT) * t * t * (3 - 2 * t); n++;
+  }
+  return sum / n;
+}
+let litFor = null, lit = 1;
+export function moonLight(frame, moon) {
+  if (moon.phaseFrac < 0.97) return 1;
+  if (litFor === moon) return lit;
+  litFor = moon;
+  const sh = currentShadow(frame);
+  return (lit = sh.far ? 1 : shadowLight(Math.acos(Math.max(-1, Math.min(1, dot(sh.u, moon.u)))) * RAD, moon.angRadius, sh.umbra, sh.penumbra));
 }
 
 let cache = null, cacheKey = '';

@@ -18,14 +18,14 @@ const PAGE = 150;
 const f = { cat: 'm', cls: 'all', mag: '', con: '', up: false, sort: 'num', q: '' };
 let panel, shown = PAGE, deepError = false, flash = -1;
 
-/** Apparent altitude (degrees, no refraction) of a catalogue row right now. */
+/** Apparent altitude (degrees, no refraction) of a catalog row right now. */
 export function dsoAltitude(o, frame = getFrame()) { return Math.asin(Math.max(-1, Math.min(1, frame.starHor(o.vec)[2]))) * RAD; }
 
 /** Select a row, glide to it, say so if it is below the horizon. */
 export function goToDso(o) {
   const ref = { kind: 'dso', idx: o.idx };
   select(ref);
-  toggleTracking(true);            // hold it in the centre, as every other "go to" does (nav.js centerOn)
+  toggleTracking(true);            // hold it in the center, as every other "go to" does (nav.js centerOn)
   flyTo(ref, { fov: niceFov(ref) });
   const alt = dsoAltitude(o);
   if (alt < 0 && state.show.ground) toast(`${o.label} is below the horizon now (altitude ${alt.toFixed(0).replace('-', '−')}°). Turn the ground off (G) or change the time to see it.`, { ms: 5200, kind: 'warn' });
@@ -109,14 +109,14 @@ function build() {
   const cons = constellations.slice().sort((a, b) => a.name.localeCompare(b.name));
   panel.body.innerHTML = `
     <div class="dl-filters">
-      <div class="seg dl-cat" role="radiogroup" aria-label="Catalogue">
+      <div class="seg dl-cat" role="radiogroup" aria-label="Catalog">
         <button type="button" role="radio" data-cat="m">Messier</button><button type="button" role="radio" data-cat="c">Caldwell</button><button type="button" role="radio" data-cat="n">NGC / IC</button><button type="button" role="radio" data-cat="all">All</button>
       </div>
       <div class="dl-grid">
         <label>Type<select class="field" data-f="cls">${CLASSES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></label>
         <label>Constellation<select class="field" data-f="con"><option value="">Any</option>${cons.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
         <label>Brighter than<select class="field" data-f="mag"><option value="">Any magnitude</option>${[5, 6, 7, 8, 9, 10, 11, 12].map((m) => `<option value="${m}">mag ${m}</option>`).join('')}</select></label>
-        <label>Sort by<select class="field" data-f="sort"><option value="num">Catalogue number</option><option value="mag">Brightness</option><option value="alt">Altitude now</option><option value="size">Angular size</option></select></label>
+        <label>Sort by<select class="field" data-f="sort"><option value="num">Catalog number</option><option value="mag">Brightness</option><option value="alt">Altitude now</option><option value="size">Angular size</option></select></label>
       </div>
       <div class="dl-line">
         <label class="check"><input type="checkbox" data-f="up"> Above the horizon now</label>
@@ -125,7 +125,7 @@ function build() {
     </div>
     <div class="dl-headrow"><span class="dl-count" aria-live="polite"></span><span class="dl-cols"><span>mag</span><span>alt</span></span></div>
     <div class="dl-rows" role="list"></div>
-    <div class="xp-foot">Data: OpenNGC (CC BY-SA 4.0). A dash means the catalogue lists no magnitude, ? that its value is doubtful. ▲ = above the horizon now.</div>`;
+    <div class="xp-foot">Data: OpenNGC (CC BY-SA 4.0). A dash means the catalog lists no magnitude, ? that its value is doubtful. ▲ = above the horizon now.</div>`;
   const sync = () => {
     panel.body.querySelectorAll('.dl-cat button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.cat === f.cat)));
     panel.body.querySelectorAll('[data-f]').forEach((c) => { if (c.type === 'checkbox') c.checked = f[c.dataset.f]; else c.value = f[c.dataset.f]; });

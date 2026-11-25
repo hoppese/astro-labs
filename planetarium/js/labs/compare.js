@@ -66,14 +66,18 @@ export function drawCompare(ctx) {
     if (pl.x < -200 || pl.y < -200 || pl.x > ctx.canvas.width || pl.y > ctx.canvas.height) continue;
     const g = b2.bodies.byId[id], mine = bodies.byId[id];
     const sepPx = Math.acos(Math.min(1, dot(u, mine.u))) * RAD * pl.scale;
-    if (cmp.align !== 'sun' && sepPx < 1.5) continue;                 // indistinguishable from the real one at this zoom
     const r = g.angRadius * pl.scale;
+    // a point indistinguishable from the real one at this zoom (a disc is always drawn: the real Sun may be behind the Moon)
+    if (cmp.align !== 'sun' && sepPx < 1.5 && r <= 6) continue;
+    const ink = id === 'Sun' ? 'rgba(255,206,92,0.95)' : 'rgba(110,226,232,0.95)'; ctx.strokeStyle = ink; ctx.fillStyle = ink;
     ctx.setLineDash(r > 6 ? [5, 4] : []);
     ctx.beginPath(); ctx.arc(pl.x, pl.y, Math.max(r, 3), 0, 2 * Math.PI); ctx.stroke();
     ctx.setLineDash([]);
+    if (r > 12 && id !== 'Sun') { ctx.beginPath(); ctx.moveTo(pl.x - 4, pl.y); ctx.lineTo(pl.x + 4, pl.y); ctx.moveTo(pl.x, pl.y - 4); ctx.lineTo(pl.x, pl.y + 4); ctx.stroke(); }      // its center, to click on
     if (r < 3) { ctx.beginPath(); ctx.arc(pl.x, pl.y, 1.2, 0, 2 * Math.PI); ctx.fill(); }
-    R.labels.add(pl.x, pl.y, `${id} · ${cmp.obs2.name}`, 'grid', 80, { gap: Math.min(Math.max(r, 3), 400) * 0.72 + 5, color: '#7fe3e8' });
-    targets.push({ x: pl.x, y: pl.y, r: Math.max(r, 3), type: 'ghost', id });
+    const gap = Math.min(Math.max(r, 3), 400) * 0.72 + 5;
+    R.labels.add(pl.x, id === 'Sun' ? pl.y + gap : pl.y, `${id} · ${cmp.obs2.name}`, 'grid', 80, { gap, color: id === 'Sun' ? '#ffd27a' : '#7fe3e8' });
+    targets.push({ x: pl.x, y: pl.y, r: Math.max(r, 3), type: 'ghost', id, limbOnly: id === 'Sun' });      // (its center is the real Sun's: a click there means the real body)
   }
   ctx.restore();
   setTargets('compare', targets);
@@ -88,14 +92,16 @@ function render() { if (card && card.isOpen()) keepFocus(card.body, draw); }
 function draw() {
   const o = cmp.obs2;
   let html = `<div class="cmp-now">You: <b style="color:#fff">${esc(state.loc.name)}</b> (${fmtLat(state.loc.lat)} ${fmtLon(state.loc.lon)})<br>Second observer: ${o ? `<b>${esc(o.name)}</b> (${fmtLat(o.lat)} ${fmtLon(o.lon)})` : '<span style="color:var(--muted)">none</span>'}</div>`;
-  html += `<div class="row"><input type="search" id="cmpCity" placeholder="Second place: search a city…" style="flex:1" aria-label="Search a city for the second observer"></div><div class="cmp-cities" id="cmpList" hidden></div>`;
-  html += `<div class="row"><input type="text" class="num" id="cmpLat" placeholder="lat" autocomplete="off" aria-label="Latitude of the second observer" value="${o ? o.lat : ''}"><input type="text" class="num" id="cmpLon" placeholder="lon" autocomplete="off" aria-label="Longitude (east +) of the second observer" value="${o ? o.lon : ''}"><button class="btn" data-act="set">Set lat / lon</button></div><p class="hint err" id="cmpMsg" role="alert" hidden></p>`;
-  if (o) {
-    html += `<div class="row"><span>Line up on:</span><button class="btn${cmp.align === 'stars' ? ' on' : ''}" data-act="stars" aria-pressed="${cmp.align === 'stars'}" title="Ghosts against the same stars">the stars</button>` +
+  const place = `<div class="row"><input type="search" id="cmpCity" placeholder="Second place: search a city…" style="flex:1" aria-label="Search a city for the second observer"></div><div class="cmp-cities" id="cmpList" hidden></div>`;
+  const coords = `<div class="row"><input type="text" class="num" id="cmpLat" placeholder="lat" autocomplete="off" aria-label="Latitude of the second observer" value="${o ? o.lat : ''}"><input type="text" class="num" id="cmpLon" placeholder="lon" autocomplete="off" aria-label="Longitude (east +) of the second observer" value="${o ? o.lon : ''}"><button class="btn" data-act="set">Set lat / lon</button></div><p class="hint err" id="cmpMsg" role="alert" hidden></p>`;
+  if (!o) html += place + coords;
+  else {
+    html += `<div class="row"><button class="btn" data-act="swap" title="Stand at the other place">Swap observers</button><button class="btn" data-act="off">Remove</button></div><div class="row"><span>Line up on:</span><button class="btn${cmp.align === 'stars' ? ' on' : ''}" data-act="stars" aria-pressed="${cmp.align === 'stars'}" title="Ghosts against the same stars">the stars</button>` +
       `<button class="btn${cmp.align === 'sun' ? ' on' : ''}" data-act="sun" aria-pressed="${cmp.align === 'sun'}" title="Both observers' Suns drawn on top of each other">the Sun's disc</button></div>` +
-      `<div class="row"><button class="btn" data-act="swap" title="Stand at the other place">Swap observers</button><button class="btn" data-act="off">Remove</button></div><div class="cmp-alt" id="cmpAlt"></div>` +
-      `<p class="hint">Dashed cyan circles show where the second observer sees the Sun, Moon and planets at this same instant. The angle tool snaps to them.</p>`;
-  } else html += '<p class="hint">Pick a second place. Its view of the Sun, Moon and planets is drawn over yours at the same instant.</p>';
+      `<div class="cmp-alt" id="cmpAlt"></div><p class="hint">Dashed circles (the Sun’s is yellow, the others blue) show where the second observer sees the Sun, Moon and planets at this same instant. The angle tool snaps to them.</p>` +
+      `<details class="cmp-other"><summary>Choose another second place</summary>${place}${coords}</details>`;
+  }
+  if (!o) html += '<p class="hint">Pick a second place. Its view of the Sun, Moon and planets is drawn over yours at the same instant.</p>';
   card.body.innerHTML = html;
   updateAlt();
 }

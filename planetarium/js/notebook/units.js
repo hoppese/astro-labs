@@ -41,9 +41,9 @@ export const UNITS = [
   U('sidday', 'sidereal d', 'sidereal days', 'time', 86164.0905, '1 sidereal day = 86,164.0905 s = 23 h 56 min 4.09 s (one turn of the Earth against the stars)'),
   U('yr', 'yr', 'years (Julian)', 'time', JULIAN_YEAR_S, '1 Julian year = 365.25 d exactly = 31,557,600 s'),
 
-  U('cm', 'cm', 'centimetres', 'length', 0.01, '1 m = 100 cm'),
-  U('m', 'm', 'metres', 'length', 1, 'the SI metre'),
-  U('km', 'km', 'kilometres', 'length', 1000, '1 km = 1000 m'),
+  U('cm', 'cm', 'centimeters', 'length', 0.01, '1 m = 100 cm'),
+  U('m', 'm', 'meters', 'length', 1, 'the SI meter'),
+  U('km', 'km', 'kilometers', 'length', 1000, '1 km = 1000 m'),
   U('Rearth', 'R⊕', 'Earth radii', 'length', 6.3781e6, '1 R⊕ = 6378.1 km (IAU 2015 nominal equatorial radius)', { sig: 5 }),
   U('Rsun', 'R☉', 'solar radii', 'length', 6.957e8, '1 R☉ = 695,700 km (IAU 2015 nominal)', { sig: 5 }),
   U('ls', 'light-s', 'light-seconds', 'length', C_M_S, '1 light-second = 299,792.458 km exactly (c × 1 s)'),
@@ -54,8 +54,8 @@ export const UNITS = [
   U('kpc', 'kpc', 'kiloparsecs', 'length', PC_M * 1e3, '1 kpc = 1000 pc'),
   U('Mpc', 'Mpc', 'megaparsecs', 'length', PC_M * 1e6, '1 Mpc = 1,000,000 pc'),
 
-  U('m/s', 'm/s', 'metres per second', 'speed', 1, 'SI', { parts: { m: 1, s: -1 } }),
-  U('km/s', 'km/s', 'kilometres per second', 'speed', 1000, '1 km/s = 1000 m/s', { parts: { km: 1, s: -1 } }),
+  U('m/s', 'm/s', 'meters per second', 'speed', 1, 'SI', { parts: { m: 1, s: -1 } }),
+  U('km/s', 'km/s', 'kilometers per second', 'speed', 1000, '1 km/s = 1000 m/s', { parts: { km: 1, s: -1 } }),
   U('AU/yr', 'AU/yr', 'astronomical units per year', 'speed', AU_M / JULIAN_YEAR_S, '1 AU/yr = 4.740470 km/s', { parts: { AU: 1, yr: -1 } }),
   U('c', 'c', 'speeds of light', 'speed', C_M_S, 'c = 299,792.458 km/s exactly'),
 
@@ -135,7 +135,7 @@ export function predictReason(from, to) {
 function singular(name) {
   return name.replace(/^(\S+?)s( \(|$| of | per )/, (m, w, rest) => (w === 'radian' ? 'radian' : w.endsWith('ie') ? w.slice(0, -2) + 'y' : w) + rest)
     
-    .replace(/^RA (hour|minute|second)s.*/, 'RA $1').replace(/^sidereal days/, 'sidereal day').replace(/^Earth radii/, 'Earth radius').replace(/^solar radii/, 'solar radius').replace(/^metres per/, 'metre per').replace(/^kilometres per/, 'kilometre per')
+    .replace(/^RA (hour|minute|second)s.*/, 'RA $1').replace(/^sidereal days/, 'sidereal day').replace(/^Earth radii/, 'Earth radius').replace(/^solar radii/, 'solar radius').replace(/^meters per/, 'meter per').replace(/^kilometers per/, 'kilometer per')
     .replace(/^astronomical units/, 'astronomical unit').replace(/^speeds of light/, 'speed of light').replace(/masses$/, 'mass');
 }
 

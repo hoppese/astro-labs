@@ -35,7 +35,7 @@ export const state = {
     dso: true,
     steady: true,            // when time runs fast: hold the sky's light (and, while following something, ground, refraction, orientation); steady.js
     sunspots: true,          // sunspots of the date (js/sunspots.js); off = a spotless Sun (labs always get the spotless disc)
-    netStars: true,          // fetch stars fainter than the bundled catalogue (G > 12) for the field on screen from the online Gaia service
+    netStars: true,          // fetch stars fainter than the bundled catalog (G > 12) for the field on screen from the online Gaia service
   },
   lightTime: true,         // true = positions as seen (light-time corrected); false = geometric
   // physical effects that the measurement labs switch on and off (not saved between visits)

@@ -127,7 +127,7 @@ export function search(q, limit = 12) {
   }
   const loading = (faint.length || m) && unloaded && !out.length;
   if (loading) loadAllTiers().then(() => rerun && rerun());
-  if (loading && m) return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }];
+  if (loading && m) return [{ label: 'Loading the full star catalog…', sub: '', pending: true }];
   const seen = new Set();
   for (const e of index) {
     let s;
@@ -146,7 +146,7 @@ export function search(q, limit = 12) {
     seen.add(k); res.push(e);
     if (res.length >= limit) break;
   }
-  if (!res.length && loading) return [{ label: 'Loading the full star catalogue…', sub: '', pending: true }];
+  if (!res.length && loading) return [{ label: 'Loading the full star catalog…', sub: '', pending: true }];
   if (!res.length && /^(ngc|ic)\s*\d+/.test(n) && !dso.deepLoaded) { loadDeepDso().then(() => rerun && rerun()); return [{ label: 'Loading the full NGC/IC list…', sub: '', pending: true }]; }
   return res;
 }

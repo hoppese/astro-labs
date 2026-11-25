@@ -23,7 +23,7 @@ const SPR = 64, ALPHA_N = 10;
 
 /** Once per frame, before the stars are drawn. */
 export function seeFrame() {
-  see.pxas = cam.pxPerDeg / 3600;                         // pixels per arcsecond at the centre of the view
+  see.pxas = cam.pxPerDeg / 3600;                         // pixels per arcsecond at the center of the view
   see.fwhm = see.seeing * see.pxas;
   see.on = see.enabled && (see.fwhm >= 3 || see.noise * see.pxas >= 0.05);
   const t = Math.floor(state.timeMs / 1000);

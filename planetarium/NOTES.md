@@ -1292,8 +1292,27 @@ Overrides the layout and Record paragraphs of "Lab notebook (2026-11-24)".
   underlined and explained in words (`whyNotNumber`).
 - **Formulas**: small letters are columns; bare `c` with a column C is refused in the dialog (`letterTrap`); the speed of light is written `c_light`.
 - Relations have no default column. Columns need a name (the dialogs ask; a pasted or imported one may be blank).
-- **Coming back** (`labs/resume.js`): a reload returns to the lab's step, date and view; opening the lab again offers it. Notebook labs only.
+- **Coming back** (`labs/resume.js`): a reload returns to the lab's step, date and view; opening the lab again offers it. Every lab; the stopwatch marks come back too.
 - Barnard / Proxima: date chip named, a step with a diagram for the east and north parts (words, no formula); the formula left the About text too.
 - **parallax-lab's `tools/sync-notebook.mjs`** needs: `practice.js` in FILES; the patch on `nb.recordClear = b.querySelector('[name=clear]').checked` dropped
   (the box is read only when present). CSS: `.nb-stick`, `.nb-foot`, `.nb-fit`, `.nb-bad` use colours it already maps.
 - Not tested: touch, Safari, Firefox, the file chooser itself, the second curve, text columns in Record.
+# Labs after a student pass (2026-11-25)
+
+## What changed, and where
+- `labs/labs.js`: every lab one step at a time, buttons above the text; `data-do` buttons inside steps (swap, shadow, light, goto); starting a lab closes side panels and the date box, resets the Events finder (`resetEvents`) and scrolls the column to the prompt;
+  Hubble's law from the list leaves the lab (`endLab`: cards closed, the date back to now; the place stays). No preset sets a clock rate.
+- `labs/stopwatch.js`: whole seconds are floored, as the clock shows them (rounding put every second mark one ahead); each mark keeps its place; gap only between two marks the student picks; toast and flash for a new mark.
+- `js/clickguard.js` (new): a press on the sky that closes a box or menu, or follows a press on a panel within 450 ms and 14 px, is not a click (a drag still drags). `.labsdock` takes the clicks in the gaps between cards.
+- `measure.js`: a limb hidden behind a nearer disc is not a target; the second end of a diameter keeps to the first one's body (across the disc; beside the first point the nearest limb wins, so contact gaps still work); a star beside a limb never takes the snap;
+  within 9 px of a body's center the center wins over any circle that passes there; an edge to another body's point is labeled; line and label have a dark edge / plate, labels step aside.
+  **The second false measurement**: an end placed by eye (notebook open) is a fixed sky point. After a clock step the planet moved away from it and the row, and Record, gave the new, meaningless distance. Such a measurement is now void once the clock
+  has moved by 1 s, and a pending first point is dropped, both with a message. The "ghost" after Record was the rubber band's old end (`hover`).
+- `labs/dock.js` + `css/labs.css`: the column uses the full height; `--dock-l` = the strip it takes; date box (wide and low: `html.pop-wide`), read-out and tracking chip stand beside it. Phone: date box on top, cards below.
+- `labs/hidden.js`: `stepHidden`, `eventsHidden`, `groundStays`. `labs/events.js`: "Moon above your horizon"; for solar eclipses anywhere, what is seen from this place.
+- `labs/compare.js`: discs are always drawn (the Sun's in yellow), with a center cross; a Sun ghost snaps by its edge only. `labs/shadow.js moonLight()`: the eclipsed Moon's magnitude, halo and moonlight (umbra 1.6e-5, about -0.6 in totality; real ones vary by several magnitudes).
+- `render/planets.js`: Mercury and Venus near inferior conjunction: no glow, a faint outline of the dark side, the same inside and outside the Sun's edge. `render/labels.js`: names on the Sun or Moon get a dark plate. Magnifier: no names in it. Measurements are drawn last.
+- `tools/check-labs.mjs` (check.mjs 28).
+
+## Not tested
+Touch; Safari and Firefox; the phone layout only in a 390 x 760 iframe with a mouse. `jupiter-mass` was opened and one reading taken, not repeated. The two parallax notebook labs were only opened.

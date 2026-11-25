@@ -6,7 +6,7 @@ export function beginPicks() { items.length = 0; }
 /** r = drawn radius in px (bigger things are easier to hit), mag = brightness for tie-breaking. */
 export function addPick(x, y, r, mag, ref) { items.push({ x, y, r, mag, ref }); }
 
-/** Nearest registered object to (x, y), or null. Bright objects win over faint neighbours. */
+/** Nearest registered object to (x, y), or null. Bright objects win over faint neighbors. */
 export function pickAt(x, y, slop = 12) {
   let best = null, bestScore = Infinity;
   // a star or deep-sky object behind the disc of the Sun, the Moon or a resolved planet cannot be seen, so it cannot be picked

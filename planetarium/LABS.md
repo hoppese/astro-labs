@@ -29,7 +29,14 @@ How the measurements were made, honestly stated:
   Unchanged to the digits given: all angles in the other labs (elongations, oppositions, Kepler, Venus's phases to 0.03″, months, apsides, aberration, parallaxes).
 - "Truth" is astronomy-engine (`tools/check.mjs` sections 12–16), JPL Horizons for Io, or the published value.
 
-Tools used below: **angle tool** (`R`; snaps to centres, to limbs when you click near the edge of a disc, to
+**2026-11-25 (after a student pass):** every lab now shows one step at a time (“All steps at once” is under *About this measurement*), opens with
+the angle tool OFF (press `R`; the two parallax notebook labs excepted) and with the clock stopped at ×1 (so `L` `L` `L` is ×1000). Buttons inside a step
+(Swap observers, Outline of the Earth’s shadow, Light-travel time, Go to a date) press the tool’s own control. Stopwatch marks carry the place and the UTC date, are grouped by
+place, and give no differences until the student presses the numbers of two marks. An edge of one body to a point of another is labeled as not a diameter.
+Changed presets: `romer` (both dates), `canopus` (starts 19 min before the meridian), `kepler-mars` (looks between the Sun and Mars, fewer labels), `elongation` (no Events finder).
+Changed prompts: one baseline only (the square-on one) in `lunar-parallax`, `eclipse-two-sites`, the transits and `mars-parallax`. Values re-measured with real clicks and keys that day are marked “25 Nov”; the contact times were stepped to with the model’s values known, and only confirmed by eye (not found blind).
+
+Tools used below: **angle tool** (`R`; snaps to centers, to limbs when you click near the edge of a disc, to
 the shadow outline, to the second observer's ghosts and to trail ticks; rows keep following the objects as time
 runs), **stopwatch** (`X` marks the clock; differences are listed), **Events finder**, **Two observers**,
 **Path of an object**, **Corrections**. Time steps: `Shift + ←/→` 1 s, `Shift + ↓/↑` 1 min, and the clock button
@@ -56,8 +63,8 @@ Student marks the four umbral contacts.
 - Moon moves its own diameter in U2 − U1 = 65 min 51 s; leading limb crosses the umbra in U3 − U1 = 2 h 49 min 34 s.
 - **Umbra / Moon = 2.575** from the timings (from astronomy-engine's contact times: 2.576).
 - With the outline on, the angle tool gave umbra limb to limb **1.3213°** and Moon limb to limb **29.836′**:
-  ratio **2.657** (model: 2.657). The timing ratio is lower because the Moon's path misses the centre of the
-  shadow by 6.4′ (also measured with the tool: Moon centre to umbra centre 6.39′).
+  ratio **2.657** (model: 2.657). The timing ratio is lower because the Moon's path misses the center of the
+  shadow by 6.4′ (also measured with the tool: Moon center to umbra center 6.39′).
 - Earth ≈ (2.6 + 1) = **3.6 Moon diameters** (true 3.67). The "+1" is the taper of the shadow.
 - The shadow uses the eclipse-prediction model: Earth's radius 6371 + 88 km of atmosphere (1.4% enlargement).
 - Other central eclipses: 2000-07-16, 2029-06-26 (umbra/Moon 2.66 and 2.74).
@@ -77,20 +84,19 @@ refraction off, stopwatch.
 - Upper limb on the horizon **23:06:18**, lower limb clear **23:08:21** (truth 23:06:17 and 23:08:20): **123 s**.
 - 360° × 123 s / (24 h 50 min) = **29.7′**. Angle tool, limb to limb: **29.897′** (info panel 29.9′).
 - Distance = 3475 km / 0.00865 rad ≈ **402,000 km** (that evening: 399,300 km from Quito).
-- The lunar day that week, measured in the `months` lab, was 25 h 07 min, which would give 29.4′: the "24 h 50 min"
-  is an average. Away from the equator, or with the Moon far from the celestial equator, the rise is slanted
+- The lunar day, 25 Nov, with the meridian line and the stopwatch: crossings at 05:13:44 and (17 Sept) 05:55:26 UTC, **24 h 41 min 42 s** (model 24 h 41 min 41 s): 360° × 123 s / 88,902 s = **29.9′**.
+  The angle tool must be used at mark 2 (a day later the Moon overhead is 30.7′). The "24 h 50 min" is an average, and `months` (another week, the Moon at perigee) gets 25 h 07 min. Away from the equator, or with the Moon far from the celestial equator, the rise is slanted
   and takes longer (other dates in the app: 121–139 s).
 
 ### `lunar-parallax` Distance of the Moon from two observers (Lalande and Lacaille)
 Preset: 2026-11-24 22:40 UTC, Berlin, second observer Cape Town, ghosts lined up on the stars.
-- Moon centre to dashed Moon centre: **1.3402°**.
-- Baseline 1.371 Earth radii (8,735 km chord): distance = 1.371 / tan 1.3402° = **58.6 Earth radii** (373,400 km).
-- True geocentric distance that night: 360,100 km = 56.5 R. Using the part of the baseline square-on to the Moon
-  (8,350 km, given in the prompt) gives 356,900 km.
+- Moon center to dashed Moon centre: **1.3402°**.
+- Baseline square-on to the Moon, 8,350 km = 1.311 Earth radii (the one in the prompt): **356,900 km = 56.0 R**. True geocentric distance that night: 360,100 km = 56.5 R.
+  (The full chord, 8,735 km = 1.371 R, is only in *About*: 58.6 R.)
 
 ### `eclipse-two-sites` Total here, partial there (Hipparchus)
 Preset: 2024-04-08 19:09:50 UTC, Richmond (total), second observer Atlanta (partial), atmosphere off.
-- Moon centre to Atlanta's Moon: **5.959′**; Sun's diameter **31.9′**: the shift is 0.19 of the Sun's width
+- The yellow dashed circle is Atlanta's Sun (the real one is behind the Moon, and cannot be snapped to). 25 Nov: Moon center to Atlanta's Moon **5.958′**; Sun's diameter on the dashed circle **31.93′**: the shift is 0.19 of the Sun's width
   (Hipparchus had "a fifth").
 - 677 km / 0.001733 rad = **390,700 km**; with the square-on baseline (614 km) **354,400 km**. True 359,900 km.
 
@@ -98,9 +104,9 @@ Preset: 2024-04-08 19:09:50 UTC, Richmond (total), second observer Atlanta (part
 Preset: 2026-11-25 21:02 UTC (perigee), Richmond, Events finder on "Moon: perigee and apogee".
 - Limb to limb at perigee **33.085′**, at the next apogee (2026-12-11, reached by clicking the event) **28.956′**.
 - Ratio of distances 1.143; e = (33.085 − 28.956) / (33.085 + 28.956) = **0.067**.
-- True for these two apsides, centre to centre: 359,335 and 406,407 km, e = 0.061. The measured value is larger
+- True for these two apsides, center to centre: 359,335 and 406,407 km, e = 0.061. The measured value is larger
   because sizes are topocentric and the Moon was below Richmond's horizon both times (the observer is up to one
-  Earth radius farther away than the Earth's centre). That is the lab's "extra" question.
+  Earth radius farther away than the Earth's center). That is the lab's "extra" question.
 
 ### `months` Two kinds of month, and the lunar day
 Preset: 2026-11-24 14:54 UTC (full Moon), Richmond.
@@ -117,7 +123,7 @@ Preset: 2026-11-24 14:54 UTC (full Moon), Richmond.
 Preset: 2026-12-17 02:00 UTC, Tokyo, Moon tracked.
 - The info panel reads **Illuminated 50.00%** from about 04:34:40 to 04:37:00 UTC (it shows 0.01% steps, each about
   1.6 minutes). Exact dichotomy from the model: 04:35:29.
-- Sun–Moon angle then (angle tool, centre to centre): **89.849°** (model 89.8492°).
+- Sun–Moon angle then (angle tool, center to center): **89.849°** (model 89.8492°).
 - 1 / cos(89.849°) = **379**: the Sun is 379 times farther than the Moon (true ratio that day 379.8).
   One 0.01% step of phase is ±0.008° of angle, which is ±5% in the ratio: the lab's point about sensitivity.
 - The Sun–Moon angle reaches 90.000° at **04:58:41**, 23 minutes after dichotomy (Tao: "about 18 minutes", an average).
@@ -125,7 +131,7 @@ Preset: 2026-12-17 02:00 UTC, Tokyo, Moon tracked.
 - The phase shown is as seen from the site (not geocentric), so it is consistent with the measured angle.
 
 ### `sun-moon-size` Sun and Moon the same size in the sky
-Preset: 2024-04-08 18:25 UTC, Richmond (partial phase), atmosphere off since 2026-11-24 (with it on, the Moon's limb outside the Sun is sky-coloured and cannot be seen, as in reality). Limb to limb: Sun **31.927′**, Moon **33.698′**
+Preset: 2024-04-08 18:25 UTC, Richmond (partial phase), atmosphere off since 2026-11-24 (with it on, the Moon's limb outside the Sun is sky-colored and cannot be seen, as in reality). Limb to limb: Sun **31.927′**, Moon **33.698′**
 (true 31.93′ and 33.70′). The Moon is 5.5% larger, hence total.
 
 ### `eratosthenes` Size of the Earth from the noon Sun
@@ -161,10 +167,10 @@ Largest |latitude| in the year: Moon **5.0°**, Mercury **4.1°**, Venus **3.2°
 Mercury can reach about 7° and the Moon 5.3°; these are topocentric, as seen from Richmond.)
 
 ### `elongation` Sizes of the orbits of Venus and Mercury (Copernicus)
-Preset: 2026-12-20, Richmond, angle tool, Events finder on greatest elongations.
+Preset: 2026-12-20, Richmond. The Events finder's list of greatest elongations is not offered in this lab (it is the answer); Mercury is followed by stepping a day at a time.
 - Sun → Venus, stepping a day at a time: maximum **46.950°** on **2027-01-03** (astronomy-engine: 46.95°, 2027-01-03).
 - sin 46.950° = **0.731 au** (Venus's distance from the Sun that day 0.72 au; mean 0.723).
-- Mercury (integration pass; each date reached by clicking it in the Events finder, angle tool Sun → Mercury, the row
+- Mercury (integration pass; each date then reached by clicking it in the Events finder, now by stepping; angle tool Sun → Mercury, the row
   follows the two bodies as the date changes):
 
   | Greatest elongation | Angle | sin = distance from the Sun |
@@ -195,6 +201,7 @@ Preset: 2027-04-06 12:00 UTC, Sun trail with one tick a Mars year later.
 - Date 1: Sun → Mars **124.550°** (Mars east of the Sun).
 - Angle between the Sun's two places: **43.369°**.
 - After +1 Mars year (2029-02-21): Sun → Mars **139.409°** (Mars now west of the Sun).
+- 25 Nov, all three again with clicks: 124.550°, 43.369°, 139.408°.
 - With the Earth on a circle of 1 au, the two sight lines cross **1.664 au** from the Sun. True 1.661 au.
 - The first version of this preset (2026-12-06) had the two sight lines only 4° apart and gave 1.74 for 1.63 au:
   Tao's warning about nearly parallel lines. Pairs between late February and late April 2027 all give within 1%.
@@ -260,16 +267,18 @@ side of each instant. Venus takes 17.5 minutes to cross the limb, so the eye is 
 | | II (just inside) | III (touches limb again) | II → III |
 |---|---|---|---|
 | Honolulu, by eye | **22:28:05** ± 8 s | **04:27:00** ± 8 s | 5 h 58 min 55 s |
+| Honolulu, 25 Nov (stepped to within 2 s of the model, touching confirmed by eye) | **22:27:52** | **04:26:34** | 5 h 58 min 42 s |
 | Honolulu, model now | 22:27:50 | 04:26:35 | 5 h 58 min 45 s |
 | Sydney (after Swap observers), by eye | **22:34:25** ± 8 s | not judged by eye | |
+| Sydney, 25 Nov (stepped to the model's seconds, touching confirmed by eye) | **22:34:12** | **04:26:15** | 5 h 52 min 03 s |
 | Sydney, model now | 22:34:12 | 04:26:15 | 5 h 52 min 03 s |
 
 (By eye: before the JPL positions, 13-25 s later than now.) Model first and last contacts now: Honolulu I 22:10:19, IV 04:44:26; Sydney I 22:16:16, IV 04:44:07. The durations differ
 by **6 min 42 s** (model). NASA’s geocentric greatest transit is 01:29:36 and 554.4″; the app has exactly that. "Model" = the instant the app's own topocentric Sun–Venus separation equals R_Sun ∓ R_Venus.
 
 ### `mercury-transit`
-Preset: 2019-11-11 12:30 UTC, Richmond. At 15:19:48 UTC: Mercury to Sun's centre **73.6″** (76.9″ before the JPL positions; geocentric least distance
-75.9″, as NASA gives; Richmond sees Mercury about 2″ closer to the centre), diameter **9.95″**.
+Preset: 2019-11-11 12:30 UTC, Richmond. At 15:19:48 UTC: Mercury to Sun's center **73.6″** (76.9″ before the JPL positions; geocentric least distance
+75.9″, as NASA gives; Richmond sees Mercury about 2″ closer to the center), diameter **9.95″**.
 
 Contacts (integration pass): Mercury selected and tracked, FOV 0.0225°, clock stepped with `Shift + arrows`; each contact
 bracketed by eye on three screenshots 10 s apart (gap, touching, overlapping).
@@ -292,16 +301,17 @@ Preset: 1672-09-05 01:00 UTC, Paris, second observer Cayenne. Mars to Cayenne's 
 ## Light
 
 ### `romer` The speed of light from Io
-Preset: 2025-10-01 14:50 UTC, Jupiter tracked, FOV 0.07°.
+Preset: 2025-08-04 05:10 UTC (six weeks after conjunction), Jupiter tracked, FOV 0.07°; a button in step 5 goes to 2025-12-11 09:50 UTC (a month before opposition). On both dates Io fades
+1.5 Jupiter radii from the center, well clear of the limb. (At opposition itself the limb hides Io before the shadow does: that is why not.) The delay of the old preset, 2025-10-01, is 2658 s at 5.326 au.
 
 | | Io gone, light time on | light time off | Delay | Jupiter |
 |---|---|---|---|---|
-| 2025-10-01 | 15:05:53 | 14:21:35 | 2658 s | 5.326 au |
-| 2025-12-11 | 10:04:43 | 09:28:27 | 2176 s | 4.360 au |
+| 2025-08-04 (25 Nov) | 05:25:39 | 04:35:38 | 3001 s | 6.014 au |
+| 2025-12-11 (25 Nov) | 10:04:43 | 09:28:28 | 2175 s | 4.360 au |
 
-- c = (5.326 − 4.360) au / (2658 − 2176) s = **299,800 km/s**.
-- Rømer's way: the two eclipses are 40 orbits apart; seen with light time on, the interval is 483 s shorter than
-  the real one, because the Earth has come 0.97 au closer: the schedule slips by about 12 s per eclipse.
+- c = (6.014 − 4.360) au / (3001 − 2175) s = **299,600 km/s** (to the millisecond: 299,792).
+- Rømer's way: the two eclipses are 73 orbits apart; seen with light time on, the interval is 826 s shorter than
+  the real one, because the Earth has come 1.65 au closer: the schedule slips by about 11 s per eclipse.
 - Check against JPL Horizons (geocentric): Io's partial-umbral phase 15:02:05–15:05:35 on 2025-10-01 and
   03:46:15–03:49:55 on 2026-03-01; the app's half-light instants are 15:03:42 and 03:48:28, and Io is drawn until
   about 12 s after Horizons' "totally eclipsed".
@@ -321,8 +331,8 @@ Preset: 2026-03-21, Greenwich, γ Draconis tracked at FOV 0.03° (the info panel
 ### `parallax` Distance of a star by parallax (Bessel)
 Preset: 61 Cygni A (HIP 104214), aberration and proper motion off, FOV 0.004°.
 - Monthly J2000 coordinates trace an ellipse: RA 21h 06m 53.239s–53.285s (0.54″ on the sky), Dec 57.67″–58.14″.
-  Semi-major axis **0.287″** → **3.48 pc = 11.4 ly** (catalogue 3.49 pc; published parallax 0.286″).
-- This recovers the catalogue distance by construction; what the lab shows is the size and phase of the loop.
+  Semi-major axis **0.287″** → **3.48 pc = 11.4 ly** (catalog 3.49 pc; published parallax 0.286″).
+- This recovers the catalog distance by construction; what the lab shows is the size and phase of the loop.
 
 ### `barnard-parallax` and `proxima-parallax` (notebook labs)
 Presets: Barnard's star from Richmond, 2026-03-01; Proxima Centauri from Cape Town, 2026-01-15. FOV 0.03° (1.8′), star
@@ -351,7 +361,7 @@ and 0.3% in proper motion. Every answer is within 2.4% of the truth. Monte Carlo
 error 0.035″): p ± 3.7-4.1%, so two students typically differ by 5-6%.
 
 How it was done, honestly: every end point was a real mouse click near the star and a real click in the magnifier, with the
-place of the star's centre judged by eye from a screenshot; Record, the date keys (`]`), the column dialogs, the axis and model
+place of the star's center judged by eye from a screenshot; Record, the date keys (`]`), the column dialogs, the axis and model
 menus and the typed slider values were real input. **Scripted:** reading the finished table back; copying a finished notebook
 aside and deleting it so that the next "student" started with a fresh random seed; reloading changed source files. Barnard's
 first student (an earlier agent) chose the Record columns in the dialog; the other three used `&template=1` for the four
@@ -360,7 +370,7 @@ run it first (the hand fit then started from the table's own numbers). Proxima s
 off), as a student would. Proxima's field is crowded: in spring 2027 a faint star runs under its image for two readings. The
 field's stars take up to about 10 s to arrive (Gaia, online or hosted).
 
-Zooming in to a 40″ field, as three of the students did, makes centring easier.
+Zooming in to a 40″ field, as three of the students did, makes centering easier.
 (These runs were made before the object panel was folded and the Distance row hidden; the panel then showed the distance.)
 
 ### `proper-motion` A star that moves
@@ -373,6 +383,7 @@ Preset: Barnard's star (HIP 87937; shown under that number, HYG has no names bel
 ### `canopus` A star you cannot see from Greece (Aristotle, Posidonius)
 Preset: 100 BC, Rhodes, second observer Alexandria, refraction off.
 - Canopus on the meridian: Rhodes **0° 53′ 57″**, Alexandria **6° 07′ 45″**: difference **5.230°** (latitudes differ by 5.23°).
+- 25 Nov, with keys: meridian at 19:49:25 (Rhodes) and, after Swap, 19:42:55 UTC (Alexandria; step back).
 - 360 / 5.23 × 5000 = 344,000 stadia; Posidonius's 7.5° gives 240,000.
 - With refraction on, Canopus at Rhodes stands at 1° 16′.
 
@@ -387,7 +398,7 @@ Preset: 2026-01-01 12:00 EST, Richmond, Sun trail of 37 ticks 10 days apart, "in
 - Top tick 2026-06-20, bottom tick 2026-12-17; angle between them **46.83°**; half is **23.4°**.
 - Widest pair of ticks (2026-02-10 and 2026-11-07): **7.68°**, about 31 minutes of time in all (true extremes of the
   equation of time −14.2 and +16.4 min).
-- The figure sits east of the meridian because Richmond is 9.9° west of the centre of its time zone.
+- The figure sits east of the meridian because Richmond is 9.9° west of the center of its time zone.
 
 ### `polaris-latitude`
 Preset: 2026-11-24, Richmond, refraction off. Polaris hourly over a day: altitude **39.213°** to **40.448°**.
@@ -428,7 +439,7 @@ recorded (8° and 6°). Rate 2.29° in 165 years = **1.39° per century = 50.0�
 
 Not reproducible in a planetarium, and why:
 - **Main-sequence fitting, Cepheids, Type Ia supernovae** (Tao's rungs 7 and 8): they need photometry over time
-  and cluster colour–magnitude data. The star catalogue has V and B−V for single stars only, no variable-star light
+  and cluster color–magnitude data. The star catalog has V and B−V for single stars only, no variable-star light
   curves and no cluster membership; nothing was invented to fill the gap.
 - **Al-Biruni's horizon dip from a mountain**, ships hull-down: not sky observations; the app has no terrain or
   observer height effects on the horizon.
@@ -446,11 +457,12 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 
 | Lab | Hidden | Why; what stays on purpose |
 |---|---|---|
-| `eclipse-timing`, `eclipse-two-sites` | Distance, Light time, Angular diameter | sizes are measured, the Moon's distance is the result |
+| `eclipse-timing`, `eclipse-two-sites` | Distance, Light time, Angular diameter; `eclipse-timing` also Magnitude | sizes are measured, the Moon's distance is the result; the magnitude would show the contacts |
 | `eclipse-shape` | Angular diameter | measured limb to limb |
-| `moonrise` | Angular diameter, Rise / Set, Transit | the result; the lunar day is timed |
+| `moonrise` | Angular diameter, Rise / Set, Transit, Hour angle | the result; the lunar day is timed (Hour angle reads 0 at the answer). No “Hide the ground” button |
 | `lunar-parallax`, `moon-apsides`, `sun-apsides`, `sun-moon-size` | Distance, Light time, Angular diameter | the results |
-| `months`, `sidereal-day`, `analemma` | Rise / Set, Transit | crossings are timed; Hour angle stays |
+| `months` | Rise / Set, Transit, Hour angle | crossings are timed at the meridian line |
+| `sidereal-day`, `analemma` | Rise / Set, Transit | crossings are timed; Hour angle stays (the prompt uses it) |
 | `half-moon` | Elongation, Distance, Light time | Illuminated stays: the prompt uses it |
 | `eratosthenes`, `canopus` | Rise / Set, Transit | Transit gives the noon altitude; Az / Alt stays |
 | `obliquity`, `polaris-latitude` | Rise / Set, Transit, both RA / Dec rows | the declination is the tilt, or Polaris's distance from the pole |
@@ -460,9 +472,10 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 | `venus-phases` | Angular diameter | measured; Illuminated stays |
 | `venus-transit-*`, `mercury-transit` | Angular diameter, Light time | minutes × c gives the AU; the distances in au are given in the prompt |
 | `mars-parallax` | Light time | the same; Distance in au is given |
-| `romer` | Light time, Seen vs. actual | the delay is the result; Distance stays |
+| `romer` | Light time, Seen vs. actual, Spot crosses center | the delay is the result (the Red Spot’s times shift by exactly it); Distance stays |
 | `parallax`, `barnard-parallax`, `proxima-parallax` | Distance, Parallax, Proper motion (every star) | the results; RA / Dec to 0.01″ stays for 61 Cygni only |
-| `proper-motion` | Proper motion | the Distance is given in the prompt |
+| `proper-motion` | Proper motion, Distance, Parallax | the distance is the student’s own, from the Barnard lab, or the instructor’s |
 | `zodiac`, `synodic`, `retrograde`, `aberration`, `precession-pole`, `precession-equinox` | nothing | their rows are the raw readings |
 
-Not hidden: the place's latitude in the bottom bar (`polaris-latitude`) and, in the `proper-motion` prompt, Barnard's distance, 1.83 pc.
+Also not offered: date-box steps that are the answer (`months` and `moonrise`: synodic and sidereal month; `moonrise`, `sidereal-day`: sidereal day, and the keys `{` `}` there; `synodic`, `retrograde`: Mars year),
+and the greatest-elongation list in `elongation`. `&instructor=1` brings them back.

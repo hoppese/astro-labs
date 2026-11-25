@@ -102,7 +102,7 @@ function keys(e) {
   if (e.key === 'x' || e.key === 'X') { e.preventDefault(); e.stopPropagation(); mark(); }
 }
 
-/** Call once, after the core UI exists and the catalogue is loaded. */
+/** Call once, after the core UI exists and the catalog is loaded. */
 export function initLabsSuite() {
   const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL('../../css/labs.css', import.meta.url).href;
   document.head.appendChild(link);
@@ -122,7 +122,7 @@ export function initLabsSuite() {
   const id = q.get('lab');
   const back = reloadedLab();       // a reload: back to the step, the date and the view (not only to the notebook)
   initResume();
-  if (back && (id ? back.id === id : !extra)) startLab(back.id, back.atStart ? {} : { extra: back.setup, at: back.step });
+  if (back && (id ? back.id === id : !extra)) startLab(back.id, back.atStart ? {} : { extra: back.setup, at: back.step, marks: back.marks });
   else if (id && labById(id)) startLab(id, { extra });
   else if (extra) applySetup(extra);
   else if (id === 'list') openLabsList();

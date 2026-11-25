@@ -34,9 +34,9 @@ export function makeFrame(timeMs, loc) {
   const beta = [(ev.vx + ov.vx) / C_AU_PER_DAY, (ev.vy + ov.vy) / C_AU_PER_DAY, (ev.vz + ov.vz) / C_AU_PER_DAY];
   const gast = A.SiderealTime(time);                       // Greenwich apparent sidereal time, hours
   return {
-    timeMs, time, obs, loc, oposB: [ev.x + ov.x, ev.y + ov.y, ev.z + ov.z], opos: [ov.x, ov.y, ov.z],      // observer from the solar-system barycentre / from the Earth's centre, au
+    timeMs, time, obs, loc, oposB: [ev.x + ov.x, ev.y + ov.y, ev.z + ov.z], opos: [ov.x, ov.y, ov.z],      // observer from the solar-system barycenter / from the Earth's center, au
     aberration: true, parallax: false,                    // getFrame() sets these from state.fx
-    epos: [ev.x, ev.y, ev.z],                              // Earth from the solar-system barycentre, au (annual parallax)
+    epos: [ev.x, ev.y, ev.z],                              // Earth from the solar-system barycenter, au (annual parallax)
     betaTrue: beta.slice(), betaDay: [ov.vx / C_AU_PER_DAY, ov.vy / C_AU_PER_DAY, ov.vz / C_AU_PER_DAY],                                // observer's velocity / c even when aberration is switched off
     Mjh, Mhj: transpose(Mjh), Mjd, Mdj: transpose(Mjd), Mdh, Mhd: transpose(Mdh),
     beta,

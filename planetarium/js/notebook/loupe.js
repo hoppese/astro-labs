@@ -24,7 +24,7 @@ export function openLoupe(sky, x, y, onPick) {
   const host = sky.parentElement, dpr = Math.min(window.devicePixelRatio || 1, 2);
   box = document.createElement('div'); box.className = 'nb-loupe';
   cv = document.createElement('canvas'); cv.width = cv.height = Math.round(size * dpr); box.appendChild(cv);
-  hint = document.createElement('div'); hint.className = 'nb-loupe-hint'; hint.textContent = 'Click the centre of the image · Esc cancels';
+  hint = document.createElement('div'); hint.className = 'nb-loupe-hint'; hint.textContent = 'Click the center of the image · Esc cancels';
   const left = Math.max(4, Math.min(sky.clientWidth - size - 4, x - size / 2)), top = Math.max(4, Math.min(sky.clientHeight - size - 4, y - size / 2));
   Object.assign(box.style, { left: left + 'px', top: top + 'px', width: size + 'px', height: size + 'px' });
   Object.assign(hint.style, { left: (left + size / 2) + 'px', top: (top + size + 8 > sky.clientHeight - 30 ? top - 30 : top + size + 8) + 'px' });

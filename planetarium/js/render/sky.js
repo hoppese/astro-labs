@@ -9,6 +9,8 @@ import { DEG, RAD, clamp, lerp, smooth, angleBetween } from '../astro.js';
 import { state, eff, emit } from '../state.js';
 import { cam, unproject } from '../camera.js';
 import { densityLimit } from './density.js';
+import { getFrame } from '../skyframe.js';
+import { moonLight } from '../labs/shadow.js';
 import { depthNow, shownLimit } from '../deepstars.js';
 
 /** Naked-eye limiting magnitude at the zenith for Bortle classes 1..9. */
@@ -60,7 +62,7 @@ export function skyConditions(bodies) {
   const sunFrac = 1 - discOverlap(bodies.sun.angRadius, moon.angRadius, angleBetween(bodies.sun.u, moon.u));
   const eclipseGain = Math.min(6.5, -2.5 * Math.log10(sunFrac + 0.0025));          // magnitudes regained
   const dayLoss = atmo ? Math.max(0, daylightLoss(sunAlt) - eclipseGain * smooth(-6, 0, sunAlt)) : 0;
-  const moonLoss = atmo ? 1.1 * Math.pow(moon.phaseFrac, 2) * smooth(-4, 15, moonAlt) * (1 - smooth(0, 6, dayLoss)) : 0;
+  const moonLoss = atmo ? 1.1 * Math.pow(moon.phaseFrac, 2) * Math.pow(moonLight(getFrame(), moon), 0.4) * smooth(-4, 15, moonAlt) * (1 - smooth(0, 6, dayLoss)) : 0;
   const base = nelm - dayLoss - moonLoss;
   // Two limits, and the fainter stars must pass both:
   //  physical  what this sky lets through, deeper as you zoom in (a narrower field acts like a telescope);

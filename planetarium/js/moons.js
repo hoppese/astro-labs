@@ -8,7 +8,7 @@ import { emit } from './state.js';
 import { MOON_ORBITS, MOON_T0 } from './moon-data.js';
 
 export const MOON_SPAN = [-18262, 36525];        // days TDB from J2000: 1950.0 to 2100.0
-/** Planet-centred EQJ position (au) of a fitted moon at tt days from J2000 (TDB). */
+/** Planet-centerd EQJ position (au) of a fitted moon at tt days from J2000 (TDB). */
 export function moonVector(id, tt) {
   const o = MOON_ORBITS[id]; if (!o) return null;
   const [ra, de, , inc, O0, dO, , w0, dw, L0, n, q] = o.p, dt = tt - MOON_T0;
@@ -43,7 +43,7 @@ function lag6(f) {
   for (let i = 0; i < 6; i++) { let p = 1; for (let j = 0; j < 6; j++) if (j !== i) p *= (f - x[j]) / (x[i] - x[j]); w.push(p); }
   return w;
 }
-/** Position (au, EQJ) about its centre ('sun', 'bary' or 'Saturn'). */
+/** Position (au, EQJ) about its center ('sun', 'bary' or 'Saturn'). */
 export function smallVector(id, tt) {
   const o = small.data && small.data[id]; if (!o || !smallCovers(id, tt)) return null;
   const s = (tt - o.t0) / o.dt, i = Math.floor(s), f = s - i, w = lag6(f), g = (k) => { const c = o.e[k]; let v = 0; for (let m = 0; m < 6; m++) v += w[m] * c[i - 2 + m]; return v; };
@@ -57,7 +57,7 @@ export function smallVector(id, tt) {
   return [r * (cO * cu - sO * su * ci), r * (sO * cu + cO * su * ci), r * su * si];
 }
 export const smallCentre = (id) => (small.data && small.data[id] ? small.data[id].c : 'sun');
-/** Sun-centred position (au, EQJ) of a small body. */
+/** Sun-centerd position (au, EQJ) of a small body. */
 export function smallHelio(id, time, ssb) {
   const v = smallVector(id, time.tt); if (!v) return null;
   if (smallCentre(id) !== 'bary') return v;
