@@ -103,7 +103,7 @@ export function hiddenFraction(rel, axis, pole, parent, moonKm, inner = 0, outer
   return { depth, perp, frac: Math.max(0, Math.min(1, (perp - lo) / (hi - lo))) };
 }
 
-/** Sun-centerd place (au, EQJ) of a body's own center at `time`. */
+/** Sun-centered place (au, EQJ) of a body's own center at `time`. */
 function helioOf(id, time) {
   if (id === 'Sun') return [0, 0, 0];
   if (id === 'Moon') { const e = vecOf(A.HelioVector(A.Body.Earth, time)), m = vecOf(A.GeoMoon(time)); return add(e, m); }

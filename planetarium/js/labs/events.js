@@ -10,7 +10,7 @@ import { state, emit, on } from '../state.js';
 import { setTime } from '../clock.js';
 import { makeFrame } from '../skyframe.js';
 import { compute } from '../ephem.js';
-import { select, flyTo, track } from '../nav.js';
+import { select, flyTo, arriveFov, track } from '../nav.js';
 import { wallParts, fmtDate, fmtTime } from '../timeutil.js';
 import { makeCard } from './dock.js';
 import { esc } from './util.js';
@@ -137,7 +137,7 @@ export const ev = { cat: 'lunar', planet: 'Mars', anchor: null, instructor: INST
 let card = null, pending = '';
 const N = 8;
 
-/** Go to an event: clock (paused), target selected and centerd. */
+/** Go to an event: clock (paused), target selected and centered. */
 export function jumpTo(e) {
   state.playing = false; emit('rate');
   setTime(e.t);
@@ -145,7 +145,7 @@ export function jumpTo(e) {
     const ref = { kind: 'body', id: e.target };
     select(ref);
     track(ref);
-    flyTo(ref, { fov: e.fov || null, dur: 500 });
+    flyTo(ref, { fov: e.fov || arriveFov(ref), dur: 500 });      // (out again from a moon event's tiny field, where the Moon or Sun would be a featureless wall)
   }
 }
 function altitudeHere(e) {
