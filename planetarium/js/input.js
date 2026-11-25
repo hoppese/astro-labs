@@ -8,6 +8,7 @@ import { cam, mountAt, bringUnder, zoomAt, update, unproject } from './camera.js
 import { sameRef } from './objects.js';
 import { getFrame } from './skyframe.js';
 import { pickAt } from './picks.js';
+import { takeEaten } from './clickguard.js';
 import { select, centerOn, flyTo, cancelAnim, zoomAnim, takeView, moveSky, zoomTracked, skyUnder, hasOffset, holdCentre } from './nav.js';
 
 const CLICK_SLOP = 5, TAP_SLOP = 12;      // px a mouse / a finger may wander and still have clicked
@@ -87,7 +88,8 @@ export function initInput(canvas, { onClickSky } = {}) {
         let ref = pickAt(downAt[0], downAt[1], open ? 11 : 20);
         if (!touch) ref = pickAt(p[0], p[1], 12);
         const now = performance.now(), twice = touch && lastTap && now - lastTap.t < DOUBLE_MS && Math.hypot(p[0] - lastTap.x, p[1] - lastTap.y) < DOUBLE_PX;
-        if (onClickSky && onClickSky(p[0], p[1], ref)) lastTap = null;
+        if (takeEaten()) lastTap = null;                  // it closed a panel, or was meant for one
+        else if (onClickSky && onClickSky(p[0], p[1], ref)) lastTap = null;
         else if (twice) doubleTap(p, lastTap.ref);
         else {
           lastTap = touch ? { t: now, x: p[0], y: p[1], ref } : null;

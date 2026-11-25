@@ -11,7 +11,7 @@ import { fmtFov, fmtLat, fmtLon } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
 import { centerOn, toggleTracking, select, stopTracking } from './nav.js';
 import { navKey } from './input.js';
-import { latitudeHidden, running } from './labs/hidden.js';
+import { latitudeHidden, running, stepHidden } from './labs/hidden.js';
 import { keyReached, takesKeys } from './focus.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
@@ -118,6 +118,7 @@ function buildTimeBar() {
   const sb = $('stepBtns');
   for (const [label, d] of STEPS) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    on('lab', () => { b.hidden = stepHidden(label); });      // the size of this step is what the lab measures
     b.addEventListener('click', () => {
       if (typeof d === 'number') stepTime(d);
       else {
@@ -344,8 +345,8 @@ function buildShortcuts(search) {
       case '8': setNow(); return;
       case ']': stepTime(DAY); return;
       case '[': stepTime(-DAY); return;
-      case '}': stepTime(SIDEREAL_DAY_MS); return;
-      case '{': stepTime(-SIDEREAL_DAY_MS); return;
+      case '}': if (!stepHidden('+1 sid. d')) stepTime(SIDEREAL_DAY_MS); return;
+      case '{': if (!stepHidden('+1 sid. d')) stepTime(-SIDEREAL_DAY_MS); return;
       case '>': stepTime(HOUR); return;
       case '<': stepTime(-HOUR); return;
     }

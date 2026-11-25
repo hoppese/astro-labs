@@ -404,7 +404,7 @@ html.quizzing .trackchip { display: none; }
 .below-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 .below-acts .btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
 .below > span { display: block; padding-right: 30px; }
-.infopanel .below { margin-top: 0; margin-bottom: 8px; }
+.infopanel .below { margin-top: 0; margin-bottom: 8px; margin-right: 34px; }      /* × stands beside it */
 @media (max-width: 560px) {
   .infopanel.small.mini:has(.below) { max-height: 310px; }
   .infopanel.small:has(.below) { max-height: 60%; }

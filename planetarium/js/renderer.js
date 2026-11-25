@@ -11,6 +11,7 @@ import { beginPicks } from './picks.js';
 import { refHorApparent } from './objects.js';
 import { projectHor } from './camera.js';
 import { R } from './render/proj.js';
+import { loupeOpen } from './notebook/loupe.js';
 import { LabelLayer } from './render/labels.js';
 import { skyConditions, drawSkyBackground } from './render/sky.js';
 import { drawStars, stats as starStats } from './render/stars.js';
@@ -111,7 +112,7 @@ function draw(frame, now) {
   drawSelection(frame, bodies);
   for (const fn of overlays) fn(ctx, R);
   lap('overlays');
-  labels.flush(ctx, cam.w, cam.h, sky.day > 0.4 ? `rgba(16,38,82,${0.35 + 0.2 * (1 - sky.day)})` : 'rgba(2,6,14,0.85)');
+  if (!loupeOpen()) labels.flush(ctx, cam.w, cam.h, sky.day > 0.4 ? `rgba(16,38,82,${0.35 + 0.2 * (1 - sky.day)})` : 'rgba(2,6,14,0.85)');
   drawSteadyFade(ctx, now);
   lap('labels');
 

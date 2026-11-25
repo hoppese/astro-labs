@@ -430,3 +430,5 @@ line(); line('== 25. Following with an offset, the middle of the free sky (tools
 await (await import('./check-track.mjs')).checkTrack({ line });
 line(); line('== 26. Moons crossing their planets, their shadows, occultations and eclipses (tools/check-moons.mjs; a failure throws) ==');
 await (await import('./check-moons.mjs')).checkMoons(line);
+line(); line('== 27. Labs: prompts, stopwatch, angle tool, what gives answers away (tools/check-labs.mjs; a failure throws) ==');
+await (await import('./check-labs.mjs')).checkLabs({ line });

@@ -20,7 +20,8 @@ import { moonError } from './moons.js';
 import { jpl, covered } from './jpl.js';
 import { sun, initSun, groupsAt, onDisc, cycleFacts } from './sunspots.js';
 import { openSunPanel } from './sunpanel.js';
-import { rowHidden, running } from './labs/hidden.js';
+import { rowHidden, running, groundStays } from './labs/hidden.js';
+import { moonLight } from './labs/shadow.js';
 import { smallWindow } from './layout.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
@@ -193,7 +194,7 @@ function upNext(ref) {
 const dayWord = (ms, tz) => { const a = wallParts(getFrame().timeMs, tz), b = wallParts(ms, tz); return a.day === b.day && a.month === b.month ? '' : 'tomorrow '; };
 /** The line "Jupiter is below the horizon (rises 23:26)" with its buttons, or ''. */
 function belowHtml(ref, name, alt, tz) {
-  if (!eff.ground || alt > -0.02 || ref.kind === 'con') return '';
+  if (!eff.ground || alt > -0.02 || ref.kind === 'con' || groundStays()) return '';      // (a lab about the horizon keeps it)
   const u = upNext(ref), secret = rowHidden('Rise / Set') || rowHidden('Transit') || rowHidden('Hour angle'), t = (ms) => dayWord(ms, tz) + fmtClock(ms, tz);
   return `<div class="below"><span><b>${esc(name)}</b> is below the horizon${secret ? '' : u ? ` (rises ${t(u.rise)})` : ' and never rises here'}. The ground hides it.</span>` +
     `<div class="below-acts"><button class="btn" data-act="noground">Hide the ground</button>${u && !running.id ? `<button class="btn" data-act="whenup" title="Set the clock to ${t(u.go)}, when it is up">Go to ${fmtClock(u.go, tz)}</button>` : ''}</div></div>`;
@@ -265,7 +266,7 @@ function render(force) {
     else if (b.kind === 'moon') type = "Earth's moon";
     else if (b.kind === 'satellite') type = `Moon of <button class="btn" style="padding:1px 7px;font-size:11.5px" data-act="parent" data-id="${b.parent}">${b.parent}</button>`;
     else type = b.kind === 'dwarf' ? 'Dwarf planet' : b.kind === 'asteroid' ? 'Asteroid' : b.kind === 'comet' ? 'Comet' : 'Planet';
-    row('Magnitude', fmtMag(b.mag));
+    { const f = b.id === 'Moon' ? moonLight(frame, b) : 1; row('Magnitude', f > 0.9995 ? fmtMag(b.mag) : (f < 1e-3 ? 'about ' : '') + fmtMag(b.mag - 2.5 * Math.log10(f), f < 1e-3 ? 0 : 1) + ' (in the Earth’s shadow)'); }
     if (b.kind === 'moon') row('Distance', Math.round(b.dist * AU_KM).toLocaleString('en-US') + ' km');
     else row('Distance', b.dist.toFixed(b.dist < 2 ? 4 : 3) + ' au');
     if (b.kind !== 'satellite') row('Angular diameter', fmtAngle(2 * b.angRadius));

@@ -16,7 +16,7 @@ import { esc } from './util.js';
 import { jovianEvents } from './jovian.js';
 import { ensure, jpl } from '../jpl.js';
 import { fmtClock } from '../timeutil.js';
-import { running } from './hidden.js';
+import { running, eventsHidden } from './hidden.js';
 
 const DAY = 86400000;
 const ms = (t) => t.date.getTime();
@@ -154,6 +154,17 @@ function altitudeHere(e) {
     return horToAzAlt(refractHor(b.hor)).alt;
   } catch (err) { return null; }
 }
+/** Solar eclipses anywhere on Earth: is any of it seen from here? (The Sun being up is not enough: the Moon's shadow has to reach this place.) */
+function seenHere(e) {
+  if (ev.cat !== 'solar') return null;
+  try {
+    const obs = new A.Observer(state.loc.lat, state.loc.lon, state.loc.elev || 0), q = A.SearchLocalSolarEclipse(at(e.t - 0.6 * DAY), obs);
+    if (Math.abs(ms(q.peak.time) - e.t) > 0.5 * DAY || Math.max(q.partial_begin.altitude, q.peak.altitude, q.partial_end.altitude) < 0) return 'no eclipse at your place';
+    return q.kind === 'partial' ? 'only partial at your place' : q.kind + ' at your place';
+  } catch (err) { return null; }
+}
+/** A lab begins: its own list, from its own date, whatever was shown before. */
+export function resetEvents(cat, planet) { ev.cat = cat || 'lunar'; ev.planet = planet || 'Mars'; ev.anchor = null; ev.rows = []; pending = ''; refresh(); }
 function refresh() {
   if (!card || !card.isOpen()) return;
   const cat = CATEGORIES.find((c) => c.id === ev.cat);
@@ -165,7 +176,7 @@ function refresh() {
   try { rows = cat.list(ev.anchor, N, ev.planet); } catch (e) { error = 'No events found from this date (the search range of the ephemeris ends).'; }
   ev.rows = rows;
   if (!rows.length && !error) error = cat.empty || 'No events found from this date.';
-  const head = `<div class="row"><select id="evCat" aria-label="Kind of event">${CATEGORIES.map((c) => `<option value="${c.id}"${c.id === ev.cat ? ' selected' : ''}>${c.label}</option>`).join('')}</select></div>` +
+  const head = `<div class="row"><select id="evCat" aria-label="Kind of event">${CATEGORIES.filter((c) => !eventsHidden(c.id)).map((c) => `<option value="${c.id}"${c.id === ev.cat ? ' selected' : ''}>${c.label}</option>`).join('')}</select></div>` +
     (cat.planet ? `<div class="row"><select id="evPlanet" aria-label="Planet">${PLANETS.map((p) => `<option${p === ev.planet ? ' selected' : ''}>${p}</option>`).join('')}</select></div>` : '') +
     `<div class="row"><button class="btn" data-act="earlier" title="Earlier events">&#9664; Earlier</button><button class="btn" data-act="now" title="List from the date on the clock">From clock date</button><button class="btn" data-act="later" title="Later events">Later &#9654;</button></div>`;
   let list = '';
@@ -173,7 +184,7 @@ function refresh() {
   else {
     list = '<ul class="ev-list">' + rows.map((e, i) => {
       const alt = altitudeHere(e);
-      const vis = alt == null ? '' : alt > 0 ? ' · up here' : ' · below the horizon here';
+      const vis = alt == null ? '' : ' · ' + (seenHere(e) ?? (alt > 0 ? `${e.target} above your horizon` : `${e.target} below your horizon`));
       return `<li><button data-i="${i}" title="Set the clock to this event"><span class="when">${e.clock ? fmtDate(wallParts(e.clock, state.loc.tz)) + (running.id && !ev.instructor ? '' : ' ' + fmtClock(e.clock, state.loc.tz)) : fmtDate(wallParts(e.t, 'UTC'))}</span><span class="what">${esc(e.text)}<span style="color:var(--muted)">${vis}</span></span>` +
         (ev.instructor && e.detail ? `<span class="more">${esc(e.detail)}</span>` : '') + '</button></li>';
     }).join('') + '</ul>';

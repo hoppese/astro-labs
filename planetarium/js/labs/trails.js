@@ -74,7 +74,7 @@ export function drawTrail(ctx) {
   for (const s of pts) {
     if (!s || s.x < -20 || s.y < -20 || s.x > cam.w + 20 || s.y > cam.h + 20) continue;
     const major = s.q.i % every === 0;
-    ctx.beginPath(); ctx.arc(s.x, s.y, s.q.i === 0 ? 3.6 : major ? 2.6 : 1.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.q.i === 0 ? 3.6 : major ? 2.6 : 1.5, 0, 2 * Math.PI); if (major) { ctx.strokeStyle = 'rgba(70,0,45,0.9)'; ctx.lineWidth = 2; ctx.stroke(); } ctx.fill();      // a dark edge: a tick can lie on the Sun
     if (major) {
       const w = wallParts(s.q.t, state.loc.tz);
       const txt = showTime ? `${String(w.month).padStart(2, '0')}-${String(w.day).padStart(2, '0')} ${String(w.hour).padStart(2, '0')}h` : fmtDate(w);
