@@ -79,7 +79,7 @@ let cache = null, cacheKey = '';
 
 /** All solar-system bodies for this frame: {list, byId}. Cached per instant, site and light-time setting. */
 export function getBodies(frame) {
-  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + (frame.vantage || '') + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
+  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + (frame.vantage || '') + (frame.vantage === 'Above' ? state.aboveAU : '') + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = compute(frame, state.lightTime, frame.aberration !== false);
@@ -106,9 +106,10 @@ export function hiddenFraction(rel, axis, pole, parent, moonKm, inner = 0, outer
 // ---- the observer away from the Earth (state.vantage): floating at the center of another body, which is then not drawn ----
 export const EARTH_DEF = { id: 'Earth', name: 'Earth', kind: 'planet', radiusKm: 6378.137, polarKm: 6356.752, color: '#9ec5ff' };
 /** Bodies the observer can stand at, in the order the menu lists them. */
-export const VANTAGES = ['Sun', 'Mercury', 'Venus', 'Moon', 'Mars', 'Phobos', 'Jupiter', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Saturn', 'Titan', 'Enceladus', 'Uranus', 'Miranda', 'Neptune', 'Triton', 'Pluto', 'Charon'];
+export const VANTAGES = ['Above', 'Sun', 'Mercury', 'Venus', 'Moon', 'Mars', 'Phobos', 'Jupiter', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Saturn', 'Titan', 'Enceladus', 'Uranus', 'Miranda', 'Neptune', 'Triton', 'Pluto', 'Charon'];
 /** Sun-centered place (au, EQJ) of the center of any body the observer can stand at, at `time` (no light time: where it is). */
 export function vantageHelio(id, time) {
+  if (id === 'Above') return scale(ECL_POLE, state.aboveAU || 12);      // high above the Sun, on the north pole of the ecliptic: the solar-system view
   if (id === 'Earth') return vecOf(A.HelioVector(A.Body.Earth, time));
   const parent = MOON_PARENT[id];
   if (!parent) return helioOf(id, time);
@@ -116,6 +117,7 @@ export function vantageHelio(id, time) {
   const rel = jm ? vecOf(A.JupiterMoons(time)[jm.key]) : id === 'Phoebe' ? smallVector('Phoebe', time.tt) : moonVector(id, time.tt);
   return rel ? add(helioOf(parent, time), rel) : null;
 }
+const ECL_POLE = [0, -Math.sin(23.4392911 * DEG), Math.cos(23.4392911 * DEG)];      // north pole of the J2000 ecliptic, EQJ
 const lambert = (a) => Math.max(1e-6, ((Math.PI - a) * Math.cos(a) + Math.sin(a)) / Math.PI);      // phase law of a diffuse sphere, a in radians
 
 /** Sun-centered place (au, EQJ) of a body's own center at `time`. */

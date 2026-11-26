@@ -1372,3 +1372,9 @@ harmless direction but takes it out of the list, skips the vantage moon, and wor
 Magnitudes from elsewhere: the Earth-based value scaled by distance and a Lambert phase law (Earth itself: V(1,0) = -3.99).
 Not done: standing on a surface; the solar-system view with orbits (next).
 | `data/bodies/earth*.webp` | NASA Blue Marble land and oceans (Stöckli et al. 2002), Wikimedia Commons "Whole world - land and oceans.jpg" 8192 x 4096 | public domain | `build_bodies.py earth` |
+
+## Solar-system view and orbits (2026-11-26)
+Vantage 'Above': `state.aboveAU` (3, 7, 12, 35, 100) au along the J2000 ecliptic pole from the Sun; ui.js lookDown() centers the Sun
+(the nadir) with a wide field. js/render/orbits.js draws one revolution of each planet (and the moons of the observer's planet with
+periods under 60 days) by sampling the ephemeris (planets cached per day, moons per hour), projected from the observer each frame.
+`state.show.orbits` (Settings, default on) only matters in space.

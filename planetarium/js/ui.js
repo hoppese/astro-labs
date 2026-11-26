@@ -189,7 +189,7 @@ function fillEditor(force) {
 // ---------- drawer: location, sky, mount, markings ----------
 const CHECKS = [['starNames', 'Star names', 'S'], ['planetNames', 'Planet names', 'P'], ['conLines', 'Constellation lines', 'C'], ['conNames', 'Constellation names', 'V'],
   ['conBounds', 'Boundaries', 'B'], ['dso', 'Deep-sky objects', 'D'], ['eqGrid', 'Equatorial grid', 'E'], ['azGrid', 'Alt-az grid', 'Z'],
-  ['meridian', 'Meridian', ';'], ['equator', 'Celestial equator', '.'], ['ecliptic', 'Ecliptic', ','], ['cardinal', 'Cardinal points', 'Q']];
+  ['meridian', 'Meridian', ';'], ['equator', 'Celestial equator', '.'], ['ecliptic', 'Ecliptic', ','], ['cardinal', 'Cardinal points', 'Q'], ['orbits', 'Orbits (looking from space)', '']];
 const PRESETS = [['Dark site', 2], ['Rural', 4], ['Suburban', 6], ['City', 8]];
 
 export function openDrawer(open, section) {
@@ -257,10 +257,11 @@ function buildDrawer() {
   });
   // where the observer is: on the Earth (the place below), or floating at the center of another body
   {
-    const sel = $('vantageSel'), moons = VANTAGES.filter((id) => MOON_PARENT[id]), rest = VANTAGES.filter((id) => !MOON_PARENT[id]);
-    sel.innerHTML = '<option value="">the Earth (the place below)</option><optgroup label="Floating in space at">' + rest.map((id) => `<option value="${id}">${id === 'Sun' || id === 'Moon' ? 'the ' + id : id}</option>`).join('') +
+    const sel = $('vantageSel'), moons = VANTAGES.filter((id) => MOON_PARENT[id]), rest = VANTAGES.filter((id) => !MOON_PARENT[id] && id !== 'Above');
+    sel.innerHTML = '<option value="">the Earth (the place below)</option><option value="Above">high above the Sun (the solar system)</option><optgroup label="Floating in space at">' + rest.map((id) => `<option value="${id}">${id === 'Sun' || id === 'Moon' ? 'the ' + id : id}</option>`).join('') +
       '</optgroup><optgroup label="At a moon">' + moons.map((id) => `<option value="${id}">${id} (${MOON_PARENT[id]})</option>`).join('') + '</optgroup>';
     sel.addEventListener('change', () => setVantage(sel.value || null));
+    $('aboveSel').addEventListener('change', (e) => { state.aboveAU = +e.target.value; emit('loc'); lookDown(); });
   }
   on('loc', () => { fillLocation(); syncPlace(); });
   on('lab', () => { fillLocation(); syncPlace(); });        // a lab may hide the latitude (labs/hidden.js)
@@ -293,9 +294,12 @@ export function setVantage(id) {
   if (state.trackRef && state.trackRef.id === id) stopTracking();
   if (state.selected && state.selected.id === id) select(null);
   emit('loc');
+  if (id === 'Above') { lookDown(); return; }
   const look = !id ? null : MOON_PARENT[id] || (id === 'Sun' || id === 'Moon' ? 'Earth' : 'Sun');      // a moon's planet; the Earth from the Sun or the Moon; else the Sun
   if (look) { const ref = { kind: 'body', id: look }; select(ref); centerOn(ref, !!MOON_PARENT[id] || id === 'Moon'); }
 }
+/** High above the Sun: look straight down at it, with a field that holds the orbits out to about the height. */
+function lookDown() { const ref = { kind: 'body', id: 'Sun' }; select(null); centerOn(ref); cam.fov = 110; emit('fov'); }
 /** A new place. What is followed goes on being followed, seen from there. */
 export function setLocation(loc) { locMsg(''); set('loc', loc); }
 function fillLocation() {
@@ -320,11 +324,12 @@ function fillCities() {
 function syncPlace() {
   const l = state.loc, b = $('placeBtn'), v = state.vantage;
   b.innerHTML = ICON.pin + '<span class="txt"></span><span class="sub"></span>';
-  b.querySelector('.txt').textContent = v ? 'At ' + (v === 'Sun' || v === 'Moon' ? 'the ' + v : v) : l.name;
+  b.querySelector('.txt').textContent = v === 'Above' ? `${state.aboveAU} au above the Sun` : v ? 'At ' + (v === 'Sun' || v === 'Moon' ? 'the ' + v : v) : l.name;
   b.querySelector('.sub').textContent = v ? 'in space' : latitudeHidden() ? '' : `${fmtLat(l.lat)} ${fmtLon(l.lon)}`;
   const sel = $('vantageSel'); if (sel && sel.value !== (v || '')) sel.value = v || '';
   const note = $('vantageNote');
-  if (note) { note.hidden = !v; note.textContent = v ? `You float at the center of ${v === 'Sun' || v === 'Moon' ? 'the ' + v : v}, which is not drawn. No ground, no air: “up” is the north pole of the ecliptic. The place below is used again when you go back to the Earth.` : ''; }
+  const ab = $('aboveRow'); if (ab) { ab.hidden = v !== 'Above'; $('aboveSel').value = String(state.aboveAU); }
+  if (note) { note.hidden = !v; note.textContent = v === 'Above' ? 'You float above the north pole of the ecliptic, looking down on the Sun. The lines are the orbits of the planets (Settings: Orbits). The planets are drawn at their true size: zoom in to see them.' : v ? `You float at the center of ${v === 'Sun' || v === 'Moon' ? 'the ' + v : v}, which is not drawn. No ground, no air: “up” is the north pole of the ecliptic. The place below is used again when you go back to the Earth.` : ''; }
 }
 function syncBortle() {
   $('bortle').value = state.bortle;

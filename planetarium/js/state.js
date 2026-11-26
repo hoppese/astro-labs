@@ -22,6 +22,7 @@ export const state = {
   // --- place ---
   loc: { ...DEFAULT_LOCATION },
   homeLoc: null,
+  aboveAU: 12,             // vantage 'Above': height above the Sun, au
   vantage: null,           // null: on the Earth at loc; or the id of a body the observer floats at (js/ephem.js VANTAGES; not saved between visits)           // the place the user chose, while pointing borrows the phone's own (js/point/): that one is never stored
   // --- view ---
   mount: 'altaz',          // 'altaz' | 'eq'
@@ -35,6 +36,7 @@ export const state = {
     azGrid: false, eqGrid: false,
     meridian: false, ecliptic: false, equator: false,
     dso: true,
+    orbits: true,            // paths of the planets (and of the moons of the planet the observer is at), drawn when looking from space
     steady: true,            // when time runs fast: hold the sky's light (and, while following something, ground, refraction, orientation); steady.js
     sunspots: true,          // sunspots of the date (js/sunspots.js); off = a spotless Sun (labs always get the spotless disc)
     netStars: true,          // fetch stars fainter than the bundled catalog (G > 12) for the field on screen from the online Gaia service
