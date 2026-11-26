@@ -31,6 +31,12 @@ export async function checkLabs({ line }) {
   H.running.id = 'elongation'; need(H.eventsHidden('elong') && !H.eventsHidden('oppo'), 'elongation list'); H.running.id = 'moonrise'; need(H.groundStays(), 'ground'); H.running.id = null;
   need(!H.stepHidden('+1 syn. mo') && !H.eventsHidden('elong'), 'hidden outside a lab');
 
+  // ---- J / L from a pause: real time, in their own direction
+  { const Ck = await import('../js/clock.js'), { state } = await import('../js/state.js'), was = [state.rate, state.playing];
+    state.rate = 100; state.playing = false; Ck.slower(); need(state.playing && state.rate === -1, 'J from a pause ' + state.rate);
+    state.rate = -1e4; state.playing = false; Ck.faster(); need(state.playing && state.rate === 1, 'L from a pause ' + state.rate);
+    state.rate = 100; state.playing = true; Ck.faster(); need(state.rate === 1000, 'L while running');
+    [state.rate, state.playing] = was; line('  J / L from a pause start at -x1 / x1'); }
   // ---- stopwatch
   need(S.wholeSecond(1532726666900) === 1532726666000 && S.wholeSecond(-1500) === -2000, 'seconds');
   const T = PLACES.tahiti, V = PLACES.vardo, mk = (t, loc) => ({ t: Date.parse(t), label: '', loc });

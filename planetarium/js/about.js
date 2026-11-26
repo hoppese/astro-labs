@@ -33,7 +33,7 @@ and Saturn's moons and Saturn's rings.</p>
   ${K('This help', ['?'])}
   ${K('Track the selection / stop tracking', ['T'])}
   ${K('Deselect / close panels', ['Esc'])}
-  ${K('Slower · real time · faster', ['J', 'K', 'L'])}
+  ${K('Slower · real time · faster (from a pause: J runs backward, L forward, both at real time)', ['J', 'K', 'L'])}
   ${K('Pause / resume', ['7'])}
   ${K('Now', ['8'])}
   ${K('Back / forward one day', ['[', ']'])}

@@ -45,8 +45,9 @@ export function setNow() { state.rate = 1; state.playing = true; setTime(Date.no
 export function togglePlay() { state.playing = !state.playing; emit('rate'); }
 export function setRate(r) { state.rate = r; state.playing = true; emit('rate'); }
 /** Stellarium's L / J: step through the rate ladder (…, -10, -1, 1, 10, …). */
-export function faster() { const i = nearestRate(); setRate(RATES[Math.min(RATES.length - 1, i + 1)]); }
-export function slower() { const i = nearestRate(); setRate(RATES[Math.max(0, i - 1)]); }
+// From a pause they start the clock at real time in their own direction (L forward ×1, J backward ×1), whatever the rate was before the pause.
+export function faster() { if (!state.playing) { setRate(1); return; } const i = nearestRate(); setRate(RATES[Math.min(RATES.length - 1, i + 1)]); }
+export function slower() { if (!state.playing) { setRate(-1); return; } const i = nearestRate(); setRate(RATES[Math.max(0, i - 1)]); }
 function nearestRate() {
   let best = 0;
   RATES.forEach((r, i) => { if (Math.abs(r - state.rate) < Math.abs(RATES[best] - state.rate)) best = i; });
