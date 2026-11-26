@@ -30,7 +30,7 @@ function axesFrom(ra, dec, w) {
 }
 /** Body-fixed axes (unit vectors in EQJ): z = north pole, x = prime meridian on the equator. null when no rotation model is known. */
 export function bodyAxes(id, tt) {
-  if (id === 'Moon') { const r = A.RotationAxis('Moon', A.AstroTime.FromTerrestrialTime(tt)); return axesFrom(r.ra * 15, r.dec, r.spin); }
+  if (id === 'Moon' || id === 'Earth') { const r = A.RotationAxis(id, A.AstroTime.FromTerrestrialTime(tt)); return axesFrom(r.ra * 15, r.dec, r.spin); }
   const p = poleAndMeridian(id, tt);
   return p && axesFrom(p.ra, p.dec, p.w);
 }
@@ -44,7 +44,7 @@ export function subPoint(ax, v, radii) {
 /** Figure radii [a, b, c] km. */
 export const figure = (id) => (id === 'Moon' ? [1737.4, 1737.4, 1737.4] : ORIENT[id] ? ORIENT[id].r : null);
 /** Degrees of rotation per second (signed as seen on the sky axes; 0 when unknown). */
-export const spinRate = (id) => (id === 'Moon' ? 13.17635815 / 86400 : ORIENT[id] ? (ORIENT[id].w[1] || 0) / 86400 : 0);
+export const spinRate = (id) => (id === 'Moon' ? 13.17635815 / 86400 : id === 'Earth' ? 360.9856235 / 86400 : ORIENT[id] ? (ORIENT[id].w[1] || 0) / 86400 : 0);
 
 // ---- Jupiter's three longitude systems -----------------------------------------------------------
 /** West central-meridian longitudes {I, II, III} for a sub-observer east longitude (System III frame). */

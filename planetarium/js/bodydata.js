@@ -5,6 +5,7 @@ const USGS = 'USGS Astrogeology / NASA';
 export const BODY_ART = {
   Sun: { tex: 'sun-quiet', small: false, kind: 'map', light: 'sun', big: 3, credit: 'NASA/SDO and the AIA, EVE, and HMI science teams', note: 'Surface: the quiet Sun of November and December 2019 from 30 daily SDO/HMI photographs.' },
   Moon: { tex: 'moon', kind: 'map', light: 'lunar', relief: 'moon-n', gain: 1.12, big: 3, credit: 'NASA SVS CGI Moon Kit (LRO LROC / LOLA)' },
+  Earth: { tex: 'earth', kind: 'map', light: 'mars', gain: 1.12, credit: 'NASA Blue Marble (Reto Stöckli, NASA Earth Observatory), land and oceans without clouds', note: 'Map: NASA’s Blue Marble, cloud-free. Real clouds would cover about two thirds of it; the night side has no city lights here.' },
   Mercury: { tex: 'mercury', kind: 'map', light: 'lunar', gain: 1.1, credit: 'MESSENGER MDIS, ' + USGS },
   Venus: { tex: 'venus', kind: 'front', light: 'gas', gain: 1.75, credit: 'Mariner 10, PIA23791, NASA/JPL-Caltech', note: 'Clouds: one Mariner 10 photograph (7 February 1974), always the same face. No published map shows the clouds of a given date.' },
   Mars: { tex: 'mars', kind: 'map', light: 'mars', gain: 1.15, credit: 'Viking orbiters, MDIM 2.1 color, ' + USGS, note: 'Map: Viking orbiter pictures of 1976 to 1980. Polar caps, frost and dust do not follow the seasons.' },

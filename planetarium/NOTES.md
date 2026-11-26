@@ -1361,3 +1361,14 @@ Natural Earth (fetched only when the card opens, 96 kB gzipped); night shaded fr
 A ruler reads km on the image plane. The labs no longer give the square-on baseline; students measure it. check-labs
 compares the picture with the answer key in LABS.md (within 1%). Seth's next wish: a floating view from other bodies
 (Moon, Sun, Jupiter, Io...), and a zoomed-out solar-system view with orbits.
+
+## Looking from another body (2026-11-26)
+`state.vantage` (null = on the Earth) is a body id from `VANTAGES` in js/ephem.js. `makeFrame(t, loc, vantage)` puts the observer at
+that body's center by setting `opos` (offset from the Earth's center), `oposB`/`epos` (star parallax) and `beta` (its own velocity,
+by a 2-minute difference) and makes "horizontal" the true ecliptic of date; nothing downstream needed to know otherwise. `eff.space`
+turns off ground, air and refraction; grids.js skips alt-az grid and meridian; info.js skips Az/Alt, hour angle, rise/set.
+compute() adds the Earth (EARTH_DEF, Blue Marble map, IAU rotation from astronomy-engine), keeps the vantage body in byId with a
+harmless direction but takes it out of the list, skips the vantage moon, and works out phases from the observer's geometry.
+Magnitudes from elsewhere: the Earth-based value scaled by distance and a Lambert phase law (Earth itself: V(1,0) = -3.99).
+Not done: standing on a surface; the solar-system view with orbits (next).
+| `data/bodies/earth*.webp` | NASA Blue Marble land and oceans (Stöckli et al. 2002), Wikimedia Commons "Whole world - land and oceans.jpg" 8192 x 4096 | public domain | `build_bodies.py earth` |

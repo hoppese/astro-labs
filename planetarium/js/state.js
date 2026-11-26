@@ -21,7 +21,8 @@ export const state = {
   playing: true,
   // --- place ---
   loc: { ...DEFAULT_LOCATION },
-  homeLoc: null,           // the place the user chose, while pointing borrows the phone's own (js/point/): that one is never stored
+  homeLoc: null,
+  vantage: null,           // null: on the Earth at loc; or the id of a body the observer floats at (js/ephem.js VANTAGES; not saved between visits)           // the place the user chose, while pointing borrows the phone's own (js/point/): that one is never stored
   // --- view ---
   mount: 'altaz',          // 'altaz' | 'eq'
   bortle: 4,               // 1 (pristine) .. 9 (inner city)
@@ -55,9 +56,10 @@ export const SHOW_DEFAULTS = { ...state.show };
 export const eff = {
   steady: '',              // '' | 'sky' | 'full'
   pointing: false,         // a phone is being pointed at the sky (js/point/): its own attitude is the view, apparent places, no steady sky
-  get atmosphere() { return state.show.atmosphere && !this.steady; },
-  get refraction() { return this.pointing || (state.show.refraction && this.steady !== 'full'); },
-  get ground() { return state.show.ground && this.steady !== 'full'; },
+  get space() { return !!state.vantage; },      // floating away from the Earth: no air, no ground, no compass points
+  get atmosphere() { return state.show.atmosphere && !this.steady && !state.vantage; },
+  get refraction() { return !state.vantage && (this.pointing || (state.show.refraction && this.steady !== 'full')); },
+  get ground() { return state.show.ground && this.steady !== 'full' && !state.vantage; },
   get mount() { return this.pointing ? 'altaz' : this.steady === 'full' ? 'eq' : state.mount; },
 };
 

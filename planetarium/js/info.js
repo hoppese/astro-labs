@@ -267,13 +267,13 @@ function render(force) {
     else if (b.kind === 'satellite') type = `Moon of <button class="btn" style="padding:1px 7px;font-size:11.5px" data-act="parent" data-id="${b.parent}">${b.parent}</button>`;
     else type = b.kind === 'dwarf' ? 'Dwarf planet' : b.kind === 'asteroid' ? 'Asteroid' : b.kind === 'comet' ? 'Comet' : 'Planet';
     { const f = b.id === 'Moon' ? moonLight(frame, b) : 1; row('Magnitude', f > 0.9995 ? fmtMag(b.mag) : (f < 1e-3 ? 'about ' : '') + fmtMag(b.mag - 2.5 * Math.log10(f), f < 1e-3 ? 0 : 1) + ' (in the Earth’s shadow)'); }
-    if (b.kind === 'moon') row('Distance', Math.round(b.dist * AU_KM).toLocaleString('en-US') + ' km');
+    if (b.kind === 'moon' || (state.vantage && b.dist < 0.02)) row('Distance', Math.round(b.dist * AU_KM).toLocaleString('en-US') + ' km');
     else row('Distance', b.dist.toFixed(b.dist < 2 ? 4 : 3) + ' au');
     if (b.kind !== 'satellite') row('Angular diameter', fmtAngle(2 * b.angRadius));
     else { row('From ' + b.parent, fmtAngle(b.sepDeg) + (b.occulted ? ' (behind the disc)' : b.light < 0.5 ? ' (in the planet’s shadow)' : b.transit ? ' (in front of the disc)' : b.behind ? ' (far side)' : ' (near side)')); row('Angular diameter', fmtAngle(2 * b.angRadius)); }
     if (b.kind !== 'sun') {
-      row('Illuminated', (b.phaseFrac * 100).toFixed(b.kind === 'moon' ? 2 : 1) + '%' + (b.kind === 'moon' ? ' · ' + moonPhaseName(A.MoonPhase(frame.time)) : ''));
-      if (b.kind !== 'satellite') row('Elongation', b.elong.toFixed(1) + '° from the Sun');
+      row('Illuminated', (b.phaseFrac * 100).toFixed(b.kind === 'moon' ? 2 : 1) + '%' + (b.kind === 'moon' && !state.vantage ? ' · ' + moonPhaseName(A.MoonPhase(frame.time)) : ''));
+      if (b.kind !== 'satellite' && state.vantage !== 'Sun') row('Elongation', b.elong.toFixed(1) + '° from the Sun');
     }
     if (b.id === 'Saturn') row('Ring tilt', (b.ringTilt >= 0 ? '+' : '−') + Math.abs(b.ringTilt).toFixed(1) + '° (' + (b.ringTilt >= 0 ? 'north' : 'south') + ' face toward us)');
     const lt = b.lightMin;
@@ -327,10 +327,12 @@ function render(force) {
   row('<span title="J2000 axes, as seen now: proper motion, aberration and parallax are included when switched on (Labs, Corrections), so it can differ from a catalog by up to about 20 arcseconds">RA / Dec (J2000)</span>', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
   row('RA / Dec (of date)', fmtRA(d.lon, raDp) + '&ensp;' + fmtDMS(d.lat, { dp: decDp }));
   { const ecl = toSph(mulMV(frame.Mjt, eqj)); row('Ecliptic lon / lat', ecl.lon.toFixed(fine ? 4 : 2) + '°&ensp;' + (ecl.lat >= 0 ? '+' : '−') + Math.abs(ecl.lat).toFixed(fine ? 4 : 2) + '° (of date)'); }
-  row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (eff.refraction ? '' : ' (no refraction)'));
-  row('Hour angle', fmtHA(mod(frame.lst - d.lon / 15 + 12, 24) - 12));
+  if (!state.vantage) {      // (in space there is no horizon to measure from)
+    row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (eff.refraction ? '' : ' (no refraction)'));
+    row('Hour angle', fmtHA(mod(frame.lst - d.lon / 15 + 12, 24) - 12));
+  }
   if (ref.kind !== 'con') {
-    const ev = riseTransitSet(ref, frame, eqj);
+    const ev = state.vantage ? null : riseTransitSet(ref, frame, eqj);
     if (ev) {
       const t = (ms) => (ms == null ? '—' : fmtClock(ms, tz));
       if (ev.rise == null && ev.set == null) row('Rise / Set', ev.transitAlt > 0 ? 'circumpolar (always up)' : 'never rises here');

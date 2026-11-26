@@ -148,7 +148,7 @@ export function drawGrids(ctx) {
       lonLabel: (v, st) => fmtHourLabel(v, st), latLabel: (v, st) => fmtDegLabel(v, st, true),
     });
   }
-  if (sh.azGrid) {
+  if (sh.azGrid && !state.vantage) {
     const a = horToAzAlt(cHor);
     drawGrid(ctx, (lon, lat) => azAltToHor(lon, lat), { lon: a.az, lat: a.alt }, {
       color: 'rgba(110,205,150,0.30)', labelColor: '#86cfa2', refract: false, lonSteps: DEG_STEPS,
@@ -168,5 +168,5 @@ export function drawGrids(ctx) {
     // true ecliptic of date (it precesses with the equinox; longitude 0 is the equinox of date)
     circle((l) => mulMV(f.Mjh, mulMV(f.Mtj, sph(l, 0))), 'rgba(240,190,80,0.6)', 'Ecliptic', true);
   }
-  if (sh.meridian) circle((l) => { const a = l * DEG; return [Math.cos(a), 0, Math.sin(a)]; }, 'rgba(120,220,160,0.58)', 'Meridian', false);
+  if (sh.meridian && !state.vantage) circle((l) => { const a = l * DEG; return [Math.cos(a), 0, Math.sin(a)]; }, 'rgba(120,220,160,0.58)', 'Meridian', false);
 }

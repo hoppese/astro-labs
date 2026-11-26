@@ -86,4 +86,12 @@ export async function checkLabs({ line }) {
     }
     Cm.cmp.obs2 = null;
     line('  Earth seen square-on: ' + out.join(', ') + ' (the answer key), sites on the grid within 0.2 deg'); }
+
+  // ---- the observer away from the Earth (state.vantage): every place gives finite directions and magnitudes, and a few sizes are right
+  { const t = Date.parse('2026-11-26T12:00:00Z'), loc = { lat: 0, lon: 0, elev: 0 }, at = (v) => E.compute(makeFrame(t, loc, v), true, true);
+    for (const v of E.VANTAGES) { const b = at(v); need(!b.list.some((x) => x.id === v), v + ' draws itself'); const bad = b.list.filter((x) => !(Number.isFinite(x.u[0]) && Number.isFinite(x.mag) && Number.isFinite(x.angRadius))); need(!bad.length, `from ${v}: ${bad.map((x) => x.id)}`); need(!!b.byId.Earth, 'no Earth from ' + v); }
+    const io = at('Io').byId.Jupiter, moon = at('Moon').byId.Earth, sun = at('Sun').byId.Earth;
+    need(Math.abs(2 * io.angRadius - 2 * Math.asin(71492 / (io.dist * X.AU_KM)) * X.RAD) < 1e-9 && io.dist * X.AU_KM > 4.1e5 && io.dist * X.AU_KM < 4.4e5, 'Jupiter from Io');
+    need(Math.abs(sun.mag + 4.0) < 0.15 && sun.phaseFrac > 0.999, 'Earth from the Sun: mag ' + sun.mag);
+    line(`  from ${E.VANTAGES.length} other bodies: all finite; Jupiter from Io ${(2 * io.angRadius).toFixed(2)} deg, ${(io.phaseFrac * 100).toFixed(0)}% lit; Earth from the Moon ${(2 * moon.angRadius).toFixed(2)} deg; from the Sun mag ${sun.mag.toFixed(2)}`); }
 }

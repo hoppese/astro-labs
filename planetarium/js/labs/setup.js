@@ -16,7 +16,7 @@ import { DEG, RAD, sph, mulMV, azAltToHor, horToAzAlt, toSph, refractHor } from 
 import { state, emit, eff, SHOW_DEFAULTS } from '../state.js';
 import { cam, update, lookAtHor, centerHor, setMount } from '../camera.js';
 import { getFrame } from '../skyframe.js';
-import { getBodies } from '../ephem.js';
+import { getBodies, VANTAGES } from '../ephem.js';
 import { setTime } from '../clock.js';
 import { select, cancelAnim, track, stopTracking, setOffset, getOffset } from '../nav.js';
 import { refHorApparent, refName } from '../objects.js';
@@ -51,6 +51,8 @@ async function resolveTarget(target) {
 export async function applySetup(s, { ephemeral = true } = {}) {
   if (ephemeral) state.ephemeral = true;
   cancelAnim();
+  // where the observer is: a lab (closeOthers) starts on the Earth unless it says otherwise; a link may say ?from=Io
+  if (s.vantage !== undefined || s.closeOthers) { const v = VANTAGES.includes(s.vantage) ? s.vantage : null; if ((state.vantage || null) !== v) { state.vantage = v; emit('loc'); } }
   if (s.loc && isFinite(s.loc.lat) && isFinite(s.loc.lon)) {
     const l = s.loc;
     state.loc = { name: l.name || `${l.lat.toFixed(2)}°, ${l.lon.toFixed(2)}°`, region: l.region || '', lat: +l.lat, lon: +l.lon, elev: +l.elev || 0,
@@ -122,6 +124,7 @@ export function describeView() {
   if (onL.length) q.set('on', onL.join(','));
   if (offL.length) q.set('off', offL.join(','));
   if (state.playing) { q.set('play', '1'); if (state.rate !== 1) q.set('rate', String(state.rate)); }
+  if (state.vantage) q.set('from', state.vantage);
   if (cmp.obs2) { q.set('obs2', [cmp.obs2.lat, cmp.obs2.lon, cmp.obs2.name].join(',')); if (cmp.align === 'sun') q.set('align', 'sun'); }
   if (trail.on) q.set('trail', [trail.body, trail.step / 86400000, trail.before, trail.after, trail.frame, new Date(trail.t0).toISOString().slice(0, 19) + 'Z'].join(','));
   const tools = openCards().filter((id) => id !== 'lab'); if (measure.active) tools.push('measure');
@@ -155,6 +158,7 @@ export function setupFromQuery(q) {
   if (q.get('align')) { s.align = q.get('align'); any = true; }
   if (q.get('trail')) { const [body, step, before, after, frame, t0] = q.get('trail').split(','); s.trail = { body, step: (+step || 1) * 86400000, before: +before || 0, after: +after || 0, frame: frame === 'horizon' ? 'horizon' : 'stars' }; if (t0) s.trail.t0 = t0; any = true; }
   if (q.get('tools')) { s.tools = q.get('tools').split(','); any = true; }
+  if (q.get('from') && VANTAGES.includes(q.get('from'))) { s.vantage = q.get('from'); any = true; }
   return any ? s : null;
 }
 export { DEG, RAD, toSph };

@@ -229,13 +229,22 @@ function baseFov(ref) {
   if (ref.kind === 'body') {
     const b = bodies.byId[ref.id];
     if (!b) return 10;
+    const f = bodyFov(b);
+    return Math.min(120, Math.max(f, 2 * b.angRadius * 2.6));      // (seen from close by, in space, a disc can be many degrees wide)
+  }
+  if (ref.kind === 'con') return 50;
+  return otherFov(ref);
+}
+function bodyFov(b) {
+  {
     if (b.kind === 'sun' || b.kind === 'moon') return 2.2;
     if (b.kind === 'satellite') return clamp(b.angRadius * 9, 0.00004, 0.5);
     if (b.kind === 'asteroid' || b.kind === 'dwarf' || b.kind === 'comet') return clamp(b.angRadius * 9, 0.00004, 0.5);
     if (b.moons && b.moons.length) return clamp(b.angRadius * 2 * 14, 0.08, 0.4);
     return clamp(b.angRadius * 2 * 30, 0.02, 0.3);
   }
-  if (ref.kind === 'con') return 50;
+}
+function otherFov(ref) {
   if (ref.kind === 'star') return cam.fov > 12 ? 5 : 1;                // a second press goes closer; from a field with nothing else in it, back out
   if (ref.kind === 'dso') { const o = dso.rows[ref.idx]; return clamp((o && o.maj ? o.maj / 60 : 0.1) * 7, 0.25, 8); }
   if (ref.kind === 'gaia') { const m = ref.t.mag[ref.i]; return m <= 12 ? 2 : m <= 15 ? 0.6 : m <= 18 ? 0.2 : 0.08; }      // a field in which the star is well above the limit

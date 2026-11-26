@@ -59,6 +59,8 @@ if want('moon'):
 # ---------------------------------------------------------------- Mercury (MESSENGER MDIS), Mars (Viking MDIM 2.1 colour)
 if want('mercury'):
     g = lum(load('mercury_bw.png')); g[g < 4] = np.median(g); g = stretch(g, 120, 2.4); save('mercury', tint(g, [1.04, 1.0, 0.94]), 80)
+if want('earth'):      # NASA Blue Marble (land and oceans, no clouds; Stöckli et al. 2002), 8192 x 4096 from Wikimedia Commons "Whole world - land and oceans.jpg"
+    a = load('world.jpg', (4096, 2048)); save('earth', a, 80)
 if want('mars'): 
     a = load('mars_color.png', (3072, 1536)); ref = load('PIA00407.jpg'); ref = ref[lum(ref) > 60].mean(0); cur = a[300:1236].mean((0, 1)); print('mars mean colour', cur, '->', ref)
     a = a * ((ref / lum(ref)) / (cur / lum(cur))) ** 0.35 * 122 / lum(cur); g = lum(a)[..., None]; a = g + 0.78 * (a - g); lo = np.stack([blur(a[..., c], 60, 60) for c in range(3)], 2); a = lo + 0.8 * (a - lo); save('mars', a, 78)      # part-way: the Viking orbiter colours are stronger than the eye's

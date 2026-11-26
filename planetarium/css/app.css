@@ -315,3 +315,7 @@ html.kb .bottombar { display: none; }
   .bottombar:has(.rate:not(.rt):not(.paused)) .place { display: none; }
   .place .txt { display: none; }
 }
+
+/* Settings: where the observer is (Earth or a body in space) */
+label.vantage { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 0 0 8px; } label.vantage select { flex: 1; min-width: 0; }
+#vantageNote { margin: -2px 0 10px; }

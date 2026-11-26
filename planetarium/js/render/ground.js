@@ -58,7 +58,7 @@ function screenVsCircle(hc) {
 }
 
 export function drawGround(ctx) {
-  if (eff.steady === 'full') return;      // steady.js: no ground, horizon line or compass points sweeping past
+  if (eff.steady === 'full' || eff.space) return;      // steady.js: no ground, horizon line or compass points sweeping past; in space there are none
   const hc = horizonCircle();
   const sky = R.sky;
   const rel = hc.line ? 'cross' : screenVsCircle(hc);

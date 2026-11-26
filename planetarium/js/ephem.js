@@ -79,7 +79,7 @@ let cache = null, cacheKey = '';
 
 /** All solar-system bodies for this frame: {list, byId}. Cached per instant, site and light-time setting. */
 export function getBodies(frame) {
-  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
+  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + (frame.vantage || '') + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = compute(frame, state.lightTime, frame.aberration !== false);
@@ -103,9 +103,25 @@ export function hiddenFraction(rel, axis, pole, parent, moonKm, inner = 0, outer
   return { depth, perp, frac: Math.max(0, Math.min(1, (perp - lo) / (hi - lo))) };
 }
 
+// ---- the observer away from the Earth (state.vantage): floating at the center of another body, which is then not drawn ----
+export const EARTH_DEF = { id: 'Earth', name: 'Earth', kind: 'planet', radiusKm: 6378.137, polarKm: 6356.752, color: '#9ec5ff' };
+/** Bodies the observer can stand at, in the order the menu lists them. */
+export const VANTAGES = ['Sun', 'Mercury', 'Venus', 'Moon', 'Mars', 'Phobos', 'Jupiter', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Saturn', 'Titan', 'Enceladus', 'Uranus', 'Miranda', 'Neptune', 'Triton', 'Pluto', 'Charon'];
+/** Sun-centered place (au, EQJ) of the center of any body the observer can stand at, at `time` (no light time: where it is). */
+export function vantageHelio(id, time) {
+  if (id === 'Earth') return vecOf(A.HelioVector(A.Body.Earth, time));
+  const parent = MOON_PARENT[id];
+  if (!parent) return helioOf(id, time);
+  const jm = JUPITER_MOONS.find((m) => m.id === id);
+  const rel = jm ? vecOf(A.JupiterMoons(time)[jm.key]) : id === 'Phoebe' ? smallVector('Phoebe', time.tt) : moonVector(id, time.tt);
+  return rel ? add(helioOf(parent, time), rel) : null;
+}
+const lambert = (a) => Math.max(1e-6, ((Math.PI - a) * Math.cos(a) + Math.sin(a)) / Math.PI);      // phase law of a diffuse sphere, a in radians
+
 /** Sun-centered place (au, EQJ) of a body's own center at `time`. */
 function helioOf(id, time) {
   if (id === 'Sun') return [0, 0, 0];
+  if (id === 'Earth') return vecOf(A.HelioVector(A.Body.Earth, time));
   if (id === 'Moon') { const e = vecOf(A.HelioVector(A.Body.Earth, time)), m = vecOf(A.GeoMoon(time)); return add(e, m); }
   const v = vecOf(A.HelioVector(id, time)), o = centreOffset(id, time);
   return o ? add(v, o) : v;
@@ -132,7 +148,7 @@ export function apparent(id, frame, aberration = true, earth = null) {
     const n = len(seen) / C_AU_PER_DAY; if (Math.abs(n - tau) < 1e-9) { tau = n; break; } tau = n;
   }
   const d = len(seen);
-  if (id !== 'Sun' && id !== 'Moon') {
+  if (id !== 'Sun' && id !== 'Moon' && len(obs) > 0.01) {      // (an observer at the Sun itself: no bending worked out)
     // bending of light by the Sun's gravity (IAU SOFA's iauLd): 0.5 arcsec for a planet 3.5 degrees beyond the Sun, nothing for one in front
     const p = scale(seen, 1 / d), q = unit(hel), E = len(obs), eh = scale(obs, 1 / E), w = SCHW / E / Math.max(dot(q, add(q, eh)), 1e-6);
     const dl = scale(sub(scale(eh, dot(p, q)), scale(q, dot(eh, p))), w);
@@ -161,8 +177,8 @@ export function compute(frame, lightTime, aberration = true) {
   const { time } = frame;
   const obsVec = frame.opos;                                       // geocentre -> observer, EQJ, au
   const earth = vecOf(A.HelioVector(A.Body.Earth, time));
-  const list = [], byId = {};
-  for (const def of BODIES) {
+  const list = [], byId = {}, V = frame.vantage || null;
+  for (const def of V ? [...BODIES, EARTH_DEF] : BODIES) {
     const b = { ...def, moons: [] };
     const { seen, geo } = apparent(def.id, frame, aberration, earth);
     b.vecSeen = seen; b.vecGeo = geo;
@@ -174,16 +190,35 @@ export function compute(frame, lightTime, aberration = true) {
     b.hor = mulMV(frame.Mjh, b.u);                                             // true (unrefracted) HOR direction
     b.angRadius = Math.asin(Math.min(1, def.radiusKm / AU_KM / b.dist)) * RAD;
     if (def.id === 'Sun') { b.mag = -26.74 + 5 * Math.log10(b.dist); b.phaseAngle = 0; b.phaseFrac = 1; b.helioDist = 0; }
+    else if (def.id === 'Earth') { b.fig = [def.radiusKm, def.radiusKm, def.polarKm]; b.helioDist = len(helioOf('Earth', time)); }      // magnitude and phase below
     else {
       const ill = A.Illumination(def.id, time);
       b.mag = ill.mag; b.phaseAngle = ill.phase_angle; b.phaseFrac = ill.phase_fraction; b.helioDist = ill.helio_dist;
+      b.geoMag = { mag: ill.mag, dist: ill.geo_dist, phase: ill.phase_angle };      // as seen from the Earth's center: the start for another observer
     }
     b.ttSeen = time.tt - (lightTime ? b.lightMin / 1440 : 0);
     list.push(b); byId[b.id] = b;
   }
+  // the body the observer floats in: kept in byId (code reads byId.Sun, byId.Moon) but out of the list, pointing anywhere harmless
+  if (V && byId[V]) {
+    const b = byId[V]; list.splice(list.indexOf(b), 1);
+    const u = b.id === 'Sun' ? [0, 0, 1] : unit(helioOf(b.id, time));
+    Object.assign(b, { isVantage: true, u, vec: scale(u, 1e-9), vecSeen: scale(u, 1e-9), vecGeo: scale(u, 1e-9), dist: 1e-9, hor: mulMV(frame.Mjh, u), angRadius: 0, mag: 99, shiftDeg: 0, lightMin: 0, toSun: b.id === 'Sun' ? null : scale(helioOf(b.id, time), -1) });
+  }
+  if (V) {
+    // seen from elsewhere: the phase and brightness from the observer's own geometry; magnitudes scaled from the Earth's (distance and a diffuse-sphere phase law)
+    for (const b of list) {
+      if (b.id === 'Sun' || b.id === V) continue;
+      const hel = b.id === 'Moon' ? add(vecOf(A.HelioVector(A.Body.Earth, time)), vecOf(A.GeoMoon(time))) : helioOf(b.id, time);
+      const a = Math.acos(Math.max(-1, Math.min(1, dot(unit(scale(hel, -1)), scale(b.u, -1)))));
+      b.phaseAngle = a * RAD; b.phaseFrac = (1 + Math.cos(a)) / 2;
+      if (b.id === 'Earth') b.mag = -3.99 + 5 * Math.log10(b.helioDist * b.dist) - 2.5 * Math.log10(lambert(a));
+      else if (b.geoMag) b.mag = b.geoMag.mag + 5 * Math.log10(b.dist / b.geoMag.dist) - 2.5 * Math.log10(lambert(a) / lambert(b.geoMag.phase * DEG));
+    }
+  }
   const sun = byId.Sun;
   for (const b of list) b.elong = b === sun ? 0 : Math.acos(Math.max(-1, Math.min(1, dot(b.u, sun.u)))) * RAD;
-  {
+  if (!V) {
     // The Moon's phase as seen from the SITE (astronomy-engine's is geocentric; the two differ by up to
     // the Moon's parallax, about 1 degree of phase angle, which matters for the half-Moon measurement).
     const m = byId.Moon, toSun = sub(sun.vec, m.vec), toObs = scale(m.vec, -1);
@@ -192,21 +227,22 @@ export function compute(frame, lightTime, aberration = true) {
   }
 
   // --- direction of the sunlight on each body ---
-  for (const b of list) b.toSun = b === sun ? null : b.id === 'Moon' ? sub(sun.vec, b.vec) : scale(helioOf(b.id, lightTime ? time.AddDays(-b.lightMin / 1440) : time), -1);
+  for (const b of list) b.toSun = b === sun || b.isVantage ? null : b.id === 'Moon' ? sub(sun.vec, b.vec) : scale(helioOf(b.id, lightTime ? time.AddDays(-b.lightMin / 1440) : time), -1);
 
   // --- pole directions (for ring tilt, disc flattening, moon planes) ---
-  for (const id of ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']) {
+  for (const id of V ? ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Earth'] : ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']) {
     const b = byId[id];
     const tSeen = lightTime ? time.AddDays(-b.lightMin / 1440) : time;
     b.pole = bodyAxes(id, tSeen.tt).z;
     b.subEarthLat = Math.asin(-dot(b.pole, b.u)) * RAD;      // > 0: north face tilted toward us
     b.tSeen = tSeen;
-    b.helioVec = scale(b.toSun, -1);                         // Sun -> planet at the instant the light left it
+    b.helioVec = b.toSun ? scale(b.toSun, -1) : helioOf(id, tSeen);      // Sun -> planet at the instant the light left it (the body the observer is in: now)
   }
   byId.Saturn.ringTilt = byId.Saturn.subEarthLat;
 
   // --- moons ---
   const addMoon = (parent, def, rel) => {
+    if (def.id === V) return;
     const v = add(parent.vec, rel);
     const d = len(v), u = unit(v);
     const depth = dot(rel, parent.u);                        // > 0: farther than the planet
@@ -217,17 +253,18 @@ export function compute(frame, lightTime, aberration = true) {
       angRadius: Math.asin(def.radiusKm / AU_KM / d) * RAD,
       mag: def.v10 + 5 * Math.log10(parent.helioDist * d),
       lightMin: d / C_AU_PER_DAY * 1440, phaseAngle: parent.phaseAngle, phaseFrac: parent.phaseFrac,
+      ...(V ? (() => { const a = Math.acos(Math.max(-1, Math.min(1, dot(unit(sub(parent.toSun, rel)), unit(scale(v, -1)))))); return { phaseAngle: a * RAD, phaseFrac: (1 + Math.cos(a)) / 2, mag: def.v10 + 5 * Math.log10(parent.helioDist * d) - 2.5 * Math.log10(lambert(a)) }; })() : {}),
       orbitKm: len(rel) * AU_KM, periodDays: MOON_PERIOD[def.id],
     };
     m.ttSeen = parent.ttSeen; m.toSun = sub(parent.toSun, rel);
     const pole = parent.pole || [0, 0, 1];
     // behind the (flattened) disc: the moon's centre is covered / how much of its disc still shows
     const occ = hiddenFraction(rel, parent.u, pole, parent, def.radiusKm);
-    m.occulted = occ.depth > 0 && occ.frac < 0.5;
+    m.occulted = occ.depth > 0 && occ.frac < 0.5 && parent.id !== V;
     m.occFrac = occ.frac;
     // in front of it: over the flattened disc, not merely within its equatorial radius
     const tra = hiddenFraction(rel, scale(parent.u, -1), pole, parent, def.radiusKm);
-    m.transit = tra.depth > 0 && tra.frac < 0.5;
+    m.transit = tra.depth > 0 && tra.frac < 0.5 && parent.id !== V;
     m.inLimb = (parent.radiusKm - occ.perp) / parent.radiusKm;      // how far the moon's center is inside the disc's edge, planet radii (< 0: outside)
     // in the planet's shadow: umbra narrows and penumbra widens with distance behind the planet
     const dSun = len(parent.helioVec) * AU_KM;
@@ -247,7 +284,7 @@ export function compute(frame, lightTime, aberration = true) {
     const rel = def.id === 'Phoebe' ? smallVector('Phoebe', tt) : moonVector(def.id, tt);
     if (!rel) continue;
     addMoon(parent, def, rel);
-    byId[def.id].inSpan = tt >= MOON_SPAN[0] && tt <= MOON_SPAN[1];
+    if (byId[def.id]) byId[def.id].inSpan = tt >= MOON_SPAN[0] && tt <= MOON_SPAN[1];
   }
   for (const b of list) if (b.moons.length > 1) mutualShadows(b);
 
