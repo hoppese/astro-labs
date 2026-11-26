@@ -2,7 +2,7 @@
 // Under a stereographic projection the horizon is exactly a circle (or a straight line) on
 // screen, so the ground is filled analytically rather than from sampled points.
 
-import { DEG, azAltToHor } from '../astro.js';
+import { DEG, azAltToHor, smooth } from '../astro.js';
 import { state, eff } from '../state.js';
 import { cam, projectHor } from '../camera.js';
 import { R } from './proj.js';
@@ -63,7 +63,7 @@ export function drawGround(ctx) {
   const sky = R.sky;
   const rel = hc.line ? 'cross' : screenVsCircle(hc);
   if (eff.ground) {
-    ctx.fillStyle = groundColour(sky);
+    ctx.fillStyle = eff.onSurface ? surfaceColour(sky) : groundColour(sky);
     ctx.beginPath();
     if (hc.line) {
       // half-plane on the nadir side of the line
@@ -100,6 +100,14 @@ export function drawGround(ctx) {
     }
   }
   if (state.show.cardinal) drawCardinals();
+}
+
+/** Standing on another body: its own colour, lit by the Sun (no air: full light once the Sun is clear of the horizon, black ground at night). */
+function surfaceColour(sky) {
+  const b = R.bodies && R.bodies.byId[state.vantage], hex = (b && b.color) || '#9a948a';
+  const lit = 0.05 + 0.42 * smooth(-0.5, 6, sky.sunAlt);
+  const c = [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * lit));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
 const NAMES = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];

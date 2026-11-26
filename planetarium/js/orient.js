@@ -42,7 +42,7 @@ export function subPoint(ax, v, radii) {
   return { lon: mod(Math.atan2(b[1], b[0]) * RAD, 360), lat: Math.atan2(b[2], h) * RAD, latG: Math.atan2(b[2] * f, h) * RAD };
 }
 /** Figure radii [a, b, c] km. */
-export const figure = (id) => (id === 'Moon' ? [1737.4, 1737.4, 1737.4] : ORIENT[id] ? ORIENT[id].r : null);
+export const figure = (id) => (id === 'Moon' ? [1737.4, 1737.4, 1737.4] : id === 'Earth' ? [6378.137, 6378.137, 6356.752] : ORIENT[id] ? ORIENT[id].r : null);
 /** Degrees of rotation per second (signed as seen on the sky axes; 0 when unknown). */
 export const spinRate = (id) => (id === 'Moon' ? 13.17635815 / 86400 : id === 'Earth' ? 360.9856235 / 86400 : ORIENT[id] ? (ORIENT[id].w[1] || 0) / 86400 : 0);
 

@@ -93,5 +93,18 @@ export async function checkLabs({ line }) {
     const io = at('Io').byId.Jupiter, moon = at('Moon').byId.Earth, sun = at('Sun').byId.Earth;
     need(Math.abs(2 * io.angRadius - 2 * Math.asin(71492 / (io.dist * X.AU_KM)) * X.RAD) < 1e-9 && io.dist * X.AU_KM > 4.1e5 && io.dist * X.AU_KM < 4.4e5, 'Jupiter from Io');
     need(Math.abs(sun.mag + 4.0) < 0.15 && sun.phaseFrac > 0.999, 'Earth from the Sun: mag ' + sun.mag);
+    // standing on a body: the horizon frame built from the body's axes agrees with astronomy-engine's own on the Earth. (Within 0.5 deg: the
+    // IAU rotation model of the Earth that bodyAxes uses differs that much from the sidereal time; a mixed-up axis would be 90 or 180 deg off.)
+    { const F = await import('../js/skyframe.js'), tm = X.A.MakeTime(new Date(t)), lat = 40, lon = -84.9, b2a = (6356.752 / 6378.137) ** 2;
+      const s = F.surfacePoint('Earth', Math.atan(b2a * Math.tan(lat * X.DEG)) * X.RAD, lon, tm.tt), M = X.fromRot(X.A.Rotation_EQJ_HOR(tm, new X.A.Observer(lat, lon, 0)));
+      const err = Math.max(...[s.north, s.west, s.up].map((r, i) => Math.acos(Math.min(1, r[0] * M[3 * i] + r[1] * M[3 * i + 1] + r[2] * M[3 * i + 2]))));
+      need(err < 1 * X.DEG, 'surface horizon frame vs the Earth\'s: ' + err * X.RAD * 3600 + ' arcsec');
+      const on = (v, la, lo) => E.compute(makeFrame(t, loc, v, { lat: la, lon: lo }), true, true), aa = (b) => X.horToAzAlt(b.hor);
+      const tq = aa(on('Moon', 0.674, 23.473).byId.Earth), far = aa(on('Moon', -45.44, 177.6).byId.Earth), jz = on('Io', 0, 20).byId.Jupiter;
+      need(tq.alt > 55 && tq.alt < 80 && Math.abs(tq.az - 270) < 35, 'Earth from Tranquility Base: az ' + tq.az + ' alt ' + tq.alt);
+      need(far.alt < -20, 'Earth seen from the far side');
+      need(Math.abs(aa(jz).alt - 70) < 3, 'Jupiter from Io (0, 20 E): alt ' + aa(jz).alt);
+      for (const v of E.SURFACES) { const b = on(v, 30, 40); const bad = b.list.filter((x) => !(Number.isFinite(x.hor[2]) && Number.isFinite(x.mag))); need(!bad.length, `on ${v}: ${bad.map((x) => x.id)}`); }
+      line(`  standing on ${E.SURFACES.length} bodies: horizon frame within ${(err * X.RAD).toFixed(2)} deg of the Earth's; Earth from Tranquility Base az ${tq.az.toFixed(0)} alt ${tq.alt.toFixed(1)}, from the far side alt ${far.alt.toFixed(0)}`); }
     line(`  from ${E.VANTAGES.length} other bodies: all finite; Jupiter from Io ${(2 * io.angRadius).toFixed(2)} deg, ${(io.phaseFrac * 100).toFixed(0)}% lit; Earth from the Moon ${(2 * moon.angRadius).toFixed(2)} deg; from the Sun mag ${sun.mag.toFixed(2)}`); }
 }

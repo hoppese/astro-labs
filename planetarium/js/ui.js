@@ -2,15 +2,15 @@
 // (location, sky, mount, markings), menu and modals, keyboard shortcuts, read-out.
 
 import { state, eff, on, emit, toggle, set, save, SHOW_DEFAULTS } from './state.js';
-import { cam, setMount } from './camera.js';
+import { cam, setMount, lookAtHor } from './camera.js';
 import { getFrame } from './skyframe.js';
-import { VANTAGES, MOON_PARENT } from './ephem.js';
+import { VANTAGES, MOON_PARENT, SURFACES, SITES, getBodies } from './ephem.js';
 import { cities } from './catalog.js';
 import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLabel, rateWords, rateCap, SIDEREAL_DAY_MS, T_MIN, T_MAX } from './clock.js';
 import { wallParts, wallToMs, zoneLabel, fmtDate, fmtTime, browserZone, zoneFromLongitude, dateProblem, daysInMonth } from './timeutil.js';
 import { findCities } from './fuzzy.js';
 import { readNumber } from './xui.js';
-import { fmtFov, fmtLat, fmtLon } from './astro.js';
+import { fmtFov, fmtLat, fmtLon, azAltToHor, horToAzAlt } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
 import { centerOn, toggleTracking, select, stopTracking } from './nav.js';
 import { navKey } from './input.js';
@@ -262,6 +262,16 @@ function buildDrawer() {
       '</optgroup><optgroup label="At a moon">' + moons.map((id) => `<option value="${id}">${id} (${MOON_PARENT[id]})</option>`).join('') + '</optgroup>';
     sel.addEventListener('change', () => setVantage(sel.value || null));
     $('aboveSel').addEventListener('change', (e) => { state.aboveAU = +e.target.value; emit('loc'); lookDown(); });
+    // standing on the body instead of floating at its center
+    $('surfOn').addEventListener('change', (e) => setSurface(e.target.checked ? defaultSite(state.vantage) : null));
+    $('surfSite').addEventListener('change', (e) => { const s = sitesFor(state.vantage)[+e.target.value]; if (s) setSurface({ lat: s[1], lon: s[2] }); });
+    const go = () => {
+      const r = readPlace($('surfLat').value, $('surfLon').value), m = $('surfMsg');
+      m.hidden = !r.err; m.textContent = r.err || '';
+      if (!r.err) setSurface({ lat: r.lat, lon: r.lon });
+    };
+    $('surfGo').addEventListener('click', go);
+    for (const id of ['surfLat', 'surfLon']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
   }
   on('loc', () => { fillLocation(); syncPlace(); });
   on('lab', () => { fillLocation(); syncPlace(); });        // a lab may hide the latitude (labs/hidden.js)
@@ -291,12 +301,36 @@ export function setVantage(id) {
   id = id && VANTAGES.includes(id) ? id : null;
   if (id === (state.vantage || null)) return;
   state.vantage = id;
+  if (state.surface) state.surface = SURFACES.includes(id) ? defaultSite(id) : null;      // still standing, on the new body
   if (state.trackRef && state.trackRef.id === id) stopTracking();
   if (state.selected && state.selected.id === id) select(null);
   emit('loc');
   if (id === 'Above') { lookDown(); return; }
-  const look = !id ? null : MOON_PARENT[id] || (id === 'Sun' || id === 'Moon' ? 'Earth' : 'Sun');      // a moon's planet; the Earth from the Sun or the Moon; else the Sun
+  if (eff.onSurface) { lookAround(); return; }
+  const look = lookTarget(id);
   if (look) { const ref = { kind: 'body', id: look }; select(ref); centerOn(ref, !!MOON_PARENT[id] || id === 'Moon'); }
+}
+const lookTarget = (id) => (!id ? null : MOON_PARENT[id] || (id === 'Sun' || id === 'Moon' ? 'Earth' : 'Sun'));      // a moon's planet; the Earth from the Sun or the Moon; else the Sun
+/** Named places on body `id`, then the default one: [label, lat, east lon]. */
+function sitesFor(id) {
+  const own = SITES[id] || [], look = lookTarget(id);
+  return own.length ? own : [[look === 'Sun' ? '20° N 20° E' : `20° N 20° E (${look} high in the sky)`, 20, 20]];
+}
+const defaultSite = (id) => { const s = sitesFor(id)[0]; return { lat: s[1], lon: s[2] }; };
+/** Stand on the vantage body at {lat, lon} (null: float at its center again). */
+export function setSurface(surf) {
+  state.surface = surf && SURFACES.includes(state.vantage) ? { lat: Math.round(surf.lat * 1e4) / 1e4, lon: Math.round(surf.lon * 1e4) / 1e4 } : null;
+  emit('loc');
+  if (eff.onSurface) lookAround();
+  else if (state.vantage) { const ref = { kind: 'body', id: lookTarget(state.vantage) }; select(ref); centerOn(ref, true); }
+}
+/** On the ground: turn to the planet (or the Earth, or the Sun) when it is up, else to the southern (northern) horizon. */
+function lookAround() {
+  const id = lookTarget(state.vantage), b = getBodies(getFrame()).byId[id];
+  cam.fov = 90; emit('fov');
+  if (b && b.hor[2] > Math.sin(3 * Math.PI / 180)) { const ref = { kind: 'body', id }; select(ref); centerOn(ref); return; }
+  select(null); stopTracking();
+  lookAtHor(azAltToHor(state.surface.lat >= 0 ? 180 : 0, 25)); emit('render');
 }
 /** High above the Sun: look straight down at it, with a field that holds the orbits out to about the height. */
 function lookDown() { const ref = { kind: 'body', id: 'Sun' }; select(null); centerOn(ref); cam.fov = 110; emit('fov'); }
@@ -324,12 +358,24 @@ function fillCities() {
 function syncPlace() {
   const l = state.loc, b = $('placeBtn'), v = state.vantage;
   b.innerHTML = ICON.pin + '<span class="txt"></span><span class="sub"></span>';
-  b.querySelector('.txt').textContent = v === 'Above' ? `${state.aboveAU} au above the Sun` : v ? 'At ' + (v === 'Sun' || v === 'Moon' ? 'the ' + v : v) : l.name;
-  b.querySelector('.sub').textContent = v ? 'in space' : latitudeHidden() ? '' : `${fmtLat(l.lat)} ${fmtLon(l.lon)}`;
+  const the = (x) => (x === 'Sun' || x === 'Moon' ? 'the ' + x : x), ground = eff.onSurface, sf = state.surface;
+  b.querySelector('.txt').textContent = v === 'Above' ? `${state.aboveAU} au above the Sun` : ground ? 'On ' + the(v) : v ? 'At ' + the(v) : l.name;
+  b.querySelector('.sub').textContent = ground ? `${fmtLat(sf.lat)} ${fmtLon(sf.lon)}` : v ? 'in space' : latitudeHidden() ? '' : `${fmtLat(l.lat)} ${fmtLon(l.lon)}`;
   const sel = $('vantageSel'); if (sel && sel.value !== (v || '')) sel.value = v || '';
   const note = $('vantageNote');
   const ab = $('aboveRow'); if (ab) { ab.hidden = v !== 'Above'; $('aboveSel').value = String(state.aboveAU); }
-  if (note) { note.hidden = !v; note.textContent = v === 'Above' ? 'You float above the north pole of the ecliptic, looking down on the Sun. The lines are the orbits of the planets (Settings: Orbits). The planets are drawn at their true size: zoom in to see them.' : v ? `You float at the center of ${v === 'Sun' || v === 'Moon' ? 'the ' + v : v}, which is not drawn. No ground, no air: “up” is the north pole of the ecliptic. The place below is used again when you go back to the Earth.` : ''; }
+  const sr = $('surfRow');
+  if (sr) {
+    sr.hidden = !SURFACES.includes(v); $('surfOn').checked = ground; $('surfWhere').hidden = !ground;
+    if (ground) {
+      const ss = sitesFor(v), k = ss.findIndex((s) => Math.abs(s[1] - sf.lat) < 1e-3 && Math.abs(s[2] - sf.lon) < 1e-3), sel = $('surfSite');
+      const html = ss.map((s, i) => `<option value="${i}">${s[0]}</option>`).join('') + '<option value="-1">Somewhere else (below)</option>';
+      if (sel.dataset.v !== v) { sel.innerHTML = html; sel.dataset.v = v; }
+      sel.value = String(k); if (document.activeElement !== $('surfLat') && document.activeElement !== $('surfLon')) { $('surfLat').value = sf.lat; $('surfLon').value = sf.lon; }
+    }
+  }
+  if (note && ground) { note.hidden = false; note.textContent = `You stand on ${the(v)}. There is no air${v === 'Titan' ? ' drawn (Titan\u2019s real sky is an orange haze)' : v === 'Mars' ? ' to speak of (the thin Martian air is not drawn)' : ''}: the sky stays black by day and nothing twinkles. North is toward ${the(v)}\u2019s north pole; longitudes are east. Settings: Ground hides or shows the ground. The place below is used again when you go back to the Earth.`; }
+  else if (note) { note.hidden = !v; note.textContent = v === 'Above' ? 'You float above the north pole of the ecliptic, looking down on the Sun. The lines are the orbits of the planets (Settings: Orbits). The planets are drawn at their true size: zoom in to see them.' : v ? `You float at the center of ${v === 'Sun' || v === 'Moon' ? 'the ' + v : v}, which is not drawn. No ground, no air: “up” is the north pole of the ecliptic. The place below is used again when you go back to the Earth.` : ''; }
 }
 function syncBortle() {
   $('bortle').value = state.bortle;

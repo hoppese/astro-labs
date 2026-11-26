@@ -3,7 +3,7 @@
 // orbit and not an ellipse drawn from elements. Seen from high above the Sun it is the familiar diagram of the solar system.
 
 import { unit, sub, add } from '../astro.js';
-import { state } from '../state.js';
+import { state, eff } from '../state.js';
 import { vantageHelio, MOON_PARENT, MOON_PERIOD, BODIES, EARTH_DEF } from '../ephem.js';
 import { placeEqj } from '../labs/util.js';
 import { R } from './proj.js';
@@ -46,7 +46,7 @@ function paths(time) {
 }
 
 export function drawOrbits(ctx) {
-  if (!state.vantage || !state.show.orbits) return;
+  if (!eff.space || !state.show.orbits) return;      // (standing on a body the ground hides half of them)
   const frame = R.frame, obs = vantageHelio(state.vantage, frame.time);
   if (!obs) return;
   const W = ctx.canvas.width, H = ctx.canvas.height, far = Math.hypot(W, H);

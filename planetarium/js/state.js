@@ -24,6 +24,7 @@ export const state = {
   homeLoc: null,
   aboveAU: 12,             // vantage 'Above': height above the Sun, au
   vantage: null,           // null: on the Earth at loc; or the id of a body the observer floats at (js/ephem.js VANTAGES; not saved between visits)           // the place the user chose, while pointing borrows the phone's own (js/point/): that one is never stored
+  surface: null,           // {lat, lon}: standing on the vantage body there (only for ephem.js SURFACES), not floating at its center
   // --- view ---
   mount: 'altaz',          // 'altaz' | 'eq'
   bortle: 4,               // 1 (pristine) .. 9 (inner city)
@@ -54,14 +55,17 @@ export const state = {
 /** The display switches as they are for a new visitor (labs/setup.js, "Reset display" in ui.js). */
 export const SHOW_DEFAULTS = { ...state.show };
 
+// (a copy of ephem.js SURFACES, which imports this module)
+const SURFACE_IDS = new Set(['Mercury', 'Moon', 'Mars', 'Phobos', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Titan', 'Enceladus', 'Miranda', 'Triton', 'Pluto', 'Charon']);
 /** What is in force NOW: the user's switches, less what steady.js holds off while time runs fast. Read these, not state.show, when drawing or projecting. */
 export const eff = {
   steady: '',              // '' | 'sky' | 'full'
   pointing: false,         // a phone is being pointed at the sky (js/point/): its own attitude is the view, apparent places, no steady sky
-  get space() { return !!state.vantage; },      // floating away from the Earth: no air, no ground, no compass points
+  get onSurface() { return !!(state.vantage && state.surface && SURFACE_IDS.has(state.vantage)); },      // standing on another body: ground and horizon, no air
+  get space() { return !!state.vantage && !this.onSurface; },      // floating away from the Earth: no air, no ground, no compass points
   get atmosphere() { return state.show.atmosphere && !this.steady && !state.vantage; },
   get refraction() { return !state.vantage && (this.pointing || (state.show.refraction && this.steady !== 'full')); },
-  get ground() { return state.show.ground && this.steady !== 'full' && !state.vantage; },
+  get ground() { return state.show.ground && this.steady !== 'full' && !this.space; },
   get mount() { return this.pointing ? 'altaz' : this.steady === 'full' ? 'eq' : state.mount; },
 };
 

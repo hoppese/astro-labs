@@ -52,7 +52,8 @@ export async function applySetup(s, { ephemeral = true } = {}) {
   if (ephemeral) state.ephemeral = true;
   cancelAnim();
   // where the observer is: a lab (closeOthers) starts on the Earth unless it says otherwise; a link may say ?from=Io
-  if (s.vantage !== undefined || s.closeOthers) { const v = VANTAGES.includes(s.vantage) ? s.vantage : null; if ((state.vantage || null) !== v) { state.vantage = v; emit('loc'); } }
+  if (s.vantage !== undefined || s.closeOthers) { const v = VANTAGES.includes(s.vantage) ? s.vantage : null; const sf = v && s.surface && isFinite(s.surface.lat) && isFinite(s.surface.lon) ? { lat: +s.surface.lat, lon: +s.surface.lon } : null;
+    if ((state.vantage || null) !== v || JSON.stringify(state.surface) !== JSON.stringify(sf)) { state.vantage = v; state.surface = sf; emit('loc'); } }
   if (s.loc && isFinite(s.loc.lat) && isFinite(s.loc.lon)) {
     const l = s.loc;
     state.loc = { name: l.name || `${l.lat.toFixed(2)}°, ${l.lon.toFixed(2)}°`, region: l.region || '', lat: +l.lat, lon: +l.lon, elev: +l.elev || 0,
@@ -125,6 +126,7 @@ export function describeView() {
   if (offL.length) q.set('off', offL.join(','));
   if (state.playing) { q.set('play', '1'); if (state.rate !== 1) q.set('rate', String(state.rate)); }
   if (state.vantage) q.set('from', state.vantage);
+  if (eff.onSurface) q.set('at', state.surface.lat + ',' + state.surface.lon);
   if (cmp.obs2) { q.set('obs2', [cmp.obs2.lat, cmp.obs2.lon, cmp.obs2.name].join(',')); if (cmp.align === 'sun') q.set('align', 'sun'); }
   if (trail.on) q.set('trail', [trail.body, trail.step / 86400000, trail.before, trail.after, trail.frame, new Date(trail.t0).toISOString().slice(0, 19) + 'Z'].join(','));
   const tools = openCards().filter((id) => id !== 'lab'); if (measure.active) tools.push('measure');
@@ -159,6 +161,7 @@ export function setupFromQuery(q) {
   if (q.get('trail')) { const [body, step, before, after, frame, t0] = q.get('trail').split(','); s.trail = { body, step: (+step || 1) * 86400000, before: +before || 0, after: +after || 0, frame: frame === 'horizon' ? 'horizon' : 'stars' }; if (t0) s.trail.t0 = t0; any = true; }
   if (q.get('tools')) { s.tools = q.get('tools').split(','); any = true; }
   if (q.get('from') && VANTAGES.includes(q.get('from'))) { s.vantage = q.get('from'); any = true; }
+  if (s.vantage && q.get('at')) { const [la, lo] = q.get('at').split(',').map(Number); if (Math.abs(la) <= 90 && Math.abs(lo) <= 360) s.surface = { lat: la, lon: lo }; }
   return any ? s : null;
 }
 export { DEG, RAD, toSph };

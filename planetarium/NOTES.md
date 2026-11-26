@@ -1370,7 +1370,7 @@ turns off ground, air and refraction; grids.js skips alt-az grid and meridian; i
 compute() adds the Earth (EARTH_DEF, Blue Marble map, IAU rotation from astronomy-engine), keeps the vantage body in byId with a
 harmless direction but takes it out of the list, skips the vantage moon, and works out phases from the observer's geometry.
 Magnitudes from elsewhere: the Earth-based value scaled by distance and a Lambert phase law (Earth itself: V(1,0) = -3.99).
-Not done: standing on a surface; the solar-system view with orbits (next).
+Standing on a surface and the solar-system view: sections below.
 | `data/bodies/earth*.webp` | NASA Blue Marble land and oceans (Stöckli et al. 2002), Wikimedia Commons "Whole world - land and oceans.jpg" 8192 x 4096 | public domain | `build_bodies.py earth` |
 
 ## Solar-system view and orbits (2026-11-26)
@@ -1378,3 +1378,16 @@ Vantage 'Above': `state.aboveAU` (3, 7, 12, 35, 100) au along the J2000 ecliptic
 (the nadir) with a wide field. js/render/orbits.js draws one revolution of each planet (and the moons of the observer's planet with
 periods under 60 days) by sampling the ephemeris (planets cached per day, moons per hour), projected from the observer each frame.
 `state.show.orbits` (Settings, default on) only matters in space.
+
+## Standing on another body (2026-11-26)
+`state.surface` = {lat, lon} (planetocentric latitude, east longitude, degrees) stands the observer on the vantage body when it is in
+`SURFACES` (js/ephem.js: the solid bodies, not Venus). skyframe.js `surfacePoint(id, lat, lon, tt)` gives the offset from the body's
+center on its figure ellipsoid (orient.js `figure`) and the local north / west / up from `bodyAxes`; makeFrame adds the offset to the
+observer's place (the 2-minute velocity difference then includes the body's spin) and builds Mjh from those three rows (HOR: x north,
+y west, z zenith, as astronomy-engine's). `eff.onSurface` brings back ground (Settings: Ground switches it), horizon, compass points,
+alt-az grid, meridian and Az/Alt; no air, refraction, hour angle or rise/set. The ground is the body's own colour, lit by the Sun's
+altitude (ground.js surfaceColour). `SITES` names places (Apollo 11, Jezero, Gale, Huygens...); elsewhere the default is 20 N 20 E,
+about 28 deg from the point under the planet for the tidally locked moons. Link: `?from=Moon&at=0.674,23.473`. The check builds the
+same frame on the Earth and compares it with astronomy-engine's Rotation_EQJ_HOR: 0.52 deg apart, which is the IAU Earth rotation
+model's offset from the sidereal time (a mixed-up axis would be 90 or 180 deg off). Not done: Mars' and Titan's skies (no air drawn),
+terrain, earthshine on the ground.

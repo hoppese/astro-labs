@@ -327,8 +327,10 @@ function render(force) {
   row('<span title="J2000 axes, as seen now: proper motion, aberration and parallax are included when switched on (Labs, Corrections), so it can differ from a catalog by up to about 20 arcseconds">RA / Dec (J2000)</span>', fmtRA(j.lon, raDp) + '&ensp;' + fmtDMS(j.lat, { dp: decDp }));
   row('RA / Dec (of date)', fmtRA(d.lon, raDp) + '&ensp;' + fmtDMS(d.lat, { dp: decDp }));
   { const ecl = toSph(mulMV(frame.Mjt, eqj)); row('Ecliptic lon / lat', ecl.lon.toFixed(fine ? 4 : 2) + '°&ensp;' + (ecl.lat >= 0 ? '+' : '−') + Math.abs(ecl.lat).toFixed(fine ? 4 : 2) + '° (of date)'); }
-  if (!state.vantage) {      // (in space there is no horizon to measure from)
-    row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (eff.refraction ? '' : ' (no refraction)'));
+  if (!eff.space) {      // (in space there is no horizon to measure from; standing on another body there is, but no Earth sidereal time)
+    row('Az / Alt', fmtDMS(aa.az, { sign: false }) + '&ensp;' + fmtDMS(aa.alt) + (eff.refraction || state.vantage ? '' : ' (no refraction)'));
+  }
+  if (!state.vantage) {
     row('Hour angle', fmtHA(mod(frame.lst - d.lon / 15 + 12, 24) - 12));
   }
   if (ref.kind !== 'con') {
