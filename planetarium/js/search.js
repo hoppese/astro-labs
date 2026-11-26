@@ -3,7 +3,7 @@
 // Caldwell, common names). With an empty box it lists the solar system and the brightest stars,
 // marking which are above the horizon now.
 
-import { VARIABLES, GCVS_NAME, TYPE_NAME, TRANSIENTS } from './variables.js';
+import { VARIABLES, VAR_BY_HIP, GCVS_NAME, TYPE_NAME, TRANSIENTS } from './variables.js';
 import { state, on } from './state.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, BODIES, SMALL, MOON_PARENT } from './ephem.js';
@@ -38,17 +38,19 @@ function build() {
   const t0 = stars.tiers[0], names = stars.names;
   for (const i of Object.keys(names.name)) {
     const mag = t0.data[i * stars.NF + F.mag];
-    add(names.name[i], names.name[i], (names.bayer[i] ? names.bayer[i] + ' · ' : '') + 'Star', mag, { kind: 'star', k: 0, i: +i }, 80 - mag * 4);
+    const vr = VAR_BY_HIP.get(t0.data[i * stars.NF + F.hip]);
+    add(names.name[i], names.name[i], (names.bayer[i] ? names.bayer[i] + ' · ' : '') + (vr ? TYPE_NAME[vr.type] : 'Star'), vr ? null : mag, { kind: 'star', k: 0, i: +i }, 80 - mag * 4);
   }
   for (const i of Object.keys(names.bayer)) {
     const mag = t0.data[i * stars.NF + F.mag], bay = names.bayer[i];
     const [letter, con] = bay.split(' ');
     const label = names.name[i] ? `${bay} (${names.name[i]})` : bay;
     const ref = { kind: 'star', k: 0, i: +i };
-    add(bay, label, 'Star', mag, ref, 55 - mag * 4);
-    if (conById[con]) add(letter + ' ' + conById[con].gen, label, 'Star', mag, ref, 50 - mag * 4);
+    const vb = VAR_BY_HIP.get(t0.data[i * stars.NF + F.hip]), kind = vb ? TYPE_NAME[vb.type] : 'Star', mg = vb ? null : mag;      // a variable: no fixed magnitude to show
+    add(bay, label, kind, mg, ref, 55 - mag * 4);
+    if (conById[con]) add(letter + ' ' + conById[con].gen, label, kind, mg, ref, 50 - mag * 4);
     const plain = letter.replace(/[⁰¹²³⁴-⁹]/g, '');          // "α¹ Cen" is also found as "alpha cen"
-    if (plain !== letter) { add(plain + ' ' + con, label, 'Star', mag, ref, 45 - mag * 4); if (conById[con]) add(plain + ' ' + conById[con].gen, label, 'Star', mag, ref, 44 - mag * 4); }
+    if (plain !== letter) { add(plain + ' ' + con, label, kind, mg, ref, 45 - mag * 4); if (conById[con]) add(plain + ' ' + conById[con].gen, label, kind, mg, ref, 44 - mag * 4); }
   }
   for (const i of Object.keys(names.flam)) {
     if (names.bayer[i]) continue;
@@ -63,8 +65,8 @@ function build() {
     let ref = null;
     for (const t of stars.tiers) { if (!t.loaded || ref) continue; for (let i = 0; i < t.n; i++) if (t.data[i * stars.NF + F.hip] === v.hip) { ref = { kind: 'star', k: t.k, i }; break; } }
     if (!ref) continue;
-    add(v.name, v.name, TYPE_NAME[v.type], v.max, ref, 62);
-    if (GCVS_NAME[v.hip]) add(GCVS_NAME[v.hip], v.name, TYPE_NAME[v.type] + ' (' + GCVS_NAME[v.hip] + ')', v.max, ref, 40);
+    add(v.name, v.name, TYPE_NAME[v.type], null, ref, 62);
+    if (GCVS_NAME[v.hip]) add(GCVS_NAME[v.hip], v.name, TYPE_NAME[v.type] + ' (' + GCVS_NAME[v.hip] + ')', null, ref, 40);
   }
   for (const o of TRANSIENTS) {
     const ref = { kind: 'tr', id: o.id }, sub = (o.kind === 'sn' ? 'Supernova in ' : 'Cepheid in ') + o.host.replace(/^the /, '');

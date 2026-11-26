@@ -1,6 +1,7 @@
 // catalog.js: loads the processed data files in data/ and keeps them in typed arrays.
 // See tools/build_*.py for how each file is made and NOTES.md for sources and licences.
 
+import { VAR_BY_HIP } from './variables.js';
 import { A, DEG, fromRot, transpose, mulMV, sph, toSph, mod } from './astro.js';
 import { emit, state } from './state.js';
 
@@ -149,6 +150,7 @@ export function starRecord(k, i) {
     vec: [t.vec[3 * i], t.vec[3 * i + 1], t.vec[3 * i + 2]] };
   if (k === 0) { s.name = stars.names.name[i] || null; s.bayer = stars.names.bayer[i] || null; s.flam = stars.names.flam[i] || null; }
   if (!s.name && FAINT_NAMES[s.hip]) s.name = FAINT_NAMES[s.hip];
+  if (!s.name && !s.bayer && VAR_BY_HIP.has(s.hip)) s.name = VAR_BY_HIP.get(s.hip).name;      // ℓ Carinae, X Sagittarii, RR Lyrae
   return s;
 }
 /** Best short label for a star. */

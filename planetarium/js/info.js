@@ -328,7 +328,7 @@ function render(force) {
     row('Magnitude now', m == null ? '<span class="nodata">nothing to see at this date</span>' : fmtMag(m) + ' (V, a model)');
     if (o.kind === 'cepheid') row('Variable', `period ${o.P} days (Templeton et al. 2011)`);
     row('In', o.host);
-    note = (o.kind === 'sn' && rowHidden('Type') ? 'The supernova’s brightness here is a model built on published dates and magnitudes, not the measurements themselves.' : o.src + ' The brightness drawn is a <b>model</b> built on these numbers, not the measurements themselves.');
+    note = (rowHidden('Magnitude now') ? 'Its brightness here is a model built on published numbers (position, period, dates), not the measurements themselves.' : o.kind === 'sn' && rowHidden('Type') ? 'The supernova’s brightness here is a model built on published dates and magnitudes, not the measurements themselves.' : o.src + ' The brightness drawn is a <b>model</b> built on these numbers, not the measurements themselves.');
   } else if (ref.kind === 'con') {
     const c = constellations.find((x) => x.id === ref.id);
     title = c.name; type = 'Constellation'; aka = `${c.id} · genitive ${c.gen}`;

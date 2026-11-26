@@ -8,7 +8,6 @@
 
 import { state } from './state.js';
 import { starRecord } from './catalog.js';
-import { deepRecord } from './deepstars.js';
 import { refKey } from './objects.js';
 import { see, noisePair } from './notebook/seeing.js';
 import { VAR_BY_HIP, varMag, jdOf, TRANSIENT, transientMag } from './variables.js';
@@ -18,7 +17,7 @@ export const ZP = 25;
 export function trueMag(ref, bodies, timeMs = state.timeMs) {
   if (!ref) return null;
   if (ref.kind === 'star') { const s = starRecord(ref.k, ref.i), v = VAR_BY_HIP.get(s.hip); return v ? varMag(v, jdOf(timeMs)) : s.mag; }
-  if (ref.kind === 'gaia') return deepRecord(ref).mag;
+  if (ref.kind === 'gaia') return ref.t.mag[ref.i];      // the tile's value: it does not change when the full record arrives (the panel and Record then agree)
   if (ref.kind === 'tr') return TRANSIENT[ref.id] ? transientMag(TRANSIENT[ref.id], jdOf(timeMs)) : null;
   if (ref.kind === 'body') { const b = bodies && bodies.byId[ref.id]; return b && b.mag < 90 ? b.mag : null; }
   return null;

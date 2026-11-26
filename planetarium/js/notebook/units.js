@@ -66,11 +66,12 @@ export const UNITS = [
 
   // counted things: listed so a column can carry them, but there is nothing to convert them to
   U('%', '%', 'percent', 'ratio', 0.01, '1% = 1/100'),
+  U('counts', 'counts', 'counts (from a detector)', 'count', 1, 'photons or electrons counted by a detector in one exposure: nothing to convert them to'),
   U('mag', 'mag', 'magnitudes', 'magnitude', 1, 'astronomical magnitude (a logarithmic scale: no unit conversion)'),
 ];
 export const UNIT = Object.fromEntries(UNITS.map((u) => [u.id, u]));
-export const DIM_NAME = { angle: 'an angle', time: 'a time', length: 'a length', speed: 'a speed', mass: 'a mass', ratio: 'a ratio', magnitude: 'a magnitude' };
-export const DIM_LABEL = { angle: 'Angle', time: 'Time', length: 'Length / distance', speed: 'Speed', mass: 'Mass', ratio: 'Ratio', magnitude: 'Brightness' };
+export const DIM_NAME = { angle: 'an angle', time: 'a time', length: 'a length', speed: 'a speed', mass: 'a mass', ratio: 'a ratio', magnitude: 'a magnitude', count: 'a number of counts' };
+export const DIM_LABEL = { angle: 'Angle', time: 'Time', length: 'Length / distance', speed: 'Speed', mass: 'Mass', ratio: 'Ratio', magnitude: 'Brightness', count: 'Counts' };
 /** Units a column may be given, grouped for a menu: [[label, [unit, ...]], ...]. */
 export function unitGroups() {
   const out = [];

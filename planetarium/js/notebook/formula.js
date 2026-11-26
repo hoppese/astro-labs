@@ -96,6 +96,7 @@ export function parse(src, isColumn = () => true) {
       // G and AU written bare are the constants; a column that happens to have that letter is written [G]
       if (k.v === 'G') return { t: 'const', id: 'Gconst' };
       if (k.v === 'AU') return { t: 'const', id: 'AUkm' };
+      if (low === 'log10') { expect('('); const e = expr(); expect(')'); return { t: 'fn', name: 'log', a: e }; }      // what the log₁₀ button looks like
       if (FUNCS.includes(low)) { expect('('); const e = expr(); expect(')'); return { t: 'fn', name: low, a: e }; }
       if (/^[A-Z]{1,2}$/.test(k.v) && isColumn(k.v)) return { t: 'col', id: k.v };
       if (k.v === 'c_light') return { t: 'const', id: 'c' };

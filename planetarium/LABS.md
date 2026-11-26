@@ -396,6 +396,15 @@ for the variables a smooth curve through GCVS 5.1's range, period, epoch of maxi
 dates and peaks with a typical shape between. The keys below are the models' values, which is what a careful student recovers (to the
 noise and their sampling). Hidden in all five: Magnitude now (and Variable, the catalog's period, in the Cepheid labs).
 
+**Student pass, 2026-11-26** (three fresh agents with the lab link only, clicks and keys, no scripts): `cepheid-distance` got P 5.36 d,
+mean 3.93, 291 pc from 24 readings over 21 days (about 140 actions); `sn-types` called 2011fe Ia and 2023ixf II and found the Ia 2.83 times
+more luminous (45 readings); `cepheid-calibrate` (three stars measured, five given as classmates' values) fitted slope −2.67 and −3.59
+at log P = 1, and put Andromeda at 720 kpc. Fixed after it: answer leaks (search showed the Cepheids' magnitudes; M31 V1's note gave its
+mean), `log10(` and the unit `counts` in formulas, the comparison-star direction for δ Cep, "average a few readings" now says to step a
+second between them, `]` / `>` step keys in the prompts, `sn-types` asks for fewer points and separate graphs, ℓ Car and other
+variables without a proper name are named. Left: Record closes the date box (use the keys), and an intro student will spend 1–2 hours
+on the calibration lab even when shared in a group.
+
 ### `cepheid-distance` δ Cephei with the period–luminosity law
 Preset: 2026-09-01, δ Cep tracked, FOV 12°, ground and air off. Also hidden: Distance.
 Model: P = 5.366208 d, V 3.48 to 4.37, mean 3.925. Benedict et al. (2007): M_V = −2.43 (log P − 1) − 4.05 = **−3.39**; m − M = 7.32,
