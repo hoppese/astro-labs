@@ -2,6 +2,7 @@
 // disc is a few pixels across it is drawn to scale from its published map on its true figure (render/globe.js), turned and lit as it really is.
 // Where no picture exists, or WebGL is missing, a plain disc with the right phase stands in (and the object panel says so).
 
+import { air } from '../air.js';
 import { DEG, RAD, AU_KM, refractHor, mulMV, unit, dot, cross, airmass, clamp, smooth, scale as vscale, len } from '../astro.js';
 import { state, eff, emit } from '../state.js';
 import { cam, projectHor } from '../camera.js';
@@ -65,8 +66,8 @@ const sRate = { t: 0, ms: 16 };                 // real milliseconds per frame, 
 /** Colour left by the air at this altitude (display units): 1, 1, 1 without atmosphere. */
 function airTint(alt) {
   if (!R.atmo) return [1, 1, 1];
-  const X = Math.min(airmass(Math.max(alt, 0)), 38) - 1, f = (k) => Math.max(0.12, Math.pow(10, -0.4 * k * X * 0.4545 * 0.3));
-  return [f(0.07), f(0.13), f(0.24)];
+  const X = Math.min(airmass(Math.max(alt, 0)), 38) - 1, f = (k) => Math.max(0.12, Math.pow(10, -0.4 * k * X * 0.4545 * 0.3)), t = air().tint;
+  return [f(t[0]), f(t[1]), f(t[2])];
 }
 const j0 = [0, 0], j1 = [0, 0];
 /** Inverse of the local map (east, north) -> (screen right, screen up), scaled so that without refraction it is a pure rotation: [rightE, rightN, upE, upN]. */
@@ -248,7 +249,7 @@ export function drawBodies(ctx) {
     if (R.ground && pl.alt < -b.angRadius - 0.05) continue;
     const reach = Math.max(rpx * 3, 60) + (b.moons.length ? Math.max(...b.moons.map((m) => m.sepDeg)) * 1.05 * pl.scale : 0);
     if (pl.x < -reach || pl.x > cam.w + reach || pl.y < -reach || pl.y > cam.h + reach) continue;
-    const ext = R.atmo ? 0.2 * (airmass(pl.alt) - 1) : 0;
+    const ext = R.atmo ? air().k * (airmass(pl.alt) - 1) : 0;
     const mag = b.mag + ext;
     let drawnR = 0, visible = true;
     const moonsBehind = [], moonsFront = [];

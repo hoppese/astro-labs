@@ -5,6 +5,7 @@
 //   2. Sky survey (off by default): the same survey for the whole sky, fetched tile by tile (HiPS) from ESA's public mirror.
 // Both go under the grids and the stars, which stay on top. Nothing here can be picked: the object itself is.
 
+import { air } from './air.js';
 import { see } from './notebook/seeing.js';
 import { emit } from './state.js';
 import { mulMV, smooth, clamp, DEG, unrefractHor } from './astro.js';
@@ -52,7 +53,7 @@ function extinction(h, sky) {
   if (!sky.atmo) return 1;
   const a = Math.max(0, Math.asin(clamp(h[2], -1, 1)) / DEG);
   const X = 1 / (Math.sin(a * DEG) + 0.50572 * Math.pow(a + 6.07995, -1.6364));      // Kasten & Young air mass
-  return Math.pow(10, -0.1 * (X - 1));                                                // 0.25 mag per air mass
+  return Math.pow(10, -0.4 * air().kImg * (X - 1));                                   // 0.25 mag per air mass on the Earth (js/air.js)
 }
 
 // ---- drawing a patch of sky from a picture ------------------------------------------------------

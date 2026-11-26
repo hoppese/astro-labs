@@ -2,6 +2,7 @@
 // Under a stereographic projection the horizon is exactly a circle (or a straight line) on
 // screen, so the ground is filled analytically rather than from sampled points.
 
+import { air } from '../air.js';
 import { DEG, azAltToHor, smooth } from '../astro.js';
 import { state, eff } from '../state.js';
 import { cam, projectHor } from '../camera.js';
@@ -92,7 +93,7 @@ export function drawGround(ctx) {
   if (rel === 'cross') {
     if (eff.ground) {
       const hz = sky.atmo ? 0.5 + 0.5 * sky.day : 0.25;
-      const tint = sky.atmo ? (sky.day > 0.5 ? '190,205,220' : '120,135,160') : '90,100,120';
+      const ah = air().haze, tint = !sky.atmo ? '90,100,120' : state.vantage ? (sky.day > 0.5 ? ah.join(',') : ah.map((v) => Math.round(v * 0.6)).join(',')) : sky.day > 0.5 ? '190,205,220' : '120,135,160';
       stroke(16, `rgba(${tint},${0.035 * hz})`); stroke(8, `rgba(${tint},${0.06 * hz})`); stroke(3, `rgba(${tint},${0.10 * hz})`);
       stroke(1, `rgba(${tint},${0.30})`);
     } else {

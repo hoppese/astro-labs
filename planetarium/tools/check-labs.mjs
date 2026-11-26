@@ -105,6 +105,12 @@ export async function checkLabs({ line }) {
       need(far.alt < -20, 'Earth seen from the far side');
       need(Math.abs(aa(jz).alt - 70) < 3, 'Jupiter from Io (0, 20 E): alt ' + aa(jz).alt);
       for (const v of E.SURFACES) { const b = on(v, 30, 40); const bad = b.list.filter((x) => !(Number.isFinite(x.hor[2]) && Number.isFinite(x.mag))); need(!bad.length, `on ${v}: ${bad.map((x) => x.id)}`); }
+      { const { state, eff } = await import('../js/state.js'), { air } = await import('../js/air.js'), was = [state.vantage, state.surface, state.show.atmosphere];
+        state.show.atmosphere = true; state.vantage = 'Mars'; state.surface = { lat: 18, lon: 77 };
+        need(eff.atmosphere && !eff.refraction && air().id === 'Mars', 'the air on Mars');
+        state.vantage = 'Moon'; need(!eff.atmosphere && air().id === 'Earth', 'no air on the Moon');
+        state.vantage = 'Titan'; need(eff.atmosphere && air().k > 3, 'Titan haze');
+        [state.vantage, state.surface, state.show.atmosphere] = was; need(air().id === 'Earth' && !eff.space, 'back on the Earth'); }
       line(`  standing on ${E.SURFACES.length} bodies: horizon frame within ${(err * X.RAD).toFixed(2)} deg of the Earth's; Earth from Tranquility Base az ${tq.az.toFixed(0)} alt ${tq.alt.toFixed(1)}, from the far side alt ${far.alt.toFixed(0)}`); }
     line(`  from ${E.VANTAGES.length} other bodies: all finite; Jupiter from Io ${(2 * io.angRadius).toFixed(2)} deg, ${(io.phaseFrac * 100).toFixed(0)}% lit; Earth from the Moon ${(2 * moon.angRadius).toFixed(2)} deg; from the Sun mag ${sun.mag.toFixed(2)}`); }
 }

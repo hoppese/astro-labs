@@ -1,6 +1,7 @@
 // render/stars.js: draws the star tiers as soft discs sized by magnitude.
 // The loop is the app's hot path: plain arithmetic on typed arrays, no allocation per star.
 
+import { air } from '../air.js';
 import { DEG, RAD, clamp, refractionDeg } from '../astro.js';
 import { stars, FAINT_NAMES } from '../catalog.js';
 import { state } from '../state.js';
@@ -80,6 +81,7 @@ export const stats = { drawn: 0, considered: 0 };
 export function drawStars(ctx) {
   const atlas = starAtlas();
   const { frame, sky, atmo, refr, ground, labels } = R;
+  const kExt = air().k, altExt = kExt > 0.3 ? 91 : 40;      // extinction per air mass; above 40 deg the Earth's is too small to matter, Titan's is not
   const lim = sky.limMag;
   const M = frame.Mjh, V = cam.V, bx = frame.beta[0], by = frame.beta[1], bz = frame.beta[2];
   const m0 = M[0], m1 = M[1], m2 = M[2], m3 = M[3], m4 = M[4], m5 = M[5], m6 = M[6], m7 = M[7], m8 = M[8];
@@ -128,9 +130,9 @@ export function drawStars(ctx) {
           if (c > 1e-9) { const k = Math.cos(a2) / c; hx *= k; hy *= k; hz = Math.sin(a2); }
           alt += rf;
         }
-        if (atmo && alt < 40) {
+        if (atmo && alt < altExt) {
           const am = 1 / (Math.sin((alt < 0 ? 0 : alt) * DEG) + 0.50572 * Math.pow((alt < 0 ? 0 : alt) + 6.07995, -1.6364));
-          mag += 0.2 * (am - 1);
+          mag += kExt * (am - 1);
           if (mag > lim) continue;
         }
       }

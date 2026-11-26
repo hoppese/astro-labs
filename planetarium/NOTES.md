@@ -1389,5 +1389,9 @@ alt-az grid, meridian and Az/Alt; no air, refraction, hour angle or rise/set. Th
 altitude (ground.js surfaceColour). `SITES` names places (Apollo 11, Jezero, Gale, Huygens...); elsewhere the default is 20 N 20 E,
 about 28 deg from the point under the planet for the tidally locked moons. Link: `?from=Moon&at=0.674,23.473`. The check builds the
 same frame on the Earth and compares it with astronomy-engine's Rotation_EQJ_HOR: 0.52 deg apart, which is the IAU Earth rotation
-model's offset from the sidereal time (a mixed-up axis would be 90 or 180 deg off). Not done: Mars' and Titan's skies (no air drawn),
-terrain, earthshine on the ground.
+model's offset from the sidereal time (a mixed-up axis would be 90 or 180 deg off). Not done: terrain, earthshine on the ground.
+Air on Mars and Titan (js/air.js): the Earth's sky model with each world's colours, zenith limit (`nelm`, no light pollution, no
+moonlight) and extinction per air mass `k` (Earth 0.2, Mars 0.5, Titan 5; stars.js then applies it at every altitude, not only below
+40 deg). Mars: butterscotch day, blue glow round the low Sun. Titan: dim orange day; at night stars brighter than about mag 2.6. eff.atmosphere is on
+there (Settings: Atmosphere), refraction stays off. sky.js planetGlare skips discs over 0.25 deg in radius (Saturn from Titan, mag -14
+and more, hid every star). The ground shading uses the body's colour (groundshade.js), not the Earth's grass.

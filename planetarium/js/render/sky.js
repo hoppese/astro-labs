@@ -5,6 +5,7 @@
 //      pixel and its distance from the Sun, then stretched over the window.
 // This is a visual model tuned to look right, not a radiative-transfer calculation.
 
+import { air } from '../air.js';
 import { DEG, RAD, clamp, lerp, smooth, angleBetween } from '../astro.js';
 import { state, eff, emit } from '../state.js';
 import { cam, unproject } from '../camera.js';
@@ -57,12 +58,12 @@ export function skyConditions(bodies) {
   const sunAlt = Math.asin(bodies.sun.hor[2]) * RAD;
   const moon = bodies.moon, moonAlt = Math.asin(moon.hor[2]) * RAD;
   // without an atmosphere there is no scattered light at all: no daylight, no light pollution
-  const nelm = atmo || held ? BORTLE_NELM[state.bortle] : BORTLE_NELM[1];
+  const ai = air(), nelm = atmo || held ? (ai.lightPollution ? BORTLE_NELM[state.bortle] : ai.nelm) : BORTLE_NELM[1];
   // a solar eclipse dims the daylight: sunFrac = fraction of the Sun's disc left uncovered by the Moon
   const sunFrac = 1 - discOverlap(bodies.sun.angRadius, moon.angRadius, angleBetween(bodies.sun.u, moon.u));
   const eclipseGain = Math.min(6.5, -2.5 * Math.log10(sunFrac + 0.0025));          // magnitudes regained
   const dayLoss = atmo ? Math.max(0, daylightLoss(sunAlt) - eclipseGain * smooth(-6, 0, sunAlt)) : 0;
-  const moonLoss = atmo ? 1.1 * Math.pow(moon.phaseFrac, 2) * Math.pow(moonLight(getFrame(), moon), 0.4) * smooth(-4, 15, moonAlt) * (1 - smooth(0, 6, dayLoss)) : 0;
+  const moonLoss = atmo && ai.moon ? 1.1 * Math.pow(moon.phaseFrac, 2) * Math.pow(moonLight(getFrame(), moon), 0.4) * smooth(-4, 15, moonAlt) * (1 - smooth(0, 6, dayLoss)) : 0;
   const base = nelm - dayLoss - moonLoss;
   // Two limits, and the fainter stars must pass both:
   //  physical  what this sky lets through, deeper as you zoom in (a narrower field acts like a telescope);
@@ -102,7 +103,7 @@ function planetGlare(bodies) {
   let g = 99;
   const c = unproject(cam.cx, cam.cy), R = Math.acos(clamp(cam.zMin, -1, 1));
   for (const b of bodies.list) {
-    if (b.kind !== 'planet' || !b.hor) continue;
+    if (b.kind !== 'planet' || !b.hor || b.angRadius > 0.25) continue;      // (a disc degrees across, Jupiter from Io or Saturn from Titan, is a lit landscape, not a glaring point)
     const sep = Math.acos(clamp(b.hor[0] * c[0] + b.hor[1] * c[1] + b.hor[2] * c[2], -1, 1));
     const t = clamp((sep / R - 0.8) / 0.8, 0, 1);
     if (t < 1) g = Math.min(g, b.mag + GLARE_MAG + 10 * t);
@@ -139,11 +140,10 @@ export function drawSkyBackground(ctx, sky, bodies) {
   const sunAlt = sky.sunAlt;
   const day = smooth(-9, 6, sunAlt) * sky.sunDim;      // overall brightness of the blue sky
   const dusk = smooth(-16, -3, sunAlt) * (1 - smooth(-1, 14, sunAlt));     // strength of the warm horizon glow
-  const lp = (state.bortle - 1) / 8;
-  // zenith and horizon colours for night, and for full day
-  const zN = [3 + 16 * lp, 5 + 16 * lp, 12 + 18 * lp], hN = [9 + 78 * lp, 12 + 62 * lp, 22 + 46 * lp];
-  const zD = [38, 96, 190], hD = [158, 196, 236];
-  const zT = [14, 28, 68], hT = [46, 62, 104];         // deep twilight
+  const ai = air(), lp = ai.lightPollution ? (state.bortle - 1) / 8 : 0;
+  // zenith and horizon colours for night, and for full day (js/air.js: the Earth's, or Mars' or Titan's)
+  const zN = ai.zN || [3 + 16 * lp, 5 + 16 * lp, 12 + 18 * lp], hN = ai.hN || [9 + 78 * lp, 12 + 62 * lp, 22 + 46 * lp];
+  const { zD, hD, zT, hT, dusk: dk, aureole: au } = ai;         // zT, hT: deep twilight
   const tw = smooth(-18, -5, sunAlt) * (1 - day);
   const aurCap = 0.14 + 0.41 * smooth(1.5, 8, cam.fov);      // zoomed in, as through a solar filter: the Moon and planets in front of the Sun have the sky's colour and must stand out
   for (let j = 0; j < GH; j++) {
@@ -162,12 +162,12 @@ export function drawSkyBackground(ctx, sky, bodies) {
       }
       // warm glow hugging the horizon on the Sun's side at dusk and dawn
       const side = Math.exp(-gamma / 38) * hz * dusk;
-      d[o] += 215 * side; d[o + 1] += 105 * side; d[o + 2] += 18 * side;
+      d[o] += dk[0] * side; d[o + 1] += dk[1] * side; d[o + 2] += dk[2] * side;
       // aureole round the Sun when it is up (or nearly)
       const glow = (Math.exp(-gamma / 7) * 0.9 + Math.exp(-gamma / 28) * 0.35) * smooth(-4, 3, sunAlt) * sky.sunDim;
       // capped so that the Sun's disc (and a planet in transit) still stands out against it when zoomed in
       const gl = Math.min(glow, aurCap);
-      d[o] = Math.min(d[o] + 150 * gl, 214); d[o + 1] = Math.min(d[o + 1] + 140 * gl, 226); d[o + 2] = Math.min(d[o + 2] + 110 * gl, 244);
+      d[o] = Math.min(d[o] + au[0] * gl, 214); d[o + 1] = Math.min(d[o + 1] + au[1] * gl, 226); d[o + 2] = Math.min(d[o + 2] + au[2] * gl, 244);
       d[o + 3] = 255;
     }
   }
@@ -184,7 +184,7 @@ export function repaintSky(ctx, sky) {
 }
 /** Ground colour for the current light. */
 export function groundColour(sky) {
-  const d = sky.day, lp = sky.atmo ? (state.bortle - 1) / 8 : 0;
+  const d = sky.day, lp = sky.atmo && air().lightPollution ? (state.bortle - 1) / 8 : 0;
   const n = [9 + 10 * lp, 12 + 9 * lp, 11 + 8 * lp], dd = [58, 72, 48];
   const c = n.map((v, i) => Math.round(lerp(v, dd[i], d)));
   return `rgb(${c[0]},${c[1]},${c[2]})`;

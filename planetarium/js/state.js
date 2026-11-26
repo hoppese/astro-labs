@@ -63,7 +63,7 @@ export const eff = {
   pointing: false,         // a phone is being pointed at the sky (js/point/): its own attitude is the view, apparent places, no steady sky
   get onSurface() { return !!(state.vantage && state.surface && SURFACE_IDS.has(state.vantage)); },      // standing on another body: ground and horizon, no air
   get space() { return !!state.vantage && !this.onSurface; },      // floating away from the Earth: no air, no ground, no compass points
-  get atmosphere() { return state.show.atmosphere && !this.steady && !state.vantage; },
+  get atmosphere() { return state.show.atmosphere && !this.steady && (!state.vantage || (this.onSurface && (state.vantage === 'Mars' || state.vantage === 'Titan'))); },      // (js/air.js: the air of each)
   get refraction() { return !state.vantage && (this.pointing || (state.show.refraction && this.steady !== 'full')); },
   get ground() { return state.show.ground && this.steady !== 'full' && !this.space; },
   get mount() { return this.pointing ? 'altaz' : this.steady === 'full' ? 'eq' : state.mount; },

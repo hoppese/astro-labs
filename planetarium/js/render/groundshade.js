@@ -3,6 +3,7 @@
 // wash on the side the Sun (or a low Moon at night) is on. Circles of constant depression below the
 // horizon are exact circles under the stereographic projection, so each step is one filled circle.
 
+import { air } from '../air.js';
 import { DEG, lerp, clamp, smooth } from '../astro.js';
 import { state } from '../state.js';
 import { cam, projectHor } from '../camera.js';
@@ -45,9 +46,9 @@ const fillCap = (ctx, dep, style) => { ctx.beginPath(); if (capPath(ctx, dep)) {
 
 const p = [0, 0];
 export function drawGroundShade(ctx, sky, bodies) {
-  const d = sky.day, lp = sky.atmo ? (state.bortle - 1) / 8 : 0;
+  const ai = air(), d = sky.day, lp = sky.atmo && ai.lightPollution ? (state.bortle - 1) / 8 : 0, hd = ai.haze;
   // 1. haze over all of the ground, strongest by day
-  const haze = [lerp(34 + 60 * lp, 176, d), lerp(40 + 48 * lp, 196, d), lerp(54 + 36 * lp, 206, d)].map(Math.round);
+  const haze = [lerp(34 + 60 * lp, hd[0], d), lerp(40 + 48 * lp, hd[1], d), lerp(54 + 36 * lp, hd[2], d)].map(Math.round);
   const hazeA = sky.atmo ? lerp(0.10 + 0.16 * lp, 0.42, d) : 0.04;
   fillCap(ctx, 0, `rgba(${haze[0]},${haze[1]},${haze[2]},${hazeA})`);
   // 2. warm light on the Sun's side, low Sun only (and a trace of it under a bright Moon)
@@ -65,7 +66,9 @@ export function drawGroundShade(ctx, sky, bodies) {
     lightOn(bodies.moon, 0.10 * (1 - d) * Math.pow(bodies.moon.phaseFrac || 0, 2) * smooth(0, 12, sky.moonAlt), '150,165,200');
   }
   // 3. darker toward your feet
-  const deep = [lerp(5 + 6 * lp, 37, d), lerp(7 + 6 * lp, 51, d), lerp(7 + 5 * lp, 30, d)].map(Math.round);
+  // (on another body: its own ground colour, darker; the Earth's is grass)
+  const own = state.vantage && bodies && bodies.byId[state.vantage] && bodies.byId[state.vantage].color, oc = own ? [1, 3, 5].map((i) => parseInt(own.slice(i, i + 2), 16) * 0.22) : [37, 51, 30];
+  const deep = [lerp(5 + 6 * lp, oc[0], d), lerp(7 + 6 * lp, oc[1], d), lerp(7 + 5 * lp, oc[2], d)].map(Math.round);
   const stepA = lerp(0.042, 0.056, d);
   // zoomed in on the ground most of these steps cover the whole window: lay those down as one fill of the combined opacity (50 full-window fills cost 8 ms)
   let full = 0;
