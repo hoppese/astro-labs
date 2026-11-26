@@ -13,7 +13,7 @@ import { compute, getBodies } from '../ephem.js';
 import { cities } from '../catalog.js';
 import { zoneFromLongitude } from '../timeutil.js';
 import { R } from '../render/proj.js';
-import { makeCard } from './dock.js';
+import { makeCard, getCard } from './dock.js';
 import { toast } from '../xui.js';
 import { keepFocus } from '../focus.js';
 import { findCities } from '../fuzzy.js';
@@ -98,7 +98,7 @@ function draw() {
   else {
     html += `<div class="row"><button class="btn" data-act="swap" title="Stand at the other place">Swap observers</button><button class="btn" data-act="off">Remove</button></div><div class="row"><span>Line up on:</span><button class="btn${cmp.align === 'stars' ? ' on' : ''}" data-act="stars" aria-pressed="${cmp.align === 'stars'}" title="Ghosts against the same stars">the stars</button>` +
       `<button class="btn${cmp.align === 'sun' ? ' on' : ''}" data-act="sun" aria-pressed="${cmp.align === 'sun'}" title="Both observers' Suns drawn on top of each other">the Sun's disc</button></div>` +
-      `<div class="cmp-alt" id="cmpAlt"></div><p class="hint">Dashed circles (the Sun’s is yellow, the others blue) show where the second observer sees the Sun, Moon and planets at this same instant. The angle tool snaps to them.</p>` +
+      `<div class="row"><button class="btn" data-act="square" title="The Earth as the Moon or the Sun sees it, with a ruler in km">Earth seen square-on…</button></div><div class="cmp-alt" id="cmpAlt"></div><p class="hint">Dashed circles (the Sun’s is yellow, the others blue) show where the second observer sees the Sun, Moon and planets at this same instant. The angle tool snaps to them.</p>` +
       `<details class="cmp-other"><summary>Choose another second place</summary>${place}${coords}</details>`;
   }
   if (!o) html += '<p class="hint">Pick a second place. Its view of the Sun, Moon and planets is drawn over yours at the same instant.</p>';
@@ -156,6 +156,7 @@ export function initCompare() {
     } else if (b.dataset.act === 'stars' || b.dataset.act === 'sun') setAlign(b.dataset.act);
     else if (b.dataset.act === 'swap') swapObservers();
     else if (b.dataset.act === 'off') setObserver2(null);
+    else if (b.dataset.act === 'square') { const c = getCard('squareon'); if (c) c.open(); }
   });
   on('frame', () => { lastFrame = R.frame; updateAlt(); });
   on('loc', render);

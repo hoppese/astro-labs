@@ -99,6 +99,7 @@ Raw downloads are NOT in the repo. Re-create with the scripts in `tools/` (each 
 | `constellations.json` | d3-celestial `data/constellations.json`, `.lines.json`, `.bounds.json` (github.com/ofrohn/d3-celestial) | BSD-3-Clause | `build_constellations.py` |
 | `dso.json`, `dso-deep.json` | OpenNGC `database_files/NGC.csv` + `addendum.csv` (github.com/mattiaverga/OpenNGC) | CC BY-SA 4.0 | `build_dso.py` |
 | `cities.json` | hand-entered (130 places: name, region, lat, lon, IANA zone) | facts | `build_cities.py` |
+| `data/earth-land.json` | Natural Earth `ne_50m_land.geojson` (github.com/nvkelso/natural-earth-vector) | public domain | `build_earth.py` |
 | `vendor/astronomy.browser.min.js` | astronomy-engine 2.1.19, npm tarball `astronomy.browser.min.js` | MIT (`vendor/astronomy-engine.LICENSE`) | copied unchanged |
 | Saturn-moon table in `js/ephem.js` | JPL Horizons state vectors (SAT441) + JPL "Planetary Satellite Mean Elements" periods | public domain | `fit_saturn_moons.mjs` |
 
@@ -1350,3 +1351,13 @@ Hooks elsewhere: `eff.pointing` (state.js: alt-az, refraction on, no steady sky)
 - Sliders (2026-11-25): − and + beside each slider change the VALUE (a tidy step of about 1/100 of its reach; Shift ten times finer; hold to repeat; keyboard works); “narrow” / “widen” change the slider's reach by 3, in place, exact inverses. (The old ⊕ / ⊖ changed the reach and were read as value buttons.)
 - Every lab that follows something at a field under 2.5 deg opens in the equatorial mount (north up), so the picture does not turn. Honolulu 2012: the Sun crosses the meridian at 88.6 deg, so in alt-az the field turned through about 180 deg between first and second contact. Both observers' views then also have the same orientation.
 - Formulas (2026-11-26): a typed number can carry a unit (100 km, 9.8 m/s^2, 30°, or {light-min}); stored as `100 {km}`. The unit after a number is read as a small unit expression; a slash followed by a number is division. The formula dialog has a unit list beside its number box.
+
+## Earth seen square-on (2026-11-26)
+`js/labs/squareon.js`, a tool card (Labs menu, a button in Two observers, and `data-do="square"` in the steps of lunar-parallax,
+eclipse-two-sites and both Venus transits). Orthographic Earth along the line from the Moon or the Sun to the Earth's center,
+celestial north up; Earth-fixed -> EQJ by Greenwich apparent sidereal time and `frame.Mdj` (polar motion ignored). Land from
+Natural Earth (fetched only when the card opens, 96 kB gzipped); night shaded from the Moon. The sites are the real
+`frame.opos` (ellipsoid), the grid a sphere: they agree within the 0.19 deg of geodetic against geocentric latitude.
+A ruler reads km on the image plane. The labs no longer give the square-on baseline; students measure it. check-labs
+compares the picture with the answer key in LABS.md (within 1%). Seth's next wish: a floating view from other bodies
+(Moon, Sun, Jupiter, Io...), and a zoomed-out solar-system view with orbits.

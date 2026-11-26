@@ -91,14 +91,14 @@ refraction off, stopwatch.
 ### `lunar-parallax` Distance of the Moon from two observers (Lalande and Lacaille)
 Preset: 2026-11-24 22:40 UTC, Berlin, second observer Cape Town, ghosts lined up on the stars.
 - Moon center to dashed Moon centre: **1.3402°**.
-- Baseline square-on to the Moon, 8,350 km = 1.311 Earth radii (the one in the prompt): **356,900 km = 56.0 R**. True geocentric distance that night: 360,100 km = 56.5 R.
+- Baseline square-on to the Moon, measured on *Earth seen square-on*: 8,330 km = 1.307 Earth radii (8,350 used for the figures here): **356,900 km = 56.0 R**. True geocentric distance that night: 360,100 km = 56.5 R.
   (The full chord, 8,735 km = 1.371 R, is only in *About*: 58.6 R.)
 
 ### `eclipse-two-sites` Total here, partial there (Hipparchus)
 Preset: 2024-04-08 19:09:50 UTC, Richmond (total), second observer Atlanta (partial), atmosphere off.
 - The yellow dashed circle is Atlanta's Sun (the real one is behind the Moon, and cannot be snapped to). 25 Nov: Moon center to Atlanta's Moon **5.958′**; Sun's diameter on the dashed circle **31.93′**: the shift is 0.19 of the Sun's width
   (Hipparchus had "a fifth").
-- 677 km / 0.001733 rad = **390,700 km**; with the square-on baseline (614 km) **354,400 km**. True 359,900 km.
+- 677 km / 0.001733 rad = **390,700 km**; with the square-on baseline (614 km, measured on *Earth seen square-on*) **354,400 km**. True 359,900 km.
 
 ### `moon-apsides` The Moon's oval orbit
 Preset: 2026-11-25 21:02 UTC (perigee), Richmond, Events finder on "Moon: perigee and apogee".
@@ -252,13 +252,13 @@ Contacts judged with Venus tracked at FOV 0.06°.
 
 - **Difference in duration 23 min 22 s** (model now 23 min 21 s; the measured contacts are from before the JPL positions, when everything came about 55 s later).
 - At mid-transit (22:25:30 UTC) Venus to the other observer's Venus: **35.78″**.
-- AU = baseline × (1/0.289 − 1/1.015) / shift: with the square-on baseline 10,470 km, **149.3 million km**;
+- AU = baseline × (1/0.289 − 1/1.015) / shift: with the square-on baseline 10,470 km (*Earth seen square-on* from the Sun at mid-transit, 22:26 UTC), **149.3 million km**;
   with the full 11,410 km chord, 162.8 million km. True 149.6.
 - Vardø's first timing was done with refraction on and was visibly wrong (Sun 7° up): hence the rule above.
 
 ### `venus-transit-2012`
 Preset: 2012-06-05 22:00 UTC, Honolulu and Sydney. At 01:28 UTC: Venus to Sydney's Venus **25.59″**, Venus's diameter
-**57.81″**. AU = 7,490 km × 2.478 / 25.59″ = **149.6 million km** (full chord 7,620 km: 152.2).
+**57.81″**. AU = 7,490 km (*Earth seen square-on* from the Sun at mid-transit, 01:27 UTC) × 2.478 / 25.59″ = **149.6 million km** (full chord 7,620 km: 152.2).
 
 Contacts (integration pass): Venus selected and tracked (`T`), FOV 0.0225° (Venus fills most of the screen), clock stepped
 with `Shift + ←/→/↑/↓`, the thread of sunlight between Venus and the limb judged by eye on screenshots 8–10 s either

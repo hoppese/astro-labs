@@ -14,7 +14,7 @@ export async function checkLabs({ line }) {
     for (const s of L.steps) {
       const text = s.replace(/<svg.*?<\/svg>/gs, '').replace(/<[^>]*>/g, '');
       need(!/\$\{|undefined|\[object/.test(s), L.id + ': unfilled text'); need(!KEYS.test(text), `${L.id}: a key value in the prompt: ${(KEYS.exec(text) || [])[0]}`);
-      for (const m of s.matchAll(/data-do="(\w+)"/g)) need(['swap', 'shadow', 'goto', 'light'].includes(m[1]), L.id + ' button ' + m[1]);
+      for (const m of s.matchAll(/data-do="(\w+)"/g)) need(['swap', 'shadow', 'goto', 'light', 'square'].includes(m[1]), L.id + ' button ' + m[1]);
       for (const m of s.matchAll(/data-t="([^"]+)"/g)) need(Number.isFinite(Date.parse(m[1])), L.id + ' date ' + m[1]);
       longest = Math.max(longest, text.length); n++;
     }
@@ -68,4 +68,22 @@ export async function checkLabs({ line }) {
   { let can = null; for (const i of Object.keys(C.stars.names.name)) if (C.stars.names.name[i] === 'Canopus') can = +i;
     const L = LABS.find((x) => x.id === 'canopus'), fr = makeFrame(Date.parse(L.setup.t), L.setup.loc), d = X.toSph(X.mulMV(fr.Mjd, C.starApparentEqj(0, can, fr))), ha = X.mod(fr.lst - d.lon / 15 + 12, 24) - 12;
     line(`  Canopus at the start: hour angle ${(ha * 60).toFixed(1)} min`); need(ha < -0.1 && ha > -1, 'Canopus hour angle ' + ha); }
+
+  // ---- Earth seen square-on (js/labs/squareon.js): the baselines the answer key uses, and the grid on the sites
+  { const { state } = await import('../js/state.js'), Cm = await import('../js/labs/compare.js'), Sq = await import('../js/labs/squareon.js'), out = [];
+    for (const [id, from, mid, km] of [['lunar-parallax', 'Moon', 0, 8330], ['eclipse-two-sites', 'Moon', 0, 614], ['venus-transit-1769', 'Sun', '1769-06-03T22:26:00Z', 10470], ['venus-transit-2012', 'Sun', '2012-06-06T01:27:00Z', 7490]]) {
+      const s = LABS.find((x) => x.id === id).setup, t = mid ? Date.parse(mid) : Date.parse(s.t);
+      state.loc = { elev: 0, ...s.loc }; Cm.cmp.obs2 = s.obs2;
+      const f = makeFrame(t, state.loc), f2 = makeFrame(t, s.obs2), g = Sq.geometry(f, E.compute(f, true), from, { frame: f2, bodies: E.compute(f2, true) }), [p, q] = g.sites;
+      const sq = Math.hypot(p.x - q.x, p.y - q.y);
+      need(Math.abs(sq / km - 1) < 0.01, `${id}: square-on ${sq.toFixed(0)} km, the key says ${km}`); need(p.z > 0 && q.z > 0, id + ': a site on the far side');
+      for (const st of g.sites) {                // a site's latitude and longitude on the drawn grid within the 0.19 deg of geodetic against geocentric latitude
+        const B = st.lat * X.DEG, Lo = st.lon * X.DEG, v = [Math.cos(B) * Math.cos(Lo), Math.cos(B) * Math.sin(Lo), Math.sin(B)];
+        const e = X.unit(X.add(X.add(X.scale(g.ef[0], v[0]), X.scale(g.ef[1], v[1])), X.scale(g.ef[2], v[2])));
+        need(Math.acos(Math.min(1, X.dot(e, X.unit(st.p)))) * X.RAD < 0.2, id + ': the grid is off at ' + st.name);
+      }
+      out.push(`${id} ${sq.toFixed(0)} km`);
+    }
+    Cm.cmp.obs2 = null;
+    line('  Earth seen square-on: ' + out.join(', ') + ' (the answer key), sites on the grid within 0.2 deg'); }
 }

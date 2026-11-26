@@ -12,6 +12,7 @@ import { fmtLat, fmtLon } from '../astro.js';
 import { rememberLab, forgetLab, savedLab, resumeText } from './resume.js';
 import { setTime } from '../clock.js';
 import { swapObservers } from './compare.js';
+import { setSquareFrom } from './squareon.js';
 import { setFx } from './corrections.js';
 import { closePanels, toast } from '../xui.js';
 
@@ -70,7 +71,7 @@ export function labLink(id) { const u = new URL(location.href); u.search = '?lab
 async function endLab() {
   if (!lab.current) return;
   card.close();
-  for (const id of ['stopwatch', 'events', 'compare', 'trails', 'corrections']) getCard(id).close();
+  for (const id of ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections']) getCard(id).close();
   await applySetup({ closeOthers: true, tools: [], obs2: null, trail: null, clearMeasures: true, lightTime: true, t: Date.now(), play: true, rate: 1, mount: 'altaz', target: '', fov: 90,
     fx: { aberration: true, parallax: true, properMotion: true, earthShadow: false }, show: { ...LAB_SHOW } });
 }
@@ -80,6 +81,7 @@ const DO = {
   swap: swapObservers,
   light: () => { set('lightTime', !state.lightTime); toast('Light-travel time is now ' + (state.lightTime ? 'on: you see things as they were.' : 'off: you see things as they are.'), { ms: 3200 }); },
   shadow: () => setFx('earthShadow', !state.fx.earthShadow),
+  square: (b) => { setSquareFrom(b.dataset.from || 'Moon'); const c = getCard('squareon'); if (c) c.open(); },
   goto: (b) => { state.playing = false; emit('rate'); setTime(Date.parse(b.dataset.t)); },
 };
 export function openLabsList() {

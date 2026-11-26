@@ -37,6 +37,7 @@ const RADIANS = HELP('A small angle is (size) ÷ (distance) when it is in <b>rad
 const YEAR0 = (bc) => HELP(`The clock shows −${String(bc - 1).padStart(4, '0')} for ${bc} BC: astronomers count a year 0 (1 BC), so the two differ by one.`);
 const ANGLE = 'the angle tool (<kbd>R</kbd>)';
 const SWAP = '<button class="btn" data-do="swap">Swap observers</button>';
+const SQUARE = (from) => `<button class="btn" data-do="square" data-from="${from}">Earth seen square-on</button>`;
 const LIGHT = '<button class="btn" data-do="light">Light-travel time on / off</button>';
 const GOTO = (t, text) => `<button class="btn" data-do="goto" data-t="${t}">${text}</button>`;
 // the four contacts of a transit, in pictures: the planet (black) and the top edge of the Sun
@@ -113,9 +114,9 @@ export const LABS = [
     steps: [
       `The solid Moon is what Berlin sees; the dashed circle is where Cape Town sees it at the same instant, against the same stars.`,
       `With ${ANGLE}, measure from the center of the Moon to the center of the dashed Moon.`,
-      `The two cities are almost on the same meridian, 86.4° of latitude apart. Seen square-on from the Moon, they are 8,350 km (1.311 Earth radii) apart tonight. How far away is the Moon, in km and in Earth radii?${RADIANS}`,
+      `Only the part of the baseline that is square-on to the Moon makes the shift. Open ${SQUARE('Moon')}: the Earth as the Moon sees it now. Drag the ruler from Berlin to Cape Town. How far away is the Moon, in km and in Earth radii (6,371 km)?${RADIANS}`,
     ],
-    about: `The straight line between the cities is 8,735 km long, but it is a little slanted to the Moon; only the square-on part, 8,350 km, makes the shift. This is ordinary surveying with the Earth as the baseline. Hipparchus used the same idea with the solar eclipse of 129 BC. See ${tao}.` },
+    about: `The straight line between the cities is 8,735 km long, but it is a little slanted to the Moon; only the square-on part, about 8,330 km, makes the shift. This is ordinary surveying with the Earth as the baseline. Hipparchus used the same idea with the solar eclipse of 129 BC. See ${tao}.` },
   { id: 'eclipse-two-sites', group: 'Earth and Moon', title: 'Total here, partial there', who: 'Hipparchus (eclipse of 129 BC), with the eclipse of 8 April 2024',
     blurb: 'A solar eclipse that is total in one town is only partial a few hundred km away.',
     setup: { t: '2024-04-08T19:09:50Z', loc: P.richmond, obs2: P.atlanta, align: 'stars', target: 'Sun', track: true, fov: 1.6, mount: 'eq', show: { refraction: false, atmosphere: false }, tools: ['compare'] },
@@ -123,7 +124,7 @@ export const LABS = [
       `In Richmond the eclipse is total. The dashed circles are the Sun (yellow) and the Moon (blue) as seen from Atlanta at the same instant. Is the Sun covered there?`,
       `With ${ANGLE} measure how far the Moon is shifted between the two towns: from the center of the Moon to the center of the dashed Moon.`,
       `Measure the Sun’s diameter on the dashed yellow circle, edge to edge (in Richmond the real Sun is behind the Moon). What fraction of the Sun’s width is the shift? That fraction is all Hipparchus knew.`,
-      `Seen square-on from the Moon, Atlanta is 614 km from Richmond. Estimate the Moon’s distance from the shift.${RADIANS}`,
+      `Open ${SQUARE('Moon')} and measure how far Atlanta is from Richmond as the Moon sees them (<b>Zoom to the places</b> first). Estimate the Moon’s distance from the shift.${RADIANS}`,
     ],
     about: `In a straight line the towns are 677 km apart, but that line is slanted to the Moon. Using its full length overestimates the distance: the same difficulty Hipparchus had. See ${tao}.` },
   { id: 'moon-apsides', group: 'Earth and Moon', title: 'The Moon’s oval orbit', who: 'Hipparchus; Ptolemy',
@@ -276,9 +277,9 @@ export const LABS = [
       `Run on, and mark <b>third contact</b>. (<kbd>Space</kbd> brings Venus back to the middle.) The time between the two marks is the duration of the transit at Tahiti.`,
       `${SWAP} and time the same two contacts from Vardø, in the Arctic. The stopwatch keeps the two places apart.`,
       `Go to mid-transit, half-way between the contacts, and zoom until Venus is a disc. The dashed circle is Venus as the other observer sees it at that instant (the two Suns are drawn on top of each other). Measure from Venus to the other Venus, center to center, with ${ANGLE}.`,
-      `Seen square-on from the Sun, Tahiti and Vardø are 10,470 km apart. Venus was 0.289 au from us and the Sun 1.015 au, so the shift in radians is baseline × (1/0.289 − 1/1.015) ÷ (1 au). How many km is an astronomical unit?${RADIANS}`,
+      `Still at mid-transit, open ${SQUARE('Sun')} and measure how far apart Tahiti and Vardø are as the Sun sees them: that is the baseline. Venus was 0.289 au from us and the Sun 1.015 au, so the shift in radians is baseline × (1/0.289 − 1/1.015) ÷ (1 au). How many km is an astronomical unit?${RADIANS}`,
     ],
-    about: `The straight line between the two places is 11,410 km long; only the part square-on to the Sun counts. Seen from two latitudes Venus crosses the Sun on two slightly different chords of different lengths, so the durations differ by minutes: Halley’s way to turn clocks into a parallax. From Kepler’s third law the shift of Venus against the Sun is (1/0.289 − 1/1.015) times the baseline in au. See ${tao}.` },
+    about: `The straight line between the two places is 11,410 km long; only the part square-on to the Sun counts (about 10,470 km at mid-transit; it changes as the Earth turns). Seen from two latitudes Venus crosses the Sun on two slightly different chords of different lengths, so the durations differ by minutes: Halley’s way to turn clocks into a parallax. From Kepler’s third law the shift of Venus against the Sun is (1/0.289 − 1/1.015) times the baseline in au. See ${tao}.` },
   { id: 'venus-transit-2012', group: 'The astronomical unit', title: 'The transit of Venus, 2012', who: 'The last one until 2117',
     blurb: 'The same measurement with modern places.',
     setup: { t: '2012-06-05T22:00:00Z', loc: P.honolulu, obs2: P.sydney, align: 'sun', target: 'Sun', track: true, fov: 0.8, mount: 'eq', show: DARK, tools: ['stopwatch', 'compare'] },
@@ -287,9 +288,9 @@ export const LABS = [
       `You are in Honolulu. Click Venus, press <kbd>T</kbd> to follow it and zoom far in. ${RUN.replace("run", "Run")} and mark <b>second contact</b> and <b>third contact</b>.${FINE}`,
       `${SWAP} and time the same two contacts from Sydney. How do the durations compare?`,
       `At mid-transit zoom until Venus is a disc. With ${ANGLE} measure from Venus to the other observer’s Venus (dashed), center to center, and Venus’s own diameter, edge to edge.`,
-      `Seen square-on from the Sun, Honolulu and Sydney are 7,490 km apart. The shift of Venus against the Sun, in radians, is baseline × (1/0.2887 − 1/1.0147) ÷ (1 au). Estimate the astronomical unit.${RADIANS}`,
+      `Still at mid-transit, open ${SQUARE('Sun')} and measure Honolulu to Sydney as the Sun sees them: that is the baseline. The shift of Venus against the Sun, in radians, is baseline × (1/0.2887 − 1/1.0147) ÷ (1 au). Estimate the astronomical unit.${RADIANS}`,
     ],
-    about: 'In a straight line the two places are 7,620 km apart. Both places saw the whole transit. Venus was 0.2887 au from the Earth and the Sun 1.0147 au.' },
+    about: 'In a straight line the two places are 7,620 km apart; square-on to the Sun at mid-transit, about 7,490 km. Both places saw the whole transit. Venus was 0.2887 au from the Earth and the Sun 1.0147 au.' },
   { id: 'mercury-transit', group: 'The astronomical unit', title: 'A transit of Mercury', who: 'Gassendi, 1631; Halley, 1677',
     blurb: 'Mercury crosses the Sun about 13 times a century.',
     setup: { t: '2019-11-11T12:30:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 0.8, mount: 'eq', show: DARK, tools: ['stopwatch'] },
