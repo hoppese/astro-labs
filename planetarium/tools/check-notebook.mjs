@@ -1,4 +1,5 @@
 // Sections 20 and 21 of tools/check.mjs: the lab notebook (js/notebook/).
+import * as Fm from '../js/notebook/formula.js';
 //   20  unit tests: the unit-conversion table (known values, round trips, the wording of rules), number formatting,
 //       the formula language with units, the model functions, and CSV export / re-import. A failure THROWS.
 //   21  the physics the two parallax labs rely on, through the app's own star pipeline: the path of Barnard's star and
@@ -96,6 +97,14 @@ export function checkNotebookUnits({ line }) {
     ok(Math.abs(r.ss - r.rms * r.rms * r.n) < 1e-18, 'sum of squares goes with the rms');
     const f = bestFit(MODEL.sine, { A: 1.5, P: 3.2, x0: 0.5, y0: 8.8 }, pts, anchors(d));
     ok(Math.abs(f.p.A - 1.7) < 1e-4 && Math.abs(f.p.P - 3.3) < 1e-4, 'least squares recovers the sine'); }
+  { // numbers with units in formulas
+    const F = Fm, u = (src) => { const t = F.parse(src, (L) => L === 'A'); return [F.analyse(t, () => 'km').label, F.evaluate(t, () => 2), F.pretty(F.parse(F.serialize(t), (L) => L === 'A')) === F.pretty(t)]; };
+    const eq = (src, label, v) => { const [l, x, rt] = u(src); ok(l === label && Math.abs(x - v) < 1e-12 && rt, `unit number ${src}: ${l} ${x} ${rt}`); };
+    eq('100 km / 300 min', 'km/min', 1 / 3); eq('100 km/300 min', 'km/min', 1 / 3); eq('9.8 m/s^2', 'm/s²', 9.8); eq('3 AU^3/yr^2', 'AU³/yr²', 3);
+    eq('A + 5 km', 'km', 7); eq('sin(30°)', '', 0.5); eq('2 {light-min}', 'light-min', 2); eq('5 s^2', 's²', 5);
+    let bad = ''; try { u('A + 5 m'); } catch (e) { bad = e.message; } ok(/different units/.test(bad), 'km + m refused');
+    try { u('10 {zz}'); bad = ''; } catch (e) { bad = e.message; } ok(/not a unit/.test(bad), 'unknown unit refused');
+  }
   ok(MODELS.length === 9 && MODELS.every((m) => typeof m.eq({ x: 'x', y: 'y', t: 't' }) === 'string' && m.params.length && (m.f || m.xy || m.path)), 'nine generic shapes, each with a formula');
   // ---- the notebook itself: chains, refusals, CSV out and back ----
   const nb = S.newNotebook('check');

@@ -272,7 +272,7 @@ html.night .nbpanel, html.night .nbtab { filter: url(#xNightRed); }
 .nb-chip.col b { font: 600 11px var(--mono); color: var(--accent); }
 .nb-chip.col i { color: var(--muted); font-style: normal; font-weight: 400; }
 .nb-chip.warn { color: #f3d9a4; }
-.nb-fnum { width: 96px; height: 30px !important; }
+.nb-fnum { width: 96px; height: 30px !important; } .nb-funit { width: 150px; height: 30px !important; }
 .nb-fresult { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1.45; background: rgba(255, 255, 255, 0.05); color: #c7d2de; }
 .nb-fresult.ok { background: rgba(25, 158, 112, 0.16); }
 .nb-fresult.warn { background: rgba(232, 184, 106, 0.16); }

@@ -404,13 +404,13 @@ export function createNotebook(root, opts = {}) {
   function calcDialog(col) {
     const cols = numericCols().filter((c) => !col || c.id !== col.id);
     const b = openDialog(col ? `Column ${S.letterOf(nb, col.id)}: formula` : 'Calculate a new column', `
-      <p class="nb-lead">Build the formula from the buttons (or type it). Columns go in by their letter. The notebook works out the unit of the answer and refuses a formula that mixes unlike things.</p>
+      <p class="nb-lead">Build the formula from the buttons (or type it). Columns go in by their letter. A number can carry a unit: choose it beside the number, or type it, as in <b>100 km</b> or <b>300 min</b>. The notebook works out the unit of the answer and refuses a formula that mixes unlike things.</p>
       <div class="nb-fpretty" data-pretty aria-live="polite"></div>
       <input class="nb-ftext" name="formula" type="text" spellcheck="false" autocomplete="off" placeholder="press the buttons, or type letters, numbers and + − × ÷" value="${esc(col ? col.formula : '')}" aria-label="Formula">
       <div class="nb-fgroup"><span>Columns</span>${cols.map((c) => { const u = S.unitInfo(nb, c).label, L = S.letterOf(nb, c.id); return `<button class="nb-chip col" data-ins="${L === 'G' || L === 'AU' ? '[' + L + ']' : L}"><b>${L}</b> ${esc(c.name)}${u ? ` <i>(${esc(u)})</i>` : ''}</button>`; }).join('')}</div>
       <div class="nb-fgroup"><span>Operations</span>${[['+', ' + '], ['−', ' - '], ['×', ' * '], ['÷', ' / '], ['x²', '^2'], ['x³', '^3'], ['xⁿ', '^'], ['(', '('], [')', ')'], ['√', 'sqrt('], ['sin', 'sin('], ['cos', 'cos('], ['tan', 'tan('], ['log₁₀', 'log(']].map(([t, v]) => `<button class="nb-chip" data-ins="${v}">${t}</button>`).join('')}</div>
       <div class="nb-fgroup"><span>Constants</span>${[['π', 'pi'], ['G', 'G'], ['c (light)', 'c_light'], ['AU in km', 'AU']].map(([t, v]) => `<button class="nb-chip" data-ins="${v}" title="${esc(CONSTANTS[v === 'G' ? 'Gconst' : v === 'AU' ? 'AUkm' : v === 'c_light' ? 'c' : v].def)}">${t}</button>`).join('')}
-        <input class="nb-fnum" type="text" inputmode="decimal" placeholder="a number" aria-label="A number to insert"><button class="nb-chip" data-num>insert number</button>
+        <input class="nb-fnum" type="text" inputmode="decimal" placeholder="a number" aria-label="A number to insert"><select class="nb-funit" aria-label="Its unit">${unitOptions('', { blank: 'no unit' })}</select><button class="nb-chip" data-num>insert number</button>
         <button class="nb-chip warn" data-back title="Remove the last piece">⌫</button><button class="nb-chip warn" data-clear>clear</button></div>
       <div class="nb-fresult" data-res></div>
       <label class="nb-f">Name of the column <input name="name" type="text" maxlength="60" placeholder="your own words" value="${esc(col ? col.name : '')}"></label>
@@ -433,8 +433,8 @@ export function createNotebook(root, opts = {}) {
     b.addEventListener('click', (e) => {
       const t = e.target.closest('button'); if (!t) return;
       if (t.dataset.ins != null) { const v = t.dataset.ins; text.value = (text.value + (/^[A-Za-z[(]/.test(v) && /[A-Za-z0-9)\]]$/.test(text.value.trim()) && !/^[(^]/.test(v) ? ' ' : '') + v); check(); }
-      else if (t.dataset.num != null) { const n = parseNum(b.querySelector('.nb-fnum').value); if (!Number.isNaN(n)) { text.value += String(n); b.querySelector('.nb-fnum').value = ''; check(); } }
-      else if (t.dataset.back != null) { text.value = text.value.replace(/\s*(sqrt\(|sin\(|cos\(|tan\(|log\(|ln\(|abs\(|\[[A-Z]+\]|[A-Za-z_]+|\d+\.?\d*(e[-+]?\d+)?|\^\d?|.)\s*$/i, ''); check(); }
+      else if (t.dataset.num != null) { const n = parseNum(b.querySelector('.nb-fnum').value); if (!Number.isNaN(n)) { const un = b.querySelector('.nb-funit').value; text.value += (/[A-Za-z0-9)\]}]$/.test(text.value.trim()) ? ' ' : '') + String(n) + (un ? ` {${un}}` : ''); b.querySelector('.nb-fnum').value = ''; check(); } }
+      else if (t.dataset.back != null) { text.value = text.value.replace(/\s*(\d+\.?\d*(e[-+]?\d+)?\s*\{[^{}]*\}|sqrt\(|sin\(|cos\(|tan\(|log\(|ln\(|abs\(|\[[A-Z]+\]|[A-Za-z_]+|\d+\.?\d*(e[-+]?\d+)?|\^\d?|.)\s*$/i, ''); check(); }
       else if (t.dataset.clear != null) { text.value = ''; check(); }
       else if (t.dataset.ok != null) {
         if (!check()) return;

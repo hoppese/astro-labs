@@ -1,14 +1,47 @@
 // notebook/formula.js: the small formula language of "calculated columns", with units carried through.
 // Pure (no DOM). A formula refers to other columns by their letter (A, B, ...), uses + − × ÷ ^ ( ), the functions
 // sqrt sin cos tan asin acos atan log ln abs, and the constants pi, c, Gconst, AUkm (units.js CONSTANTS).
+// A typed number can carry a unit: 100 km, 300 min, 30°, or in braces for any unit symbol, 2.5 {light-min}.
 // Units are checked the way a careful person checks them: only like things may be added; multiplying and dividing
 // build compound units (km/s, AU³/yr²); sin() of a column in degrees is the sine of that many degrees.
 
-import { UNIT, CONSTANTS, DIM_NAME, UNITS } from './units.js';
+import { UNIT, CONSTANTS, DIM_NAME, UNITS, withUnit } from './units.js';
 import { sup } from './format.js';
 
 export class FormulaError extends Error {}
 const FUNCS = ['sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'abs'];
+
+/** The unit id a typed unit names: its id or its symbol (km, min, h, d, yr, AU, light-min, °, ″, ...). Plain time beats right ascension. */
+export function unitFor(text) {
+  if (!text) return null;
+  if (UNIT[text]) return text;
+  const hits = UNITS.filter((u) => u.sym === text || u.name === text);
+  return (hits.find((u) => u.dim !== 'angle' || !/RA/.test(u.id)) || hits[0] || {}).id || null;
+}
+
+/** A unit written after a number, at the start of `r`: names joined by / or · with powers, as in km, m/s^2, AU³/yr², 30°.
+ *  Each name is the longest known unit there ("km/s" is one unit; in "km/300" only "km" is). Returns {parts, len} or null. */
+function unitExpr(r) {
+  let k = 0, parts = {}, sign = 1, any = false;
+  const add = (id, p) => { for (const [u, n] of Object.entries(unitParts(id))) parts[u] = (parts[u] || 0) + sign * p * n; };
+  for (;;) {
+    let id = null, L = 0;
+    if (/^[°′″]/.test(r.slice(k))) { id = unitFor(r[k]); L = 1; }
+    else {
+      const w = /^[A-Za-z%][A-Za-z\-/%⊕☉_ ]*/.exec(r.slice(k)) || [''];
+      for (let n = w[0].length; n > 0 && !id; n--) { const x = r.slice(k, k + n); if (/[\/ \-]$/.test(x)) continue; const after = r[k + n] || ''; if (/[A-Za-z_0-9(]/.test(after) || (x.includes('/') && /^\s*(\^|²|³)/.test(r.slice(k + n)))) continue; if (unitFor(x)) { id = unitFor(x); L = n; } }
+    }
+    if (!id) break;
+    k += L; let p = 1;
+    const pw = /^\s*(\^\s*(-?\d+)|²|³)/.exec(r.slice(k)); if (pw) { p = pw[2] ? +pw[2] : pw[1] === '²' ? 2 : 3; k += pw[0].length; }
+    add(id, p); any = true;
+    const op = /^\s*([/·*])\s*/.exec(r.slice(k)); if (!op) break;
+    const nextUnit = unitExpr(r.slice(k + op[0].length));
+    if (!nextUnit) break;                                          // "/ 300": the slash is division, not part of the unit
+    sign = op[1] === '/' ? -sign : sign; k += op[0].length;
+  }
+  return any ? { parts: clean(parts), len: k } : null;
+}
 
 // ---- tokens ---------------------------------------------------------------------------------------------------------
 function tokenize(src) {
@@ -20,7 +53,17 @@ function tokenize(src) {
     if (/[0-9.]/.test(ch)) {
       const m = /^(\d+\.?\d*|\.\d+)(e[-+]?\d+)?/i.exec(s.slice(i));
       if (!m) throw new FormulaError(`“${s.slice(i, i + 6)}” is not a number.`);
-      out.push({ t: 'num', v: Number(m[0]) }); i += m[0].length; continue;
+      i += m[0].length;
+      // a unit right after the number: {anything}, a degree/minute/second sign, or a known unit word (a formula never puts two things side by side otherwise)
+      const rest = s.slice(i), sp = /^\s*/.exec(rest)[0].length, r = rest.slice(sp);
+      let used = 0, parts = null, text = '';
+      if (r[0] === '{') {
+        const e = r.indexOf('}'); if (e < 0) throw new FormulaError('A unit in braces needs its closing brace, like {km}.');
+        const inner = r.slice(1, e).trim(), got = unitFor(inner) ? { parts: unitParts(unitFor(inner)), len: inner.length } : unitExpr(inner);
+        if (!got || got.len !== inner.length) throw new FormulaError(`“${inner}” is not a unit the notebook knows (see ⋯ → Units and constants).`);
+        parts = got.parts; text = inner; used = sp + e + 1;
+      } else { const got = unitExpr(r); if (got) { parts = got.parts; text = r.slice(0, got.len).trim(); used = sp + got.len; } }
+      out.push(parts ? { t: 'num', v: Number(m[0]), u: text, parts } : { t: 'num', v: Number(m[0]) }); i += used; continue;
     }
     if (/[A-Za-z_]/.test(ch)) { const m = /^[A-Za-z_][A-Za-z_0-9]*/.exec(s.slice(i)); out.push({ t: 'id', v: m[0] }); i += m[0].length; continue; }
     if ('+-*/^(),'.includes(ch)) { out.push({ t: ch }); i++; continue; }
@@ -45,7 +88,7 @@ export function parse(src, isColumn = () => true) {
   function atom() {
     const k = next();
     if (!k) throw new FormulaError('The formula stops too soon: something is missing at the end.');
-    if (k.t === 'num') return { t: 'num', v: k.v };
+    if (k.t === 'num') return k.parts ? { t: 'num', v: k.v, u: k.u, parts: k.parts } : { t: 'num', v: k.v };
     if (k.t === '(') { const e = expr(); expect(')'); return { t: 'par', a: e }; }
     if (k.t === 'id') {
       const low = k.v.toLowerCase();
@@ -107,7 +150,7 @@ export function mixedWarning(parts) {
   for (const k of Object.keys(parts)) { const d = UNIT[k] && UNIT[k].dim; if (!d) continue; if (seen[d]) return `This mixes ${symOf(seen[d])} and ${symOf(k)}, which are both ${DIM_NAME[d].replace(/^an? /, '')}s: convert one of them first so that they combine.`; seen[d] = k; }
   return '';
 }
-const isPureNumber = (n) => n.t === 'num' || (n.t === 'neg' && isPureNumber(n.a)) || (n.t === 'par' && isPureNumber(n.a)) || (n.t === 'bin' && isPureNumber(n.a) && isPureNumber(n.b));
+const isPureNumber = (n) => (n.t === 'num' && !n.parts) || (n.t === 'neg' && isPureNumber(n.a)) || (n.t === 'par' && isPureNumber(n.a)) || (n.t === 'bin' && isPureNumber(n.a) && isPureNumber(n.b));
 const describe = (p) => { const l = partsLabel(p); return l ? l : 'a pure number'; };
 const kindOf = (p) => {
   const d = dimsOf(p), ks = Object.keys(d);
@@ -122,7 +165,7 @@ export function analyse(tree, unitOfCol) {
   let note = '';
   function go(n) {
     switch (n.t) {
-      case 'num': return {};
+      case 'num': return n.parts ? { ...n.parts } : {};
       case 'col': return unitParts(unitOfCol(n.id));
       case 'const': return { ...CONSTANTS[n.id].parts };
       case 'neg': case 'par': return go(n.a);
@@ -201,7 +244,7 @@ export function evaluate(n, valueOfCol) {
 /** The formula as a person would write it: B × sin(C), 4π²A³ ÷ (G·T²) style with real signs and superscripts. */
 export function pretty(n) {
   switch (n.t) {
-    case 'num': return String(n.v).replace(/e\+?(-?\d+)/, (m, e) => ' × 10' + sup(e)).replace('-', '−');
+    case 'num': { const t = String(n.v).replace(/e\+?(-?\d+)/, (m, e) => ' × 10' + sup(e)).replace('-', '−'); return n.parts ? withUnit(t, partsLabel(n.parts) || n.u) : t; }
     case 'col': return n.id === 'G' || n.id === 'AU' ? '[' + n.id + ']' : n.id;
     case 'const': return CONSTANTS[n.id].sym;
     case 'neg': return '−' + pretty(n.a);
@@ -224,7 +267,7 @@ export function columnsUsed(n, out = new Set()) {
 /** The formula back as text that parse() reads, with column letters passed through `map` (used when columns are removed). */
 export function serialize(n, map = (l) => l) {
   switch (n.t) {
-    case 'num': return String(n.v);
+    case 'num': return n.parts ? `${n.v} {${n.u}}` : String(n.v);
     case 'col': { const l = map(n.id); return l === 'G' || l === 'AU' ? '[' + l + ']' : l; }
     case 'const': return n.id === 'Gconst' ? 'G' : n.id === 'AUkm' ? 'AU' : n.id === 'c' ? 'c_light' : n.id;
     case 'neg': return '-' + serialize(n.a, map);
