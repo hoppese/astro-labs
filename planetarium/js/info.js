@@ -22,6 +22,8 @@ import { sun, initSun, groupsAt, onDisc, cycleFacts } from './sunspots.js';
 import { openSunPanel } from './sunpanel.js';
 import { rowHidden, running, groundStays } from './labs/hidden.js';
 import { moonLight } from './labs/shadow.js';
+import { counts as photoCounts } from './photometer.js';
+import { VAR_BY_HIP, TYPE_NAME, varMag, jdOf, TRANSIENT, transientMag } from './variables.js';
 import { smallWindow } from './layout.js';
 
 let panel, partHtml = {}, lastUpdate = 0, events = null, eventsKey = '';
@@ -234,11 +236,17 @@ function render(force) {
     title = s.name || ids.shift() || 'Star';
     aka = ids.join(' · ');
     type = 'Star';
-    row('Magnitude', fmtMag(s.mag) + ' (V)');
+    const vr = VAR_BY_HIP.get(s.hip);
+    if (vr) {      // a Cepheid or RR Lyrae star: its brightness now from the catalog's elements (js/variables.js), and the elements themselves
+      type = TYPE_NAME[vr.type];
+      row('Magnitude now', vr.quiet ? fmtMag(s.mag) + ' (V; varies by a few hundredths)' : fmtMag(varMag(vr, jdOf(state.timeMs))) + ' (V, a model)');
+      row('Variable', `V ${vr.max.toFixed(2)} to ${vr.min.toFixed(2)}, period ${vr.P} days (GCVS)`);
+    } else row('Magnitude', fmtMag(s.mag) + ' (V)');
     row('Color index', s.bv == null ? ND : s.bv.toFixed(2) + ' (B−V)');
     row('Distance', s.dist ? `${sig(s.dist * LY_PER_PC, 3)} ly (${sig(s.dist, 3)} pc)` : ND);
     // where the place and proper motion come from (tools/build_stars.py); everything else is HYG's
     if (s.src != null && ASTROMETRY[s.src]) note = 'Position and proper motion: ' + ASTROMETRY[s.src] + '.';
+    if (vr) note = (vr.quiet ? 'Polaris is a Cepheid whose swing has shrunk to a few hundredths of a magnitude; it is drawn steady. ' : 'Its brightness here is a <b>model</b>, not a measurement: a smooth curve through the catalog’s maximum, minimum, period, date of maximum and rise time (General Catalogue of Variable Stars). Real curves have bumps this one lacks, and the phase today can be off by part of a cycle. ') + (note || '');
   } else if (ref.kind === 'gaia') {
     // a star of the Gaia DR3 layers: every number is Gaia's own (the tile's rounded copy until the full record arrives)
     const s = deepRecord(ref);
@@ -312,10 +320,22 @@ function render(force) {
     note = 'Catalog values from OpenNGC. No distance is listed there.';
     if (doubt) note += ' <b>Doubtful magnitude:</b> ' + doubt;
     if (o.rv != null && o.z != null && Math.abs(o.rv - o.z * 299792.458) >= 2) note += ' Two velocities: c × z is the one used for Hubble’s law; the catalog’s own “radial velocity” is worked out from the same redshift with the relativistic Doppler formula, which gives a little less.';
+  } else if (ref.kind === 'tr') {
+    // a supernova or M31 V1 (js/variables.js): a model built on published numbers
+    const o = TRANSIENT[ref.id], m = transientMag(o, jdOf(state.timeMs));
+    title = o.name; aka = o.aka || ''; type = o.kind === 'sn' ? 'Supernova' : 'Cepheid variable star';
+    if (o.kind === 'sn') row('Type', 'Type ' + o.type);
+    row('Magnitude now', m == null ? '<span class="nodata">nothing to see at this date</span>' : fmtMag(m) + ' (V, a model)');
+    if (o.kind === 'cepheid') row('Variable', `period ${o.P} days (Templeton et al. 2011)`);
+    row('In', o.host);
+    note = (o.kind === 'sn' && rowHidden('Type') ? 'The supernova’s brightness here is a model built on published dates and magnitudes, not the measurements themselves.' : o.src + ' The brightness drawn is a <b>model</b> built on these numbers, not the measurements themselves.');
   } else if (ref.kind === 'con') {
     const c = constellations.find((x) => x.id === ref.id);
     title = c.name; type = 'Constellation'; aka = `${c.id} · genitive ${c.gen}`;
   }
+
+  // the standard-candle labs: what the photometer collects from it in one exposure (js/photometer.js)
+  if (running.photometer && ref.kind !== 'con' && ref.kind !== 'dso') { const n = photoCounts(ref, getBodies(getFrame())); if (n != null) row('Photometer', n.toLocaleString('en-US') + ' counts (one exposure)'); }
 
   // --- where it is ---
   const j = toSph(eqj), d = toSph(mulMV(frame.Mjd, eqj));

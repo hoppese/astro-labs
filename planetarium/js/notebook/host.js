@@ -21,6 +21,7 @@ import { createNotebook } from './ui.js';
 import { see } from './seeing.js';
 import { rowHidden } from '../labs/hidden.js';
 import { lab, labStep, setLabStep } from '../labs/labs.js';
+import { counts as photoCounts } from '../photometer.js';
 
 const q = new URLSearchParams(location.search);
 const num = (k) => { const v = parseFloat(q.get(k)); return Number.isFinite(v) ? v : null; };
@@ -57,6 +58,8 @@ function readings() {
   out.push({ key: 'lit', group: 'Selected object (its panel)', label: 'Illuminated fraction', unit: '%', kind: 'data', value: b && b.phaseFrac != null ? r3(b.phaseFrac * 100, 2) : null, sig: 0, why: ref ? why4 : why3 });
   out.push({ key: 'alt', group: 'Selected object (its panel)', label: 'Altitude', unit: 'deg', kind: 'data', value: aa ? r3(aa.alt, 3) : null, sig: 0, why: why3 });
   out.push({ key: 'az', group: 'Selected object (its panel)', label: 'Azimuth', unit: 'deg', kind: 'data', value: aa ? r3(aa.az, 3) : null, sig: 0, why: why3 });
+  { const n = ref ? photoCounts(ref, bodies) : null;
+    out.push({ key: 'counts', group: 'Photometer (selected object)', label: 'Counts in one exposure', unit: 'counts', kind: 'data', value: n, sig: 0, why: ref ? 'nothing to measure there' : why3 }); }
   // a reading the running lab asks the student to find is not offered either (labs/hidden.js)
   for (const [k, l] of [['dist', 'distance'], ['diam', 'angular diameter']]) { const r = out.find((x) => x.key === k); if (rowHidden(l)) { r.value = null; r.why = 'hidden during this lab'; } }
   return out;

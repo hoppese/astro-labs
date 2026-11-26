@@ -3,6 +3,7 @@
 // Caldwell, common names). With an empty box it lists the solar system and the brightest stars,
 // marking which are above the horizon now.
 
+import { VARIABLES, GCVS_NAME, TYPE_NAME, TRANSIENTS } from './variables.js';
 import { state, on } from './state.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, BODIES, SMALL, MOON_PARENT } from './ephem.js';
@@ -56,6 +57,19 @@ function build() {
     add(fl, fl, 'Star', mag, ref, 35 - mag * 4);
     const [n, con] = fl.split(' ');
     if (conById[con]) add(n + ' ' + conById[con].gen, fl, 'Star', mag, ref, 30 - mag * 4);
+  }
+  // variable stars by their own names (X Sagittarii, X Sgr, RR Lyrae), and the supernovae and M31 V1 (js/variables.js)
+  for (const v of VARIABLES) {
+    let ref = null;
+    for (const t of stars.tiers) { if (!t.loaded || ref) continue; for (let i = 0; i < t.n; i++) if (t.data[i * stars.NF + F.hip] === v.hip) { ref = { kind: 'star', k: t.k, i }; break; } }
+    if (!ref) continue;
+    add(v.name, v.name, TYPE_NAME[v.type], v.max, ref, 62);
+    if (GCVS_NAME[v.hip]) add(GCVS_NAME[v.hip], v.name, TYPE_NAME[v.type] + ' (' + GCVS_NAME[v.hip] + ')', v.max, ref, 40);
+  }
+  for (const o of TRANSIENTS) {
+    const ref = { kind: 'tr', id: o.id }, sub = (o.kind === 'sn' ? 'Supernova in ' : 'Cepheid in ') + o.host.replace(/^the /, '');
+    add(o.name, o.name, sub, null, ref, 66); add(o.id, o.name, sub, null, ref, 40);
+    if (o.id === 'M31-V1') { add('Hubble variable', o.name, sub, null, ref, 30); add('V1', o.name, sub, null, ref, 30); }
   }
   addDso(0);
   const best = new Map();
@@ -222,7 +236,7 @@ export function initSearch(root) {
   list.addEventListener('pointerdown', (e) => e.preventDefault());      // keep focus in the input
   list.addEventListener('click', (e) => { const b = e.target.closest('.opt'); if (b) choose(+b.dataset.i); });
   document.addEventListener('pointerdown', (e) => { if (!root.contains(e.target)) hide(); });
-  on('catalog', () => { if (!list.hidden && rerun) rerun(); });
+  on('catalog', (what) => { if (what === 'stars') index = null; if (!list.hidden && rerun) rerun(); });      // (a fainter tier holds RR Lyrae: build again with it)
   return { focus() { input.focus(); input.select(); } };
 }
 export { state };

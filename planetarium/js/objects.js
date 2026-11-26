@@ -2,11 +2,13 @@
 //   {kind: 'star', k: tier, i: index}   {kind: 'body', id: 'Jupiter' | 'Io' | ...}
 //   {kind: 'dso', idx}                  {kind: 'con', id: 'Ori'}
 //   {kind: 'gaia', t: tile, i}          a faint star of the Gaia DR3 layers, bundled or online (js/deepstars.js)
+//   {kind: 'tr', id: 'SN2011fe'}        an object of js/variables.js TRANSIENTS (supernovae, M31 V1): a model, not a catalog entry
 
 import { mulMV, unit, refractHor } from './astro.js';
 import { state, eff } from './state.js';
 import { stars, starRecord, starLabel, dso, constellations, starApparentEqj } from './catalog.js';
 import { deepName, deepKey, deepParallax } from './deepstars.js';
+import { TRANSIENT, transientEqj } from './variables.js';
 
 export function refKey(ref) {
   if (!ref) return '';
@@ -14,6 +16,7 @@ export function refKey(ref) {
   if (ref.kind === 'body') return 'b' + ref.id;
   if (ref.kind === 'gaia') return deepKey(ref);
   if (ref.kind === 'dso') return 'd' + ref.idx;
+  if (ref.kind === 'tr') return 't' + ref.id;
   return 'c' + ref.id;
 }
 export const sameRef = (a, b) => refKey(a) === refKey(b);
@@ -23,6 +26,7 @@ export function refEqj(ref, frame, bodies) {
   if (ref.kind === 'body') { const b = bodies.byId[ref.id]; return b ? b.u : null; }
   let v = null;
   if (ref.kind === 'star') return starApparentEqj(ref.k, ref.i, frame);
+  if (ref.kind === 'tr') return transientEqj(ref.id, frame);
   else if (ref.kind === 'gaia') {
     // Gaia tile star (js/deepstars.js): proper motion is already in the tile's vectors; annual parallax from Gaia's own value
     v = [ref.t.vec[3 * ref.i], ref.t.vec[3 * ref.i + 1], ref.t.vec[3 * ref.i + 2]];
@@ -50,6 +54,7 @@ export function refName(ref, bodies) {
   if (ref.kind === 'body') return ref.id;
   if (ref.kind === 'star') return starLabel(starRecord(ref.k, ref.i));
   if (ref.kind === 'gaia') return deepName(ref);
+  if (ref.kind === 'tr') return TRANSIENT[ref.id] ? TRANSIENT[ref.id].name : '';
   if (ref.kind === 'dso') { const o = dso.rows[ref.idx]; return o.m ? 'M ' + o.m : o.id; }
   const c = constellations.find((x) => x.id === ref.id);
   return c ? c.name : '';

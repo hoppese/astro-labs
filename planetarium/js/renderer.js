@@ -15,6 +15,7 @@ import { loupeOpen } from './notebook/loupe.js';
 import { LabelLayer } from './render/labels.js';
 import { skyConditions, drawSkyBackground } from './render/sky.js';
 import { drawStars, stats as starStats } from './render/stars.js';
+import { drawTransients } from './render/transients.js';
 import { drawGrids } from './render/grids.js';
 import { drawConstellations } from './render/constellations.js';
 import { drawBodies } from './render/planets.js';
@@ -107,7 +108,8 @@ function draw(frame, now) {
   drawGrids(ctx); lap('grids');
   drawConstellations(ctx); lap('constellations');
   drawStars(ctx); lap('stars');
-  drawDeepStars(ctx); lap('deep');         // Gaia DR3, bundled tiles + online: the stars fainter than the base catalog holds (js/deepstars.js)
+  drawDeepStars(ctx); lap('deep');
+  drawTransients(ctx);                     // a Cepheid in another galaxy and the supernovae (js/variables.js): models, not catalog stars         // Gaia DR3, bundled tiles + online: the stars fainter than the base catalog holds (js/deepstars.js)
   drawDso(ctx); lap('dso');
   for (const fn of underlays) fn(ctx, R);
   drawBodies(ctx); lap('bodies');

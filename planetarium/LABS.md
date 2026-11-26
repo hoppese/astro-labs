@@ -387,6 +387,55 @@ Preset: 100 BC, Rhodes, second observer Alexandria, refraction off.
 - 360 / 5.23 × 5000 = 344,000 stadia; Posidonius's 7.5° gives 240,000.
 - With refraction on, Canopus at Rhodes stands at 1° 16′.
 
+## Standard candles
+
+All five are notebook labs with a simulated **photometer**: the panel of the selected object shows the counts collected in one
+exposure, 10^(−0.4 (m − 25)), with photon noise and a 0.5% wobble seeded by the notebook seed and the clock second. Students turn counts
+into magnitudes against a comparison star of their choice: m = m_c − 2.5 log(N / N_c). Every light curve is a **model** (js/variables.js):
+for the variables a smooth curve through GCVS 5.1's range, period, epoch of maximum and rise time; for the supernovae, published explosion
+dates and peaks with a typical shape between. The keys below are the models' values, which is what a careful student recovers (to the
+noise and their sampling). Hidden in all five: Magnitude now (and Variable, the catalog's period, in the Cepheid labs).
+
+### `cepheid-distance` δ Cephei with the period–luminosity law
+Preset: 2026-09-01, δ Cep tracked, FOV 12°, ground and air off. Also hidden: Distance.
+Model: P = 5.366208 d, V 3.48 to 4.37, mean 3.925. Benedict et al. (2007): M_V = −2.43 (log P − 1) − 4.05 = **−3.39**; m − M = 7.32,
+**d ≈ 291 pc**. Catalog (Hipparcos) distance 265 pc; HST parallax 273 pc. (The difference: no dust correction, A_V ≈ 0.2.)
+
+### `rr-lyrae` RR Lyrae in one night
+Preset: 2026-07-15, RR Lyr tracked, FOV 3°. Also hidden: Distance.
+Model: P = 0.5668678 d (13.6 h), V 7.06 to 8.12, mean 7.59, rise 19% of the cycle (2.6 h). With M_V = +0.6: m − M = 6.99, **d ≈ 250 pc**.
+Catalog distance 289 pc.
+
+### `cepheid-calibrate` Calibrate the law, then Andromeda
+Eight calibrators with their catalog (Hipparcos) distances and model mean V (log P; M = m − 5 log(d/10 pc)):
+
+| Star | P (d) | log P | mean V | d (pc, catalog) | M |
+|---|---|---|---|---|---|
+| δ Cep | 5.366 | 0.730 | 3.93 | 265 | −3.19 |
+| η Aql | 7.177 | 0.856 | 3.91 | 424 | −4.23 |
+| ζ Gem | 10.151 | 1.007 | 3.90 | 422 | −4.23 |
+| β Dor | 9.843 | 0.993 | 3.77 | 309 | −3.68 |
+| ℓ Car | 35.556 | 1.551 | 3.71 | 479 | −4.69 |
+| X Sgr | 7.013 | 0.846 | 4.55 | 302 | −2.85 |
+| Y Sgr | 5.773 | 0.761 | 5.75 | 379 | −2.15 |
+| T Vul | 4.435 | 0.647 | 5.75 | 369 | −2.09 |
+
+Least-squares line: **M = −2.68 (log P − 1) − 3.59** (Benedict: slope −2.43, −4.05 at log P = 1). The zero point is about 0.45 mag
+too faint, mostly dust (Y Sgr, T Vul, X Sgr sit behind 0.5–0.8 mag). M31 V1: P = 31.4 d (log P 1.497), mean V 19.40; with the
+least-squares law M = −4.93, m − M = 24.33, **d ≈ 735 kpc**; with Benedict's law 855 kpc. Today's value: about 765 kpc.
+Hubble (1925): 285 kpc; his calibration was about 2 mag too faint (two kinds of Cepheid were not yet told apart).
+
+### `sn-ia` A Type Ia as a standard candle
+Preset: 2011-08-25 03:00 UTC, SN 2011fe tracked, FOV 0.6°.
+SN 2011fe model: explosion JD 2455796.687, **V peak 9.99 on JD 2455817.0** (2011 September 12), 0.62 mag down 15 days later.
+With M101 at m − M = 29.19: **M_peak = −19.20**. SN 2014J (M82): peak V 10.44 on JD 2456692.2 (2014 February 2); with
+M = −19.20, m − M = 29.64, **d ≈ 8.5 Mpc**, against M82's TRGB distance of 3.5 Mpc: about 1.9 mag of dust in M82 dims it.
+
+### `sn-types` Two supernovae in M101
+SN 2011fe (Ia): rises 20 days to V 9.99, fades about 2.6 mag in the next 60 days, then 0.025 mag/day.
+SN 2023ixf (II): first light MJD 60082.788, V peak 11.11 about 6 days later, slides about 1 mag over a 65-day plateau, drops about
+2.2 mag between 75 and 95 days after the peak, then 0.0098 mag/day. Peaks: M = −19.20 and −18.08, so the Ia is **2.8 times** more luminous.
+
 ## Time and the calendar
 
 ### `sidereal-day`
@@ -438,9 +487,9 @@ recorded (8° and 6°). Rate 2.29° in 165 years = **1.39° per century = 50.0�
 | Not in Tao, added: Hipparchus's eclipse, lunar parallax, Mars 1672, Bradley, proper motion, precession, sidereal day, analemma, obliquity, apsides, Jupiter's mass, phases of Venus | see above |
 
 Not reproducible in a planetarium, and why:
-- **Main-sequence fitting, Cepheids, Type Ia supernovae** (Tao's rungs 7 and 8): they need photometry over time
-  and cluster color–magnitude data. The star catalog has V and B−V for single stars only, no variable-star light
-  curves and no cluster membership; nothing was invented to fill the gap.
+- **Main-sequence fitting** (Tao's rung 7): it needs cluster color–magnitude data with membership, which the star
+  catalog does not have. (Cepheids and Type Ia supernovae, rung 8, are now labs: see Standard candles, with light curves that are
+  models built on catalog and published numbers.)
 - **Al-Biruni's horizon dip from a mountain**, ships hull-down: not sky observations; the app has no terrain or
   observer height effects on the horizon.
 - **Vega as pole star (AD 14000)**: outside the ±3000-year range in which the ephemeris is trusted.
@@ -467,6 +516,10 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 | `eratosthenes`, `canopus` | Rise / Set, Transit | Transit gives the noon altitude; Az / Alt stays |
 | `obliquity`, `polaris-latitude` | Rise / Set, Transit, both RA / Dec rows | the declination is the tilt, or Polaris's distance from the pole |
 | `elongation` | Elongation | the result |
+| `cepheid-distance`, `rr-lyrae` | Magnitude now, Variable, Distance | the light curve and the distance are the results; comparison stars' Magnitude stays |
+| `cepheid-calibrate` | Magnitude now, Variable | Distance stays: it is the calibration |
+| `sn-ia` | Magnitude now | the peak is measured |
+| `sn-types` | Magnitude now, Type | the type is the result |
 | `kepler-mars` | Elongation, Distance, Light time | the angle is measured, Mars's place is the result |
 | `jupiter-mass` | From Jupiter (moons) | the separation; Jupiter's Distance stays: the prompt uses it |
 | `venus-phases` | Angular diameter | measured; Illuminated stays |

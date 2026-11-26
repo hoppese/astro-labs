@@ -247,6 +247,7 @@ function bodyFov(b) {
 function otherFov(ref) {
   if (ref.kind === 'star') return cam.fov > 12 ? 5 : 1;                // a second press goes closer; from a field with nothing else in it, back out
   if (ref.kind === 'dso') { const o = dso.rows[ref.idx]; return clamp((o && o.maj ? o.maj / 60 : 0.1) * 7, 0.25, 8); }
+  if (ref.kind === 'tr') return 0.5;      // a supernova beside its galaxy, a Cepheid among M31's stars
   if (ref.kind === 'gaia') { const m = ref.t.mag[ref.i]; return m <= 12 ? 2 : m <= 15 ? 0.6 : m <= 18 ? 0.2 : 0.08; }      // a field in which the star is well above the limit
   return 6;
 }

@@ -87,6 +87,28 @@ export async function checkLabs({ line }) {
     Cm.cmp.obs2 = null;
     line('  Earth seen square-on: ' + out.join(', ') + ' (the answer key), sites on the grid within 0.2 deg'); }
 
+  // ---- standard candles (js/variables.js, js/photometer.js): the models stay inside the catalog's numbers and hit the published peaks
+  { const Vb = await import('../js/variables.js'), Ph = await import('../js/photometer.js'), jd0 = 2461300;
+    for (const v of Vb.VARIABLES) { if (v.quiet) continue; let lo = 99, hi = -99, sum = 0; const n = 2000;
+      for (let k = 0; k < n; k++) { const m = Vb.varMag(v, jd0 + v.P * k / n); lo = Math.min(lo, m); hi = Math.max(hi, m); sum += m; }
+      need(Math.abs(lo - v.max) < 0.01 && Math.abs(hi - v.min) < 0.01 && Math.abs(sum / n - (v.max + v.min) / 2) < 0.01, 'variable range ' + v.name);
+      need(Math.abs(Vb.varMag(v, v.epoch + 3 * v.P) - v.max) < 1e-6, 'maximum at the catalog epoch: ' + v.name); }
+    const T = Vb.TRANSIENT, m = (id, jd) => Vb.transientMag(T[id], jd);
+    for (const id of ['SN2011fe', 'SN2014J', 'SN2023ixf']) { const o = T[id]; need(m(id, o.t0 - 0.1) === null && Math.abs(m(id, o.tPeak) - o.peak) < 1e-9, 'peak of ' + id);
+      for (let d = -15; d <= 200; d += 0.5) { const x = m(id, o.tPeak + d); need(x === null || x >= o.peak - 1e-9, 'nothing brighter than the peak: ' + id); } }
+    need(Math.abs(Math.min(...Array.from({ length: 400 }, (_, k) => m('SN1987A', T.SN1987A.t0 + k * 0.5)).filter((x) => x != null)) - 2.9) < 0.01, 'SN 1987A peak');
+    const v1 = Array.from({ length: 400 }, (_, k) => m('M31-V1', 2461000 + k * 31.4 / 400)), mean = v1.reduce((a, b) => a + b) / 400;
+    need(Math.abs(mean - 19.4) < 0.01, 'M31 V1 mean');
+    // the photometer: counts = 10^(-0.4 (m - 25)) on average, with photon noise
+    const ref = { kind: 'tr', id: 'SN2011fe' }, t = (T.SN2011fe.tPeak - 2440587.5) * 86400000, c = [];
+    for (let k = 0; k < 200; k++) c.push(Ph.counts(ref, null, t + k * 1000));
+    const mc = c.reduce((a, b) => a + b) / c.length, sd = Math.sqrt(c.reduce((a, b) => a + (b - mc) ** 2, 0) / c.length), N = Math.pow(10, -0.4 * (9.99 - 25));
+    need(Math.abs(mc / N - 1) < 0.002 && Math.abs(sd / Math.sqrt(N + (0.005 * N) ** 2) - 1) < 0.2 && Ph.counts(ref, null, t) === Ph.counts(ref, null, t + 400), 'photometer counts');
+    // the answer keys of LABS.md, from the models
+    const dCep = Vb.VAR_BY_HIP.get(110991), Mv = (P) => -2.43 * (Math.log10(P) - 1) - 4.05, pc = (mu) => Math.pow(10, mu / 5 + 1);
+    line(`  standard candles: ${Vb.VARIABLES.length} variables inside their catalog ranges, peaks of 3 supernovae, M31 V1 mean 19.40, photometer noise ${(sd / mc * 100).toFixed(2)}% at mag 9.99; `
+      + `δ Cep with Benedict's law ${pc((dCep.max + dCep.min) / 2 - Mv(dCep.P)).toFixed(0)} pc; SN 2011fe M = ${(9.99 - 29.19).toFixed(2)}, M82 from SN 2014J ${(pc(10.44 - (9.99 - 29.19)) / 1e6).toFixed(1)} Mpc`); }
+
   // ---- the observer away from the Earth (state.vantage): every place gives finite directions and magnitudes, and a few sizes are right
   { const t = Date.parse('2026-11-26T12:00:00Z'), loc = { lat: 0, lon: 0, elev: 0 }, at = (v) => E.compute(makeFrame(t, loc, v), true, true);
     for (const v of E.VANTAGES) { const b = at(v); need(!b.list.some((x) => x.id === v), v + ' draws itself'); const bad = b.list.filter((x) => !(Number.isFinite(x.u[0]) && Number.isFinite(x.mag) && Number.isFinite(x.angRadius))); need(!bad.length, `from ${v}: ${bad.map((x) => x.id)}`); need(!!b.byId.Earth, 'no Earth from ' + v); }

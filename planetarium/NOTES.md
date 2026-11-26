@@ -1379,6 +1379,19 @@ Vantage 'Above': `state.aboveAU` (3, 7, 12, 35, 100) au along the J2000 ecliptic
 periods under 60 days) by sampling the ephemeris (planets cached per day, moons per hour), projected from the observer each frame.
 `state.show.orbits` (Settings, default on) only matters in space.
 
+## Standard candles: variables, supernovae, photometer (2026-11-26)
+js/variables.js holds the models (pure; tools/check-labs.mjs tests them). VARIABLES: 15 Cepheids and RR Lyrae by HIP, with GCVS 5.1
+elements fetched from VizieR (Harvard mirror; CDS was down) on 2026-11-26: V max/min, epoch of maximum, period, M−m. The shape is ours:
+a cosine fall over (1 − M−m) of the cycle and a cosine rise over M−m (mean over a cycle = (max+min)/2). Polaris is drawn steady (its swing
+shrank). render/stars.js flags the variables per tier (WeakMap on the tier data) and replaces their magnitude in the loop (a fainter-
+than-limit variable is skipped with continue, not break). TRANSIENTS: M31 V1 (Templeton et al. 2011: position, P 31.4 d, max JD
+2455430.5, mean V 19.4; amplitude 0.8 our estimate), SN 2011fe, 2014J, 2023ixf (explosion, peak date and V from the papers in the
+credits; between them a typical Ia or fast Type II shape, rise as x²(3−2x)), SN 1987A (a smoothed outline). Drawn by
+render/transients.js after the deep stars, to the sky's physical limit (not the loaded tiles' depth); ref kind 'tr' in objects.js,
+info.js, nav.js and search.js. js/photometer.js: counts = 10^(−0.4 (m − 25)) with photon noise and 0.5% wobble, seeded by (notebook
+seed, clock second, object); shown as a Photometer row while a lab with `photometer: true` runs, and as the Record reading 'counts'.
+Five labs (group Standard candles); keys in LABS.md.
+
 ## Solar-system view in 3D; discs that hide what is behind them (2026-11-26)
 js/orbitcam.js: vantage 'Above' is an orbit camera. The observer is `aboveAU` from a target (`abovePan`, or the body `aboveTarget`
 circled, which carries the observer along as it moves) in the ecliptic direction (`aboveLon`, `aboveLat`), and the camera always looks

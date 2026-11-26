@@ -2,7 +2,7 @@
 // lab asks the student to find are not shown. Rows the prompt tells the student to read stay. The page opened with
 // instructor=1 shows everything; closing the lab brings everything back. The list, lab by lab, with reasons, is in LABS.md.
 
-export const running = { id: null };
+export const running = { id: null, photometer: false };      // photometer: the running lab measures brightness (js/photometer.js)
 export const INSTRUCTOR = typeof location !== 'undefined' && new URLSearchParams(location.search).get('instructor') === '1';
 
 // keys: the start of the row's label in info.js, lower case
@@ -16,6 +16,8 @@ export const HIDDEN = {
   'kepler-mars': [...DIST, 'elongation'], 'jupiter-mass': ['from '], 'venus-phases': SIZE,
   'venus-transit-1769': ['light time', ...SIZE], 'venus-transit-2012': ['light time', ...SIZE], 'mercury-transit': ['light time', ...SIZE], 'mars-parallax': ['light time'],
   romer: ['light time', 'seen vs. actual', 'spot crosses'], aberration: [], parallax: STAR, 'barnard-parallax': STAR, 'proxima-parallax': STAR, 'proper-motion': STAR,
+  'cepheid-distance': ['distance', 'variable', 'magnitude now'], 'rr-lyrae': ['distance', 'variable', 'magnitude now'], 'cepheid-calibrate': ['variable', 'magnitude now'],
+  'sn-ia': ['magnitude now'], 'sn-types': ['magnitude now', 'type'],
   canopus: TRANSIT, 'sidereal-day': TRANSIT, analemma: TRANSIT, 'polaris-latitude': [...TRANSIT, 'ra / dec'], 'precession-pole': [], 'precession-equinox': [],
 };
 /** Is the row with this label (may contain HTML) hidden now? */

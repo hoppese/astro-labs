@@ -46,6 +46,21 @@ const CONTACTS = (() => {
   return '<svg class="lab-fig" viewBox="0 0 282 64" role="img" aria-label="First contact: the planet touches the edge of the Sun from outside. Second: it is just completely inside. Third: it touches the edge again from inside, on its way out. Fourth: it leaves the edge.">' + one(0, 18.5, 1, '1st') + one(72, 33.5, 1, '2nd') + one(144, 33.5, -1, '3rd') + one(216, 18.5, -1, '4th') + '</svg>';
 })();
 
+// ---- the standard-candle labs (js/variables.js, js/photometer.js): brightness from a photometer, by comparison with a steady star ----
+const PHOTO_TEMPLATE = { cols: [
+  { key: 'jd', kind: 'data', name: 'date', unit: 'd', sig: 0, raw: 'jd', rawLabel: 'Julian Date' },
+  { key: 'n', kind: 'data', name: 'counts', unit: 'counts', sig: 0, raw: 'counts', rawLabel: 'Counts in one exposure' },
+  { key: 'obj', kind: 'text', name: 'star', raw: 'obj', rawLabel: 'Name' }] };
+const CANDLE_SHOW = { ...DARK, conLines: true, conNames: true, dso: true };
+const PHOTOMETRY = (comp) => [
+  `The star in the middle changes in brightness. Click it: its panel has a <b>Photometer</b> row, the counts a detector collects from it in one exposure. The ground and the daylight are switched off, so any date and hour will do.`,
+  `Pick a <b>comparison star</b> near it that does not vary, with a magnitude given in its panel${comp ? ` (${comp} will do)` : ''}. Write down its magnitude, and read its counts several times (step the clock a second between readings: each second is a new exposure). Average them.`,
+  `Set up your notebook: columns of your own, with names and units. <b>Choose what Record copies</b> (the Julian Date and the counts are among the readings). Then record the variable star’s counts, select it first.`,
+  `A magnitude from counts: <i>m</i> = <i>m</i><sub>comparison</sub> − 2.5 log( counts ÷ counts<sub>comparison</sub> ). Add it as a formula column.` + HELP('Brighter means more counts and a SMALLER magnitude. Five magnitudes is a factor of 100 in counts.'),
+];
+const CANDLE_ABOUT = 'The variable stars’ brightness is a <b>model</b>, not a record of what the star did: a smooth curve through the period, the range, a date of maximum and the rise time listed in the General Catalogue of Variable Stars. Real light curves have bumps this one lacks, and the phase today can be off by part of a cycle, because periods drift and some catalog dates are decades old. '
+  + 'The counts are simulated too: photon noise and a half-percent wobble from exposure to exposure, a fixed function of your notebook seed and the clock second, so no two students get the same numbers.';
+
 // ---- the two notebook astrometry labs share their wording (what to measure; the analysis is the student's) ----
 // where a star is from its reference star: the two sides of the triangle, no formula (east is to the left on the sky)
 const SPLIT_DIAGRAM = '<svg class="lab-diagram" viewBox="0 0 250 150" role="img" aria-label="A right-angled triangle on the sky: the separation runs from the reference star to the star, the position angle is measured from north toward east, and the two short sides are the north part and the east part">'
@@ -73,7 +88,7 @@ const ASTROMETRY_TEMPLATE = { cols: [
   { key: 'pa', kind: 'data', name: 'position angle', unit: 'deg', sig: 0, raw: 'pa', rawLabel: 'Position angle (north through east)' },
   { key: 'ref', kind: 'text', name: 'reference star', raw: 'from', rawLabel: 'Measured from (name)' }] };
 
-export const GROUPS = ['Earth and Moon', 'The Sun', 'The planets', 'The astronomical unit', 'Light', 'The stars', 'Time and the calendar'];
+export const GROUPS = ['Earth and Moon', 'The Sun', 'The planets', 'The astronomical unit', 'Light', 'The stars', 'Standard candles', 'Time and the calendar'];
 
 export const LABS = [
   // ------------------------------------------------------------------ Earth and Moon
@@ -383,6 +398,71 @@ export const LABS = [
     ],
     about: `Aristotle noted that travellers going south see stars that never rise in Greece, so the Earth is curved and not very big. See ${tao}.` },
 
+  // ------------------------------------------------------------------ Standard candles
+  { id: 'cepheid-distance', group: 'Standard candles', title: 'How far is δ Cephei? A Cepheid as a standard candle', who: 'Leavitt, 1912; a notebook lab',
+    blurb: 'Measure a Cepheid’s period and average brightness, and let the period–luminosity law give its distance.',
+    setup: { t: '2026-09-01T03:00:00Z', loc: P.richmond, target: { hip: 110991 }, track: true, fov: 12, mount: 'eq', show: CANDLE_SHOW, tools: [] },
+    notebook: true, photometer: true, obs: { seeing: 0, noise: 0 }, template: PHOTO_TEMPLATE,
+    steps: [
+      ...PHOTOMETRY('ε Cephei, a little to the east, or ζ Cephei'),
+      'Step the date by a day at a time (click the date and time: <b>+1 day</b>) and record its counts every night for at least three weeks. Some nights, take two readings a few hours apart.',
+      'Graph magnitude against date. Upside down is the astronomers’ custom (brighter higher): you may flip the axis. How long is one cycle, from one maximum to the next? Use as many cycles as you can, or lay a <b>Sine wave</b> model over your points. What is its average magnitude?',
+      'Henrietta Leavitt found that the longer a Cepheid’s period, the more luminous it is. Calibrated today on Cepheids with measured parallaxes, the law is <i>M</i><sub>V</sub> = −2.43 ( log <i>P</i> − 1 ) − 4.05, with the period <i>P</i> in days (Benedict et al. 2007). What is δ Cephei’s absolute magnitude <i>M</i>?',
+      'The distance modulus gives the distance: <i>m</i> − <i>M</i> = 5 log( <i>d</i> ÷ 10 pc ). How many parsecs, and light-years, away is δ Cephei? When you have finished, close the lab and compare with the distance in its panel, from its parallax.',
+    ],
+    about: 'The period–luminosity law used here is Benedict et al. (2007), calibrated on ten Cepheids whose parallaxes the Hubble Space Telescope measured. The lab next door makes the law yourself instead. Dust between us and the star dims it a little, and is ignored here. ' + CANDLE_ABOUT },
+  { id: 'rr-lyrae', group: 'Standard candles', title: 'RR Lyrae: a standard candle in one night', who: 'Fleming, 1901; a notebook lab',
+    blurb: 'A star that brightens by a factor of two in an hour and repeats in half a day.',
+    setup: { t: '2026-07-15T04:00:00Z', loc: P.richmond, target: { hip: 95497 }, track: true, fov: 3, mount: 'eq', show: CANDLE_SHOW, tools: [] },
+    notebook: true, photometer: true, obs: { seeing: 0, noise: 0 }, template: PHOTO_TEMPLATE,
+    steps: [
+      ...PHOTOMETRY(''),
+      'This star changes fast: record its counts every 20 to 30 minutes (<kbd>Shift</kbd> + <kbd>↑</kbd> is a minute; the date box has <b>+1 h</b>) for a day and a half.',
+      'Graph magnitude against time. How long is one cycle? How long does the star take to brighten, and to fade? What is its average magnitude?',
+      'RR Lyrae stars are old stars burning helium in their cores, and all of them have nearly the same luminosity: an absolute magnitude of about <i>M</i><sub>V</sub> = +0.6. How far away is RR Lyrae? (<i>m</i> − <i>M</i> = 5 log( <i>d</i> ÷ 10 pc ).) Close the lab afterward and compare with its parallax distance.',
+      'Why can an RR Lyrae star, a hundred times fainter than a Cepheid, still measure the distances to the globular clusters and the center of our Galaxy?',
+    ],
+    about: 'RR Lyrae stars’ absolute magnitudes depend a little on how much metal the star has; +0.6 is a typical value. ' + CANDLE_ABOUT },
+  { id: 'cepheid-calibrate', group: 'Standard candles', title: 'Make the period–luminosity law yourself, then measure Andromeda', who: 'Hertzsprung, 1913; Hubble, 1925; a notebook lab',
+    blurb: 'Climb the distance ladder: parallaxes calibrate the Cepheids, and the Cepheids reach another galaxy.',
+    setup: { t: '2026-09-01T03:00:00Z', loc: P.richmond, target: { hip: 110991 }, track: true, fov: 12, mount: 'eq', show: CANDLE_SHOW, tools: [] },
+    notebook: true, photometer: true, obs: { seeing: 0, noise: 0 }, template: PHOTO_TEMPLATE,
+    steps: [
+      'Rung one: Cepheids close enough for a parallax. Here are eight: <b>δ Cephei</b>, <b>η Aquilae</b>, <b>ζ Geminorum</b>, <b>β Doradus</b>, <b>ℓ Carinae</b>, <b>X Sagittarii</b>, <b>Y Sagittarii</b> and <b>T Vulpeculae</b> (search for each by name). Each one’s panel gives its distance, from its parallax (Hipparcos), and a <b>Photometer</b> row. The ground is switched off, so the southern ones can be seen too. Share them out in your group.',
+      'For each Cepheid: choose a steady comparison star near it with a magnitude in its panel, average a few of its readings, then record the Cepheid’s counts night after night (<b>+1 day</b> in the date box) until you have at least two cycles. ℓ Carinae is slow: give it two months. Turn counts into magnitudes: <i>m</i> = <i>m</i><sub>comparison</sub> − 2.5 log( counts ÷ counts<sub>comparison</sub> ).',
+      'From each light curve: the period <i>P</i> (days) and the average magnitude <i>m</i>. From its distance <i>d</i>: its absolute magnitude, <i>M</i> = <i>m</i> − 5 log( <i>d</i> ÷ 10 pc ).',
+      'Make a new table, one row per Cepheid: log <i>P</i> and <i>M</i>. Graph <i>M</i> against log <i>P</i> and fit a <b>Straight line</b> by hand. That line is your own period–luminosity law. How much do the stars scatter about it, and why might they?',
+      'Rung two: another galaxy. Search for <b>M31 V1</b>, the star in the Andromeda Galaxy in which Edwin Hubble recognized a Cepheid in 1923. It is about 19th magnitude: zoom in, and use a comparison star in the same field. Measure its light curve over two or three months.',
+      'With your own law: V1’s absolute magnitude, then the distance to Andromeda. Hubble found about 285,000 parsecs in 1925; today’s value is about 765,000. Which way is yours off, and what in your calibration could push it that way? (Think about dust, and about the parallaxes.)',
+    ],
+    about: 'This is the real ladder in miniature: every rung is calibrated on the one below, and every error is carried upward. The parallax distances are Hipparcos’s, as the star catalog has them; some of these stars sit behind a magnitude of dust, which is not removed here, and two of the brightest Cepheids are binaries. The light of M31 V1 is a model built on Templeton et al. (2011): position, period, date of maximum and mean magnitude; its amplitude is our estimate. ' + CANDLE_ABOUT },
+  { id: 'sn-ia', group: 'Standard candles', title: 'A Type Ia supernova as a standard candle', who: 'Phillips, 1993; the 1998 discovery of the accelerating universe; a notebook lab',
+    blurb: 'Follow SN 2011fe in the Pinwheel Galaxy to its peak, calibrate it, and use it on another galaxy.',
+    setup: { t: '2011-08-25T03:00:00Z', loc: P.richmond, target: 'SN 2011fe', track: true, fov: 0.6, mount: 'eq', show: CANDLE_SHOW, tools: [] },
+    notebook: true, photometer: true, obs: { seeing: 0, noise: 0 }, template: PHOTO_TEMPLATE,
+    steps: [
+      'On 24 August 2011 a new star appeared in the Pinwheel Galaxy (M101): SN 2011fe, the nearest Type Ia supernova in decades. It is the star in the middle. Click it: its panel has a <b>Photometer</b> row.',
+      'Choose a steady comparison star in the same field with a magnitude in its panel. Average a few readings of its counts.',
+      'Record the supernova’s counts once a night (<b>+1 day</b> in the date box) for about two months, and turn them into magnitudes: <i>m</i> = <i>m</i><sub>comparison</sub> − 2.5 log( counts ÷ counts<sub>comparison</sub> ).',
+      'Graph magnitude against date. When did it peak, and how bright was it at peak? How many magnitudes did it fade in the 15 days after the peak?',
+      'Calibrate. Cepheids in M101, measured with the Hubble Space Telescope, put it 6.85 million parsecs away (distance modulus 29.19). What was the supernova’s absolute magnitude at peak?',
+      'Use it. SN 2014J went off in the Cigar Galaxy (M82) in January 2014 (search for it, and step to the end of January). Find its peak magnitude the same way, and with your calibration, the distance to M82.',
+      'Red giants put M82 about 3.5 million parsecs away. Does your answer agree? What could make a supernova look fainter than it should, and what would that do to the distance you work out? (Its spectrum showed it to be unusually red.)',
+    ],
+    about: 'Type Ia supernovae are not all exactly alike: the brighter ones fade more slowly (the Phillips relation), and real work corrects for that and for dust. Both supernovae’s brightness here is a <b>model</b> built on published numbers (the date of explosion, the date and magnitude of the peak, the late fading rate), with the typical shape of a Type Ia between them, not the measurements themselves. The counts are simulated, with photon noise.' },
+  { id: 'sn-types', group: 'Standard candles', title: 'Two supernovae in one galaxy: Type Ia or Type II?', who: 'Minkowski, 1941; a notebook lab',
+    blurb: 'M101 had a supernova in 2011 and another in 2023. Tell them apart by their light curves.',
+    setup: { t: '2011-08-25T03:00:00Z', loc: P.richmond, target: 'M 101', track: true, fov: 0.6, mount: 'eq', show: CANDLE_SHOW, tools: [] },
+    notebook: true, photometer: true, obs: { seeing: 0, noise: 0 }, template: PHOTO_TEMPLATE,
+    steps: [
+      'The Pinwheel Galaxy, M101, had two bright supernovae twelve years apart: <b>SN 2011fe</b> (found 24 August 2011) and <b>SN 2023ixf</b> (found 19 May 2023). Each appears in this field on its own date. Neither panel will tell you its type.',
+      'Pick a steady comparison star in the field with a magnitude in its panel, and average a few readings of its counts.',
+      'For each supernova: set the date to the day it was found, then record its counts every two or three days for four months. Turn counts into magnitudes: <i>m</i> = <i>m</i><sub>comparison</sub> − 2.5 log( counts ÷ counts<sub>comparison</sub> ).',
+      'Graph the two light curves against <b>days since discovery</b>, on the same axes. How fast does each rise? What does each do in the month after its peak, and in the month after that?',
+      'A <b>Type Ia</b> is a white dwarf blown apart: no hydrogen, a rise of two to three weeks, then a steady fade (about three magnitudes in two months, then a slow tail). A <b>Type II</b> is the collapse of a massive star’s core inside its hydrogen envelope: a rise of days, then a <i>plateau</i> while the envelope cools, then a sudden drop. Which is which?',
+      'Both are in the same galaxy, so at the same distance. Which was more luminous at its peak, and by how many times? Which kind would you trust as a standard candle?',
+    ],
+    about: 'Both light curves are <b>models</b> built on published numbers (dates of explosion and peak, peak magnitude), with the typical shape of each type between them, not the measurements. SN 2023ixf faded off its plateau sooner than most Type II supernovae. For a third, stranger kind, search for SN 1987A in the Large Magellanic Cloud (February 1987). The counts are simulated, with photon noise.' },
   // ------------------------------------------------------------------ Time and the calendar
   { id: 'sidereal-day', group: 'Time and the calendar', title: 'The sidereal day', who: 'Antiquity',
     blurb: 'A star returns to the meridian a little early each night.',

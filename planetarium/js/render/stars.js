@@ -9,6 +9,21 @@ import { cam } from '../camera.js';
 import { addPick } from '../picks.js';
 import { R } from './proj.js';
 import { see, seeFrame, seeStar } from '../notebook/seeing.js';
+import { VAR_BY_HIP, varMag, jdOf } from '../variables.js';
+
+// ---- variable stars (js/variables.js): which entries of a tier are variables, and their model magnitude now ----
+const varFlags = new WeakMap();      // tier data -> Uint8Array (1 = a variable star)
+function flagsOf(t) {
+  let f = varFlags.get(t.data);
+  if (f === undefined) {
+    f = null;
+    for (let i = 0; i < t.n; i++) if (VAR_BY_HIP.has(t.data[i * stars.NF + 4])) { if (!f) f = new Uint8Array(t.n); f[i] = 1; }
+    varFlags.set(t.data, f);
+  }
+  return f;
+}
+/** Model V magnitude now of the catalog star with this HIP number if it is one of the variables, else null (info.js, the notebook). */
+export function magNow(hip, timeMs) { const v = hip && VAR_BY_HIP.get(hip); return v ? varMag(v, jdOf(timeMs)) : null; }
 
 // ---- colour from B-V ---------------------------------------------------------
 const NB = 14, BV0 = -0.4, BV_STEP = 0.2;
@@ -106,11 +121,12 @@ export function drawStars(ctx) {
   for (const t of stars.tiers) {
     if (!t.loaded) continue;
     if (t.magMin > lim) break;
-    const d = t.data, v = t.vec, n = t.n;
+    const d = t.data, v = t.vec, n = t.n, vf = flagsOf(t), jd = vf ? jdOf(state.timeMs) : 0;
     for (let i = 0; i < n; i++) {
       const o = i * NF;
       let mag = d[o + 2];
-      if (mag > lim) break;
+      if (vf !== null && vf[i] === 1) { mag = varMag(VAR_BY_HIP.get(d[o + 4]), jd); if (mag > lim) continue; }      // a variable: its brightness now (a model)
+      else if (mag > lim) break;
       considered++;
       let x = v[3 * i] + bx, y = v[3 * i + 1] + by, z = v[3 * i + 2] + bz;
       if (f0 * x + f1 * y + f2 * z < zLoose) continue;

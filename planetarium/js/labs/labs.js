@@ -31,7 +31,7 @@ export async function startLab(id, { extra = null, at = 0, fresh = false, marks 
   if (!L) return false;
   starting = true; offer = null;
   emit('lab-start', L);           // js/point/: a phone held at the sky lets go, with everything put back, before the lab sets its own
-  lab.current = L; running.id = L.id; state.keepTracked = false;
+  lab.current = L; running.id = L.id; running.photometer = !!L.photometer; state.keepTracked = false;
   clearMarks(); closePanels(); closeBoxes();
   // start clean: no leftovers from another lab
   const base = { closeOthers: true, tools: [], obs2: null, trail: null, clearMeasures: true, lightTime: true, play: false, rate: 1, mount: 'altaz',
@@ -107,7 +107,7 @@ export function openLabsList() {
   const f = modal.querySelector('.close'); if (f) f.focus();
 }
 export function initLabs() {
-  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { forgetLab(); lab.current = null; running.id = null; emit('lab', null); emit('selection'); } });
+  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { forgetLab(); lab.current = null; running.id = null; running.photometer = false; emit('lab', null); emit('selection'); } });
   card.body.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.do) DO[b.dataset.do](b);
