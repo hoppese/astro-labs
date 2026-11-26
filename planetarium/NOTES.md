@@ -1379,6 +1379,16 @@ Vantage 'Above': `state.aboveAU` (3, 7, 12, 35, 100) au along the J2000 ecliptic
 periods under 60 days) by sampling the ephemeris (planets cached per day, moons per hour), projected from the observer each frame.
 `state.show.orbits` (Settings, default on) only matters in space.
 
+## Solar-system view in 3D; discs that hide what is behind them (2026-11-26)
+js/orbitcam.js: vantage 'Above' is an orbit camera. The observer is `aboveAU` from a target (`abovePan`, or the body `aboveTarget`
+circled, which carries the observer along as it moves) in the ecliptic direction (`aboveLon`, `aboveLat`), and the camera always looks
+at the target (alt-az mount forced, ecliptic north up). input.js routes drag (orbit), shift/right/ctrl-drag and two-finger moves (pan),
+wheel and pinch (distance, not field), arrows, +/-, and double-click on a body (circle it) there. "Top view" (Settings) goes home.
+Orbit lines: drawn as an underlay (renderer.js addUnderlay) before the bodies; a toolbar button and key U, shown only in space; the
+moons of the planet circled get theirs. planets.js occlude(): a resolved disc first repaints the sky inside itself, so a night side
+(Jupiter from Io, the Earth from the Moon) hides stars, Milky Way and lines; before, only the lit part was drawn and the dark side was
+see-through. Stepping onto a surface switches Ground on.
+
 ## Standing on another body (2026-11-26)
 `state.surface` = {lat, lon} (planetocentric latitude, east longitude, degrees) stands the observer on the vantage body when it is in
 `SURFACES` (js/ephem.js: the solid bodies, not Venus). skyframe.js `surfacePoint(id, lat, lon, tt)` gives the offset from the body's

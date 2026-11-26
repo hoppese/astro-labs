@@ -18,6 +18,7 @@ import { latitudeHidden, running, stepHidden } from './labs/hidden.js';
 import { keyReached, takesKeys } from './focus.js';
 import { ICON, TICON } from './icons.js';
 import { measure, toggleMeasure } from './measure.js';
+import { aimAbove, homeAbove } from './orbitcam.js';
 import { INFO_HTML, CREDITS_HTML } from './about.js';
 import { deep, netUsable, netWhy, depthNow, deepSource } from './deepstars.js';
 
@@ -44,6 +45,7 @@ const TOOLS = [
   { key: 'refraction', label: 'Refraction', k: 'F', hidden: true },
   { key: 'ground', label: 'Ground', k: 'G' },
   { key: 'cardinal', label: 'Cardinal points', k: 'Q' },
+  { key: 'orbits', label: 'Orbit lines (looking from space)', k: 'U', spaceOnly: true },
   { key: 'mount', label: 'Equatorial mount', k: 'M', mount: true },
   null,
   { key: 'measure', label: 'Measure an angle', k: 'R', act: () => toggleMeasure(), isOn: () => measure.active },
@@ -189,7 +191,7 @@ function fillEditor(force) {
 // ---------- drawer: location, sky, mount, markings ----------
 const CHECKS = [['starNames', 'Star names', 'S'], ['planetNames', 'Planet names', 'P'], ['conLines', 'Constellation lines', 'C'], ['conNames', 'Constellation names', 'V'],
   ['conBounds', 'Boundaries', 'B'], ['dso', 'Deep-sky objects', 'D'], ['eqGrid', 'Equatorial grid', 'E'], ['azGrid', 'Alt-az grid', 'Z'],
-  ['meridian', 'Meridian', ';'], ['equator', 'Celestial equator', '.'], ['ecliptic', 'Ecliptic', ','], ['cardinal', 'Cardinal points', 'Q'], ['orbits', 'Orbits (looking from space)', '']];
+  ['meridian', 'Meridian', ';'], ['equator', 'Celestial equator', '.'], ['ecliptic', 'Ecliptic', ','], ['cardinal', 'Cardinal points', 'Q'], ['orbits', 'Orbits (looking from space)', 'U']];
 const PRESETS = [['Dark site', 2], ['Rural', 4], ['Suburban', 6], ['City', 8]];
 
 export function openDrawer(open, section) {
@@ -261,7 +263,8 @@ function buildDrawer() {
     sel.innerHTML = '<option value="">the Earth (the place below)</option><option value="Above">high above the Sun (the solar system)</option><optgroup label="Floating in space at">' + rest.map((id) => `<option value="${id}">${id === 'Sun' || id === 'Moon' ? 'the ' + id : id}</option>`).join('') +
       '</optgroup><optgroup label="At a moon">' + moons.map((id) => `<option value="${id}">${id} (${MOON_PARENT[id]})</option>`).join('') + '</optgroup>';
     sel.addEventListener('change', () => setVantage(sel.value || null));
-    $('aboveSel').addEventListener('change', (e) => { state.aboveAU = +e.target.value; emit('loc'); lookDown(); });
+    $('aboveSel').addEventListener('change', (e) => { state.aboveAU = +e.target.value; emit('loc'); aimAbove(); });
+    $('aboveHome').addEventListener('click', () => { select(null); homeAbove(); });
     // standing on the body instead of floating at its center
     $('surfOn').addEventListener('change', (e) => setSurface(e.target.checked ? defaultSite(state.vantage) : null));
     $('surfSite').addEventListener('change', (e) => { const s = sitesFor(state.vantage)[+e.target.value]; if (s) setSurface({ lat: s[1], lon: s[2] }); });
@@ -321,7 +324,7 @@ const defaultSite = (id) => { const s = sitesFor(id)[0]; return { lat: s[1], lon
 export function setSurface(surf) {
   state.surface = surf && SURFACES.includes(state.vantage) ? { lat: Math.round(surf.lat * 1e4) / 1e4, lon: Math.round(surf.lon * 1e4) / 1e4 } : null;
   emit('loc');
-  if (eff.onSurface) lookAround();
+  if (eff.onSurface) { if (!state.show.ground) toggle('ground', true); lookAround(); }      // stepping onto the ground: show it (G hides it again)
   else if (state.vantage) { const ref = { kind: 'body', id: lookTarget(state.vantage) }; select(ref); centerOn(ref, true); }
 }
 /** On the ground: turn to the planet (or the Earth, or the Sun) when it is up, else to the southern (northern) horizon. */
@@ -332,8 +335,8 @@ function lookAround() {
   select(null); stopTracking();
   lookAtHor(azAltToHor(state.surface.lat >= 0 ? 180 : 0, 25)); emit('render');
 }
-/** High above the Sun: look straight down at it, with a field that holds the orbits out to about the height. */
-function lookDown() { const ref = { kind: 'body', id: 'Sun' }; select(null); centerOn(ref); cam.fov = 110; emit('fov'); }
+/** The solar-system view: from above the Sun, looking at it, with a field that holds the orbits out to about the distance (js/orbitcam.js moves about from there). */
+function lookDown() { select(null); stopTracking(); cam.fov = 80; emit('fov'); homeAbove(); }
 /** A new place. What is followed goes on being followed, seen from there. */
 export function setLocation(loc) { locMsg(''); set('loc', loc); }
 function fillLocation() {
@@ -359,11 +362,12 @@ function syncPlace() {
   const l = state.loc, b = $('placeBtn'), v = state.vantage;
   b.innerHTML = ICON.pin + '<span class="txt"></span><span class="sub"></span>';
   const the = (x) => (x === 'Sun' || x === 'Moon' ? 'the ' + x : x), ground = eff.onSurface, sf = state.surface;
-  b.querySelector('.txt').textContent = v === 'Above' ? `${state.aboveAU} au above the Sun` : ground ? 'On ' + the(v) : v ? 'At ' + the(v) : l.name;
+  b.querySelector('.txt').textContent = v === 'Above' ? 'In the solar system' : ground ? 'On ' + the(v) : v ? 'At ' + the(v) : l.name;
   b.querySelector('.sub').textContent = ground ? `${fmtLat(sf.lat)} ${fmtLon(sf.lon)}` : v ? 'in space' : latitudeHidden() ? '' : `${fmtLat(l.lat)} ${fmtLon(l.lon)}`;
   const sel = $('vantageSel'); if (sel && sel.value !== (v || '')) sel.value = v || '';
   const note = $('vantageNote');
-  const ab = $('aboveRow'); if (ab) { ab.hidden = v !== 'Above'; $('aboveSel').value = String(state.aboveAU); }
+  const ab = $('aboveRow'); if (ab) { ab.hidden = v !== 'Above'; const near = [3, 7, 12, 35, 100].reduce((a, c) => (Math.abs(Math.log(c / state.aboveAU)) < Math.abs(Math.log(a / state.aboveAU)) ? c : a)); $('aboveSel').value = String(near); }
+  document.querySelectorAll('.tool[data-key="orbits"]').forEach((t) => { t.style.display = eff.space ? '' : 'none'; });
   const sr = $('surfRow');
   if (sr) {
     sr.hidden = !SURFACES.includes(v); $('surfOn').checked = ground; $('surfWhere').hidden = !ground;
@@ -375,7 +379,7 @@ function syncPlace() {
     }
   }
   if (note && ground) { note.hidden = false; note.textContent = `You stand on ${the(v)}. ${v === 'Titan' ? 'Its thick orange haze is drawn (Settings: Atmosphere): a dim orange day, and at night only the brightest stars and planets, Saturn among them, get through.' : v === 'Mars' ? 'Its thin, dusty air is drawn (Settings: Atmosphere): butterscotch by day, a blue glow round the setting Sun, no stars by day.' : 'There is no air: the sky stays black by day and nothing twinkles.'} North is toward ${the(v)}\u2019s north pole; longitudes are east. Settings: Ground hides or shows the ground. The place below is used again when you go back to the Earth.`; }
-  else if (note) { note.hidden = !v; note.textContent = v === 'Above' ? 'You float above the north pole of the ecliptic, looking down on the Sun. The lines are the orbits of the planets (Settings: Orbits). The planets are drawn at their true size: zoom in to see them.' : v ? `You float at the center of ${v === 'Sun' || v === 'Moon' ? 'the ' + v : v}, which is not drawn. No ground, no air: “up” is the north pole of the ecliptic. The place below is used again when you go back to the Earth.` : ''; }
+  else if (note) { note.hidden = !v; note.textContent = v === 'Above' ? 'You float in the solar system, looking at the Sun. Drag to fly round it; shift-drag (or right-drag, or two fingers) to move sideways; scroll or pinch to go nearer or farther; double-click a planet to circle it instead. Up is the north of the ecliptic. The lines are the orbits (U). The planets are drawn at their true size: go near to see them.' : v ? `You float at the center of ${v === 'Sun' || v === 'Moon' ? 'the ' + v : v}, which is not drawn. No ground, no air: “up” is the north pole of the ecliptic. The place below is used again when you go back to the Earth.` : ''; }
 }
 function syncBortle() {
   $('bortle').value = state.bortle;

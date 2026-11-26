@@ -79,7 +79,7 @@ let cache = null, cacheKey = '';
 
 /** All solar-system bodies for this frame: {list, byId}. Cached per instant, site and light-time setting. */
 export function getBodies(frame) {
-  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + (frame.vantage || '') + (frame.vantage === 'Above' ? state.aboveAU : '') + (frame.surface ? '@' + frame.surface.lat + ',' + frame.surface.lon : '') + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
+  const key = jpl.version + '|' + frame.timeMs + '|' + frame.loc.lat + '|' + frame.loc.lon + '|' + (frame.vantage || '') + (frame.vantage === 'Above' ? aboveKey() : '') + (frame.surface ? '@' + frame.surface.lat + ',' + frame.surface.lon : '') + '|' + state.lightTime + '|' + frame.aberration + '|' + !!small.data;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = compute(frame, state.lightTime, frame.aberration !== false);
@@ -107,6 +107,8 @@ export function hiddenFraction(rel, axis, pole, parent, moonKm, inner = 0, outer
 export const EARTH_DEF = { id: 'Earth', name: 'Earth', kind: 'planet', radiusKm: 6378.137, polarKm: 6356.752, color: '#9ec5ff' };
 /** Bodies the observer can stand at, in the order the menu lists them. */
 export const VANTAGES = ['Above', 'Sun', 'Mercury', 'Venus', 'Moon', 'Mars', 'Phobos', 'Jupiter', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Saturn', 'Titan', 'Enceladus', 'Uranus', 'Miranda', 'Neptune', 'Triton', 'Pluto', 'Charon'];
+/** What places the observer in the solar-system view (for cache keys). */
+export const aboveKey = () => [state.aboveAU, state.aboveLat, state.aboveLon, state.aboveTarget, ...(state.abovePan || [])].join(',');
 /** The solid bodies the observer can also stand on (js/skyframe.js surfacePoint); not Venus, whose sky is solid cloud. */
 export const SURFACES = ['Mercury', 'Moon', 'Mars', 'Phobos', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Titan', 'Enceladus', 'Miranda', 'Triton', 'Pluto', 'Charon'];
 /** Named places to stand: [label, lat, east lon]. Elsewhere a place about 20 deg from the point under the planet (or the Earth). */
@@ -117,7 +119,11 @@ export const SITES = {
 };
 /** Sun-centered place (au, EQJ) of the center of any body the observer can stand at, at `time` (no light time: where it is). */
 export function vantageHelio(id, time) {
-  if (id === 'Above') return scale(ECL_POLE, state.aboveAU || 12);      // high above the Sun, on the north pole of the ecliptic: the solar-system view
+  if (id === 'Above') {      // the solar-system view (js/orbitcam.js): aboveAU from the target, in the ecliptic direction (aboveLon, aboveLat)
+    const b = state.aboveLat * DEG, l = state.aboveLon * DEG, x = Math.cos(b) * Math.cos(l), y = Math.cos(b) * Math.sin(l), z = Math.sin(b);
+    const c = state.aboveTarget ? vantageHelio(state.aboveTarget, time) : null;      // circling a body: it stays in the middle as time runs
+    return add(c || state.abovePan || [0, 0, 0], scale([x, y * ECL_POLE[2] + z * ECL_POLE[1], -y * ECL_POLE[1] + z * ECL_POLE[2]], state.aboveAU || 12));
+  }
   if (id === 'Earth') return vecOf(A.HelioVector(A.Body.Earth, time));
   const parent = MOON_PARENT[id];
   if (!parent) return helioOf(id, time);

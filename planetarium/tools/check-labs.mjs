@@ -111,6 +111,11 @@ export async function checkLabs({ line }) {
         state.vantage = 'Moon'; need(!eff.atmosphere && air().id === 'Earth', 'no air on the Moon');
         state.vantage = 'Titan'; need(eff.atmosphere && air().k > 3, 'Titan haze');
         [state.vantage, state.surface, state.show.atmosphere] = was; need(air().id === 'Earth' && !eff.space, 'back on the Earth'); }
+      { const { state } = await import('../js/state.js'), was = [state.aboveAU, state.aboveLat, state.aboveLon, state.abovePan], tm = X.A.MakeTime(new Date(t)), d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        Object.assign(state, { aboveAU: 10, aboveLat: 0, aboveLon: 0, abovePan: [0, 0, 0] }); need(d(E.vantageHelio('Above', tm), [10, 0, 0]) < 1e-9, 'solar-system view toward the equinox');
+        Object.assign(state, { aboveLat: 90, aboveLon: 123, abovePan: [1, 2, 3] }); const pole = E.vantageHelio('Above', tm), ep = 23.4392911 * X.DEG;
+        need(d(pole, [1, 2 - 10 * Math.sin(ep), 3 + 10 * Math.cos(ep)]) < 1e-9, 'solar-system view from the ecliptic pole, panned');
+        Object.assign(state, { aboveAU: was[0], aboveLat: was[1], aboveLon: was[2], abovePan: was[3] }); }
       line(`  standing on ${E.SURFACES.length} bodies: horizon frame within ${(err * X.RAD).toFixed(2)} deg of the Earth's; Earth from Tranquility Base az ${tq.az.toFixed(0)} alt ${tq.alt.toFixed(1)}, from the far side alt ${far.alt.toFixed(0)}`); }
     line(`  from ${E.VANTAGES.length} other bodies: all finite; Jupiter from Io ${(2 * io.angRadius).toFixed(2)} deg, ${(io.phaseFrac * 100).toFixed(0)}% lit; Earth from the Moon ${(2 * moon.angRadius).toFixed(2)} deg; from the Sun mag ${sun.mag.toFixed(2)}`); }
 }

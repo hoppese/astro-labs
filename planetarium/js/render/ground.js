@@ -106,7 +106,7 @@ export function drawGround(ctx) {
 /** Standing on another body: its own colour, lit by the Sun (no air: full light once the Sun is clear of the horizon, black ground at night). */
 function surfaceColour(sky) {
   const b = R.bodies && R.bodies.byId[state.vantage], hex = (b && b.color) || '#9a948a';
-  const lit = 0.05 + 0.42 * smooth(-0.5, 6, sky.sunAlt);
+  const lit = 0.05 + 0.6 * smooth(-0.5, 6, sky.sunAlt);
   const c = [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * lit));
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }

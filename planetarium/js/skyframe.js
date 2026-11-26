@@ -5,7 +5,7 @@ import { A, fromRot, transpose, mulMV, mulMM, vecOf, C_AU_PER_DAY, mod } from '.
 import { state, eff } from './state.js';
 import './deltat.js';            // the clocks: UTC, TT, UT1
 import { jpl, init as initJpl } from './jpl.js';
-import { vantageHelio, SURFACES } from './ephem.js';
+import { vantageHelio, SURFACES, aboveKey } from './ephem.js';
 import { bodyAxes, figure } from './orient.js';
 
 let cache = null, cacheKey = '';
@@ -14,7 +14,7 @@ let cache = null, cacheKey = '';
 export function getFrame() {
   const loc = state.loc;
   const fx = state.fx;
-  const key = jpl.version + '|' + (state.vantage || '') + (state.vantage === 'Above' ? state.aboveAU : '') + surfKey() + '|' + state.timeMs + '|' + loc.lat + '|' + loc.lon + '|' + (loc.elev || 0) + '|' + fx.aberration + fx.parallax;
+  const key = jpl.version + '|' + (state.vantage || '') + (state.vantage === 'Above' ? aboveKey() : '') + surfKey() + '|' + state.timeMs + '|' + loc.lat + '|' + loc.lon + '|' + (loc.elev || 0) + '|' + fx.aberration + fx.parallax;
   if (key === cacheKey) return cache;
   cacheKey = key;
   cache = makeFrame(state.timeMs, loc, state.vantage, onSurface() ? state.surface : null);

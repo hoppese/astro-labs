@@ -2,6 +2,7 @@
 // Drag pans (the sky point under the pointer stays under it), wheel / two-finger scroll / pinch
 // zooms about the pointer, a click selects the nearest object. While something is followed a drag keeps following it with an offset
 // (nav.js); a zoom is about the pointer once there is an offset, about the object while it is in the middle.
+// In the solar-system view (js/orbitcam.js) a drag turns round the target instead, shift- (or right-) drag pans, and zoom moves nearer.
 
 import { state, emit } from './state.js';
 import { cam, mountAt, bringUnder, zoomAt, update, unproject } from './camera.js';
@@ -9,6 +10,7 @@ import { sameRef } from './objects.js';
 import { getFrame } from './skyframe.js';
 import { pickAt } from './picks.js';
 import { takeEaten } from './clickguard.js';
+import { orbitMode, orbitBy, panBy, zoomDistance, targetBody } from './orbitcam.js';
 import { select, centerOn, flyTo, cancelAnim, zoomAnim, takeView, moveSky, zoomTracked, skyUnder, hasOffset, holdCentre, driven, releaseDriver } from './nav.js';
 
 const CLICK_SLOP = 5, TAP_SLOP = 12;      // px a mouse / a finger may wander and still have clicked
@@ -16,13 +18,14 @@ const DOUBLE_MS = 320, DOUBLE_PX = 34;     // two taps this close are a double t
 
 export function initInput(canvas, { onClickSky } = {}) {
   const pointers = new Map();
-  let grab = null, moved = 0, downAt = null, pinch = null, lastTap = null, lastType = 'mouse';
+  let grab = null, moved = 0, downAt = null, pinch = null, lastTap = null, lastType = 'mouse', panDrag = false;
 
   const pos = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   const userMoves = () => { releaseDriver('drag'); if (state.tracking) takeView(); else cancelAnim(); };
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse' && !(orbitMode() && e.button === 2)) return;
+    panDrag = e.shiftKey || e.ctrlKey || e.altKey || e.button === 2;
     canvas.setPointerCapture(e.pointerId);
     const p = pos(e);
     lastType = e.pointerType; holdCentre(true);
@@ -55,6 +58,7 @@ export function initInput(canvas, { onClickSky } = {}) {
           canvas.classList.add('dragging'); userMoves();
           if (e.pointerType !== 'mouse' && !state.tracking) { update(frame); grab = mountAt(prev[0], prev[1]); }      // no jump by the 12 px it took to be sure
         }
+        if (orbitMode()) { (panDrag || e.shiftKey ? panBy : orbitBy)(p[0] - prev[0], p[1] - prev[1]); return; }
         if (state.tracking) moveSky(skyUnder(prev[0], prev[1]), p[0], p[1], grab);
         else bringUnder(grab, p[0], p[1], frame);
         emit('render');
@@ -62,6 +66,7 @@ export function initInput(canvas, { onClickSky } = {}) {
     } else if (pointers.size === 2 && pinch) {
       const [a, b] = [...pointers.values()];
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1;
+      if (orbitMode()) { if (!pinch.began) { pinch.began = true; userMoves(); } zoomDistance(pinch.last / d); panBy(mx - pinch.mx, my - pinch.my); pinch.mx = mx; pinch.my = my; pinch.last = d; return; }      // nearer or farther, and two fingers moving together pan
       if (driven()) { pinch.mx = mx; pinch.my = my; cam.fov = driven().clampFov(cam.fov * pinch.last / d); pinch.last = d; emit('render'); return; }      // pointing: the phone holds the view, two fingers only zoom
       if (!pinch.began) { pinch.began = true; pinch.offset = hasOffset() || grabbedAway(); if (!state.tracking || pinch.offset) userMoves(); else cancelAnim(); pinch.fov = cam.fov; }
       if (state.tracking && !pinch.offset) zoomAt(pinch.last / d, cam.cx, cam.cy, frame, true);       // the followed object stays in the middle
@@ -114,13 +119,16 @@ export function initInput(canvas, { onClickSky } = {}) {
   function doubleTap(p, ref) {
     lastTap = null;
     if (driven()) { if (ref) select(ref); return; }
+    if (ref && orbitMode() && ref.kind === 'body') { select(ref); targetBody(ref.id); return; }
     if (ref) { select(ref); centerOn(ref); return; }
+    if (orbitMode()) { zoomDistance(0.5); return; }
     if (state.tracking) { if (hasOffset()) zoomTracked(0.5, p[0], p[1]); else zoomAt(0.5, p[0], p[1], getFrame(), true); emit('render'); }
     else { update(getFrame()); flyTo(unproject(cam.cx + (p[0] - cam.cx) / 2, cam.cy + (p[1] - cam.cy) / 2), { fov: cam.fov / 2, dur: 260 }); }
   }
   canvas.addEventListener('dblclick', (e) => {
     if (lastType === 'touch') return;      // the taps have been dealt with already
     const p = pos(e); const ref = pickAt(p[0], p[1]);
+    if (ref && orbitMode() && ref.kind === 'body') { select(ref); targetBody(ref.id); return; }      // the solar-system view turns round it from now on
     if (ref) { select(ref); centerOn(ref); }
   });
 
@@ -132,10 +140,12 @@ export function initInput(canvas, { onClickSky } = {}) {
     const k = e.ctrlKey ? 0.012 : 0.0022;
     dy = Math.max(-240, Math.min(240, dy));
     const f = Math.exp(dy * k);
+    if (orbitMode()) { zoomDistance(f * f); return; }      // (distance spans more than the field: twice the step)
     if (state.tracking) { if (!zoomAnim(f)) { if (hasOffset()) zoomTracked(f, p[0], p[1]); else zoomAt(f, p[0], p[1], getFrame(), true); } }
     else { cancelAnim(); zoomAt(f, p[0], p[1], getFrame()); }
     emit('render');
   }, { passive: false });
+  canvas.addEventListener('contextmenu', (e) => { if (orbitMode()) e.preventDefault(); });      // right-drag pans there
   // Safari's own pinch gesture would zoom the page
   for (const t of ['gesturestart', 'gesturechange']) canvas.addEventListener(t, (e) => e.preventDefault());
 }
@@ -154,6 +164,12 @@ export function navKey(e) {
     releaseDriver('drag'); cancelAnim();
     cam.lon += dl / Math.max(Math.cos(cam.lat * Math.PI / 180), 0.15); cam.lat += db; update(frame); emit('render');
   };
+  if (orbitMode()) {      // the solar-system view: arrows turn round the target, + and - move nearer and farther
+    const o = { ArrowLeft: [-40, 0], ArrowRight: [40, 0], ArrowUp: [0, -40], ArrowDown: [0, 40] }[e.key];
+    if (o) { e.shiftKey ? panBy(-o[0], -o[1]) : orbitBy(o[0], o[1]); return true; }
+    if (['+', '=', 'PageUp'].includes(e.key)) { zoomDistance(1 / 1.25); return true; }
+    if (['-', '_', 'PageDown'].includes(e.key)) { zoomDistance(1.25); return true; }
+  }
   // on screen, +lon is to the left in both mounts (east is left of north when looking up at the sky)
   switch (e.key) {
     case 'ArrowLeft': pan(step, 0); return true;

@@ -15,8 +15,8 @@ let cache = { key: '', paths: [] };
 
 /** Sun-centered points (au, EQJ) round one revolution of each path, centered on now. Planets: cached per day; moons: per hour. */
 function paths(time) {
-  const V = state.vantage, home = MOON_PARENT[V] || V;
-  const key = V + '|' + state.aboveAU + '|' + Math.round(time.ut * 24);
+  const V = state.vantage, T = V === 'Above' ? state.aboveTarget : V, home = T ? MOON_PARENT[T] || T : null;      // (in the solar-system view: the moons of the planet circled)
+  const key = V + '|' + T + '|' + Math.round(time.ut * 24);
   if (cache.key === key) return cache.paths;
   const out = [];
   const dayKey = Math.round(time.ut);
@@ -30,7 +30,7 @@ function paths(time) {
     cache.planets = pl; cache.dayKey = dayKey; out.push(...pl);
   }
   // the moons of the planet the observer is at (or whose moon the observer is on), drawn round the planet where it is now
-  const fam = Object.keys(MOON_PERIOD).filter((id) => MOON_PARENT[id] === home && id !== V && MOON_PERIOD[id] < 60);
+  const fam = !home ? [] : Object.keys(MOON_PERIOD).filter((id) => MOON_PARENT[id] === home && id !== V && MOON_PERIOD[id] < 60);
   for (const id of fam) {
     const P = MOON_PERIOD[id], parent = home, c = vantageHelio(parent, time);
     if (!c) continue;

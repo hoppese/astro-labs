@@ -22,7 +22,10 @@ export const state = {
   // --- place ---
   loc: { ...DEFAULT_LOCATION },
   homeLoc: null,
-  aboveAU: 12,             // vantage 'Above': height above the Sun, au
+  aboveAU: 12,             // vantage 'Above' (js/orbitcam.js): distance from the target point, au
+  aboveLat: 89.5, aboveLon: 270,      //   the observer's direction from the target, ecliptic degrees (89.5: all but straight above)
+  abovePan: [0, 0, 0],     //   the target point, Sun-centered EQJ au
+  aboveTarget: null,       //   or the body circled (it carries the observer along as it moves)
   vantage: null,           // null: on the Earth at loc; or the id of a body the observer floats at (js/ephem.js VANTAGES; not saved between visits)           // the place the user chose, while pointing borrows the phone's own (js/point/): that one is never stored
   surface: null,           // {lat, lon}: standing on the vantage body there (only for ephem.js SURFACES), not floating at its center
   // --- view ---
@@ -66,7 +69,7 @@ export const eff = {
   get atmosphere() { return state.show.atmosphere && !this.steady && (!state.vantage || (this.onSurface && (state.vantage === 'Mars' || state.vantage === 'Titan'))); },      // (js/air.js: the air of each)
   get refraction() { return !state.vantage && (this.pointing || (state.show.refraction && this.steady !== 'full')); },
   get ground() { return state.show.ground && this.steady !== 'full' && !this.space; },
-  get mount() { return this.pointing ? 'altaz' : this.steady === 'full' ? 'eq' : state.mount; },
+  get mount() { return this.pointing || state.vantage === 'Above' ? 'altaz' : this.steady === 'full' ? 'eq' : state.mount; },
 };
 
 /** Toggle one of the state.show flags. */

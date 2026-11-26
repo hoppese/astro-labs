@@ -35,6 +35,8 @@ const overlays = [];          // extra draw callbacks (measure tool, quiz, ...):
 export const perf = { frameMs: 0, avgMs: 0, stars: 0, limMag: 0, fov: 0, stage: {} };
 
 export function addOverlay(fn) { overlays.push(fn); }
+const underlays = [];        // drawn just before the Sun, Moon and planets, so their discs cover them (orbit lines)
+export function addUnderlay(fn) { underlays.push(fn); }
 export function requestRender() { dirty = true; }
 
 export function initRenderer(el) {
@@ -107,6 +109,7 @@ function draw(frame, now) {
   drawStars(ctx); lap('stars');
   drawDeepStars(ctx); lap('deep');         // Gaia DR3, bundled tiles + online: the stars fainter than the base catalog holds (js/deepstars.js)
   drawDso(ctx); lap('dso');
+  for (const fn of underlays) fn(ctx, R);
   drawBodies(ctx); lap('bodies');
   drawGround(ctx); lap('ground');
   drawSelection(frame, bodies);

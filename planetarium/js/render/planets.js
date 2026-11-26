@@ -270,12 +270,13 @@ export function drawBodies(ctx) {
         ctx.save(); ctx.beginPath(); ctx.arc(pl.x, pl.y, drawnR, 0, 2 * Math.PI); ctx.clip(); repaintSky(ctx, sky); ctx.restore();      // dark: what we see there is our own sky
         if (nearSide(b) < 1) darkOutline(ctx, pl, rpx, 1 - nearSide(b));      // the same before, at and after the contacts: nothing but the edges themselves gives the instant away
       // beside the Sun its dark side faces us (the sunlit part left is a hair): no star-like glow, and a faint outline so that its way to the Sun's edge can be followed
-      } else if (nearSide(b) < 1) drawnR = drawDarkSide(ctx, b, pl, rpx, dm, resolved);
+      } else if (nearSide(b) < 1) { if (resolved) occlude(ctx, pl, rpx); drawnR = drawDarkSide(ctx, b, pl, rpx, dm, resolved); }
       else if (dm <= 0 && !resolved) visible = false;
       else {
         // a point of light that shrinks into the disc as the disc outgrows it
         if (dm > 0) { const ss = starSize(dm), k = resolved ? 1 - smooth(0.45, 1.1, rpx / ss) : 1; if (k > 0.02) drawnR = drawPointFaded(ctx, pl.x, pl.y, dm, POINT_BV[b.id] ?? 0.7, k); }
         if (resolved) {
+          occlude(ctx, pl, rpx);
           const d = drawFromMap(ctx, b, pl, rpx);
           if (d) drawnR = Math.max(drawnR, d);
           else { drawPhaseDisc(ctx, pl.x, pl.y, rpx, screenAngleToward(b, b.toSun ? unit(b.toSun) : sunU, pl.x, pl.y), b.phaseAngle, b.color, '#14181f', 1); drawnR = Math.max(drawnR, rpx); }
@@ -294,6 +295,10 @@ export function drawBodies(ctx) {
 }
 
 /** 0: Mercury or Venus within about 1.5 degrees of passing between us and the Sun; 1: ordinary. */
+/** A resolved disc hides what is behind it: its night side (and the gaps of a thin crescent) show our own sky there, not the stars, the Milky
+ *  Way, orbit lines or a Sun beyond it. Its light is then added on top. (From the Earth the planets are dots and this never showed; from Io,
+ *  Jupiter is 20 degrees across.) The circle has the equatorial radius: past a flattened limb it covers a sliver of empty sky with sky. */
+function occlude(ctx, pl, r) { ctx.save(); ctx.beginPath(); ctx.arc(pl.x, pl.y, r, 0, 2 * Math.PI); ctx.clip(); repaintSky(ctx, R.sky); ctx.restore(); }
 const nearSide = (b) => (b.dist < R.bodies.sun.dist && (b.id === 'Venus' || b.id === 'Mercury') ? smooth(0.0015, 0.005, b.phaseFrac) : 1);
 function darkOutline(ctx, pl, rpx, a) { ctx.strokeStyle = `rgba(150,168,192,${0.6 * a})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(pl.x, pl.y, Math.max(rpx, 2), 0, 2 * Math.PI); ctx.stroke(); }
 function drawDarkSide(ctx, b, pl, rpx, dm, resolved) {
