@@ -91,11 +91,27 @@ function initDevVoice(token) {
     }).join('') : '<div class="dv-empty">Nothing asked yet in this run of the server.</div>')
       + `<div class="dv-foot">${d.unpushed.length} local commit${d.unpushed.length === 1 ? '' : 's'} not pushed${d.unpushed.length ? ': ' + d.unpushed.slice(0, 6).map((c) => esc(c.hash)).join(', ') + (d.unpushed.length > 6 ? ', …' : '') : ''}. Push them from a normal Claude Code session.</div>`;
   }
+  // Every change (asked from this page or another, typed, or an Undo) moves the repository's HEAD: when it does, the page refreshes
+  let head0 = null, refreshing = false;
   async function refreshList() {
     clearTimeout(listTimer);
     try { lastJobs = await fetch(API + '/jobs', { headers: { 'x-dev-token': token } }).then((r) => r.json()); renderList(lastJobs); } catch (e) { listBtn.textContent = 'Changes (server?)'; }
+    if (lastJobs && lastJobs.head) { if (!head0) head0 = lastJobs.head; else if (lastJobs.head !== head0 && !refreshing) { refreshNow(lastJobs); return; } }
     const busy = lastJobs && lastJobs.jobs.some((j) => j.state !== 'done');
-    if (busy || !listEl.hidden) listTimer = setTimeout(refreshList, busy ? 2000 : 6000);
+    listTimer = setTimeout(refreshList, busy ? 2000 : 4000);      // always watching (a change may come from Undo or another tab)
+  }
+  async function refreshNow(d) {
+    refreshing = true;
+    const j = d.jobs.find((x) => x.commit && x.commit.hash && d.head.startsWith(x.commit.hash)) || d.jobs.find((x) => x.commit);
+    const what = j ? (j.undone ? 'Undone: ' : '') + (j.reply || j.text) : 'The code changed.';
+    note('<b>Refreshing</b> to show the change: ' + esc(what));
+    // the local server lets the browser cache scripts: fetch each changed file past the cache first, or the reload shows the old code
+    try {
+      const { files } = await fetch(API + '/changed?since=' + head0, { headers: { 'x-dev-token': token } }).then((r) => r.json());
+      const base = new URL('../../', import.meta.url);      // planetarium/
+      await Promise.all((files || []).map((f) => fetch(new URL(f.replace(/^planetarium\//, ''), base), { cache: 'reload' }).catch(() => null)));
+    } catch (e) { /* reload anyway */ }
+    reloadTo(context().link, what, 1200);
   }
   listEl.addEventListener('click', (e) => { const it = e.target.closest('.dv-item'); if (!it) return; const id = +it.dataset.id; openItems.has(id) ? openItems.delete(id) : openItems.add(id); it.classList.toggle('open'); });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -125,16 +141,16 @@ function initDevVoice(token) {
       let j; try { j = await fetch(API + '/job?id=' + r.id, { headers: { 'x-dev-token': token } }).then((x) => x.json()); } catch (e) { setTimeout(poll, 3000); return; }
       if (j.state !== 'done') { setTimeout(poll, 2000); return; }
       m.remove();
-      note(`<b>${j.commit ? 'Changed' : j.ok ? 'Answer' : 'Problem'}</b>: ${esc(j.reply)}` + (j.commit ? `<br><small>commit ${esc(j.commit.hash)} · ${esc(j.commit.files.join(', '))} · reloading…</small>` : ''), { cls: j.ok ? '' : 'err' });
+      note(`<b>${j.commit ? 'Changed' : j.ok ? 'Answer' : 'Problem'}</b>: ${esc(j.reply)}` + (j.commit ? `<br><small>commit ${esc(j.commit.hash)} · ${esc(j.commit.files.join(', '))}</small>` : ''), { cls: j.ok ? '' : 'err' });
       refreshList();
       chime(j.ok ? 1175 : 330);
-      if (j.commit) reloadTo(ctx.link, j.reply);
+      if (j.commit) refreshList();      // the HEAD watch refreshes the page
     };
     setTimeout(poll, 2500);
   }
-  function reloadTo(link, reply) {
+  function reloadTo(link, reply, ms = 2500) {
     try { sessionStorage.setItem('devVoice.last', reply); sessionStorage.setItem('devVoice.listen', listening ? '1' : ''); } catch (e) { /* fine */ }
-    setTimeout(() => { location.href = link; }, 2500);
+    setTimeout(() => { location.href = link; }, ms);
   }
   box.addEventListener('click', async (e) => {
     const a = e.target.closest('[data-a]'); if (!a) return;
@@ -144,7 +160,7 @@ function initDevVoice(token) {
     else if (a.dataset.a === 'undo') {
       let r; try { r = await post('/undo'); } catch (err) { note('Could not reach the dev-voice server.', { cls: 'err' }); return; }
       note(`<b>${r.ok ? 'Undone' : 'Not undone'}</b>: ${esc(r.reply)}`, { cls: r.ok ? '' : 'err' }); refreshList();
-      if (r.ok) reloadTo(context().link, r.reply);
+      if (r.ok) refreshList();
     }
   });
 
@@ -186,7 +202,7 @@ function initDevVoice(token) {
   try { if (sessionStorage.getItem('devVoice.list')) listEl.hidden = false; } catch (e) { /* fine */ }
   refreshList();
   try {
-    const last = sessionStorage.getItem('devVoice.last'); if (last) { note('<b>Changed</b>: ' + esc(last), { ms: 15000 }); sessionStorage.removeItem('devVoice.last'); }
+    const last = sessionStorage.getItem('devVoice.last'); if (last) { note('<b>Refreshed</b>: ' + esc(last), { ms: 15000 }); sessionStorage.removeItem('devVoice.last'); }
     if (sessionStorage.getItem('devVoice.listen')) start();
   } catch (e) { /* fine */ }
   return () => { stop(); clearTimeout(listTimer); box.remove(); console.error = ce; };

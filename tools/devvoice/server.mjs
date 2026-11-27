@@ -140,7 +140,15 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && url.pathname === '/jobs') {      // the panel's list: every request since the server started, newest first, and what is not pushed yet
     let unpushed = [];
     try { unpushed = git('log', '--format=%h %s', '@{upstream}..HEAD').split('\n').filter(Boolean).map((l) => ({ hash: l.slice(0, l.indexOf(' ')), subject: l.slice(l.indexOf(' ') + 1) })); } catch (e) { /* no upstream: fine */ }
-    send(200, { busy, jobs: [...jobs.values()].reverse().map((j) => ({ id: j.id, text: j.text, state: j.state, ok: j.ok, reply: j.reply, commit: j.commit, undone: !!j.undone, at: j.at, startedAt: j.startedAt, doneAt: j.doneAt, ahead: queue.indexOf(j) })), unpushed });
+    send(200, { head: git('rev-parse', 'HEAD'), busy, jobs: [...jobs.values()].reverse().map((j) => ({ id: j.id, text: j.text, state: j.state, ok: j.ok, reply: j.reply, commit: j.commit, undone: !!j.undone, at: j.at, startedAt: j.startedAt, doneAt: j.doneAt, ahead: queue.indexOf(j) })), unpushed });
+    return;
+  }
+  if (req.method === 'GET' && url.pathname === '/changed') {      // files under planetarium/ changed between a commit and now (the page refetches them before reloading)
+    const since = url.searchParams.get('since') || '';
+    if (!/^[0-9a-f]{7,40}$/.test(since)) { send(400, { error: 'bad commit' }); return; }
+    let files = [];
+    try { files = git('diff', '--name-only', since, 'HEAD', '--', 'planetarium').split('\n').filter(Boolean); } catch (e) { /* unknown commit: reload anyway */ }
+    send(200, { files });
     return;
   }
   if (req.method === 'POST' && url.pathname === '/undo') { if (busy || queue.length) { send(409, { ok: false, reply: 'Wait until the current request is done.' }); return; } try { send(200, undo()); } catch (e) { send(500, { ok: false, reply: e.message }); } return; }
