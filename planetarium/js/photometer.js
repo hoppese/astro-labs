@@ -26,9 +26,9 @@ const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h =
 const g = [0, 0];
 /** Counts in one exposure (whole number), or null when there is nothing to measure. */
 export function counts(ref, bodies, timeMs = state.timeMs) {
-  const m = trueMag(ref, bodies, timeMs);
+  const t = Math.floor(timeMs / 1000), m = trueMag(ref, bodies, t * 1000);      // one exposure, one instant: the start of its clock second
   if (m == null) return null;
-  const N = Math.pow(10, -0.4 * (m - ZP)), t = Math.floor(timeMs / 1000);
+  const N = Math.pow(10, -0.4 * (m - ZP));
   noisePair(see.seed || 1, t | 0, Math.floor(t / 4294967296) | 0, hash(refKey(ref)), 0x5ca1ab1e, g);
   return Math.max(0, Math.round(N + g[0] * Math.sqrt(N + (0.005 * N) ** 2)));
 }

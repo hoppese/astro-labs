@@ -206,6 +206,19 @@ Preset: 2027-04-06 12:00 UTC, Sun trail with one tick a Mars year later.
 - The first version of this preset (2026-12-06) had the two sight lines only 4° apart and gave 1.74 for 1.63 au:
   Tao's warning about nearly parallel lines. Pairs between late February and late April 2027 all give within 1%.
 
+### `kepler-earth` Advanced: Kepler I, the Earth's orbit seen from Mars
+Preset: 2014-04-08 20:57 UTC (opposition), Mars tracked. Notebook readings: J2000 ecliptic longitudes of the Sun and the selected object,
+each with 1′ (1σ) of simulated error from the seed (`lonErr: 1`); the panel's coordinates, distances, sizes, elongation and phase are hidden.
+Student records λ0, then 9 returns at +1 Mars yr (2016-02-24 … 2031-03-13); r = sin(λ0 − λM)/sin(λM − λS) in units of Sun–Mars.
+Without errors (tools/check-labs.mjs): r from 0.607 to 0.627; circle radius 0.617 → **Sun–Mars at λ0 = 1.622 au** (true 1.622);
+**center off by 0.0166 of the radius toward 283°** (Earth's e = 0.0167, aphelion near 283°). With 1′ errors: offset ±0.003, direction ±20°.
+
+### `kepler-orbit` Advanced: Kepler II, Mars's orbit and the law of areas
+Preset: 2026-01-01. First dates every two months for two years, each with a partner +1 Mars yr later; Earth from Kepler I's circle.
+Without errors: 10 of 12 pairs pass |sin(λ2 − λ1)| ≥ 0.15; **r from 1.383 to 1.665 au, a = 1.524, e = 0.092** (true 1.5237, 0.0934);
+circle fit center 0.143 au from the Sun. In a 40-day version of the simulation the angle per day ran 0.44–0.63°/day while r1·r2·Δθ/Δt
+stayed at 1.21 ± 1%: equal areas. An ellipse cannot be told from an off-center circle with 1′ data (b/a = 0.9956), and the prompt says so.
+
 ### `jupiter-mass` Weighing Jupiter
 Preset: 2026-11-24 09:00 UTC, Jupiter tracked, angle tool. Measured for Ganymede, reading the angle hourly:
 - Greatest elongation on one side **293.6″** (Jupiter at 5.030 au), and again 172 h later: T = **7.17 d** (true 7.155).

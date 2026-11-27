@@ -2,6 +2,7 @@
 // the needed toggles (see setup.js for the fields) and gives the student a short prompt of what to
 // measure. NO ANSWERS here: the values the instructor should expect are in planetarium/LABS.md.
 
+import * as V from '../variables.js';
 const DAY = 86400000;
 const TAO = 'https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/';
 const tao = `<a href="${TAO}" target="_blank" rel="noopener">Terence Tao’s notes on the cosmic distance ladder</a>`;
@@ -47,6 +48,20 @@ const CONTACTS = (() => {
 })();
 
 // ---- the standard-candle labs (js/variables.js, js/photometer.js): brightness from a photometer, by comparison with a steady star ----
+// truth(): what THIS student's sky holds (their seed shifts the models), shown on the lab card only with instructor=1
+const f2 = (x) => x.toFixed(2), f3 = (x) => x.toFixed(3), pcOf = (mu) => Math.pow(10, mu / 5 + 1), BEN = (P) => -2.43 * (Math.log10(P) - 1) - 4.05;
+const dateOf = (jd) => new Date((jd - 2440587.5) * DAY).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+const CAL = [110991, 97804, 34088, 26069, 47854, 87072, 89968, 102949];
+const TRUTH = {
+  'cepheid-distance': () => { const t = V.varTruth(110991), M = BEN(t.P); return `δ Cep: P ${f3(t.P)} d, mean V ${f2(t.mean)} (range ${f2(t.max)}–${f2(t.min)}); Benedict M ${f2(M)}; distance ${pcOf(t.mean - M).toFixed(0)} pc.`; },
+  'rr-lyrae': () => { const t = V.varTruth(95497); return `RR Lyr: P ${(t.P * 24).toFixed(2)} h, mean V ${f2(t.mean)} (range ${f2(t.max)}–${f2(t.min)}); with M = +0.6, ${pcOf(t.mean - 0.6).toFixed(0)} pc.`; },
+  'cepheid-calibrate': () => CAL.map((h) => { const t = V.varTruth(h); return `${t.name}: P ${f3(t.P)} d, mean ${f2(t.mean)}`; }).join('; ') + `. M31 V1: P ${f2(V.transientTruth('M31-V1').P)} d, mean ${f2(V.transientTruth('M31-V1').mean)}.`,
+  'sn-ia': () => { const a = V.transientTruth('SN2011fe'), b = V.transientTruth('SN2014J'), M = a.peak - 29.19; return `SN 2011fe: peak V ${f2(a.peak)} on ${dateOf(a.tPeak)}, so M ${f2(M)}. SN 2014J: peak ${f2(b.peak)} on ${dateOf(b.tPeak)}; M82 at ${(pcOf(b.peak - M) / 1e6).toFixed(1)} Mpc.`; },
+  'sn-types': () => { const a = V.transientTruth('SN2011fe'), b = V.transientTruth('SN2023ixf'); return `SN 2011fe (Ia): peak ${f2(a.peak)} on ${dateOf(a.tPeak)}. SN 2023ixf (II): peak ${f2(b.peak)} on ${dateOf(b.tPeak)}. Ratio of peak luminosities ${Math.pow(10, 0.4 * (b.peak - a.peak)).toFixed(2)}.`; },
+};
+TRUTH['kepler-earth'] = () => 'Without the 1′ reading errors: Earth’s circle off center by 0.0166 of its radius toward longitude 283° (true e = 0.0167, aphelion at 283°); Sun–Mars at λ0 = 1.622 au. With the errors, expect ±0.003 in the offset and ±20° in its direction.';
+TRUTH['kepler-orbit'] = () => 'Without the reading errors (Earth circle c = 0.0166, φ = 283°): 10 of the 12 pairs pass the 0.15 cut; r from 1.383 to 1.665 au, a = 1.524 au, e = 0.092 (true 1.5237, 0.0934); a fitted circle’s center 0.143 au from the Sun. Angle per day varies by about ±18%, swept area per day by about 1%.';
+export const truthFor = (id) => (TRUTH[id] ? TRUTH[id]() : null);
 const PHOTO_TEMPLATE = { cols: [
   { key: 'jd', kind: 'data', name: 'date', unit: 'd', sig: 0, raw: 'jd', rawLabel: 'Julian Date' },
   { key: 'n', kind: 'data', name: 'counts', unit: 'counts', sig: 0, raw: 'counts', rawLabel: 'Counts in one exposure' },
@@ -60,6 +75,12 @@ const PHOTOMETRY = (comp) => [
 ];
 const CANDLE_ABOUT = 'The variable stars’ brightness is a <b>model</b>, not a record of what the star did: a smooth curve through the period, the range, a date of maximum and the rise time listed in the General Catalogue of Variable Stars. Real light curves have bumps this one lacks, and the phase today can be off by part of a cycle, because periods drift and some catalog dates are decades old. '
   + 'The counts are simulated too: photon noise and a half-percent wobble from exposure to exposure, a fixed function of your notebook seed and the clock second. ' + 'Each student’s sky is also a slightly different version of the model, set by the notebook seed: the stars’ and supernovae’s brightness is shifted by about the uncertainty in the published numbers (a few hundredths of a magnitude). Your answer should agree with your classmates’ within your uncertainties, not to the last digit.';
+
+// the Kepler labs: dates and two ecliptic longitudes (with simulated 1′ errors, running.lonErr) per row
+const KEPLER_TEMPLATE = { cols: [
+  { key: 'jd', kind: 'data', name: 'date', unit: 'd', sig: 0, raw: 'jd', rawLabel: 'Julian Date' },
+  { key: 'ls', kind: 'data', name: 'Sun longitude', unit: 'deg', sig: 0, raw: 'sunlon', rawLabel: 'The Sun' },
+  { key: 'lm', kind: 'data', name: 'Mars longitude', unit: 'deg', sig: 0, raw: 'elon', rawLabel: 'The selected object' }] };
 
 // ---- the two notebook astrometry labs share their wording (what to measure; the analysis is the student's) ----
 // where a star is from its reference star: the two sides of the triangle, no formula (east is to the left on the sky)
@@ -260,6 +281,32 @@ export const LABS = [
       `Draw the Sun, the Earth’s two places (1 au from the Sun, separated by the angle from step 2) and the two sight lines to Mars, each at its angle from the Sun. Where they cross is Mars: how far is it from the Sun?`,
     ],
     about: `Repeating this for many pairs of dates gave Kepler the shape of both orbits. It fails when Mars is near opposition or conjunction, where the sight lines are nearly parallel. See ${tao}.` },
+  { id: 'kepler-earth', group: 'The planets', title: 'Advanced: Kepler I. The Earth’s orbit, seen from Mars', who: 'Kepler, Astronomia Nova, 1609, with Tycho Brahe’s observations; a notebook lab',
+    blurb: 'Mars comes back to the same point every 687 days: a fixed lighthouse from which to survey the Earth’s own orbit.',
+    setup: { t: '2014-04-08T20:57:00Z', loc: P.richmond, target: 'Mars', track: true, fov: 60, mount: 'eq', show: { ...DARK, ecliptic: true, conLines: true, conNames: true, dso: false }, tools: [] },
+    notebook: true, lonErr: 1, obs: { seeing: 0, noise: 0 }, template: KEPLER_TEMPLATE,
+    steps: [
+      'Kepler could not find Mars’s orbit without first knowing the Earth’s, and he could not know the Earth’s without a fixed point to measure from. His trick: Mars itself. Every 687 days (one Mars year) Mars is back at the same point of its orbit, while the Earth is somewhere else in its own.',
+      'The clock shows 8 April 2014, when Mars was at <b>opposition</b>: Sun, Earth and Mars in a line, so Mars’s direction from the Earth is also its direction from the Sun. Select Mars, open the notebook’s <b>Choose what Record copies</b>, and record the date and the <b>ecliptic longitudes</b> of the Sun and of the selected object. Mars’s longitude now is <i>λ</i><sub>0</sub>, where Mars sits in its orbit.',
+      'Step one Mars year (click the date and time: <b>+1 Mars yr</b>) and record again, with Mars still selected. Repeat until you have 8 or 9 dates (about 2031). Each reading carries about 1′ of error, as Tycho’s did.',
+      'For each date, a triangle: Sun, Earth, Mars. With the Sun–Mars distance as the unit, the Earth’s distance from the Sun is <i>r</i> = sin( <i>λ</i><sub>0</sub> − <i>λ</i><sub>Mars</sub> ) ÷ sin( <i>λ</i><sub>Mars</sub> − <i>λ</i><sub>Sun</sub> ), and its direction from the Sun is <i>λ</i><sub>Sun</sub> + 180°. Add these as formula columns. (Draw one triangle to see why: the law of sines.)',
+      'Add <i>x</i> = <i>r</i> cos( <i>λ</i><sub>Sun</sub> + 180° ) and <i>y</i> = <i>r</i> sin( <i>λ</i><sub>Sun</sub> + 180° ). Graph <i>y</i> against <i>x</i> with the same scale on both axes and lay a <b>Circle</b> over the points. Where is its center? Is the Sun, at (0, 0), in the middle?',
+      'The Earth’s orbit has a radius of 1 au by definition. How far is Mars from the Sun at <i>λ</i><sub>0</sub>, in au? How far off center is the Sun, as a fraction of the radius, and in which direction (a longitude)? Keep these: Kepler II needs them.',
+    ],
+    about: 'This is the first half of Kepler’s construction as Terence Tao tells it (' + tao + '). A circle that is not centered on the Sun is how the eccentric Earth orbit first showed itself; Kepler found it by exactly this route. Mars’s period of 686.98 days is assumed known (from many centuries of its returns to the same stars). The longitudes are on the J2000 axes, so that the slow precession of the equinoxes over these 17 years does not need to be removed. Each reading has about 1′ of <b>simulated</b> error, drawn from your notebook seed, about as good as Tycho Brahe’s naked-eye instruments: no two students get exactly the same orbit.' },
+  { id: 'kepler-orbit', group: 'The planets', title: 'Advanced: Kepler II. The shape of Mars’s orbit and the law of areas', who: 'Kepler, Astronomia Nova, 1609; a notebook lab',
+    blurb: 'Triangulate Mars from pairs of dates a Mars year apart, map its orbit, and find the law of equal areas.',
+    setup: { t: '2026-01-01T00:00:00Z', loc: P.richmond, target: 'Mars', track: true, fov: 60, mount: 'eq', show: { ...DARK, ecliptic: true, conLines: true, conNames: true, dso: false }, tools: [] },
+    notebook: true, lonErr: 1, obs: { seeing: 0, noise: 0 }, template: KEPLER_TEMPLATE,
+    steps: [
+      'You need the Earth’s orbit from Kepler I: a circle of radius 1 au whose center is <i>c</i> au from the Sun toward ecliptic longitude <i>φ</i>. (No Kepler I? Ask your instructor for <i>c</i> and <i>φ</i>.)',
+      'Select Mars and record the date and the ecliptic longitudes of the Sun and of Mars. Then step <b>+1 Mars yr</b> and record again: Mars is back at the same point, seen from a different Earth. Step back a Mars year and on two months (<b>+1 month</b> twice), and repeat, for two years of first dates: about 12 pairs.',
+      'Put each pair on one row (add typed columns for the second date’s two longitudes, or do this part in a spreadsheet: ⋯ → Export CSV). For each date, the Earth’s place: direction <i>λ</i><sub>E</sub> = <i>λ</i><sub>Sun</sub> + 180°; with <i>k</i> = <i>c</i> cos( <i>λ</i><sub>E</sub> − <i>φ</i> ), distance <i>r</i><sub>E</sub> = <i>k</i> + √( 1 − <i>c</i>² + <i>k</i>² ); then <i>x</i> = <i>r</i><sub>E</sub> cos <i>λ</i><sub>E</sub>, <i>y</i> = <i>r</i><sub>E</sub> sin <i>λ</i><sub>E</sub>.',
+      'Mars is where the two sight lines cross. With <i>λ</i><sub>1</sub>, <i>λ</i><sub>2</sub> its longitudes on the two dates and (<i>x</i><sub>1</sub>, <i>y</i><sub>1</sub>), (<i>x</i><sub>2</sub>, <i>y</i><sub>2</sub>) the Earth’s places: <i>s</i> = [ (<i>x</i><sub>2</sub> − <i>x</i><sub>1</sub>) sin <i>λ</i><sub>2</sub> − (<i>y</i><sub>2</sub> − <i>y</i><sub>1</sub>) cos <i>λ</i><sub>2</sub> ] ÷ sin( <i>λ</i><sub>2</sub> − <i>λ</i><sub>1</sub> ), and Mars is at ( <i>x</i><sub>1</sub> + <i>s</i> cos <i>λ</i><sub>1</sub>, <i>y</i><sub>1</sub> + <i>s</i> sin <i>λ</i><sub>1</sub> ). Leave out any pair whose sin( <i>λ</i><sub>2</sub> − <i>λ</i><sub>1</sub> ) is smaller than 0.15: its sight lines are nearly parallel, and a small error moves the crossing a long way.',
+      'Graph Mars’s places (same scale both ways) and lay a <b>Circle</b> over them. Where is its center, and how far from the Sun? From the nearest and farthest points, Mars’s distances <i>r</i><sub>min</sub> and <i>r</i><sub>max</sub>: the size of the orbit <i>a</i> = (<i>r</i><sub>max</sub> + <i>r</i><sub>min</sub>) ÷ 2 and its eccentricity <i>e</i> = (<i>r</i><sub>max</sub> − <i>r</i><sub>min</sub>) ÷ (<i>r</i><sub>max</sub> + <i>r</i><sub>min</sub>).',
+      'The law of areas. For each two consecutive first dates (two months apart): the angle Mars moved round the Sun, Δθ (from cos Δθ = ( <i>x</i><sub>1</sub><i>x</i><sub>2</sub> + <i>y</i><sub>1</sub><i>y</i><sub>2</sub> ) ÷ ( <i>r</i><sub>1</sub><i>r</i><sub>2</sub> )), and the area it swept, about ½ <i>r</i><sub>1</sub> <i>r</i><sub>2</sub> sin Δθ. Does Mars move through equal angles in equal times? Through equal areas?',
+    ],
+    about: 'The second half of Kepler’s construction (' + tao + '). Mars’s orbit is so nearly round that its width is 99.6% of its length: telling an ellipse from an off-center circle by shape alone takes measurements better than 1′, which is why Kepler’s famous 8′ discrepancy mattered so much. The off-center Sun and the law of equal areas show plainly in these data. Each longitude has about 1′ of <b>simulated</b> error from your notebook seed, and your Earth orbit is your own, so no two students get exactly the same Mars.' },
   { id: 'jupiter-mass', group: 'The planets', title: 'Weighing Jupiter', who: 'Galileo, 1610; Newton, 1687',
     blurb: 'Periods and orbit sizes of the four big moons.',
     setup: { t: '2026-11-24T09:00:00Z', loc: P.richmond, target: 'Jupiter', track: true, fov: 0.3, mount: 'eq', show: DARK, tools: ['stopwatch'] },

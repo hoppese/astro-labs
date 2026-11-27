@@ -12,14 +12,14 @@ import { state, on, emit } from '../state.js';
 import { cam } from '../camera.js';
 import { getFrame } from '../skyframe.js';
 import { getBodies } from '../ephem.js';
-import { horToAzAlt } from '../astro.js';
-import { refHorApparent, refName } from '../objects.js';
+import { horToAzAlt, mulMV, transpose, toSph, mod } from '../astro.js';
+import { refHorApparent, refName, refEqj, refKey } from '../objects.js';
 import { wallParts, fmtDate, fmtTime } from '../timeutil.js';
 import { measure, lastMeasure, clearMeasures } from '../measure.js';
 import { marks } from '../labs/stopwatch.js';
 import { createNotebook } from './ui.js';
-import { see } from './seeing.js';
-import { rowHidden } from '../labs/hidden.js';
+import { see, noisePair } from './seeing.js';
+import { rowHidden, running } from '../labs/hidden.js';
 import { lab, labStep, setLabStep } from '../labs/labs.js';
 import { counts as photoCounts } from '../photometer.js';
 import { setModelSeed } from '../variables.js';
@@ -59,10 +59,22 @@ function readings() {
   out.push({ key: 'lit', group: 'Selected object (its panel)', label: 'Illuminated fraction', unit: '%', kind: 'data', value: b && b.phaseFrac != null ? r3(b.phaseFrac * 100, 2) : null, sig: 0, why: ref ? why4 : why3 });
   out.push({ key: 'alt', group: 'Selected object (its panel)', label: 'Altitude', unit: 'deg', kind: 'data', value: aa ? r3(aa.alt, 3) : null, sig: 0, why: why3 });
   out.push({ key: 'az', group: 'Selected object (its panel)', label: 'Azimuth', unit: 'deg', kind: 'data', value: aa ? r3(aa.az, 3) : null, sig: 0, why: why3 });
+  // ecliptic longitudes on the fixed J2000 axes (no precession to untangle over decades), as an instrument reads them: in a lab that sets
+  // running.lonErr (arcmin; the Kepler labs: Tycho's instruments were good to one or two), each reading carries that much error (1 sigma),
+  // drawn from (seed, clock second, object), so the same exposure reads the same and the next one differs
+  { const g2 = [0, 0], err = running.lonErr || 0, Mje = transpose(frame.Mej);
+    const lonOf = (r, salt) => {
+      const u = r && refEqj(r, frame, bodies); if (!u) return null;
+      let L = toSph(mulMV(Mje, u)).lon;
+      if (err) { let h = 0; const k = refKey(r); for (let i = 0; i < k.length; i++) h = Math.imul(h ^ k.charCodeAt(i), 16777619); const t = Math.floor(state.timeMs / 1000); noisePair(see.seed, t | 0, salt, h, 0x7c40, g2); L += g2[0] * err / 60; }
+      return (mod(L, 360)).toFixed(err ? 3 : 4);
+    };
+    out.push({ key: 'sunlon', group: 'Ecliptic longitudes (J2000)' + (err ? `, as measured: about ${err}′ of error` : ''), label: 'The Sun', unit: 'deg', kind: 'data', value: lonOf({ kind: 'body', id: 'Sun' }, 1), sig: 0 });
+    out.push({ key: 'elon', group: 'Ecliptic longitudes (J2000)' + (err ? `, as measured: about ${err}′ of error` : ''), label: 'The selected object', unit: 'deg', kind: 'data', value: ref && ref.kind !== 'con' ? lonOf(ref, 2) : null, sig: 0, why: why3 }); }
   { const n = ref ? photoCounts(ref, bodies) : null;
     out.push({ key: 'counts', group: 'Photometer (selected object)', label: 'Counts in one exposure', unit: 'counts', kind: 'data', value: n, sig: 0, why: ref ? 'nothing to measure there' : why3 }); }
   // a reading the running lab asks the student to find is not offered either (labs/hidden.js)
-  for (const [k, l] of [['dist', 'distance'], ['diam', 'angular diameter']]) { const r = out.find((x) => x.key === k); if (rowHidden(l)) { r.value = null; r.why = 'hidden during this lab'; } }
+  for (const [k, l] of [['dist', 'distance'], ['diam', 'angular diameter'], ['lit', 'illuminated']]) { const r = out.find((x) => x.key === k); if (rowHidden(l)) { r.value = null; r.why = 'hidden during this lab'; } }
   return out;
 }
 

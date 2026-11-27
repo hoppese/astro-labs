@@ -17,6 +17,7 @@ export const HIDDEN = {
   'venus-transit-1769': ['light time', ...SIZE], 'venus-transit-2012': ['light time', ...SIZE], 'mercury-transit': ['light time', ...SIZE], 'mars-parallax': ['light time'],
   romer: ['light time', 'seen vs. actual', 'spot crosses'], aberration: [], parallax: STAR, 'barnard-parallax': STAR, 'proxima-parallax': STAR, 'proper-motion': STAR,
   'cepheid-distance': ['distance', 'variable', 'magnitude now'], 'rr-lyrae': ['distance', 'variable', 'magnitude now'], 'cepheid-calibrate': ['variable', 'magnitude now'],
+  'kepler-earth': ['ecliptic lon', 'ra / dec', 'distance', 'light time', 'angular diameter', 'elongation', 'illuminated'], 'kepler-orbit': ['ecliptic lon', 'ra / dec', 'distance', 'light time', 'angular diameter', 'elongation', 'illuminated'],
   'sn-ia': ['magnitude now'], 'sn-types': ['magnitude now', 'type'],
   canopus: TRANSIT, 'sidereal-day': TRANSIT, analemma: TRANSIT, 'polaris-latitude': [...TRANSIT, 'ra / dec'], 'precession-pole': [], 'precession-equinox': [],
 };

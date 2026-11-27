@@ -2,7 +2,10 @@
 // screen with the prompt: what to measure, never the answer.
 
 import { state, emit, set } from '../state.js';
-import { LABS, GROUPS, labById } from './presets.js';
+import { LABS, GROUPS, labById, truthFor } from './presets.js';
+import { INSTRUCTOR } from './hidden.js';
+import { see } from '../notebook/seeing.js';
+import { getModelSeed } from '../variables.js';
 import { applySetup } from './setup.js';
 import { makeCard, getCard, getDock } from './dock.js';
 import { clearMarks, restoreMarks } from './stopwatch.js';
@@ -31,7 +34,7 @@ export async function startLab(id, { extra = null, at = 0, fresh = false, marks 
   if (!L) return false;
   starting = true; offer = null;
   emit('lab-start', L);           // js/point/: a phone held at the sky lets go, with everything put back, before the lab sets its own
-  lab.current = L; running.id = L.id; running.photometer = !!L.photometer; state.keepTracked = false;
+  lab.current = L; running.id = L.id; running.photometer = !!L.photometer; running.lonErr = L.lonErr || 0; state.keepTracked = false;
   clearMarks(); closePanels(); closeBoxes();
   // start clean: no leftovers from another lab
   const base = { closeOthers: true, tools: [], obs2: null, trail: null, clearMeasures: true, lightTime: true, play: false, rate: 1, mount: 'altaz',
@@ -62,7 +65,9 @@ function renderCard() {
     (offer ? `<p class="lab-offer">You were here before: ${esc(resumeText(offer))}. <button class="btn" data-act="resume">Go back there</button></p>` : '') +
     (!all || L.notebook ? `<div class="lab-nav"><button class="btn" data-act="prev" aria-label="Previous step"${step ? '' : ' disabled'}>&lsaquo;</button><span>Step ${step + 1} of ${L.steps.length}</span><button class="btn" data-act="next" aria-label="Next step"${step < L.steps.length - 1 ? '' : ' disabled'}>&rsaquo;</button></div><div class="lab-step">${L.steps[step]}</div>`
       : `<div class="lab-nav"><span>All ${L.steps.length} steps</span></div><ol>${L.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`) +
-    `<details><summary>About this measurement, restart, links</summary><p><i>${esc(L.who)}.</i> ${L.about}</p>` +
+    // the instructor's key for THIS student's sky (their seed; open the lab with &seed=<their seed>&instructor=1)
+    (INSTRUCTOR && truthFor(L.id) ? `<p class="lab-truth"><b>Instructor, seed ${getModelSeed() || 'none (catalog values)'}:</b> ${truthFor(L.id)}</p>` : '') +
+    `<details><summary>About this measurement, restart, links</summary><p><i>${esc(L.who)}.</i> ${L.about}</p><p class="lab-seed">Your seed: <b>${see.seed}</b>. It makes your measurement errors${L.photometer ? ' and your sky' : ''} your own; give it to your instructor with your results.</p>` +
     `<div class="row"><button class="btn" data-act="restart" title="Put the date, place and view back to the start of this lab">Restart lab</button><button class="btn" data-act="list">All labs</button><button class="btn" data-act="link" title="Copy a link that opens this lab">Copy lab link</button>${L.notebook ? '' : `<button class="btn" data-act="all">${all ? 'One step at a time' : 'All steps at once'}</button>`}</div></details>`;
 }
 export function labLink(id) { const u = new URL(location.href); u.search = '?lab=' + encodeURIComponent(id); u.hash = ''; return u.toString(); }
@@ -107,7 +112,7 @@ export function openLabsList() {
   const f = modal.querySelector('.close'); if (f) f.focus();
 }
 export function initLabs() {
-  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { forgetLab(); lab.current = null; running.id = null; running.photometer = false; emit('lab', null); emit('selection'); } });
+  card = makeCard('lab', 'Lab', { cls: 'lab-card', onClose() { forgetLab(); lab.current = null; running.id = null; running.photometer = false; running.lonErr = 0; emit('lab', null); emit('selection'); } });
   card.body.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.do) DO[b.dataset.do](b);

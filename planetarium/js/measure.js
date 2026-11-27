@@ -17,6 +17,7 @@ import { projectPolyline, strokeStrips, R } from './render/proj.js';
 import { refractHor } from './astro.js';
 import { allTargets, resolveCustom } from './labs/targets.js';
 import { openLoupe, closeLoupe, loupeOpen } from './notebook/loupe.js';
+import { see, noisePair } from './notebook/seeing.js';
 
 // byEye (lab notebook, js/notebook/host.js): stars and other point sources are NOT snapped to; a magnifier opens and the
 // student places the point on the image by eye (discs still snap to centre and limb). onRecord: the notebook's Record.
@@ -125,7 +126,11 @@ function eqjOf(p, frame, bodies) {
   if (p.vec) return p.vec;
   const c = centreOf(p, frame, bodies);
   if (!c) return null;
-  return p.limb == null ? c.u : offsetPoint(c.u, c.angRadius, p.limb);
+  const v = p.limb == null ? c.u : offsetPoint(c.u, c.angRadius, p.limb);
+  if (!p.off) return v;
+  // the pointing error of this snapped end (see commit): a small step east and north of where the snap put it
+  const e = unit(cross([0, 0, 1], v)), n = cross(v, e);
+  return unit([0, 1, 2].map((k) => v[k] + (e[k] * p.off[0] + n[k] * p.off[1]) * DEG));
 }
 function nameOf(p) {
   if (p.vec) return p.near || 'sky point';
@@ -195,7 +200,12 @@ export function measureClick(x, y, ref) {
   return true;
 }
 let serial = 0;
+const gg = [0, 0];
 function commit(p) {
+  // A snapped end lands exactly on the object, which no hand or eye does: it gets a pointing error of about half a screen pixel
+  // (one sigma each way), drawn from the student's seed (js/notebook/seeing.js), so readings differ a little between students and
+  // shrink as you zoom in, as they would at a real eyepiece. By-eye ends (the notebook's magnifier) and free clicks carry their own.
+  if (!p.vec) { const s = 0.5 / cam.pxPerDeg, t = Math.floor(state.timeMs / 1000); noisePair(see.seed, t | 0, serial + 1, measure.pending ? 2 : 1, 0x0a9e1e, gg); p.off = [gg[0] * s, gg[1] * s]; }
   p.t = state.timeMs; dropped = false; measure.hover = null;      // (the old end of the rubber band is not the new one)
   dropStale();
   if (!measure.pending) measure.pending = p;
@@ -252,7 +262,7 @@ function updatePanel() {
   const frame = getFrame(), bodies = getBodies(frame);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let html = '<div class="mp-head">Angular distance</div>';
-  if (measure.active) html += `<div class="mp-hint">${dropped ? '<b>The clock has moved</b>, so the first point was dropped: click it again.' : measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?) <button class="mp-x" data-act="undo" title="Take back the first point" aria-label="Take back the first point">&times;</button>' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the center of the image by eye.' + (measure.snap ? ' Discs still snap to center and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb.' : 'Click two points (free: no snapping).')}</div>`;
+  if (measure.active) html += `<div class="mp-hint">${dropped ? '<b>The clock has moved</b>, so the first point was dropped: click it again.' : measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?) <button class="mp-x" data-act="undo" title="Take back the first point" aria-label="Take back the first point">&times;</button>' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the center of the image by eye.' + (measure.snap ? ' Discs still snap to center and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb. Each snapped point is off by about half a screen pixel, as a hand would be: zoom in for a finer reading.' : 'Click two points (free: no snapping).')}</div>`;
   const rows = measure.list.map((m) => {
     const a = eqjOf(m.a, frame, bodies), b = eqjOf(m.b, frame, bodies);
     if (!a || !b) return '';

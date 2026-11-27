@@ -17,7 +17,10 @@ import { state } from '../state.js';
 import { cam } from '../camera.js';
 import { addPick } from '../picks.js';
 
-export const see = { enabled: false, seeing: 0, noise: 0, seed: 1, on: false, fwhm: 0, pxas: 0, x: 0, y: 0, r: 0, noMarker: false };
+// seed: the notebook's when one is open (host.js); otherwise this browser's own, kept between visits, so that the angle tool's pointing
+// error and the photometer's noise differ from one student to the next even in a lab without a notebook
+const browserSeed = (() => { try { let s = +localStorage.getItem('astro-labs.seed'); if (!(s > 0)) { s = 1 + Math.floor(Math.random() * 999998); localStorage.setItem('astro-labs.seed', String(s)); } return s; } catch (e) { return 1 + Math.floor(Math.random() * 999998); } })();
+export const see = { enabled: false, seeing: 0, noise: 0, seed: browserSeed, on: false, fwhm: 0, pxas: 0, x: 0, y: 0, r: 0, noMarker: false };
 let tLo = 0, tHi = 0;
 const SPR = 64, ALPHA_N = 10;
 

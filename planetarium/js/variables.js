@@ -158,3 +158,16 @@ const vecs = Object.fromEntries(TRANSIENTS.map((o) => [o.id, sph(o.ra, o.dec)]))
 export function transientEqj(id, frame) { const v = vecs[id], b = frame.beta; return v ? unit([v[0] + b[0], v[1] + b[1], v[2] + b[2]]) : null; }
 /** Model V magnitude at an instant (UTC ms), or null. */
 export const transientMagNow = (id, timeMs) => (TRANSIENT[id] ? transientMag(TRANSIENT[id], jdOf(timeMs)) : null);
+
+// ---- the instructor's view (labs.js, with instructor=1): this seed's true values ----------------------------------------------
+/** A catalog variable as this student's sky has it: period, mean magnitude, range. */
+export function varTruth(hip) {
+  const v = VAR_BY_HIP.get(hip), j = jitterOf(hip, 'var'), mid = (v.max + v.min) / 2 + j.dm, half = (v.min - v.max) / 2 * j.amp;
+  return { name: v.name, P: v.P * j.P, mean: mid, max: mid - half, min: mid + half };
+}
+/** M31 V1 or a supernova as this student's sky has it: {P, mean} or {peak, tPeak}. */
+export function transientTruth(id) {
+  const o = TRANSIENT[id];
+  if (o.kind === 'cepheid') { const j = jitterOf(id, 'cepheid'); return { name: o.name, P: o.P * j.P, mean: o.mean + j.dm }; }
+  const j = jitterOf(id, 'sn'); return { name: o.name, peak: o.peak + j.dm, tPeak: o.tPeak + j.dt };
+}

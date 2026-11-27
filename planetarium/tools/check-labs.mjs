@@ -87,6 +87,28 @@ export async function checkLabs({ line }) {
     Cm.cmp.obs2 = null;
     line('  Earth seen square-on: ' + out.join(', ') + ' (the answer key), sites on the grid within 0.2 deg'); }
 
+  // ---- Kepler I and II (the readings students record: J2000 ecliptic longitudes of the Sun and Mars, here without the 1′ error)
+  { const O = await import('../js/objects.js'), loc = { lat: 39.83, lon: -84.89, elev: 0 }, D = X.DEG;
+    const lons = (ms) => { const f = makeFrame(ms, loc), b = E.compute(f, true, true), Mje = X.transpose(f.Mej), L = (id) => X.toSph(X.mulMV(Mje, O.refEqj({ kind: 'body', id }, f, b))).lon; return [L('Sun'), L('Mars')]; };
+    const MY = 686.9796 * 86400000, t0 = Date.parse('2014-04-08T20:57:00Z'), l0 = lons(t0)[1], P1 = [];
+    for (let k = 1; k <= 9; k++) { const [ls, lm] = lons(t0 + k * MY), r = Math.sin((l0 - lm) * D) / Math.sin((lm - ls) * D), le = (ls + 180) * D; P1.push([r * Math.cos(le), r * Math.sin(le)]); }
+    const circ = (P) => { const n = P.length; let a = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]; for (const [x, y] of P) { const z = x * x + y * y, row = [x, y, 1]; for (let i = 0; i < 3; i++) { for (let j = 0; j < 3; j++) a[i][j] += row[i] * row[j]; a[i][3] += row[i] * z; } }
+      for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) { const f = a[j][i] / a[i][i]; for (let k = i; k < 4; k++) a[j][k] -= f * a[i][k]; }
+      const q = [0, 0, 0]; for (let i = 2; i >= 0; i--) { let v = a[i][3]; for (let k = i + 1; k < 3; k++) v -= a[i][k] * q[k]; q[i] = v / a[i][i]; }
+      const cx = q[0] / 2, cy = q[1] / 2; return { cx, cy, R: Math.sqrt(q[2] + cx * cx + cy * cy) }; };
+    const e1 = circ(P1), off = Math.hypot(e1.cx, e1.cy) / e1.R, phi = X.mod(Math.atan2(e1.cy, e1.cx) * X.RAD, 360);
+    need(Math.abs(off - 0.0167) < 0.002 && Math.abs(phi - 283) < 6 && Math.abs(1 / e1.R - 1.62) < 0.01, `Kepler I: offset ${off}, toward ${phi}, Sun-Mars ${1 / e1.R}`);
+    // Kepler II with the Earth circle of Kepler I, first dates every two months from 2026-01-01
+    const c = off, ph = phi * D, earth = (ls) => { const le = (ls + 180) * D, k = c * Math.cos(le - ph), r = k + Math.sqrt(1 - c * c + k * k); return [r * Math.cos(le), r * Math.sin(le)]; };
+    const P2 = [];
+    for (let m = 0; m < 24; m += 2) { const d = new Date(Date.UTC(2026, m, 1)).getTime(), [s1, l1] = lons(d), [s2, l2] = lons(d + MY), sn = Math.sin((l2 - l1) * D);
+      if (Math.abs(sn) < 0.15) continue;
+      const [x1, y1] = earth(s1), [x2, y2] = earth(s2), s = ((x2 - x1) * Math.sin(l2 * D) - (y2 - y1) * Math.cos(l2 * D)) / sn;
+      P2.push([x1 + s * Math.cos(l1 * D), y1 + s * Math.sin(l1 * D), d]); }
+    const rs = P2.map(([x, y]) => Math.hypot(x, y)), rmax = Math.max(...rs), rmin = Math.min(...rs), am = (rmax + rmin) / 2, ecc = (rmax - rmin) / (rmax + rmin), c2 = circ(P2);
+    need(Math.abs(am - 1.5237) < 0.02 && Math.abs(ecc - 0.0934) < 0.02 && P2.length >= 8, `Kepler II: ${P2.length} points, a ${am}, e ${ecc}`);
+    line(`  Kepler I: Earth's circle off center by ${off.toFixed(4)} of its radius toward ${phi.toFixed(0)}°, Mars at λ0 ${(1 / e1.R).toFixed(3)} au; Kepler II: ${P2.length} of 12 pairs kept, r ${rmin.toFixed(3)}-${rmax.toFixed(3)} au, a ${am.toFixed(3)}, e ${ecc.toFixed(3)}, circle center ${Math.hypot(c2.cx, c2.cy).toFixed(3)} au from the Sun`); }
+
   // ---- standard candles (js/variables.js, js/photometer.js): the models stay inside the catalog's numbers and hit the published peaks
   { const Vb = await import('../js/variables.js'), Ph = await import('../js/photometer.js'), jd0 = 2461300;
     for (const v of Vb.VARIABLES) { if (v.quiet) continue; let lo = 99, hi = -99, sum = 0; const n = 2000;
@@ -110,10 +132,10 @@ export async function checkLabs({ line }) {
       need(sdv > 0.04 && sdv < 0.06 && Math.max(...dv.map(Math.abs)) <= 0.126 && sdp > 0.04 && sdp < 0.06 && Math.max(...dp.map(Math.abs)) <= 0.126, `student shifts: δ Cep mean ${sdv}, SN peak ${sdp}`);
       line(`  each student's own model (300 seeds): δ Cep mean magnitude ±${sdv.toFixed(3)} (distance ±${(sdv * 46).toFixed(1)}%), SN 2011fe peak ±${sdp.toFixed(3)}; none without a seed`); }
     // the photometer: counts = 10^(-0.4 (m - 25)) on average, with photon noise
-    const ref = { kind: 'tr', id: 'SN2011fe' }, t = (T.SN2011fe.tPeak - 2440587.5) * 86400000, c = [];
+    const ref = { kind: 'tr', id: 'SN2011fe' }, t = Math.floor((T.SN2011fe.tPeak - 2440587.5) * 86400) * 1000, c = [];      // (on a whole second: +400 ms is the same exposure)
     for (let k = 0; k < 200; k++) c.push(Ph.counts(ref, null, t + k * 1000));
     const mc = c.reduce((a, b) => a + b) / c.length, sd = Math.sqrt(c.reduce((a, b) => a + (b - mc) ** 2, 0) / c.length), N = Math.pow(10, -0.4 * (9.99 - 25));
-    need(Math.abs(mc / N - 1) < 0.002 && Math.abs(sd / Math.sqrt(N + (0.005 * N) ** 2) - 1) < 0.2 && Ph.counts(ref, null, t) === Ph.counts(ref, null, t + 400), 'photometer counts');
+    need(Math.abs(mc / N - 1) < 0.002 && Math.abs(sd / Math.sqrt(N + (0.005 * N) ** 2) - 1) < 0.2 && Ph.counts(ref, null, t) === Ph.counts(ref, null, t + 400), `photometer counts: mean/N ${mc / N}, sd ratio ${sd / Math.sqrt(N + (0.005 * N) ** 2)}, model seed ${Vb.getModelSeed()}`);
     // the answer keys of LABS.md, from the models
     const dCep = Vb.VAR_BY_HIP.get(110991), Mv = (P) => -2.43 * (Math.log10(P) - 1) - 4.05, pc = (mu) => Math.pow(10, mu / 5 + 1);
     line(`  standard candles: ${Vb.VARIABLES.length} variables inside their catalog ranges, peaks of 3 supernovae, M31 V1 mean 19.40, photometer noise ${(sd / mc * 100).toFixed(2)}% at mag 9.99; `

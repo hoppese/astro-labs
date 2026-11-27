@@ -1379,6 +1379,15 @@ Vantage 'Above': `state.aboveAU` (3, 7, 12, 35, 100) au along the J2000 ecliptic
 periods under 60 days) by sampling the ephemeris (planets cached per day, moons per hour), projected from the observer each frame.
 `state.show.orbits` (Settings, default on) only matters in space.
 
+## Per-student variation; Kepler I and II (2026-11-26)
+js/notebook/seeing.js `see.seed`: the notebook's seed when one is open, else this browser's own (localStorage astro-labs.seed). It drives
+(1) the photometer's noise, (2) the standard-candle models' shifts (variables.js setModelSeed, from host.js applyObs; 0 = catalog values
+outside notebooks), (3) the angle tool's pointing error: each snapped end gets a seeded offset of 0.5 screen px (1σ each axis) at the
+zoom of the click (measure.js commit/eqjOf), so readings shrink in error as you zoom. The stopwatch is NOT jittered: a real student's
+key press already carries a real reaction time. The lab card shows "Your seed" in About; with instructor=1 (and &seed=<n>) it shows
+that seed's true values (presets.js TRUTH). Kepler labs: host.js readings 'sunlon' and 'elon' (J2000 ecliptic longitude; running.lonErr
+arcmin of seeded error per reading, 1′ there); tools/check-labs.mjs runs both procedures through the app's frames (keys in LABS.md).
+
 ## Standard candles: variables, supernovae, photometer (2026-11-26)
 js/variables.js holds the models (pure; tools/check-labs.mjs tests them). VARIABLES: 15 Cepheids and RR Lyrae by HIP, with GCVS 5.1
 elements fetched from VizieR (Harvard mirror; CDS was down) on 2026-11-26: V max/min, epoch of maximum, period, M−m. The shape is ours:
