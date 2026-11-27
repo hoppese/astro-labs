@@ -9,7 +9,7 @@ import { cities } from './catalog.js';
 import { setNow, togglePlay, faster, slower, setRate, stepTime, setTime, rateLabel, rateWords, rateCap, SIDEREAL_DAY_MS, T_MIN, T_MAX } from './clock.js';
 import { wallParts, wallToMs, zoneLabel, fmtDate, fmtTime, browserZone, zoneFromLongitude, dateProblem, daysInMonth } from './timeutil.js';
 import { findCities } from './fuzzy.js';
-import { readNumber } from './xui.js';
+import { readNumber, toast } from './xui.js';
 import { fmtFov, fmtLat, fmtLon, azAltToHor, horToAzAlt } from './astro.js';
 import { BORTLE_NAMES, BORTLE_NELM } from './render/sky.js';
 import { centerOn, toggleTracking, select, stopTracking } from './nav.js';
@@ -399,6 +399,23 @@ function buildMenu() {
   $('mInfo').addEventListener('click', () => open('infoModal'));
   $('mCredits').addEventListener('click', () => open('creditsModal'));
   $('mBug').addEventListener('click', () => open('bugModal'));
+  // Dev voice (development only, tools/devvoice/): talk to Claude while using the app. Only when the page is served from this laptop,
+  // so students on the live site never see it. On or off is remembered in this browser.
+  if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) {
+    const KEY = 'astro-labs.devvoice', item = document.createElement('button');
+    item.id = 'mDevVoice'; menu.appendChild(item);
+    const show = (on) => { item.innerHTML = `<span class="ico">🎙</span>Dev voice: ${on ? 'on' : 'off'}`; item.setAttribute('aria-pressed', on); };
+    const set = async (on) => {
+      const m = await import('./dev/voice.js');
+      if (on) { const err = await m.startDevVoice(); if (err) { toast(err, { ms: 6000 }); on = false; } }
+      else m.stopDevVoice();
+      try { localStorage.setItem(KEY, on ? '1' : ''); } catch (e) { /* fine */ }
+      show(on);
+    };
+    let on = false; try { on = localStorage.getItem(KEY) === '1'; } catch (e) { /* fine */ }
+    show(false); if (on) set(true);
+    item.addEventListener('click', () => { close(); set(item.getAttribute('aria-pressed') !== 'true'); });
+  }
   document.querySelectorAll('.modal-backdrop').forEach((m) => {
     m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('show'); });
     m.addEventListener('keydown', (e) => { if (e.key !== 'Escape') e.stopPropagation(); });

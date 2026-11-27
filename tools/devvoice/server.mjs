@@ -132,6 +132,8 @@ const server = http.createServer((req, res) => {
   if (ORIGINS.includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Access-Control-Allow-Headers', 'content-type, x-dev-token'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST'); }
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   const send = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  // the planetarium's menu toggle asks for the token: only the local planetarium page gets it (the browser sends its Origin)
+  if (req.method === 'GET' && req.url === '/token') { if (ORIGINS.includes(origin)) send(200, { token: TOKEN }); else send(403, { error: 'only the local planetarium' }); return; }
   if (req.headers['x-dev-token'] !== TOKEN) { send(403, { error: 'bad token' }); return; }
   const url = new URL(req.url, 'http://x');
   if (req.method === 'GET' && url.pathname === '/job') { const j = jobs.get(+url.searchParams.get('id')); send(j ? 200 : 404, j ? { ...j, shot: undefined, context: undefined, ahead: queue.indexOf(j) } : { error: 'no such job' }); return; }
@@ -158,5 +160,5 @@ const server = http.createServer((req, res) => {
 });
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Dev voice server on 127.0.0.1:${PORT}. Each change becomes a local commit in ${REPO}; nothing is pushed.\n`);
-  console.log(`Open:  http://127.0.0.1:8111/planetarium/?dev=${TOKEN}\n`);
+  console.log('Open http://127.0.0.1:8111/planetarium/ and switch on ☰ → Dev voice.\n');
 });

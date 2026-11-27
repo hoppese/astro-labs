@@ -1,6 +1,7 @@
 // dev/voice.js: DEVELOPMENT ONLY. "Hey Claude, ..." while using the planetarium on this laptop: what is said after the wake words, with
 // what is on screen, goes to the local dev-voice server (tools/devvoice/server.mjs), which has Claude make the change and commits it
-// locally. Loaded by main.js only on 127.0.0.1 / localhost with ?dev=<token> in the address (the server prints that link); inert anywhere else.
+// locally. Switched on and off from the ☰ menu (ui.js), which shows the item only when the page is served from this laptop; the token
+// comes from the local server, which gives it only to this page.
 // Speech recognition is Chrome's built-in one (it sends the audio to Google to be transcribed).
 
 import { state } from '../state.js';
@@ -13,7 +14,19 @@ const WAKE = /\b(?:hey|hi|ok(?:ay)?|a)[\s,.]+(?:claude|cloud|clyde|clod|claud)\b
 const CANCEL = /^\s*(?:cancel|never ?mind|stop)\b/i;
 const SILENCE_MS = 1600;
 
-export function initDevVoice(token) {
+let running = null;
+/** Ask the local server for its token and open the panel. Returns an error message, or '' when it is on. */
+export async function startDevVoice() {
+  if (running) return '';
+  let token;
+  try { token = (await fetch(API + '/token').then((r) => r.json())).token; } catch (e) { token = null; }
+  if (!token) return 'The dev-voice server is not running. In astro-labs/ run: node tools/devvoice/server.mjs';
+  running = initDevVoice(token);
+  return '';
+}
+export function stopDevVoice() { if (running) { running(); running = null; } }
+
+function initDevVoice(token) {
   // ---- what went wrong lately (sent with each request) ----
   const errors = [];
   const keep = (s) => { errors.push(String(s).slice(0, 300)); if (errors.length > 8) errors.shift(); };
@@ -90,7 +103,7 @@ export function initDevVoice(token) {
 
   // ---- what is on screen ----
   function context() {
-    const q = describeView(); q.set('dev', token);
+    const q = describeView();
     if (lab.current) { q.set('lab', lab.current.id); }
     const panels = [...document.querySelectorAll('.infopanel, .lab-card, .lcard:not([hidden]), .modal-backdrop.show .modal')]
       .filter((e) => e.offsetParent).map((e) => e.innerText.replace(/\s+\n/g, '\n').trim()).join('\n---\n');
@@ -176,4 +189,5 @@ export function initDevVoice(token) {
     const last = sessionStorage.getItem('devVoice.last'); if (last) { note('<b>Changed</b>: ' + esc(last), { ms: 15000 }); sessionStorage.removeItem('devVoice.last'); }
     if (sessionStorage.getItem('devVoice.listen')) start();
   } catch (e) { /* fine */ }
+  return () => { stop(); clearTimeout(listTimer); box.remove(); console.error = ce; };
 }
