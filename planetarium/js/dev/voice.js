@@ -10,7 +10,8 @@ import { describeView } from '../labs/setup.js';
 import { lab, labStep } from '../labs/labs.js';
 
 const API = 'http://127.0.0.1:8112';
-const WAKE = /\b(?:hey|hi|ok(?:ay)?|a)[\s,.]+(?:claude|cloud|clyde|clod|claud)\b[\s,.!]*/i;
+// Chrome's recognizer cannot be taught a word and often mishears the name: accept the usual mishearings too ("a slot" included)
+const WAKE = /\b(?:hey|hi|hay|ok(?:ay)?|a|eh)[\s,.]+(?:claude|claud|clawed|claw|clod|cloud|clyde|clot|clause|claws|slot|plod|plaud|lord)\b[\s,.!]*/i;
 const CANCEL = /^\s*(?:cancel|never ?mind|stop)\b/i;
 const SILENCE_MS = 1600;
 
@@ -57,10 +58,13 @@ function initDevVoice(token) {
     #devVoice .dv-item small{color:#8496a9}
     #devVoice .st-queued{color:#9fb0c2}#devVoice .st-working{color:#f0c46a}#devVoice .st-changed{color:#5fd38a}#devVoice .st-answer{color:#7fb4ff}#devVoice .st-problem{color:#ff8a7a}#devVoice .st-undone{color:#8496a9;text-decoration:line-through}
     #devVoice .dv-foot{padding:6px 9px;border-top:1px solid #2a3848;color:#8496a9;font-size:12px}
-    #devVoice .dv-empty{padding:8px 9px;color:#8496a9}</style>
+    #devVoice .dv-empty{padding:8px 9px;color:#8496a9}
+    #devVoice .dv-ask{display:flex;gap:6px;margin-bottom:6px}#devVoice .dv-ask[hidden]{display:none}
+    #devVoice .dv-ask textarea{flex:1;min-height:54px;resize:vertical;background:#0f1720;color:#e8eef5;border:1px solid #f0c46a;border-radius:8px;padding:6px 8px;font:inherit}</style>
     <div class="dv-msgs"></div>
     <div class="dv-list" hidden></div>
-    <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice ready, say “Hey Claude”</span><button data-a="type" title="Type a request instead">⌨</button><button data-a="list" title="What you asked for: done, in the works, undone">Changes</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
+    <div class="dv-ask" hidden><textarea placeholder="Type or dictate a request; Enter sends, Shift+Enter for a new line, Esc closes" aria-label="Request for Claude"></textarea></div>
+    <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice ready, say “Hey Claude”</span><button data-a="type" title="Type or dictate a request (the \` key)">⌨</button><button data-a="list" title="What you asked for: done, in the works, undone">Changes</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
   document.body.appendChild(box);
   const dot = box.querySelector('.dv-dot'), live = box.querySelector('.dv-live'), msgs = box.querySelector('.dv-msgs'), micBtn = box.querySelector('[data-a=mic]');
   function note(html, { cls = '', ms = 0 } = {}) {
@@ -156,13 +160,29 @@ function initDevVoice(token) {
     const a = e.target.closest('[data-a]'); if (!a) return;
     if (a.dataset.a === 'mic') { listening ? stop() : start(); }
     else if (a.dataset.a === 'list') { listEl.hidden = !listEl.hidden; try { sessionStorage.setItem('devVoice.list', listEl.hidden ? '' : '1'); } catch (err) { /* fine */ } refreshList(); }
-    else if (a.dataset.a === 'type') { const t = prompt('Request for Claude:'); if (t && t.trim()) ask(t.trim()); }
+    else if (a.dataset.a === 'type') openAsk();
     else if (a.dataset.a === 'undo') {
       let r; try { r = await post('/undo'); } catch (err) { note('Could not reach the dev-voice server.', { cls: 'err' }); return; }
       note(`<b>${r.ok ? 'Undone' : 'Not undone'}</b>: ${esc(r.reply)}`, { cls: r.ok ? '' : 'err' }); refreshList();
       if (r.ok) refreshList();
     }
   });
+
+  // ---- the request box: ` (backtick) or ⌨ opens it focused, so any dictation tool (macOS dictation and the like) can fill it ----
+  const askBox = box.querySelector('.dv-ask'), askText = askBox.querySelector('textarea');
+  function openAsk() { askBox.hidden = false; askText.focus(); }
+  function closeAsk() { askBox.hidden = true; askText.value = ''; document.getElementById('sky')?.focus({ preventScroll: true }); }
+  askText.addEventListener('keydown', (e) => {
+    e.stopPropagation();                                                    // the planetarium's own shortcuts stay out of the box
+    if (e.key === 'Escape') { e.preventDefault(); closeAsk(); }
+    else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const t = askText.value.trim(); closeAsk(); if (t) { live.textContent = 'Sent: ' + t; ask(t); } }
+  });
+  const onKey = (e) => {
+    if (e.key !== '`' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const tg = e.target; if (tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))) return;
+    e.preventDefault(); e.stopPropagation(); openAsk();
+  };
+  window.addEventListener('keydown', onKey, true);
 
   // ---- listening ----
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -190,6 +210,8 @@ function initDevVoice(token) {
   function start() {
     if (!SR) { note('This browser has no speech recognition (use Chrome). The ⌨ button still works.', { cls: 'err' }); return; }
     rec = new SR(); rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US';
+    // newer Chrome can be told which words to expect (contextual biasing); older versions ignore this
+    try { if (window.SpeechRecognitionPhrase) rec.phrases = [new window.SpeechRecognitionPhrase('Hey Claude', 10), new window.SpeechRecognitionPhrase('Claude', 10)]; } catch (e) { /* not supported */ }
     rec.onresult = onResult;
     rec.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { note('Microphone not allowed: allow it for this page, then press Start.', { cls: 'err' }); stop(); } };
     rec.onend = () => { if (listening) try { rec.start(); } catch (e) { /* already running */ } };      // Chrome stops after a while: keep going
@@ -205,5 +227,5 @@ function initDevVoice(token) {
     const last = sessionStorage.getItem('devVoice.last'); if (last) { note('<b>Refreshed</b>: ' + esc(last), { ms: 15000 }); sessionStorage.removeItem('devVoice.last'); }
     if (sessionStorage.getItem('devVoice.listen')) start();
   } catch (e) { /* fine */ }
-  return () => { stop(); clearTimeout(listTimer); box.remove(); console.error = ce; };
+  return () => { stop(); clearTimeout(listTimer); window.removeEventListener('keydown', onKey, true); box.remove(); console.error = ce; };
 }

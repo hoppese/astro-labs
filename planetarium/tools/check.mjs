@@ -432,6 +432,11 @@ line(); line('== 26. Moons crossing their planets, their shadows, occultations a
 await (await import('./check-moons.mjs')).checkMoons(line);
 line(); line('== 27. What students type and click (tools/check-student.mjs; a failure throws) ==');
 await (await import('./check-student.mjs')).checkStudent({ line });
+// the development-only modules are never loaded by the checks above: at least make sure they parse (js/dev/, the dev-voice panel)
+{ const { execFileSync } = await import('node:child_process'), { readdirSync } = await import('node:fs');
+  const dir = new URL('../js/dev/', import.meta.url);
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.js'))) execFileSync(process.execPath, ['--check', new URL(f, dir).pathname], { stdio: 'pipe' });
+  line(); line('== Development modules (js/dev/): they parse =='); }
 line(); line('== 28. Labs: prompts, stopwatch, angle tool, what gives answers away (tools/check-labs.mjs; a failure throws) ==');
 await (await import('./check-labs.mjs')).checkLabs({ line });
 line(); line('== 29. Pointing a phone at the sky: attitude, compass, calibration, WMM2025, targets (tools/check-point.mjs; a failure throws) ==');

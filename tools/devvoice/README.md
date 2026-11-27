@@ -6,7 +6,9 @@
    this laptop, never on the live site), press **Start** on the small panel at the bottom right, and allow the microphone.
    The panel's **Changes** list shows every request: waiting, working, changed, answered, undone, and the commits not yet pushed.
 4. Use the app. Say **“Hey Claude, …”** and what should change (“…the photometer row should be bold”); pause to send.
-   “Hey Claude, cancel” drops it. The ⌨ button types a request instead; **Undo** reverts the last change.
+   “Hey Claude, cancel” drops it. **Undo** reverts the last change.
+   Chrome’s recognizer often mishears the name (common slips such as “a slot” or “hey cloud” are accepted). For better accuracy press
+   **`** (backtick) or ⌨: a request box opens, focused, so any dictation tool you prefer can fill it; Enter sends, Esc closes.
 
 Each request goes, with the view link, the open panels, recent console errors and a screenshot of the sky, to headless Claude Code
 running in this folder (one request at a time, one continuing session). Claude may edit files and run `node planetarium/tools/check.mjs`,
