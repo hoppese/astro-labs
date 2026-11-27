@@ -219,6 +219,14 @@ Without errors: 10 of 12 pairs pass |sin(λ2 − λ1)| ≥ 0.15; **r from 1.383 
 circle fit center 0.143 au from the Sun. In a 40-day version of the simulation the angle per day ran 0.44–0.63°/day while r1·r2·Δθ/Δt
 stayed at 1.21 ± 1%: equal areas. An ellipse cannot be told from an off-center circle with 1′ data (b/a = 0.9956), and the prompt says so.
 
+**Student pass, 2026-11-26** (fresh agents, clicks and keys only): `kepler-earth` (seed 8458) found λ0 = 198.749°, circle off center by
+0.016 of its radius toward 293°, Sun–Mars 1.62 au (about 105 actions). `kepler-orbit` (given c = 0.017, φ = 285°; 10 of 12 pairs kept)
+found a = 1.523 au, e = 0.092, circle center 0.142 au from the Sun, angle per two months 25.9° to 37.3° while the swept area held to ±3%
+(about 140 actions). Fixed after it: the Circle model started at half size and its diameter was called D like a column (now ⌀); the
+opposition row is now said to be the reference, not an Earth point; "9 more dates, to 2031"; the direction asked for is the center seen
+from the Sun; the steps say where the date steps and "Same scale on both axes" are; and the notebook has `next( … )` / `prev( … )`, so a
+pair recorded on two consecutive rows is worked out without retyping (Kepler II now uses it, with a typed `first` column of 1s).
+
 ### `jupiter-mass` Weighing Jupiter
 Preset: 2026-11-24 09:00 UTC, Jupiter tracked, angle tool. Measured for Ganymede, reading the angle hourly:
 - Greatest elongation on one side **293.6″** (Jupiter at 5.030 au), and again 172 h later: T = **7.17 d** (true 7.155).

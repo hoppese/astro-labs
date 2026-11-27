@@ -115,7 +115,7 @@ export function values(nb, id, seen = new Set()) {
     if (!ui.error) { const R = RELATION[col.rel], ins = {}; for (const inp of R.inputs) ins[inp.key] = values(nb, col.in[inp.key], seen); for (let i = 0; i < n; i++) { const v = {}; for (const k of Object.keys(ins)) v[k] = ins[k][i]; out[i] = R.f(v, ui.inUnits); } }
   } else if (col.kind === 'calc') {
     const ui = unitInfo(nb, col);
-    if (!ui.error) { const cache = {}; const get = (L) => cache[L] || (cache[L] = values(nb, colByLetter(nb, L).id, seen)); for (let i = 0; i < n; i++) out[i] = evaluate(ui.tree, (L) => get(L)[i]); }
+    if (!ui.error) { const cache = {}; const get = (L) => cache[L] || (cache[L] = values(nb, colByLetter(nb, L).id, seen)); for (let i = 0; i < n; i++) out[i] = evaluate(ui.tree, (L, off = 0) => { const v = get(L)[i + off]; return v === undefined ? NaN : v; }); }      // off: next() / prev()
   }
   for (let i = 0; i < n; i++) if (!Number.isFinite(out[i])) out[i] = NaN;
   nb._cache[id] = out;

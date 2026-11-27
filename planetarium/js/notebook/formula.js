@@ -1,6 +1,8 @@
 // notebook/formula.js: the small formula language of "calculated columns", with units carried through.
 // Pure (no DOM). A formula refers to other columns by their letter (A, B, ...), uses + − × ÷ ^ ( ), the functions
 // sqrt sin cos tan asin acos atan log ln abs, and the constants pi, c, Gconst, AUkm (units.js CONSTANTS).
+// next( … ) and prev( … ): the same expression worked out on the row below / above (blank on the last / first row), for data recorded
+// in pairs of rows (the Kepler labs: a date, then the same point of Mars's orbit a Mars year later) or for differences between rows.
 // A typed number can carry a unit: 100 km, 300 min, 30°, or in braces for any unit symbol, 2.5 {light-min}.
 // Units are checked the way a careful person checks them: only like things may be added; multiplying and dividing
 // build compound units (km/s, AU³/yr²); sin() of a column in degrees is the sine of that many degrees.
@@ -96,6 +98,7 @@ export function parse(src, isColumn = () => true) {
       // G and AU written bare are the constants; a column that happens to have that letter is written [G]
       if (k.v === 'G') return { t: 'const', id: 'Gconst' };
       if (k.v === 'AU') return { t: 'const', id: 'AUkm' };
+      if (low === 'next' || low === 'prev') { expect('('); const e = expr(); expect(')'); return { t: 'shift', name: low, d: low === 'next' ? 1 : -1, a: e }; }
       if (low === 'log10') { expect('('); const e = expr(); expect(')'); return { t: 'fn', name: 'log', a: e }; }      // what the log₁₀ button looks like
       if (FUNCS.includes(low)) { expect('('); const e = expr(); expect(')'); return { t: 'fn', name: low, a: e }; }
       if (/^[A-Z]{1,2}$/.test(k.v) && isColumn(k.v)) return { t: 'col', id: k.v };
@@ -169,7 +172,7 @@ export function analyse(tree, unitOfCol) {
       case 'num': return n.parts ? { ...n.parts } : {};
       case 'col': return unitParts(unitOfCol(n.id));
       case 'const': return { ...CONSTANTS[n.id].parts };
-      case 'neg': case 'par': return go(n.a);
+      case 'neg': case 'par': case 'shift': return go(n.a);
       case 'fn': {
         const a = go(n.a);
         if (n.name === 'sin' || n.name === 'cos' || n.name === 'tan') {
@@ -219,6 +222,7 @@ export function evaluate(n, valueOfCol) {
     case 'const': return CONSTANTS[n.id].value;
     case 'neg': return -evaluate(n.a, valueOfCol);
     case 'par': return evaluate(n.a, valueOfCol);
+    case 'shift': return evaluate(n.a, (L, off = 0) => valueOfCol(L, off + n.d));
     case 'fn': {
       const a = evaluate(n.a, valueOfCol);
       switch (n.name) {
@@ -250,7 +254,7 @@ export function pretty(n) {
     case 'const': return CONSTANTS[n.id].sym;
     case 'neg': return '−' + pretty(n.a);
     case 'par': return '(' + pretty(n.a) + ')';
-    case 'fn': return n.name + '(' + pretty(n.a) + ')';
+    case 'fn': case 'shift': return n.name + '(' + pretty(n.a) + ')';
     case 'bin':
       if (n.op === '^') return pretty(n.a) + (n.b.t === 'num' && Number.isInteger(n.b.v) && n.b.v >= 0 ? sup(n.b.v) : '^' + pretty(n.b));
       return pretty(n.a) + ({ '+': ' + ', '-': ' − ', '*': ' × ', '/': ' ÷ ' })[n.op] + pretty(n.b);
@@ -273,7 +277,7 @@ export function serialize(n, map = (l) => l) {
     case 'const': return n.id === 'Gconst' ? 'G' : n.id === 'AUkm' ? 'AU' : n.id === 'c' ? 'c_light' : n.id;
     case 'neg': return '-' + serialize(n.a, map);
     case 'par': return '(' + serialize(n.a, map) + ')';
-    case 'fn': return n.name + '(' + serialize(n.a, map) + ')';
+    case 'fn': case 'shift': return n.name + '(' + serialize(n.a, map) + ')';
     case 'bin': return serialize(n.a, map) + (n.op === '^' ? '^' : ' ' + n.op + ' ') + serialize(n.b, map);
   }
   return '';
