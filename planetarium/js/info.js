@@ -7,7 +7,8 @@ import { see } from './notebook/seeing.js';
 import { state, on, emit, eff, toggle } from './state.js';
 import { setTime } from './clock.js';
 import { getFrame } from './skyframe.js';
-import { getBodies, MOON_PARENT, SMALL } from './ephem.js';
+import { getBodies, MOON_PARENT, SMALL, SURFACES } from './ephem.js';
+import { landOn } from './ui.js';
 import { starRecord, dso, dsoDoubt, constellations, DSO_TYPES, ASTROMETRY } from './catalog.js';
 import { refEqj, refHorApparent, refKey } from './objects.js';
 import { select, centerOn, toggleTracking } from './nav.js';
@@ -53,6 +54,7 @@ export function initInfo(el) {
     else if (act === 'center') centerOn(state.selected);
     else if (act === 'zoom') centerOn(state.selected, true);
     else if (act === 'track') toggleTracking();
+    else if (act === 'land') landOn(b.dataset.id);
     else if (act === 'noground') { toggle('ground', false); centerOn(state.selected); }
     else if (act === 'whenup') { const u = upNext(state.selected); if (u) { setTime(u.go); centerOn(state.selected); } }
     else if (act === 'sunpanel') openSunPanel();
@@ -369,7 +371,8 @@ function render(force) {
   const trk = state.tracking && refKey(state.trackRef) === refKey(ref);
   const acts = `<div class="acts"><button class="btn" data-act="center" title="Center the view on it (Space)">Center <kbd>Space</kbd></button>` +
     `<button class="btn${trk ? ' on' : ''}" data-act="track" aria-pressed="${trk}" title="Keep it centered as time runs (T)">Track <kbd>T</kbd></button>` +
-    `<button class="btn" data-act="zoom" title="Center it and set the field that frames it">Zoom to</button></div>`;
+    `<button class="btn" data-act="zoom" title="Center it and set the field that frames it">Zoom to</button>` +
+    (ref.kind === 'body' && SURFACES.includes(ref.id) ? `<button class="btn" data-act="land" data-id="${ref.id}" title="Stand on its surface (as in the settings: where you are)">Land on it</button>` : '') + '</div>';
   const ls = rowHidden('Parallax') ? [] : linksFor(ref);      // a lab that hides the parallax does not link to it either
   const look = ls.length ? `<div class="look"><span>Look it up</span>${ls.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.title)}">${esc(l.label)}</a>`).join('')}</div>` : '';
   const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + (pic ? `<div class="note">Picture: ${pic}.</div>` : '');

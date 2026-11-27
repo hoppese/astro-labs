@@ -327,6 +327,12 @@ export function setSurface(surf) {
   if (eff.onSurface) { if (!state.show.ground) toggle('ground', true); lookAround(); }      // stepping onto the ground: show it (G hides it again)
   else if (state.vantage) { const ref = { kind: 'body', id: lookTarget(state.vantage) }; select(ref); centerOn(ref, true); }
 }
+/** Stand on body `id` at its first named site, as choosing it in the settings and ticking "stand on it" does. */
+export function landOn(id) {
+  if (!SURFACES.includes(id)) return;
+  setVantage(id);
+  setSurface(defaultSite(id));
+}
 /** On the ground: turn to the planet (or the Earth, or the Sun) when it is up, else to the southern (northern) horizon. */
 function lookAround() {
   const id = lookTarget(state.vantage), b = getBodies(getFrame()).byId[id];
