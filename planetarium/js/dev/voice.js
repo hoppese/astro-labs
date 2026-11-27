@@ -34,9 +34,19 @@ export function initDevVoice(token) {
     #devVoice .dv-msgs{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;max-height:50vh;overflow:auto}
     #devVoice .dv-msg{background:#1c2836;border:1px solid #3a4b5f;border-radius:8px;padding:7px 9px}
     #devVoice .dv-msg b{color:#f0c46a}#devVoice .dv-msg .dv-x{float:right;padding:0 5px;margin:-2px -4px 0 6px}
-    #devVoice .dv-msg.err{border-color:#a5473d}</style>
+    #devVoice .dv-msg.err{border-color:#a5473d}
+    #devVoice .dv-list{background:#16202c;border:1px solid #3a4b5f;border-radius:8px;margin-bottom:6px;max-height:45vh;overflow:auto}
+    #devVoice .dv-list[hidden]{display:none}
+    #devVoice .dv-item{padding:6px 9px;border-top:1px solid #2a3848;cursor:pointer}#devVoice .dv-item:first-child{border-top:0}
+    #devVoice .dv-item .dv-st{display:inline-block;min-width:74px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    #devVoice .dv-item .dv-t{color:#e8eef5}#devVoice .dv-item .dv-r{display:none;color:#b9c6d4;margin-top:4px}#devVoice .dv-item.open .dv-r{display:block}
+    #devVoice .dv-item small{color:#8496a9}
+    #devVoice .st-queued{color:#9fb0c2}#devVoice .st-working{color:#f0c46a}#devVoice .st-changed{color:#5fd38a}#devVoice .st-answer{color:#7fb4ff}#devVoice .st-problem{color:#ff8a7a}#devVoice .st-undone{color:#8496a9;text-decoration:line-through}
+    #devVoice .dv-foot{padding:6px 9px;border-top:1px solid #2a3848;color:#8496a9;font-size:12px}
+    #devVoice .dv-empty{padding:8px 9px;color:#8496a9}</style>
     <div class="dv-msgs"></div>
-    <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice ready, say “Hey Claude”</span><button data-a="type" title="Type a request instead">⌨</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
+    <div class="dv-list" hidden></div>
+    <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice ready, say “Hey Claude”</span><button data-a="type" title="Type a request instead">⌨</button><button data-a="list" title="What you asked for: done, in the works, undone">Changes</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
   document.body.appendChild(box);
   const dot = box.querySelector('.dv-dot'), live = box.querySelector('.dv-live'), msgs = box.querySelector('.dv-msgs'), micBtn = box.querySelector('[data-a=mic]');
   function note(html, { cls = '', ms = 0 } = {}) {
@@ -45,6 +55,35 @@ export function initDevVoice(token) {
     if (ms) setTimeout(() => m.remove(), ms);
     return m;
   }
+  // ---- the list of requests: heard, in the works, changed, undone (from the server, so it survives the reloads) ----
+  const listEl = box.querySelector('.dv-list'), listBtn = box.querySelector('[data-a=list]');
+  const openItems = new Set();
+  let listTimer = null, lastJobs = null;
+  const ago = (ms) => { const s = Math.round((Date.now() - ms) / 1000); return s < 60 ? s + ' s ago' : s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago'; };
+  function statusOf(j) {
+    if (j.undone) return ['undone', 'Undone'];
+    if (j.state === 'queued') return ['queued', j.ahead > 0 ? `Waiting (${j.ahead} ahead)` : 'Waiting'];
+    if (j.state === 'working') return ['working', 'Working ' + Math.round((Date.now() - (j.startedAt || j.at)) / 1000) + ' s'];
+    return j.commit ? ['changed', 'Changed'] : j.ok ? ['answer', 'Answered'] : ['problem', 'Problem'];
+  }
+  function renderList(d) {
+    const pending = d.jobs.filter((j) => j.state !== 'done').length;
+    listBtn.textContent = 'Changes' + (d.jobs.length ? ` (${pending ? pending + ' in the works, ' : ''}${d.jobs.length})` : '');
+    if (listEl.hidden) return;
+    listEl.innerHTML = (d.jobs.length ? d.jobs.map((j) => {
+      const [cls, label] = statusOf(j);
+      return `<div class="dv-item${openItems.has(j.id) ? ' open' : ''}" data-id="${j.id}"><span class="dv-st st-${cls}">${esc(label)}</span><span class="dv-t">“${esc(j.text)}”</span> <small>${esc(ago(j.at))}${j.commit ? ' · ' + esc(j.commit.hash) : ''}</small>`
+        + `<div class="dv-r">${j.reply ? esc(j.reply) : 'No reply yet.'}${j.commit && j.commit.files.length ? `<br><small>${esc(j.commit.files.join(', '))}</small>` : ''}</div></div>`;
+    }).join('') : '<div class="dv-empty">Nothing asked yet in this run of the server.</div>')
+      + `<div class="dv-foot">${d.unpushed.length} local commit${d.unpushed.length === 1 ? '' : 's'} not pushed${d.unpushed.length ? ': ' + d.unpushed.slice(0, 6).map((c) => esc(c.hash)).join(', ') + (d.unpushed.length > 6 ? ', …' : '') : ''}. Push them from a normal Claude Code session.</div>`;
+  }
+  async function refreshList() {
+    clearTimeout(listTimer);
+    try { lastJobs = await fetch(API + '/jobs', { headers: { 'x-dev-token': token } }).then((r) => r.json()); renderList(lastJobs); } catch (e) { listBtn.textContent = 'Changes (server?)'; }
+    const busy = lastJobs && lastJobs.jobs.some((j) => j.state !== 'done');
+    if (busy || !listEl.hidden) listTimer = setTimeout(refreshList, busy ? 2000 : 6000);
+  }
+  listEl.addEventListener('click', (e) => { const it = e.target.closest('.dv-item'); if (!it) return; const id = +it.dataset.id; openItems.has(id) ? openItems.delete(id) : openItems.add(id); it.classList.toggle('open'); });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   function chime(f = 880) { try { const a = new AudioContext(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; g.gain.value = 0.06; o.connect(g).connect(a.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.25); o.stop(a.currentTime + 0.3); } catch (e) { /* no sound: fine */ } }
 
@@ -66,13 +105,14 @@ export function initDevVoice(token) {
     let r;
     try { r = await post('/ask', { text, context: ctx, shot: shot() }); } catch (e) { note('Could not reach the dev-voice server. Is <code>node tools/devvoice/server.mjs</code> running?', { cls: 'err' }); return; }
     if (!r.id) { note('The server refused: ' + esc(r.error || '?'), { cls: 'err' }); return; }
-    const m = note(`<b>Working</b>${r.ahead ? ` (after ${r.ahead} more)` : ''}: “${esc(text)}”`);
+    const m = note(`<b>Heard</b>${r.ahead ? ` (after ${r.ahead} more)` : ''}: “${esc(text)}”`, { ms: 8000 });
+    refreshList();
     const poll = async () => {
       let j; try { j = await fetch(API + '/job?id=' + r.id, { headers: { 'x-dev-token': token } }).then((x) => x.json()); } catch (e) { setTimeout(poll, 3000); return; }
       if (j.state !== 'done') { setTimeout(poll, 2000); return; }
-      m.classList.toggle('err', !j.ok);
-      m.innerHTML = `<button class="dv-x" aria-label="Close">×</button><b>${j.commit ? 'Changed' : j.ok ? 'Answer' : 'Problem'}</b>: ${esc(j.reply)}` + (j.commit ? `<br><small>commit ${esc(j.commit.hash)} · ${esc(j.commit.files.join(', '))} · reloading…</small>` : '');
-      m.querySelector('.dv-x').onclick = () => m.remove();
+      m.remove();
+      note(`<b>${j.commit ? 'Changed' : j.ok ? 'Answer' : 'Problem'}</b>: ${esc(j.reply)}` + (j.commit ? `<br><small>commit ${esc(j.commit.hash)} · ${esc(j.commit.files.join(', '))} · reloading…</small>` : ''), { cls: j.ok ? '' : 'err' });
+      refreshList();
       chime(j.ok ? 1175 : 330);
       if (j.commit) reloadTo(ctx.link, j.reply);
     };
@@ -85,10 +125,11 @@ export function initDevVoice(token) {
   box.addEventListener('click', async (e) => {
     const a = e.target.closest('[data-a]'); if (!a) return;
     if (a.dataset.a === 'mic') { listening ? stop() : start(); }
+    else if (a.dataset.a === 'list') { listEl.hidden = !listEl.hidden; try { sessionStorage.setItem('devVoice.list', listEl.hidden ? '' : '1'); } catch (err) { /* fine */ } refreshList(); }
     else if (a.dataset.a === 'type') { const t = prompt('Request for Claude:'); if (t && t.trim()) ask(t.trim()); }
     else if (a.dataset.a === 'undo') {
       let r; try { r = await post('/undo'); } catch (err) { note('Could not reach the dev-voice server.', { cls: 'err' }); return; }
-      note(`<b>${r.ok ? 'Undone' : 'Not undone'}</b>: ${esc(r.reply)}`, { cls: r.ok ? '' : 'err' });
+      note(`<b>${r.ok ? 'Undone' : 'Not undone'}</b>: ${esc(r.reply)}`, { cls: r.ok ? '' : 'err' }); refreshList();
       if (r.ok) reloadTo(context().link, r.reply);
     }
   });
@@ -127,7 +168,9 @@ export function initDevVoice(token) {
   }
   function stop() { listening = false; capturing = false; if (rec) try { rec.stop(); } catch (e) { /* fine */ } dot.classList.remove('on', 'hot'); micBtn.textContent = 'Start'; live.textContent = 'Not listening.'; }
 
-  // after a reload made by a change: say what changed, and listen again if it was listening
+  // after a reload made by a change: say what changed, and listen again if it was listening; the list as it was
+  try { if (sessionStorage.getItem('devVoice.list')) listEl.hidden = false; } catch (e) { /* fine */ }
+  refreshList();
   try {
     const last = sessionStorage.getItem('devVoice.last'); if (last) { note('<b>Changed</b>: ' + esc(last), { ms: 15000 }); sessionStorage.removeItem('devVoice.last'); }
     if (sessionStorage.getItem('devVoice.listen')) start();

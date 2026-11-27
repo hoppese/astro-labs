@@ -13,7 +13,7 @@
 import http from 'node:http';
 import { spawn, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -21,7 +21,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');                 // astro-labs
 const SHOTS = path.join(HERE, 'shots');                      // screenshots sent with requests (gitignored)
 const PORT = 8112, ORIGINS = ['http://127.0.0.1:8111', 'http://localhost:8111'];
-const TOKEN = randomBytes(12).toString('hex');
+// the token is kept in tools/devvoice/.token (gitignored), so a restart keeps the same link; delete the file for a new one
+const TOKEN_FILE = path.join(HERE, '.token');
+const TOKEN = (() => { try { const t = readFileSync(TOKEN_FILE, 'utf8').trim(); if (/^[0-9a-f]{24}$/.test(t)) return t; } catch (e) { /* none yet */ } const t = randomBytes(12).toString('hex'); writeFileSync(TOKEN_FILE, t + '\n', { mode: 0o600 }); return t; })();
 mkdirSync(SHOTS, { recursive: true });
 
 const RULES = `You are making live changes to the astro-labs planetarium (folder planetarium/) while its author, Seth, uses it in the browser
@@ -81,7 +83,7 @@ function runClaude(prompt) {
 async function work() {
   if (busy || !queue.length) return;
   busy = true;
-  const job = queue.shift(); job.state = 'working';
+  const job = queue.shift(); job.state = 'working'; job.startedAt = Date.now();
   const c = job.context || {};
   let shot = '';
   if (job.shot && /^data:image\/jpeg;base64,/.test(job.shot)) { shot = path.join(SHOTS, `${job.id}.jpg`); writeFileSync(shot, Buffer.from(job.shot.split(',')[1], 'base64')); }
@@ -109,7 +111,7 @@ ${shot ? '- screenshot of the sky: ' + shot : ''}`;
   }
   let commit = null;
   try { commit = commitIfChanged(job.text); } catch (e) { r.text += ' (The commit failed: ' + e.message.slice(0, 200) + ')'; }
-  Object.assign(job, { state: 'done', ok: r.ok, reply: r.text || '(no reply)', commit });
+  Object.assign(job, { state: 'done', ok: r.ok, reply: r.text || '(no reply)', commit, doneAt: Date.now() });
   console.log(`[${job.id}] ${job.text}\n   -> ${commit ? commit.hash + ' ' + commit.files.join(', ') : 'no change'}\n   ${job.reply}\n`);
   busy = false;
   work();
@@ -119,7 +121,9 @@ function undo() {
   const msg = git('log', '-1', '--format=%s');
   if (!msg.startsWith('dev voice: ')) return { ok: false, reply: 'The last commit is not a dev-voice change, so nothing was undone.' };
   if (git('status', '--porcelain', '--', 'planetarium')) return { ok: false, reply: 'There are uncommitted changes; nothing was undone.' };
+  const gone = git('rev-parse', '--short', 'HEAD');
   git('revert', '--no-edit', 'HEAD');
+  for (const j of jobs.values()) if (j.commit && j.commit.hash === gone) j.undone = true;
   return { ok: true, reply: 'Undone: ' + msg.slice(11), commit: { hash: git('rev-parse', '--short', 'HEAD'), files: [] } };
 }
 
@@ -131,6 +135,12 @@ const server = http.createServer((req, res) => {
   if (req.headers['x-dev-token'] !== TOKEN) { send(403, { error: 'bad token' }); return; }
   const url = new URL(req.url, 'http://x');
   if (req.method === 'GET' && url.pathname === '/job') { const j = jobs.get(+url.searchParams.get('id')); send(j ? 200 : 404, j ? { ...j, shot: undefined, context: undefined, ahead: queue.indexOf(j) } : { error: 'no such job' }); return; }
+  if (req.method === 'GET' && url.pathname === '/jobs') {      // the panel's list: every request since the server started, newest first, and what is not pushed yet
+    let unpushed = [];
+    try { unpushed = git('log', '--format=%h %s', '@{upstream}..HEAD').split('\n').filter(Boolean).map((l) => ({ hash: l.slice(0, l.indexOf(' ')), subject: l.slice(l.indexOf(' ') + 1) })); } catch (e) { /* no upstream: fine */ }
+    send(200, { busy, jobs: [...jobs.values()].reverse().map((j) => ({ id: j.id, text: j.text, state: j.state, ok: j.ok, reply: j.reply, commit: j.commit, undone: !!j.undone, at: j.at, startedAt: j.startedAt, doneAt: j.doneAt, ahead: queue.indexOf(j) })), unpushed });
+    return;
+  }
   if (req.method === 'POST' && url.pathname === '/undo') { if (busy || queue.length) { send(409, { ok: false, reply: 'Wait until the current request is done.' }); return; } try { send(200, undo()); } catch (e) { send(500, { ok: false, reply: e.message }); } return; }
   if (req.method === 'POST' && url.pathname === '/ask') {
     let body = '';
@@ -138,7 +148,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       let o; try { o = JSON.parse(body); } catch (e) { send(400, { error: 'bad json' }); return; }
       if (!o.text || typeof o.text !== 'string') { send(400, { error: 'no text' }); return; }
-      const job = { id: ++seq, text: o.text.slice(0, 2000), context: o.context, shot: o.shot, state: 'queued' };
+      const job = { id: ++seq, text: o.text.slice(0, 2000), context: o.context, shot: o.shot, state: 'queued', at: Date.now() };
       jobs.set(job.id, job); queue.push(job); work();
       send(200, { id: job.id, ahead: queue.length - 1 + (busy ? 1 : 0) });
     });
