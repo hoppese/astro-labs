@@ -38,7 +38,8 @@ export function initDevVoice(token) {
     #devVoice .dv-list{background:#16202c;border:1px solid #3a4b5f;border-radius:8px;margin-bottom:6px;max-height:45vh;overflow:auto}
     #devVoice .dv-list[hidden]{display:none}
     #devVoice .dv-item{padding:6px 9px;border-top:1px solid #2a3848;cursor:pointer}#devVoice .dv-item:first-child{border-top:0}
-    #devVoice .dv-item .dv-st{display:inline-block;min-width:74px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    #devVoice button{white-space:nowrap}
+    #devVoice .dv-item .dv-st{display:inline-block;min-width:74px;margin-right:6px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
     #devVoice .dv-item .dv-t{color:#e8eef5}#devVoice .dv-item .dv-r{display:none;color:#b9c6d4;margin-top:4px}#devVoice .dv-item.open .dv-r{display:block}
     #devVoice .dv-item small{color:#8496a9}
     #devVoice .st-queued{color:#9fb0c2}#devVoice .st-working{color:#f0c46a}#devVoice .st-changed{color:#5fd38a}#devVoice .st-answer{color:#7fb4ff}#devVoice .st-problem{color:#ff8a7a}#devVoice .st-undone{color:#8496a9;text-decoration:line-through}
@@ -68,7 +69,7 @@ export function initDevVoice(token) {
   }
   function renderList(d) {
     const pending = d.jobs.filter((j) => j.state !== 'done').length;
-    listBtn.textContent = 'Changes' + (d.jobs.length ? ` (${pending ? pending + ' in the works, ' : ''}${d.jobs.length})` : '');
+    listBtn.textContent = pending ? `Changes · ${pending} working` : 'Changes' + (d.jobs.length ? ` (${d.jobs.length})` : '');
     if (listEl.hidden) return;
     listEl.innerHTML = (d.jobs.length ? d.jobs.map((j) => {
       const [cls, label] = statusOf(j);
