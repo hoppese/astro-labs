@@ -13,7 +13,7 @@
 import http from 'node:http';
 import { spawn, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -30,7 +30,8 @@ on his screen: the view link, the lab and step, the selected object, text of the
 can Read.
 - Make the change he asked for, as small and focused as possible, in the style of the surrounding code (read planetarium/NOTES.md for how
   things fit together when you need to).
-- Then run: node planetarium/tools/check.mjs  (it must exit 0; fix what you broke).
+- The server runs the check suite (node planetarium/tools/check.mjs) after you finish and tells you if it fails; you may run it
+  yourself too, exactly as written, with no cd, pipes or redirection.
 - Do NOT run git, do not commit or push: the server commits each change. Never touch data licences, credentials or anything outside
   astro-labs.
 - If the request is unclear, make your best reasonable guess and say what you assumed. If it is not a change request (a question, a
@@ -40,13 +41,24 @@ can Read.
 let session = null, busy = false, seq = 0;
 const jobs = new Map(), queue = [];
 
-const git = (...a) => execFileSync('git', a, { cwd: REPO, encoding: 'utf8' }).trim();
+const gitRaw = (...a) => execFileSync('git', a, { cwd: REPO, encoding: 'utf8' });
+const git = (...a) => gitRaw(...a).trim();
+/** Files changed under planetarium/ (not trimmed: porcelain lines start with a space). */
+const changed = () => gitRaw('status', '--porcelain', '--', 'planetarium').split('\n').filter(Boolean).map((l) => l.slice(3));
+/** The check suite, run by the server itself after every change (so it never depends on what Claude chose to run): {ok, tail}. */
+function check() {
+  try { execFileSync('node', ['planetarium/tools/check.mjs'], { cwd: REPO, encoding: 'utf8', stdio: 'pipe', timeout: 600000 }); return { ok: true, tail: '' }; }
+  catch (e) { return { ok: false, tail: String((e.stdout || '') + (e.stderr || '')).split('\n').slice(-25).join('\n') }; }
+}
+const untracked = () => new Set(gitRaw('status', '--porcelain', '--untracked-files=all', '--', 'planetarium').split('\n').filter((l) => l.startsWith('??')).map((l) => l.slice(3)));
+/** Throw away a change whose checks still fail: edits to tracked files, and only the new files THIS change created. */
+function discard(before) { git('checkout', '--', 'planetarium'); for (const f of untracked()) if (!before.has(f)) rmSync(path.join(REPO, f), { force: true }); }
 function commitIfChanged(text) {
-  const st = git('status', '--porcelain', '--', 'planetarium');
-  if (!st) return null;
+  const files = changed();
+  if (!files.length) return null;
   git('add', '-A', '--', 'planetarium');
   git('commit', '-q', '-m', 'dev voice: ' + text.slice(0, 120).replace(/\s+/g, ' '), '-m', 'Made live from a spoken request (tools/devvoice). Not pushed.');
-  return { hash: git('rev-parse', '--short', 'HEAD'), files: st.split('\n').map((l) => l.slice(3)) };
+  return { hash: git('rev-parse', '--short', 'HEAD'), files };
 }
 
 function runClaude(prompt) {
@@ -82,7 +94,19 @@ On screen when he said it:
 - open panels (text): ${(c.panels || '').slice(0, 3000) || 'none'}
 - recent console errors: ${(c.errors || []).join(' | ') || 'none'}
 ${shot ? '- screenshot of the sky: ' + shot : ''}`;
+  const before = untracked();
   const r = await runClaude(prompt);
+  // the server runs the checks; one chance to fix a failure, then the change is thrown away
+  if (changed().length) {
+    let c = check();
+    if (!c.ok) {
+      console.log(`[${job.id}] checks failed; asking for a fix`);
+      const f = await runClaude('The check suite (node planetarium/tools/check.mjs) fails after your change. Its last lines:\n' + c.tail + '\nFix it, keeping the change he asked for. Reply in 1 to 3 sentences.');
+      if (f.text) r.text = f.text;
+      c = check();
+      if (!c.ok) { discard(before); r.ok = false; r.text = 'I made the change but the checks still failed, so it was thrown away. ' + c.tail.split('\n').filter((l) => /Error|fail/i.test(l)).slice(-2).join(' '); }
+    }
+  }
   let commit = null;
   try { commit = commitIfChanged(job.text); } catch (e) { r.text += ' (The commit failed: ' + e.message.slice(0, 200) + ')'; }
   Object.assign(job, { state: 'done', ok: r.ok, reply: r.text || '(no reply)', commit });
