@@ -99,6 +99,16 @@ export async function checkLabs({ line }) {
     need(Math.abs(Math.min(...Array.from({ length: 400 }, (_, k) => m('SN1987A', T.SN1987A.t0 + k * 0.5)).filter((x) => x != null)) - 2.9) < 0.01, 'SN 1987A peak');
     const v1 = Array.from({ length: 400 }, (_, k) => m('M31-V1', 2461000 + k * 31.4 / 400)), mean = v1.reduce((a, b) => a + b) / 400;
     need(Math.abs(mean - 19.4) < 0.01, 'M31 V1 mean');
+    // each student's version (a notebook seed): small shifts of the size of the published uncertainties, none without a seed
+    { const v = Vb.VAR_BY_HIP.get(110991), mean = () => { let t = 0; for (let k = 0; k < 400; k++) t += Vb.varMag(v, jd0 + v.P * k / 400); return t / 400; };
+      const sn = T.SN2011fe, peakOf = () => Math.min(...Array.from({ length: 400 }, (_, k) => Vb.transientMag(sn, sn.tPeak - 5 + k * 0.025)));
+      const dv = [], dp = [];
+      for (let seed = 1; seed <= 300; seed++) { Vb.setModelSeed(seed); dv.push(mean() - 3.925); dp.push(peakOf() - 9.99); }
+      Vb.setModelSeed(0);
+      const sdv = Math.sqrt(dv.reduce((a, b) => a + b * b, 0) / dv.length), sdp = Math.sqrt(dp.reduce((a, b) => a + b * b, 0) / dp.length);
+      need(Math.abs(mean() - 3.925) < 0.002 && Math.abs(peakOf() - 9.99) < 1e-6, 'no shift without a seed');
+      need(sdv > 0.04 && sdv < 0.06 && Math.max(...dv.map(Math.abs)) <= 0.126 && sdp > 0.04 && sdp < 0.06 && Math.max(...dp.map(Math.abs)) <= 0.126, `student shifts: δ Cep mean ${sdv}, SN peak ${sdp}`);
+      line(`  each student's own model (300 seeds): δ Cep mean magnitude ±${sdv.toFixed(3)} (distance ±${(sdv * 46).toFixed(1)}%), SN 2011fe peak ±${sdp.toFixed(3)}; none without a seed`); }
     // the photometer: counts = 10^(-0.4 (m - 25)) on average, with photon noise
     const ref = { kind: 'tr', id: 'SN2011fe' }, t = (T.SN2011fe.tPeak - 2440587.5) * 86400000, c = [];
     for (let k = 0; k < 200; k++) c.push(Ph.counts(ref, null, t + k * 1000));

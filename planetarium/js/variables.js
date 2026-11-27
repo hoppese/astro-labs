@@ -17,6 +17,39 @@ import { sph, unit } from './astro.js';
 const DAY = 86400000;
 export const jdOf = (ms) => ms / DAY + 2440587.5;
 
+// ---- each student's own version of the model ----------------------------------------------------------------------------------
+// In a lab every student has a notebook seed (js/notebook/host.js calls setModelSeed). The seed shifts each object's model by a small
+// random amount, of the size of the uncertainty in the published numbers, so that no two students' skies are quite the same and their
+// answers agree within their errors, not to the last digit. Seed 0 (no notebook open) is the catalog's values exactly.
+let modelSeed = 0;
+const jitCache = new Map();
+export function setModelSeed(seed) { seed = seed | 0; if (seed !== modelSeed) { modelSeed = seed; jitCache.clear(); } }
+export const getModelSeed = () => modelSeed;
+/** Standard normal numbers for (seed, name): a small hash-seeded generator, the same in every browser. */
+function normals(seed, name, n) {
+  let h = 2166136261 ^ seed;
+  for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 16777619);
+  const rnd = () => { h = (h + 0x6D2B79F5) | 0; let t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const out = [];
+  while (out.length < n) { const u = rnd() || 1e-12, v = rnd(); out.push(Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)); }
+  return out;
+}
+// one-sigma sizes; each shift is capped at 2.5 sigma
+const cap = (x) => Math.max(-2.5, Math.min(2.5, x));
+/** The shifts for one object: {dm (mag), amp (factor), dph (cycles), P (factor), dt (days)}; all zero without a seed. */
+export function jitterOf(id, kind) {
+  if (!modelSeed) return { dm: 0, amp: 1, dph: 0, P: 1, dt: 0 };
+  let j = jitCache.get(id);
+  if (!j) {
+    const [a, b, c, d, e] = normals(modelSeed, String(id), 5).map(cap);
+    j = kind === 'sn' ? { dm: 0.05 * a, amp: 1, dph: 0, P: 1, dt: 0.5 * b }
+      : kind === 'cepheid' ? { dm: 0.08 * a, amp: 1 + 0.06 * b, dph: 0.03 * c, P: 1 + (0.1 / 31.4) * d, dt: 0 }
+      : { dm: 0.05 * a, amp: 1 + 0.04 * b, dph: 0.03 * c, P: 1 + 1e-4 * d, dt: 0 };
+    jitCache.set(id, j);
+  }
+  return j;
+}
+
 // ---- Cepheids and RR Lyrae in the star catalog, by Hipparcos number (GCVS 5.1) ------------------------------------------
 // [hip, name, GCVS type, V max, V min, epoch of maximum (JD), period (d), M−m (% of the period)]
 const G = [
@@ -53,10 +86,12 @@ export function shape(ph, rise) {
   const fall = 1 - rise;
   return ph < fall ? (1 - Math.cos(Math.PI * ph / fall)) / 2 : (1 + Math.cos(Math.PI * (ph - fall) / rise)) / 2;
 }
-/** Model V magnitude of a catalog variable at jd. */
+/** Model V magnitude of a catalog variable at jd (this student's version of it, when a seed is set). */
 export function varMag(v, jd) {
   if (v.quiet) return (v.max + v.min) / 2;
-  return v.max + (v.min - v.max) * shape(phaseAt(v, jd), v.rise);
+  const j = jitterOf(v.hip, 'var'), P = v.P * j.P, f = (jd - v.epoch) / P + j.dph, ph = f - Math.floor(f);
+  const mid = (v.max + v.min) / 2 + j.dm, half = (v.min - v.max) / 2 * j.amp;
+  return mid - half + 2 * half * shape(ph, v.rise);
 }
 
 // ---- objects the star catalog does not have ---------------------------------------------------------------------------------
@@ -94,7 +129,12 @@ const FAINT = 24;      // fainter than this, nothing is drawn or measured
 
 /** Model V magnitude of one of TRANSIENTS at jd, or null when there is nothing to see (before the explosion, or long after). */
 export function transientMag(o, jd) {
-  if (o.kind === 'cepheid') return o.mean - o.amp / 2 + o.amp * shape(phaseAt(o, jd), o.rise);
+  if (o.kind === 'cepheid') {
+    const j = jitterOf(o.id, 'cepheid'), f = (jd - o.epoch) / (o.P * j.P) + j.dph, amp = o.amp * j.amp;
+    return o.mean + j.dm - amp / 2 + amp * shape(f - Math.floor(f), o.rise);
+  }
+  const jj = jitterOf(o.id, 'sn');
+  jd -= jj.dt;                                                                      // this student's supernova peaks a little earlier or later
   const t = jd - o.t0;
   if (t <= 0) return null;
   let m;
@@ -109,6 +149,7 @@ export function transientMag(o, jd) {
     const x = jd - o.tPeak, T = o.curve, last = T[T.length - 1];
     m = o.peak + (x <= last[0] ? table(T, x) : last[1] + o.tail * (x - last[0]));
   }
+  m += jj.dm;
   return m < FAINT ? m : null;
 }
 

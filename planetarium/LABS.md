@@ -393,8 +393,10 @@ All five are notebook labs with a simulated **photometer**: the panel of the sel
 exposure, 10^(−0.4 (m − 25)), with photon noise and a 0.5% wobble seeded by the notebook seed and the clock second. Students turn counts
 into magnitudes against a comparison star of their choice: m = m_c − 2.5 log(N / N_c). Every light curve is a **model** (js/variables.js):
 for the variables a smooth curve through GCVS 5.1's range, period, epoch of maximum and rise time; for the supernovae, published explosion
-dates and peaks with a typical shape between. The keys below are the models' values, which is what a careful student recovers (to the
-noise and their sampling). Hidden in all five: Magnitude now (and Variable, the catalog's period, in the Cepheid labs).
+dates and peaks with a typical shape between. The keys below are the models' values. **Each student's model is shifted** by their
+notebook seed (js/variables.js `jitterOf`, 1σ, capped at 2.5σ): variables' mean ±0.05 mag, amplitude ±4%, phase ±0.03 cycle,
+period ±0.01%; M31 V1 mean ±0.08 mag, period ±0.1 d; supernovae peak ±0.05 mag, peak date ±0.5 d. So a careful student lands within
+about ±2–4% of the distances below (more with sparse sampling), and no two students agree exactly. Hidden in all five: Magnitude now (and Variable, the catalog's period, in the Cepheid labs).
 
 **Student pass, 2026-11-26** (three fresh agents with the lab link only, clicks and keys, no scripts): `cepheid-distance` got P 5.36 d,
 mean 3.93, 291 pc from 24 readings over 21 days (about 140 actions); `sn-types` called 2011fe Ia and 2023ixf II and found the Ia 2.83 times

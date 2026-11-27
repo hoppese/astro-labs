@@ -22,6 +22,7 @@ import { see } from './seeing.js';
 import { rowHidden } from '../labs/hidden.js';
 import { lab, labStep, setLabStep } from '../labs/labs.js';
 import { counts as photoCounts } from '../photometer.js';
+import { setModelSeed } from '../variables.js';
 
 const q = new URLSearchParams(location.search);
 const num = (k) => { const v = parseFloat(q.get(k)); return Number.isFinite(v) ? v : null; };
@@ -71,6 +72,7 @@ function applyObs(obs) {
   if (obs) nb.obs = { seeing: +obs.seeing || 0, noise: +obs.noise || 0 };
   see.enabled = !!nb.obs && (nb.obs.seeing > 0 || nb.obs.noise > 0);
   see.seeing = nb.obs ? nb.obs.seeing : 0; see.noise = nb.obs ? nb.obs.noise : 0; see.seed = nb.seed;
+  setModelSeed(nb.seed);      // this student's own version of the variable stars and supernovae (js/variables.js)
   emit('render'); emit('selection');
 }
 function conditionsDialog() {
