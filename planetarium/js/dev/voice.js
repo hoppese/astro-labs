@@ -36,7 +36,7 @@ export function initDevVoice(token) {
     #devVoice .dv-msg b{color:#f0c46a}#devVoice .dv-msg .dv-x{float:right;padding:0 5px;margin:-2px -4px 0 6px}
     #devVoice .dv-msg.err{border-color:#a5473d}</style>
     <div class="dv-msgs"></div>
-    <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice: say “Hey Claude, …”</span><button data-a="type" title="Type a request instead">⌨</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
+    <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice ready, say “Hey Claude”</span><button data-a="type" title="Type a request instead">⌨</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
   document.body.appendChild(box);
   const dot = box.querySelector('.dv-dot'), live = box.querySelector('.dv-live'), msgs = box.querySelector('.dv-msgs'), micBtn = box.querySelector('[data-a=mic]');
   function note(html, { cls = '', ms = 0 } = {}) {
