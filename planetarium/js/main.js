@@ -74,5 +74,7 @@ async function start() {
   initPoint();                  // pointing a phone at the sky (js/point/)
   addUnderlay(drawOrbits);      // under the planets: a disc hides the lines behind it
   addOverlay(drawMeasures);     // last: over the Earth's shadow and the second observer's circles
+  // development only: talk to Claude while using the app (tools/devvoice/). Never loaded except on this laptop with ?dev=<token>.
+  { const dv = new URLSearchParams(location.search).get('dev'); if (dv && /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) import('./dev/voice.js').then((m) => m.initDevVoice(dv)); }
 }
 start();
