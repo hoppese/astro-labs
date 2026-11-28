@@ -329,6 +329,10 @@ export function setSurface(surf) {
 }
 /** Stand on body `id` at its first named site, as choosing it in the settings and ticking "stand on it" does. */
 export function landOn(id) {
+  if (id === 'Earth') {      // home: your own place (Settings: where you are), facing the southern (northern) horizon
+    setVantage(null); select(null); stopTracking(); cam.fov = 90; emit('fov');
+    lookAtHor(azAltToHor(state.loc.lat >= 0 ? 180 : 0, 25)); emit('render'); return;
+  }
   if (!SURFACES.includes(id)) return;
   setVantage(id);
   setSurface(defaultSite(id));

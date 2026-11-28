@@ -372,7 +372,8 @@ function render(force) {
   const acts = `<div class="acts"><button class="btn" data-act="center" title="Center the view on it (Space)">Center <kbd>Space</kbd></button>` +
     `<button class="btn${trk ? ' on' : ''}" data-act="track" aria-pressed="${trk}" title="Keep it centered as time runs (T)">Track <kbd>T</kbd></button>` +
     `<button class="btn" data-act="zoom" title="Center it and set the field that frames it">Zoom to</button>` +
-    (ref.kind === 'body' && SURFACES.includes(ref.id) && !running.id ?      /* (not in a lab: it would leave the lab's own setup) */ `<button class="btn" data-act="land" data-id="${ref.id}" title="Stand on its surface (as in the settings: where you are)">Land on it</button>` : '') + '</div>';
+    (ref.kind === 'body' && (SURFACES.includes(ref.id) || (ref.id === 'Earth' && state.vantage)) && !running.id ?      /* (not in a lab: it would leave the lab's own setup) */
+      `<button class="btn" data-act="land" data-id="${ref.id}" title="${ref.id === 'Earth' ? 'Back home: stand at your place on the Earth' : 'Stand on its surface (as in the settings: where you are)'}">Land on it</button>` : '') + '</div>';
   const ls = rowHidden('Parallax') ? [] : linksFor(ref);      // a lab that hides the parallax does not link to it either
   const look = ls.length ? `<div class="look"><span>Look it up</span>${ls.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.title)}">${esc(l.label)}</a>`).join('')}</div>` : '';
   const html = head + `<table>${rows.join('')}</table>` + (note ? `<div class="note">${note}</div>` : '') + (pic ? `<div class="note">Picture: ${pic}.</div>` : '');
