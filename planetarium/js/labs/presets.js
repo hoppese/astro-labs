@@ -144,7 +144,7 @@ export const LABS = [
       `With ${ANGLE}, measure from the center of the Moon to the center of the dashed Moon.`,
       `Only the part of the baseline that is square-on to the Moon makes the shift. Open ${SQUARE('Moon')}: the Earth as the Moon sees it now. Drag the ruler from Berlin to Cape Town. How far away is the Moon, in km and in Earth radii (6,371 km)?${RADIANS}`,
     ],
-    about: `The straight line between the cities is 8,735 km long, but it is a little slanted to the Moon; only the square-on part, about 8,330 km, makes the shift. This is ordinary surveying with the Earth as the baseline. Hipparchus used the same idea with the solar eclipse of 129 BC. See ${tao}.` },
+    about: `The straight line between the cities is a little slanted to the Moon; only the part of it that is square-on to the Moon makes the shift, and that is what you measure. This is ordinary surveying with the Earth as the baseline. Hipparchus used the same idea with the solar eclipse of 129 BC. See ${tao}.` },
   { id: 'eclipse-two-sites', group: 'Earth and Moon', title: 'Total here, partial there', who: 'Hipparchus (eclipse of 129 BC), with the eclipse of 8 April 2024',
     blurb: 'A solar eclipse that is total in one town is only partial a few hundred km away.',
     setup: { t: '2024-04-08T19:09:50Z', loc: P.richmond, obs2: P.atlanta, align: 'stars', target: 'Sun', track: true, fov: 1.6, mount: 'eq', show: { refraction: false, atmosphere: false }, tools: ['compare'] },

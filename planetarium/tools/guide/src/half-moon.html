@@ -1,0 +1,82 @@
+<!--
+title: How far is the Sun? The half Moon
+lede: When the Moon is exactly half lit, the Sun, the Moon and you make a right triangle. Measure one angle of it, the one at your eye between the Moon and the Sun, and the triangle tells you how many times farther the Sun is than the Moon.
+-->
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>How many times farther away the Sun is than the Moon. This is Aristarchus’s measurement, about 270 BC, and the first rung of the distance ladder that reaches past the Moon. You will also see why his answer, though his geometry was right, came out far too small.</p>
+  <p>You need: the planetarium (the lab puts you in Tokyo in December 2026, a few hours before the first-quarter Moon, with the Moon selected and followed), the stopwatch it opens, the angle tool, and a calculator with a cosine key.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: a right angle at the Moon</h2>
+  <p>The Moon has no light of its own: the Sun always lights the half of it that faces the Sun. We see the Moon exactly half lit, with a straight edge between light and dark, only when we look at that lit half exactly side-on: when the line from us to the Moon is at a right angle to the line from the Moon to the Sun.</p>
+  <figure>
+    <!--FIG:hm_triangle-->
+    <figcaption><b>The triangle at the half Moon, from above.</b> At the instant the Moon is exactly half lit, the angle at the Moon is 90°. The angle at the Earth, between the Moon and the Sun, is θ: that is the one you can measure. The Moon’s distance is the side next to θ; the Sun’s distance is the long side across from the right angle. Not to scale: drawn to scale the triangle is a sliver far too thin to see, with θ very close to 90°.</figcaption>
+  </figure>
+  <p>In a right triangle the ratio of the side next to an angle to the long side (the <b>hypotenuse</b>) depends only on the angle: it is the angle’s <b>cosine</b>. So</p>
+  <div class="eq"><div class="row"><span class="frac"><span><i>Moon’s distance</i></span><span><i>Sun’s distance</i></span></span> = cos θ</div><div class="row"><span class="so">so</span><i>Sun’s distance</i> = <span class="frac"><span>1</span><span>cos θ</span></span> × <i>Moon’s distance</i></div></div>
+  <p>The number <span class="frac"><span>1</span><span>cos θ</span></span> is how many times farther the Sun is. You do not need to know either distance to find it.</p>
+</section>
+
+<section id="sky">
+  <h2>The angle in the sky</h2>
+  <p>From the Earth, θ is simply how far apart the Moon and the Sun are in the sky, center to center. At first quarter the Moon is high in the afternoon sky while the Sun is up too, so the two can be measured together. (The lab switches off the atmosphere and the ground so that both are easy to see.)</p>
+  <figure>
+    <!--FIG:hm_sky-->
+    <figcaption><b>What you measure.</b> The half Moon’s lit side faces the Sun. The angle tool, clicked on the middle of each disc, measures from the Moon’s center to the Sun’s: that is θ. The planetarium shows the Moon’s lit fraction in its panel, so you do not have to judge “exactly half” by eye, as Aristarchus had to.</figcaption>
+  </figure>
+</section>
+
+<section id="runaway">
+  <h2>Why it is so hard: the last degree</h2>
+  <p>θ is very close to 90°, and near 90° the cosine is close to zero. Dividing by a number close to zero is where small errors become huge ones: a tiny change in θ makes a big change in the answer.</p>
+  <figure>
+    <!--FIG:hm_runaway-->
+    <figcaption><b>The answer runs away near 90°.</b> The graph shows <span class="frac"><span>1</span><span>cos θ</span></span>, the Sun’s distance in Moon distances, for θ from 80° to 90°. Up to about 87° it rises gently; in the last degree (shaded) it shoots up without limit. Aristarchus judged θ to be 87° and got about 19. Where the curve is steep, a difference in θ too small for the eye to see changes the answer many times over.</figcaption>
+  </figure>
+  <p>So the geometry was right; the measurement was impossible with the eye alone. Your job is to measure θ to a hundredth of a degree, and then to see how much one hundredth changes your answer.</p>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=half-moon" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>The instant of half Moon.</b> The Moon is selected; its panel shows <b>Illuminated</b>, the lit fraction. Step the clock (<kbd>Shift</kbd> + <kbd>↓</kbd> <kbd>↑</kbd> for a minute at a time, <kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd> for a second) until it reads <b>50.00%</b>. The reading stays at 50.00% for a couple of minutes, so mark the moment it first reads 50.00% and the moment it turns to 50.01% (<b>Mark time</b>, or <kbd>X</kbd>), and take the time halfway between as the half Moon. Go to that time.</li>
+    <li><b>Measure θ.</b> Zoom out (<kbd>-</kbd> or the mouse wheel) until the Sun is in view too. Open the angle tool (<kbd>R</kbd>) and click the middle of the Moon, then the middle of the Sun. A click near a disc’s edge measures to the edge instead: check that the tool’s row reads <b>Moon center</b> to <b>Sun center</b>. Read θ to 0.01°. Each click is off by about half a screen pixel, as a hand would be, so zoom out only as far as you must to get both in view (a big window helps), and measure three times and average.</li>
+    <li><b>Work it out:</b> <span class="frac"><span>1</span><span>cos θ</span></span>, with your calculator in degrees. Then do it again with θ 0.01° bigger and 0.01° smaller. How much does the answer change?</li>
+    <li><b>Aristarchus’s own way round.</b> The angle tool’s row follows the Moon and the Sun as the clock runs. Step on from the half Moon until θ reads exactly 90.00° and mark that time. How long after the half Moon is it? (See <a href="#further">Going further</a> for what that delay is worth.)</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th>What</th><th>Time (UTC)</th><th>Angle θ</th><th><span class="frac"><span>1</span><span>cos θ</span></span></th></tr>
+    <tr><td>first reads 50.00%</td><td class="blank"></td><td></td><td></td></tr>
+    <tr><td>turns to 50.01%</td><td class="blank"></td><td></td><td></td></tr>
+    <tr><td>half Moon (halfway between)</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>θ reaches 90.00°</td><td class="blank"></td><td>90.00°</td><td></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>The instant.</b> The Moon moves about half a degree an hour against the Sun, so θ changes by roughly a hundredth of a degree every minute. Measuring a few minutes from the true half Moon is already enough to change your answer noticeably. That is why step 1 takes the middle of the 50.00% stretch.</li>
+    <li><b>Edge instead of center.</b> The Moon and the Sun are each about half a degree across. Measuring to an edge instead of the center puts θ off by a quarter of a degree, which, this close to 90°, is a disaster.</li>
+    <li><b>Zoomed far out.</b> With a quarter of the sky on the screen, half a pixel is a few hundredths of a degree, enough to move your answer a lot. Repeat the measurement and compare: the spread of your readings is your uncertainty in θ.</li>
+    <li><b>Rounding.</b> Keep every digit of θ until the end. Rounding θ to the nearest tenth of a degree can change the answer by more than half.</li>
+    <li><b>Degrees and radians.</b> If your calculator is in radians, cos θ comes out meaningless. Check: cos 60° should be 0.5.</li>
+    <li><b>Where you stand.</b> The panel’s lit fraction is as seen from Tokyo, not from the Earth’s center, and so is the angle you measure. They agree with each other, which is what matters: do not mix a phase from one place with an angle from another.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <p><b>Aristarchus’s way round: the delay.</b> If the Sun were infinitely far away, θ would be exactly 90° at the half Moon. Because it is not, the Moon has to move on a little farther, by 90° − θ, before θ reaches 90°. The Moon goes once all the way round the sky relative to the Sun (360°) in one month of phases, the <b>synodic month</b> (see the <a href="months.html">two kinds of month</a> lab). So the delay you timed in step 4 gives θ by a second route:</p>
+  <div class="eq"><div class="row"><span class="frac"><span>90° − θ</span><span>360°</span></span> = <span class="frac"><span><i>delay</i></span><span>1 <i>synodic month</i></span></span></div><div class="row"><span class="so">so</span>θ = 90° − 360° × <span class="frac"><span><i>delay</i></span><span>1 <i>synodic month</i></span></span></div></div>
+  <p>Do the two routes agree? The Moon does not move at a perfectly steady rate, so expect them to differ a little.</p>
+  <ul>
+    <li><b>How big is the Sun?</b> The Sun and the Moon look the same size in the sky (the <a href="sun-moon-size.html">solar eclipse</a> lab). Two things that look the same size are in the same ratio in true size as in distance, so the Sun is as many times bigger than the Moon as it is farther away.</li>
+    <li><b>In kilometres.</b> With the Moon’s distance (the <a href="lunar-parallax.html">two-observer parallax</a> lab, or the <a href="moonrise.html">moonrise</a> and <a href="eclipse-timing.html">eclipse</a> labs together), your ratio gives the Sun’s distance: the astronomical unit.</li>
+    <li>Read Terence Tao’s account of this rung of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>

@@ -1,0 +1,131 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>How far is the Moon? Two observers, one Moon · Lab guide</title><meta name="description" content="Hold a finger up and look at it with one eye, then the other: it jumps against the background. Two observers far apart on the Earth see the Moon jump against the stars in the same way. Measure the jump and the distance between the observers, and you have the distance to the Moon."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="guide.css"></head><body><div class="band"><div class="in"><a href="../">Planetarium</a><span class="crumb">›</span><a href="index.html">Lab guides</a><span class="sp"></span></div></div><div class="wrap"><header class="lab"><div class="eyebrow">Earth and Moon · lab guide</div><h1>How far is the Moon? Two observers, one Moon</h1><p class="who">Lalande and Lacaille, 1751 (Berlin and the Cape)</p><p><a class="go" href="../?lab=lunar-parallax" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p><p class="lede">Hold a finger up and look at it with one eye, then the other: it jumps against the background. Two observers far apart on the Earth see the Moon jump against the stars in the same way. Measure the jump and the distance between the observers, and you have the distance to the Moon.</p></header><nav class="toc" aria-label="On this page"><b>On this page</b><ol><li><a href="#goal">What you will find out</a></li><li><a href="#idea">The idea: parallax</a></li><li><a href="#baseline">The baseline: only the square-on part counts</a></li><li><a href="#triangle">From the angle to the distance</a></li><li><a href="#steps">In the planetarium, step by step</a></li><li><a href="#wrong">What can go wrong</a></li><li><a href="#further">Going further</a></li></ol></nav><main>
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>The <b>distance to the Moon</b>, in kilometres and in Earth radii, by surveying: a baseline on the ground and an angle at the far end. In 1751 Lalande in Berlin and Lacaille at the Cape of Good Hope did this together, timing their observations to match, from almost opposite ends of the Old World.</p>
+  <p>You need: the planetarium (the lab puts you in Berlin, with a second observer in Cape Town at the same instant), the angle tool, the <b>Earth seen square-on</b> picture it opens, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: parallax</h2>
+  <p>The stars are so far away that both observers see them in the same places. The Moon is near, so each observer looks at it along a different line, and the two lines land on different stars. The Moon seems to sit in a different place among the stars for each of them. That shift is the <b>parallax</b>.</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 330" role="img" aria-labelledby="lp1t lp1d"><title id="lp1t">Two observers see the Moon against different stars</title><desc id="lp1d">Side view, not to scale. Observers in Berlin, in the north, and in Cape Town, in the south, look at the Moon at the same instant. Their lines of sight cross at the Moon and continue to the distant stars, where they land in different places: Berlin sees the Moon lower among the stars, Cape Town higher. The angle between the two lines at the Moon is the parallax.</desc>
+<defs><marker id="lph" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahead"/></marker></defs>
+<rect x="694" y="20" width="44" height="270" rx="6" style="fill:color-mix(in srgb, var(--f-muted) 10%, transparent)"/>
+<circle cx="704" cy="40" r="2.4" style="fill:var(--f-muted)"/>
+<circle cx="722" cy="70" r="1.8" style="fill:var(--f-muted)"/>
+<circle cx="710" cy="104" r="2.4" style="fill:var(--f-muted)"/>
+<circle cx="728" cy="140" r="1.8" style="fill:var(--f-muted)"/>
+<circle cx="706" cy="178" r="2.4" style="fill:var(--f-muted)"/>
+<circle cx="720" cy="212" r="1.8" style="fill:var(--f-muted)"/>
+<circle cx="730" cy="246" r="2.4" style="fill:var(--f-muted)"/>
+<circle cx="708" cy="262" r="1.8" style="fill:var(--f-muted)"/>
+<text class="lbl sm" x="716" y="308" text-anchor="middle">distant stars</text>
+<line class="sight" x1="177.5" y1="103.1" x2="700.0" y2="213.7"/>
+<line class="sight" x1="194.7" y1="208.5" x2="700.0" y2="128.6"/>
+<circle class="earth" cx="130" cy="165" r="78"/><text class="lbl" x="130" y="170" text-anchor="middle" style="fill:#fff">Earth</text>
+<circle cx="177.5" cy="103.1" r="4" class="dotc2"/><text class="lbl sm" x="183.5" y="93.1">Berlin</text>
+<circle cx="194.7" cy="208.5" r="4" class="dotc2"/><text class="lbl sm" x="200.7" y="228.5">Cape Town</text>
+<circle class="moon" cx="470" cy="165" r="20"/><text class="lbl" x="470" y="133" text-anchor="middle">Moon</text>
+<path class="dim strong" d="M560.9,150.6 A92,92 0 0,1 560.0,184.0"/>
+<text class="lbl" x="568" y="170">p</text>
+<circle cx="700.0" cy="213.7" r="9" style="fill:none;stroke:var(--f-moon-line);stroke-width:1.6;stroke-dasharray:3 2"/>
+<text class="lbl sm" x="686.0" y="217.7" text-anchor="end">Berlin sees the Moon here</text>
+<circle cx="700.0" cy="128.6" r="9" style="fill:none;stroke:var(--f-moon-line);stroke-width:1.6;stroke-dasharray:3 2"/>
+<text class="lbl sm" x="686.0" y="132.6" text-anchor="end">Cape Town sees it here</text>
+<text class="lbl sm" x="10" y="322">side view · the Earth hugely too big and the Moon far too close · not to scale</text>
+</svg>
+    <figcaption><b>Two lines of sight.</b> At the same instant, Berlin in the north and Cape Town in the south look at the Moon. Their lines cross at the Moon and go on to the distant stars, where they land in different places: Berlin sees the Moon lower among the stars, Cape Town higher. The angle <i>p</i> between the two lines, at the Moon, is the same angle as the shift you measure on the sky. The Earth is drawn far too big here, and the Moon far too close.</figcaption>
+  </figure>
+  <p>The farther away the Moon, the smaller the shift; the longer the baseline between the observers, the bigger. That is all the method needs.</p>
+</section>
+
+<section id="baseline">
+  <h2>The baseline: only the square-on part counts</h2>
+  <p>The straight line between Berlin and Cape Town (through the Earth) is not quite square-on to the Moon: it is slanted to the line of sight. Imagine sliding one city along its line of sight toward the Moon: its view would not change at all. So only the part of the baseline that runs <b>across</b> the line of sight makes the shift.</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 330" role="img" aria-labelledby="lp2t lp2d"><title id="lp2t">Only the square-on part of the baseline counts</title><desc id="lp2d">Side view of the Earth with the Moon far away to the right. The straight line between Berlin and Cape Town is slanted to the direction of the Moon. Dotted lines from each city toward the Moon mark off the part of that line that lies square-on, across the line of sight: that part, shorter than the straight line, is the baseline that makes the shift.</desc>
+<defs><marker id="lph" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahead"/></marker></defs>
+<circle class="earth" cx="250" cy="165" r="115"/><text class="lbl" x="220" y="170" text-anchor="middle" style="fill:#fff">Earth</text>
+<line class="chord" x1="320.0" y1="73.8" x2="345.5" y2="229.1"/>
+<line class="guide-l" x1="320.0" y1="73.8" x2="489.2" y2="156.3"/>
+<line class="guide-l" x1="345.5" y1="229.1" x2="432.9" y2="271.8"/>
+<line class="lead" x1="489.2" y1="156.3" x2="432.9" y2="271.8"/>
+<line class="dim" x1="482.9" y1="153.2" x2="495.5" y2="159.4"/>
+<line class="dim" x1="426.6" y1="268.7" x2="439.2" y2="274.9"/>
+<text class="lbl" x="477.1" y="206.1" style="fill:#d2691e">the square-on part:</text><text class="lbl" x="477.1" y="224.1" style="fill:#d2691e">the baseline that counts</text>
+<path class="arrow" marker-end="url(#lph)" d="M525.0,45.0 L677.8,119.5"/>
+<text class="lbl sm" x="683.8" y="137.5" text-anchor="end">to the Moon, far away</text>
+<circle cx="320.0" cy="73.8" r="4.5" class="dotc2"/><text class="lbl sm" x="330.0" y="65.8" text-anchor="start">Berlin</text>
+<circle cx="345.5" cy="229.1" r="4.5" class="dotc2"/><text class="lbl sm" x="355.5" y="249.1" text-anchor="start">Cape Town</text>
+<text class="lbl sm" x="175.0" y="314">yellow: the straight line between the cities, through the Earth</text>
+<text class="lbl sm" x="750" y="322" text-anchor="end">side view · not to scale</text>
+</svg>
+    <figcaption><b>The square-on part.</b> The yellow line joins the two cities. The dotted lines run from each city toward the Moon, and mark off the part of the baseline that lies across the line of sight (orange). That shorter length is the one to use. The lab’s <b>Earth seen square-on</b> picture shows the Earth exactly as the Moon sees it at that instant, so a ruler laid between the two cities on it measures the orange length directly.</figcaption>
+  </figure>
+</section>
+
+<section id="triangle">
+  <h2>From the angle to the distance</h2>
+  <p>The baseline and the Moon make a long, thin triangle with the small angle <i>p</i> at the Moon. For a small angle, measured in <b>radians</b>, the angle is the short side over the long side:</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 220" role="img" aria-labelledby="lp3t lp3d"><title id="lp3t">A long thin triangle</title><desc id="lp3d">The square-on baseline b on the left, between the two observers, and the Moon at distance d on the right. Lines from the two ends of the baseline meet at the Moon at the small angle p. In radians, p is very nearly b divided by d.</desc>
+<path class="wedge" d="M80,53 L650,105 L80,157 Z"/>
+<line class="sight" x1="80" y1="53" x2="650" y2="105"/><line class="sight" x1="80" y1="157" x2="650" y2="105"/>
+<line class="lead" x1="80" y1="53" x2="80" y2="157"/>
+<circle cx="80" cy="53" r="4.5" class="dotc2"/><circle cx="80" cy="157" r="4.5" class="dotc2"/>
+<text class="lbl sm" x="70" y="58" text-anchor="end">Berlin</text><text class="lbl sm" x="70" y="162" text-anchor="end">Cape Town</text>
+<text class="lbl" x="90" y="110" style="fill:#d2691e">b</text>
+<circle class="moon" cx="650" cy="105" r="16"/><text class="lbl sm" x="674" y="110">Moon</text>
+<path class="dim" d="M480.7,89.6 A170,170 0 0,0 480.7,120.4"/>
+<text class="lbl" x="464" y="110">p</text>
+<path class="dim" d="M80,191 H650"/><path class="dim" d="M80,185 v12 M650,185 v12"/><text class="lbl" x="365.0" y="183" text-anchor="middle">d</text>
+<text class="lbl sm" x="750" y="212" text-anchor="end">the angle hugely exaggerated</text>
+</svg>
+    <figcaption><b>A thin triangle.</b> The square-on baseline <i>b</i> between the two observers, the Moon at distance <i>d</i>, and the angle <i>p</i> between the two lines of sight. The real triangle is so thin that the two long sides are, for all purposes, the same length.</figcaption>
+  </figure>
+  <div class="eq"><div class="row"><i>p</i> = <span class="frac"><span><i>b</i></span><span><i>d</i></span></span></div><div class="row"><span class="so">so</span><i>d</i> = <span class="frac"><span><i>b</i></span><span><i>p</i></span></span></div><div class="row"><span class="eqnote">To put <i>p</i> in radians:</span> <span class="frac"><span><i>p</i> in radians</span><span>π</span></span> = <span class="frac"><span><i>p</i> in degrees</span><span>180°</span></span></div></div>
+  <p>To give the distance in Earth radii, divide it by the Earth’s radius, 6,371 km:</p>
+  <div class="eq"><div class="row"><i>d</i> in Earth radii = <span class="frac"><span><i>d</i> in km</span><span>6,371 km</span></span></div></div>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=lunar-parallax" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Look at the two Moons.</b> The lab puts you in Berlin, following the Moon. The solid Moon is the one Berlin sees. The dashed circle is the Moon as Cape Town sees it at the same instant, placed against the same stars. Compare where each sits among the stars.</li>
+    <li><b>Measure the shift.</b> Open the angle tool (<kbd>R</kbd>). Click on the center of the solid Moon, then on the center of the dashed Moon: the tool snaps to centers. Read the angle and write it down, in degrees.</li>
+    <li><b>Measure the baseline.</b> Press <b>Earth seen square-on</b> in the step. It shows the Earth as the Moon sees it at this instant, with Berlin and Cape Town marked and zoomed in on. Drag a ruler from one city to the other, and read the length in km. (Drag again to redo it.)</li>
+    <li><b>Work it out,</b> with the equations above: the angle into radians, then the distance in km, then in Earth radii.</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th>Quantity</th><th>Value</th></tr>
+    <tr><td>Shift <i>p</i>, in degrees</td><td class="blank"></td></tr>
+    <tr><td>Shift <i>p</i>, in radians</td><td class="blank"></td></tr>
+    <tr><td>Square-on baseline <i>b</i>, in km</td><td class="blank"></td></tr>
+    <tr><td>Distance <i>d</i>, in km</td><td class="blank"></td></tr>
+    <tr><td>Distance <i>d</i>, in Earth radii</td><td class="blank"></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>Using the straight-line distance.</b> The distance between the cities on a map, or straight through the Earth, is longer than the square-on part, and gives too large a distance to the Moon. Use the square-on picture.</li>
+    <li><b>Degrees in the formula.</b> <i>d</i> = <i>b</i> over <i>p</i> only works with <i>p</i> in radians. In degrees the answer comes out about 57 times too small.</li>
+    <li><b>Placing the ruler.</b> The ruler does not snap to the cities: drag from the center of one marker to the center of the other. Use <b>Zoom to the places</b> if the markers are small.</li>
+    <li><b>Center to center.</b> Measure from the center of one Moon to the center of the other, not edge to edge. If you click near the edge of a disc, the tool snaps to the edge instead.</li>
+    <li><b>Which distance?</b> Your answer is the Moon’s distance from the observers on the surface, which differs a little from its distance from the Earth’s center. It also changes from night to night, because the Moon’s orbit is an oval (the <a href="../?lab=moon-apsides" target="_blank" rel="noopener">Moon’s oval orbit</a> lab).</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li>Where did the Earth’s radius come from? From Eratosthenes and the <a href="eratosthenes.html">noon Sun</a>. Lalande and Lacaille’s baseline in km depended on it.</li>
+    <li>Compare with the <a href="moonrise.html">moonrise</a> lab: there you found the Moon’s angular size; with this distance, that angle gives the Moon’s diameter in km. Does it match what the <a href="eclipse-timing.html">eclipse lab</a> gives?</li>
+    <li>Hipparchus did the same thing about 2,100 years earlier with a solar eclipse that was total in one place and partial in another: <a href="../?lab=eclipse-two-sites" target="_blank" rel="noopener">Total here, partial there</a>.</li>
+    <li>Read Terence Tao’s account of this rung of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>
+</main></div></body></html>
