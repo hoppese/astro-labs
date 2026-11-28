@@ -283,7 +283,7 @@ function render(force) {
     else { row('From ' + b.parent, fmtAngle(b.sepDeg) + (b.occulted ? ' (behind the disc)' : b.light < 0.5 ? ' (in the planet’s shadow)' : b.transit ? ' (in front of the disc)' : b.behind ? ' (far side)' : ' (near side)')); row('Angular diameter', fmtAngle(2 * b.angRadius)); }
     if (b.kind !== 'sun') {
       row('Illuminated', (b.phaseFrac * 100).toFixed(b.kind === 'moon' ? 2 : 1) + '%' + (b.kind === 'moon' && !state.vantage ? ' · ' + moonPhaseName(A.MoonPhase(frame.time)) : ''));
-      if (b.kind !== 'satellite' && state.vantage !== 'Sun') row('Elongation', b.elong.toFixed(1) + '° from the Sun');
+      if (b.kind !== 'satellite' && state.vantage !== 'Sun' && b.elong != null) row('Elongation', b.elong.toFixed(1) + '° from the Sun');
     }
     if (b.id === 'Saturn') row('Ring tilt', (b.ringTilt >= 0 ? '+' : '−') + Math.abs(b.ringTilt).toFixed(1) + '° (' + (b.ringTilt >= 0 ? 'north' : 'south') + ' face toward us)');
     const lt = b.lightMin;

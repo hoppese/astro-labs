@@ -204,6 +204,7 @@ export { mulMV, toSph };
 export function select(ref) {
   // a notebook lab (js/notebook/host.js): closing the object panel only puts the panel away, Record still reads the object
   if (!ref && state.keepTracked && state.tracking) { emit('dismiss'); return; }
+  if (ref && ref.kind === 'body' && ref.id === state.vantage) ref = null;      // the body you are in or standing on is not an object in the sky (a link may say ?from=Moon&target=Moon)
   state.selected = ref || null;
   emit('selection');
 }

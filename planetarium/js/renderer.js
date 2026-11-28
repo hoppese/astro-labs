@@ -56,6 +56,7 @@ export function initRenderer(el) {
 }
 
 function loop(now) {
+  requestAnimationFrame(loop);      // first: an error in one frame must not stop the sky for good
   const ticking = advance(now);
   // at real-time rates the sky creeps; a few redraws a second are plenty unless zoomed far in
   const slow = Math.abs(state.rate) <= 1 && cam.fov > 1;
@@ -64,7 +65,6 @@ function loop(now) {
   if (stepSteady(now, frame, canvas)) dirty = true;      // before stepNav: it can change which mount the view is held in
   if (stepNav(now, frame)) dirty = true;
   if (dirty) { dirty = false; lastDraw = now; draw(frame, now); }
-  requestAnimationFrame(loop);
 }
 
 // Screen rectangles covered by the floating UI, so sky labels are not drawn underneath it.
