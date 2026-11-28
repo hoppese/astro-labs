@@ -27,7 +27,7 @@ def side():
     def Z(x, y): return X0 + (x - bx0) * k, Y0 + (y - cy) * k
     H = int(Y0 + bh * k + 40)
     s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs1t fs1d"><title id="fs1t">The Earth\'s shadow seen from the side</title>'
-         '<desc id="fs1d">Above: the Sun, the Earth and the lines that graze both. Below, magnified: the umbra narrowing behind the Earth, the penumbra widening around it, the Moon\'s path crossing both, and the two lines from the Sun\'s top edge, one past the top of the Earth and one past the bottom, nearly parallel and an Earth width apart.</desc>'
+         '<desc id="fs1d">Above: the Sun, the Earth and the lines that graze both. Below, magnified: the umbra narrowing behind the Earth, the penumbra widening around it, the Moon\'s path crossing both, and at the Moon the umbra pulled in by half a Moon from the Earth\'s top and bottom.</desc>'
          f'<defs><clipPath id="zc"><rect x="{f(X0)}" y="{f(Y0 - bh*k)}" width="{f((bx1-bx0)*k)}" height="{f(2*bh*k)}"/></clipPath></defs>']
     # ---- overview ----
     def poly(pts, cls, T=lambda x, y: (x, y)): return f'<path class="{cls}" d="M' + ' L'.join(f'{f(T(x, y)[0])},{f(T(x, y)[1])}' for x, y in pts) + ' Z"/>'
@@ -40,9 +40,9 @@ def side():
         return out
     s += shadow(lambda x, y: (x, y), xr)
     s.append(f'<circle class="sun" cx="{xs}" cy="{cy}" r="{R}"/><text class="lbl" x="{xs}" y="{cy+5}" text-anchor="middle" style="fill:#5a3b00">Sun</text>')
-    s.append(f'<circle class="earth" cx="{xe}" cy="{cy}" r="{r}"/><text class="lbl" x="{xe-44}" y="{cy-30}" text-anchor="end">Earth</text>')
+    s.append(f'<circle class="earth" cx="{xe}" cy="{cy}" r="{r}"/><text class="lbl" x="{xe-30}" y="{cy+r+20}" text-anchor="middle">Earth</text>')
     s.append(f'<line class="orbit" x1="{xm}" y1="{cy-60}" x2="{xm}" y2="{cy+60}"/>')
-    s.append(f'<rect class="zoombox" x="{bx0}" y="{cy-bh}" width="{bx1-bx0}" height="{2*bh}"/><text class="lbl sm" x="{bx0-8}" y="{cy+bh-4}" text-anchor="end">magnified below</text>')
+    s.append(f'<rect class="zoombox" x="{bx0}" y="{cy-bh}" width="{bx1-bx0}" height="{2*bh}"/>')
     s.append(f'<text class="lbl sm" x="20" y="{cy+100}">not to scale: the real Sun is 109 times the Earth’s width and 23,000 Earth widths away</text>')
     # ---- the magnified panel ----
     zx0, zy0 = Z(bx0, cy - bh); zx1, zy1 = Z(bx1, cy + bh)
@@ -67,10 +67,6 @@ def side():
     for y0, y1 in ((cy - r, y_at(ot, xm)), (y_at(ob, xm), cy + r)):
         _, ga = Z(xm, y0); _, gb = Z(xm, y1)
         s.append(f'<path class="dim" d="M{f(gx)},{f(ga)} h7 V{f(gb)} h-7"/><text class="lbl sm" x="{f(gx+12)}" y="{f((ga+gb)/2+4)}">½ Moon</text>')
-    for x, lab in ((xe + 10, 'one Earth width'), (xm - 22, 'about the same')):
-        X, Y1 = Z(x, y_at(ot, x)); _, Y2 = Z(x, y_at(it_, x))
-        s.append(f'<path class="dim" d="M{f(X+6)},{f(Y1)} h6 V{f(Y2)} h-6"/><text class="lbl sm" x="{f(X+4)}" y="{f(Y2+18)}" text-anchor="middle">{lab}</text>')
-    s.append(f'<text class="lbl sm" x="{f(zx0+10)}" y="{f(zy1-12)}">the two lines from the Sun’s top edge: nearly parallel</text>')
     s.append('</svg>')
     return '\n'.join(s), (y_at(ob, xm) - y_at(ot, xm)) / 2 / rd, (y_at(it_, xm) - y_at(ib, xm)) / 2 / rd
 
