@@ -158,3 +158,41 @@ table.rec td.blank { min-width: 130px; }
   .wrap { display: block; padding: 0; }
   figure, ol.steps > li, .note, .warn { break-inside: avoid; }
 }
+
+/* ---- the course pages (guide/course/, tools/guide/course_build.py) ---- */
+.wrap.one { grid-template-columns: minmax(0, 1fr); max-width: 1000px; }
+.legend { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { display: inline-block; font: 600 11.5px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; vertical-align: 1px; background: var(--note); color: var(--muted); border: 1px solid var(--note-line); }
+.tag.act { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.tag.quiz, .tag.test { background: var(--warn); color: #9a4a12; border-color: var(--warn-line); }
+.tag.proj { background: color-mix(in srgb, #7a5cc2 14%, var(--paper)); color: #6a4cb0; border-color: color-mix(in srgb, #7a5cc2 35%, transparent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag.quiz, :root:not([data-theme="light"]) .tag.test { color: #f0b27a; } :root:not([data-theme="light"]) .tag.proj { color: #c7b3f5; } }
+:root[data-theme="dark"] .tag.quiz, :root[data-theme="dark"] .tag.test { color: #f0b27a; } :root[data-theme="dark"] .tag.proj { color: #c7b3f5; }
+table.sched { width: 100%; border-collapse: collapse; font-size: 15.5px; margin-top: 10px; }
+table.sched th { text-align: left; font: 600 12px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 2px solid var(--rule); }
+table.sched td { padding: 9px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.sched tr.wk td { font: 600 13px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); padding-top: 20px; border-bottom: 1px solid var(--rule); }
+table.sched tr.brk td { background: var(--note); color: var(--muted); font-style: italic; text-align: center; }
+table.sched tr.act td { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+table.sched td.dt { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); width: 7.5em; }
+table.sched td.rd, table.sched td.due { font-size: 14px; color: var(--muted); white-space: nowrap; }
+table.sched a { text-decoration: none; font-weight: 600; } table.sched a:hover { text-decoration: underline; }
+table.sched .sub { font-size: 14px; margin-top: 3px; } table.sched .sub a { font-weight: 500; }
+table.sched .snote { color: var(--muted); font-style: italic; }
+.sketch { font: 600 10.5px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border: 1px dashed var(--rule); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+.sketch-note { color: var(--muted); font-style: italic; }
+.tbd { color: var(--muted); font-style: italic; }
+@media (max-width: 720px) { table.sched td.rd, table.sched th:nth-child(3) { display: none; } table.sched td.dt { width: auto; } }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 16px 0 0; padding: 14px 16px; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; font-size: 15.5px; }
+dl.facts dt { font: 600 12px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+dl.facts dd { margin: 0; }
+.daynav { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); font-weight: 600; }
+.daynav a { text-decoration: none; }
+.semcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 8px 0 34px; }
+.semcard { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; color: var(--ink); text-decoration: none; }
+.semcard:hover { border-color: var(--accent); }
+.semcard b { font: 600 21px/1.25 var(--serif); }
+.semcard small { color: var(--muted); }
+.plan-flow { width: 100%; border-collapse: collapse; font-size: 15.5px; margin: 8px 0 16px; }
+.plan-flow td { padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.plan-flow td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; width: 6.5em; }
