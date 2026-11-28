@@ -6,7 +6,7 @@ import { A } from './astro.js';
 import { state, load, on, emit } from './state.js';
 import { loadCore, stars, dso, constellations } from './catalog.js';
 import { cam } from './camera.js';
-import { drawOrbits } from './render/orbits.js';
+import { drawOrbits, drawAuGrid } from './render/orbits.js';
 import { initRenderer, perf, addOverlay, addUnderlay } from './renderer.js';
 import { initInput } from './input.js';
 import { initUI } from './ui.js';
@@ -72,6 +72,7 @@ async function start() {
   initLayout(canvas);           // the middle of the free sky, the "Tracking" chip (js/layout.js); before a lab or a link sets the view
   initLabsSuite();              // measuring tools, labs menu, URL parameters (js/labs/index.js)
   initPoint();                  // pointing a phone at the sky (js/point/)
+  addUnderlay(drawAuGrid);      // the solar-system view's distance grid, under the orbits
   addUnderlay(drawOrbits);      // under the planets: a disc hides the lines behind it
   addOverlay(drawMeasures);     // last: over the Earth's shadow and the second observer's circles
 }

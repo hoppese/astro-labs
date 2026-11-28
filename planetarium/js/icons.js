@@ -14,6 +14,7 @@ export const ICON = {
   ecliptic: S(`<circle cx="12" cy="12" r="2.600"/><ellipse cx="12" cy="12" rx="9.500" ry="4.200" transform="rotate(-20 12 12)"/>${dot(20.2, 8.2, 1.4)}`),
   equator: S(`<circle cx="12" cy="12" r="8.500"/><ellipse cx="12" cy="12" rx="8.500" ry="2.800"/><path d="M12 2v2.500M12 19.500V22"/>`),
   atmosphere: S(`<path d="M2.500 18.500h19"/><path d="M6.500 18.500a5.500 5.500 0 0 1 11 0"/><path d="M12 9V6.500M5.300 11.800 3.500 10M18.700 11.800 20.500 10M8.300 9.700 7.300 7.500M15.700 9.700l1-2.200"/>`),
+  auGrid: S(`<path d="M3 8h18M3 16h18M8 3v18M16 3v18"/><circle cx="12" cy="12" r="1.800"/>`),
   orbits: S(`<ellipse cx="12" cy="12" rx="9.500" ry="5"/><circle cx="12" cy="12" r="1.800"/><circle cx="19.200" cy="8.800" r="1.300"/>`),
   ground: S(`<path d="M2.500 17.500 8 10l3.500 4.500 3-3.500 7 6.500z"/><path d="M2.500 20.500h19"/>`),
   cardinal: S(`<circle cx="12" cy="12" r="9"/><path d="M9.500 15.500V8.500l5 7V8.500"/>`),

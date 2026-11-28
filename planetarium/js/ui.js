@@ -46,6 +46,7 @@ const TOOLS = [
   { key: 'ground', label: 'Ground', k: 'G' },
   { key: 'cardinal', label: 'Cardinal points', k: 'Q' },
   { key: 'orbits', label: 'Orbit lines (looking from space)', k: 'U', spaceOnly: true },
+  { key: 'auGrid', label: 'Distance grid in au (solar-system view)', k: 'Y', spaceOnly: true },
   { key: 'mount', label: 'Equatorial mount', k: 'M', mount: true },
   null,
   { key: 'measure', label: 'Measure an angle', k: 'R', act: () => toggleMeasure(), isOn: () => measure.active },
@@ -191,7 +192,7 @@ function fillEditor(force) {
 // ---------- drawer: location, sky, mount, markings ----------
 const CHECKS = [['starNames', 'Star names', 'S'], ['planetNames', 'Planet names', 'P'], ['conLines', 'Constellation lines', 'C'], ['conNames', 'Constellation names', 'V'],
   ['conBounds', 'Boundaries', 'B'], ['dso', 'Deep-sky objects', 'D'], ['eqGrid', 'Equatorial grid', 'E'], ['azGrid', 'Alt-az grid', 'Z'],
-  ['meridian', 'Meridian', ';'], ['equator', 'Celestial equator', '.'], ['ecliptic', 'Ecliptic', ','], ['cardinal', 'Cardinal points', 'Q'], ['orbits', 'Orbits (looking from space)', 'U']];
+  ['meridian', 'Meridian', ';'], ['equator', 'Celestial equator', '.'], ['ecliptic', 'Ecliptic', ','], ['cardinal', 'Cardinal points', 'Q'], ['orbits', 'Orbits (looking from space)', 'U'], ['auGrid', 'Distance grid in au (solar-system view)', 'Y']];
 const PRESETS = [['Dark site', 2], ['Rural', 4], ['Suburban', 6], ['City', 8]];
 
 export function openDrawer(open, section) {
@@ -383,6 +384,7 @@ function syncPlace() {
   const note = $('vantageNote');
   const ab = $('aboveRow'); if (ab) { ab.hidden = v !== 'Above'; const near = [3, 7, 12, 35, 100].reduce((a, c) => (Math.abs(Math.log(c / state.aboveAU)) < Math.abs(Math.log(a / state.aboveAU)) ? c : a)); $('aboveSel').value = String(near); }
   document.querySelectorAll('.tool[data-key="orbits"]').forEach((t) => { t.style.display = eff.space ? '' : 'none'; });
+  document.querySelectorAll('.tool[data-key="auGrid"]').forEach((t) => { t.style.display = v === 'Above' ? '' : 'none'; });
   const sr = $('surfRow');
   if (sr) {
     sr.hidden = !SURFACES.includes(v); $('surfOn').checked = ground; $('surfWhere').hidden = !ground;

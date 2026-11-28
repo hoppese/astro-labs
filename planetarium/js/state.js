@@ -41,6 +41,7 @@ export const state = {
     meridian: false, ecliptic: false, equator: false,
     dso: true,
     orbits: true,            // paths of the planets (and of the moons of the planet the observer is at), drawn when looking from space
+    auGrid: false,           // the solar-system view: a square grid in the ecliptic plane, in au from the Sun (render/orbits.js)
     steady: true,            // when time runs fast: hold the sky's light (and, while following something, ground, refraction, orientation); steady.js
     sunspots: true,          // sunspots of the date (js/sunspots.js); off = a spotless Sun (labs always get the spotless disc)
     netStars: true,          // fetch stars fainter than the bundled catalog (G > 12) for the field on screen from the online Gaia service
