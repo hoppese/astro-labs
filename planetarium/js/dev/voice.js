@@ -61,6 +61,7 @@ function initDevVoice(token) {
     #devVoice .dv-foot{padding:6px 9px;border-top:1px solid #2a3848;color:#8496a9;font-size:12px}
     #devVoice .dv-empty{padding:8px 9px;color:#8496a9}
     #devVoice .dv-ask{display:flex;gap:6px;margin-bottom:6px}#devVoice .dv-ask[hidden]{display:none}
+    #devVoice .dv-cancel{margin-left:6px}
     #devVoice .dv-mic{display:flex;gap:6px;align-items:center;margin-bottom:6px;background:#16202c;border:1px solid #3a4b5f;border-radius:8px;padding:5px 8px;color:#9fb0c2}#devVoice .dv-mic[hidden]{display:none}
     #devVoice .dv-mic select{flex:1;min-width:0;background:#0f1720;color:#e8eef5;border:1px solid #3a4b5f;border-radius:5px;font:inherit}
     #devVoice .dv-ask textarea{flex:1;min-height:54px;resize:vertical;background:#0f1720;color:#e8eef5;border:1px solid #f0c46a;border-radius:8px;padding:6px 8px;font:inherit}</style>
@@ -227,8 +228,41 @@ function initDevVoice(token) {
     new Int16Array(buf, 44).set(pcm);
     return new Blob([buf], { type: 'audio/wav' });
   }
+  // ---- listening continuously: every utterance goes into a running transcript; after a pause a fast model (server /intent) reads the
+  // new part with the earlier part as context and returns the requests in it, merged across pauses, or "still talking". No wake word.
+  const lines = [], recent = [];                                           // {t (s since Start), text}; requests sent lately
+  let t0 = 0, cut = 0, inFlight = 0, reading = false, speaking = false, lastVoice = 0, waitingSince = 0, intentTimer = null;
+  const PAUSE = 2.5, GIVE_UP = 12;                                         // seconds of quiet before reading; before treating a half-request as done
+  function propose(text) {
+    // a request read from free speech: shown for 3 s with Cancel before it goes to the queue (no wake word means a stray remark could slip in)
+    const m = note(`<b>About to do</b>: “${esc(text)}” <button class="dv-cancel">Cancel</button>`);
+    const t = setTimeout(() => { m.remove(); recent.push(text); live.textContent = 'Sent: ' + text; ask(text); }, 3000);
+    m.querySelector('.dv-cancel').onclick = () => { clearTimeout(t); m.remove(); live.textContent = 'Cancelled: ' + text; };
+    chime();
+  }
+  async function readNow(final) {
+    if (reading || cut >= lines.length) return;
+    reading = true;
+    const from = Math.max(0, cut - 12), upto = lines.length;
+    let r = { requests: [], waiting: false };
+    try { r = await fetch(API + '/intent', { method: 'POST', headers: { 'content-type': 'application/json', 'x-dev-token': token }, body: JSON.stringify({ lines: lines.slice(from, upto), cut: cut - from, recent, final }) }).then((x) => x.json()); } catch (e) { /* try again after the next pause */ }
+    reading = false;
+    if (r.waiting && !final) { if (!waitingSince) waitingSince = Date.now(); live.textContent = '🎙 … (waiting for the rest)'; return; }
+    waitingSince = 0; cut = upto;
+    for (const q of r.requests || []) propose(q);
+  }
+  function tick() {
+    // every half second: read the transcript once he has been quiet long enough and nothing is still being transcribed
+    if (!whisper) return;
+    const quiet = (performance.now() - lastVoice) / 1000;
+    if (!speaking && !inFlight && cut < lines.length) {
+      if (waitingSince) { if (quiet > GIVE_UP) readNow(true); }
+      else if (quiet > PAUSE) readNow(false);
+    }
+  }
   async function heard(text) {
-    // one utterance, as Whisper wrote it: the same "Hey Claude" handling as the Chrome path
+    if (whisper) { if (text) { lines.push({ t: (performance.now() - t0) / 1000, text }); if (lines.length > 300) { lines.splice(0, 100); cut = Math.max(0, cut - 100); } live.textContent = '“' + text + '”'; } return; }
+    // (the Chrome path below keeps the "Hey Claude" handling)
     if (!text) { if (capturing) { clearTimeout(timer); timer = setTimeout(finish, SILENCE_MS); } return; }
     if (capturing) said += ' ' + text;
     else { const m = WAKE.exec(text); if (!m) { live.textContent = text; return; } capturing = true; said = text.slice(m.index + m[0].length); chime(); dot.classList.add('hot'); }
@@ -274,28 +308,31 @@ function initDevVoice(token) {
       if (!seg) {
         if (!loud) noise = noise * 0.95 + rms * 0.05;                    // the room's own level, followed slowly
         pre.push(x); if (pre.length > PRE) pre.shift();
-        if (loud) { seg = pre.splice(0); quiet = 0; clearTimeout(timer); if (!capturing) live.textContent = '🎙 …'; }
+        if (loud) { seg = pre.splice(0); quiet = 0; speaking = true; lastVoice = performance.now(); live.textContent = '🎙 …'; }
         return;
       }
-      seg.push(x); quiet = loud ? 0 : quiet + x.length / rate;
+      seg.push(x); quiet = loud ? 0 : quiet + x.length / rate; if (loud) lastVoice = performance.now();
       const len = seg.length * 4096 / rate;
       if (quiet > 0.8 || len > 25) {                                     // the end of an utterance: a pause, or 25 s
-        const chunk = seg; seg = null;
+        const chunk = seg; seg = null; speaking = false;
         if (len - quiet < 0.35) return;                                  // a click or a breath
+        inFlight++;
         fetch(API + '/transcribe', { method: 'POST', headers: { 'content-type': 'audio/wav', 'x-dev-token': token }, body: wavOf(chunk, rate) })
-          .then((r) => r.json()).then((j) => heard((j.text || '').trim())).catch(() => { live.textContent = 'Could not reach the server to transcribe.'; });
+          .then((r) => r.json()).then((j) => heard((j.text || '').trim())).catch(() => { live.textContent = 'Could not reach the server to transcribe.'; })
+          .finally(() => { inFlight--; });
       }
     };
     src.connect(node); node.connect(ctx.destination);
     whisper = { ctx, stream, node };
+    t0 = performance.now(); lastVoice = t0; clearInterval(intentTimer); intentTimer = setInterval(tick, 500);
     return true;
   }
-  function stopWhisper() { if (!whisper) return; try { whisper.node.disconnect(); whisper.stream.getTracks().forEach((t) => t.stop()); whisper.ctx.close(); } catch (e) { /* fine */ } whisper = null; }
+  function stopWhisper() { clearInterval(intentTimer); if (!whisper) return; try { whisper.node.disconnect(); whisper.stream.getTracks().forEach((t) => t.stop()); whisper.ctx.close(); } catch (e) { /* fine */ } whisper = null; }
 
   async function start() {
     if (await hasWhisper()) {
       if (!(await startWhisper())) return;
-      listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening (Whisper) on ' + (micSel.selectedOptions[0] ? micSel.selectedOptions[0].textContent : 'the microphone') + ': say “Hey Claude, …”';
+      listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening (Whisper) on ' + (micSel.selectedOptions[0] ? micSel.selectedOptions[0].textContent : 'the microphone') + ': just say what should change';
       return;
     }
     if (!SR) { note('This browser has no speech recognition (use Chrome). The ⌨ button still works.', { cls: 'err' }); return; }
