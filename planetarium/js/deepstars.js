@@ -642,10 +642,7 @@ function viewSettled(f0, f1, f2, now) {
   const dt = Math.max(1, now - last.t) / 1000;
   const move = Math.acos(Math.min(1, f0 * last.f0 + f1 * last.f1 + f2 * last.f2)) * RAD / cam.fov, zoom = Math.abs(Math.log(cam.fov / (last.fov || cam.fov)));
   // moving = more than 12 % of the field per second, or the zoom changing by more than 12 % per second
-  // but following a planet while time runs, the stars stream steadily past it (Jupiter at ×10⁴ in a 3′ field: half a field a second): that view
-  // never stops, and the tiles it reaches are wanted, so a steady drift of up to 2 fields a second counts as still
-  const drift = state.tracking && state.playing && dt < 1.5 && zoom / dt <= 0.12 && move / dt <= 2;
-  if (!drift && (dt < 1.5 ? (move / dt > 0.12 || zoom / dt > 0.12) : (move > 0.3 || zoom > 0.3))) last.movedAt = now;
+  if (dt < 1.5 ? (move / dt > 0.12 || zoom / dt > 0.12) : (move > 0.3 || zoom > 0.3)) last.movedAt = now;
   last.f0 = f0; last.f1 = f1; last.f2 = f2; last.fov = cam.fov; last.t = now;
   return now - last.movedAt >= NET_SETTLE_MS;
 }
