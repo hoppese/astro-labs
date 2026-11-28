@@ -153,10 +153,45 @@ def chord(hu_m, hp_m):
     s.append('</svg>')
     return '\n'.join(s)
 
+def penradius():
+    """Going further: umbra radius + penumbra radius = about one Earth diameter. The two lines from the Sun's top edge (one past the top
+    of the Earth, one past the bottom) are drawn bold; at the Moon's distance the umbra's radius (axis up to the first) and the
+    penumbra's radius (axis down to the second) together span about the Earth's diameter."""
+    W, H = 760, 340
+    xe, cy, r = 150, 165, 62
+    xm = 520; xr = 522
+    s1, s2 = 0.062, 0.072                      # slopes: the line past the Earth's top, the line past its bottom (both from the Sun's top edge)
+    def up_u(x): return cy - r + s1 * (x - xe)      # umbra, top edge
+    def lo_u(x): return cy + r - s1 * (x - xe)      # umbra, bottom edge (mirror: from the Sun's bottom edge)
+    def lo_p(x): return cy + r + s2 * (x - xe)      # penumbra, bottom edge
+    def up_p(x): return cy - r - s2 * (x - xe)      # penumbra, top edge (mirror)
+    s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs5t fs5d"><title id="fs5t">Umbra radius plus penumbra radius</title>'
+         '<desc id="fs5d">Behind the Earth, two lines from the top edge of the Sun: one past the top of the Earth bounds the umbra, one past the bottom bounds the penumbra. At the Moon\'s distance the umbra\'s radius and the penumbra\'s radius together span about one Earth diameter.</desc>']
+    s.append(f'<path class="pen" d="M{xe},{cy-r} L{xr},{f(up_p(xr))} L{xr},{f(lo_p(xr))} L{xe},{cy+r} Z"/>')
+    s.append(f'<path class="umb" d="M{xe},{cy-r} L{xr},{f(up_u(xr))} L{xr},{f(lo_u(xr))} L{xe},{cy+r} Z"/>')
+    # the mirror lines faint, the two from the Sun's top edge bold, coming in from the left
+    s.append(f'<line class="ray p" x1="{xe-90}" y1="{f(up_p(xe-90))}" x2="{xr}" y2="{f(up_p(xr))}" style="opacity:.45"/><line class="ray u" x1="{xe-90}" y1="{f(lo_u(xe-90))}" x2="{xr}" y2="{f(lo_u(xr))}" style="opacity:.45"/>')
+    s.append(f'<line class="ray key" x1="{xe-110}" y1="{f(up_u(xe-110))}" x2="{xr}" y2="{f(up_u(xr))}"/><line class="ray key" x1="{xe-110}" y1="{f(lo_p(xe-110))}" x2="{xr}" y2="{f(lo_p(xr))}"/>')
+    s.append(f'<text class="lbl sm" x="{xe-112}" y="{f(up_u(xe-112)-26)}">both from the</text><text class="lbl sm" x="{xe-112}" y="{f(up_u(xe-112)-10)}">Sun’s top edge</text>')
+    s.append(f'<circle class="earth" cx="{xe}" cy="{cy}" r="{r}"/><text class="lbl" x="{xe}" y="{cy+5}" text-anchor="middle" style="fill:#fff">Earth</text>')
+    s.append(f'<line class="orbit" x1="{xe}" y1="{cy}" x2="{xr+20}" y2="{cy}"/><line class="orbit" x1="{xm}" y1="20" x2="{xm}" y2="{H-24}"/><text class="lbl sm" x="{xm-6}" y="30" text-anchor="end">the Moon’s distance</text>')
+    s.append(f'<text class="lbl u" x="{(xe+xm)/2+10}" y="{cy-6}" text-anchor="middle">umbra</text><text class="lbl p" x="{(xe+xm)/2+10}" y="{f(lo_p((xe+xm)/2)-14)}" text-anchor="middle">penumbra</text>')
+    # the Earth's diameter, where the two lines pass it
+    s.append(f'<path class="dim" d="M{xe-r-14},{cy-r} h-8 V{cy+r} h8"/><text class="lbl sm" x="{xe-r-26}" y="{cy+4}" text-anchor="end">Earth’s</text><text class="lbl sm" x="{xe-r-26}" y="{cy+20}" text-anchor="end">diameter</text>')
+    # at the Moon: the two radii, and together
+    a, b = up_u(xm), lo_p(xm)
+    s.append(f'<path class="dim" d="M{xm+10},{f(a)} h8 V{cy} h-8"/><text class="lbl sm" x="{xm+24}" y="{f((a+cy)/2+4)}">umbra radius</text>')
+    s.append(f'<path class="dim" d="M{xm+10},{cy} h8 V{f(b)} h-8"/><text class="lbl sm" x="{xm+24}" y="{f((cy+b)/2+4)}">penumbra radius</text>')
+    s.append(f'<path class="dim strong" d="M{xm+150},{f(a)} h8 V{f(b)} h-8"/><text class="lbl" x="{xm+166}" y="{f((a+b)/2-4)}">together:</text><text class="lbl" x="{xm+166}" y="{f((a+b)/2+14)}">≈ Earth’s</text><text class="lbl" x="{xm+166}" y="{f((a+b)/2+32)}">diameter</text>')
+    s.append(f'<text class="lbl sm" x="{W-10}" y="{H-8}" text-anchor="end">not to scale</text>')
+    s.append('</svg>')
+    return '\n'.join(s)
+
 a, hu, hp = side()
 open(__file__.replace('eclipse_figs.py', 'fig_side.svg.html'), 'w').write(a)
 FACE = (2.2, 3.9)     # umbra and penumbra in Moon diameters as DRAWN face-on: deliberately not the real ratio (the lab measures it)
 open(__file__.replace('eclipse_figs.py', 'fig_face.svg.html'), 'w').write(face(*FACE))
 open(__file__.replace('eclipse_figs.py', 'fig_taper.svg.html'), 'w').write(taper())
 open(__file__.replace('eclipse_figs.py', 'fig_chord.svg.html'), 'w').write(chord(*FACE))
+open(__file__.replace('eclipse_figs.py', 'fig_penradius.svg.html'), 'w').write(penradius())
 print('umbra half-height / Moon radius', round(hu, 2), 'penumbra', round(hp, 2))
