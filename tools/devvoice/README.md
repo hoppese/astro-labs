@@ -15,5 +15,8 @@ running in this folder (one request at a time, one continuing session). Claude m
 nothing else. The server then makes **one local commit per change** (“dev voice: …”) and the page reloads to the same view.
 **Nothing is pushed**: review and push later from a normal Claude Code session.
 
-Speech recognition is Chrome's built-in one, which sends the audio to Google to transcribe. The server listens on 127.0.0.1 only, gives its token
+Speech: **Whisper on this laptop** (`brew install whisper-cpp`, model `tools/devvoice/models/ggml-base.en.bin` from
+huggingface.co/ggerganov/whisper.cpp, gitignored; SHA-1 137c4040…). The panel cuts the microphone into utterances at the pauses and
+sends each to the server as 16 kHz WAV; Whisper takes about half a second each and nothing leaves the laptop. Without Whisper the panel
+falls back to Chrome's recognizer, which sends the audio to Google and often mishears the name. The server listens on 127.0.0.1 only, gives its token
 (kept in `tools/devvoice/.token`, gitignored) only to the local planetarium page, and answers only requests carrying it. Screenshots are kept in `tools/devvoice/shots/` (gitignored).

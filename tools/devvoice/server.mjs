@@ -13,13 +13,37 @@
 import http from 'node:http';
 import { spawn, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');                 // astro-labs
 const SHOTS = path.join(HERE, 'shots');                      // screenshots sent with requests (gitignored)
+// Whisper (whisper.cpp, `brew install whisper-cpp`; model in tools/devvoice/models/, gitignored): transcribes on this laptop, nothing leaves it
+const WHISPER = ['/opt/homebrew/bin/whisper-cli', '/usr/local/bin/whisper-cli'].find((p) => existsSync(p)) || null;
+const MODEL = path.join(HERE, 'models', 'ggml-base.en.bin');
+const WHISPER_OK = !!WHISPER && existsSync(MODEL);
+// words Whisper should expect (it follows the vocabulary of this prompt)
+const VOCAB = 'Hey Claude. Planetarium, photometer, Cepheid, RR Lyrae, supernova, Kepler, Jupiter, Io, notebook, lab, magnitude, parallax.';
+let whisperChain = Promise.resolve();
+function transcribe(wav) {
+  const run = () => new Promise((resolve) => {
+    const f = path.join(SHOTS, `speech-${Date.now()}.wav`);
+    writeFileSync(f, wav);
+    const p = spawn(WHISPER, ['-m', MODEL, '-f', f, '-nt', '-np', '-l', 'en', '--prompt', VOCAB], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    p.stdout.on('data', (d) => { out += d; });
+    p.on('close', () => {
+      rmSync(f, { force: true });
+      // what Whisper writes for silence and noise is not speech
+      const text = out.replace(/\[[^\]]*\]|\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+      resolve(/^(thank you\.?|thanks for watching!?|you|\.)$/i.test(text) ? '' : text);
+    });
+  });
+  whisperChain = whisperChain.then(run, run);
+  return whisperChain;
+}
 const PORT = 8112, ORIGINS = ['http://127.0.0.1:8111', 'http://localhost:8111'];
 // the token is kept in tools/devvoice/.token (gitignored), so a restart keeps the same link; delete the file for a new one
 const TOKEN_FILE = path.join(HERE, '.token');
@@ -143,6 +167,14 @@ const server = http.createServer((req, res) => {
     send(200, { head: git('rev-parse', 'HEAD'), busy, jobs: [...jobs.values()].reverse().map((j) => ({ id: j.id, text: j.text, state: j.state, ok: j.ok, reply: j.reply, commit: j.commit, undone: !!j.undone, at: j.at, startedAt: j.startedAt, doneAt: j.doneAt, ahead: queue.indexOf(j) })), unpushed });
     return;
   }
+  if (req.method === 'GET' && url.pathname === '/whisper') { send(200, { ok: WHISPER_OK }); return; }
+  if (req.method === 'POST' && url.pathname === '/transcribe') {
+    if (!WHISPER_OK) { send(503, { error: 'whisper is not installed' }); return; }
+    const chunks = []; let n = 0;
+    req.on('data', (d) => { chunks.push(d); n += d.length; if (n > 4e6) req.destroy(); });
+    req.on('end', async () => { const wav = Buffer.concat(chunks); if (wav.length < 44 || wav.toString('ascii', 0, 4) !== 'RIFF') { send(400, { error: 'not a wav' }); return; } send(200, { text: await transcribe(wav) }); });
+    return;
+  }
   if (req.method === 'GET' && url.pathname === '/changed') {      // files under planetarium/ changed between a commit and now (the page refetches them before reloading)
     const since = url.searchParams.get('since') || '';
     if (!/^[0-9a-f]{7,40}$/.test(since)) { send(400, { error: 'bad commit' }); return; }
@@ -168,5 +200,6 @@ const server = http.createServer((req, res) => {
 });
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Dev voice server on 127.0.0.1:${PORT}. Each change becomes a local commit in ${REPO}; nothing is pushed.\n`);
-  console.log('Open http://127.0.0.1:8111/planetarium/ and switch on ☰ → Dev voice.\n');
+  console.log('Open http://127.0.0.1:8111/planetarium/ and switch on ☰ → Dev voice.');
+  console.log(WHISPER_OK ? 'Speech: Whisper, on this laptop (' + path.basename(MODEL) + ').\n' : 'Speech: Whisper not found (brew install whisper-cpp, and the model in tools/devvoice/models/): the page uses Chrome\'s recognizer.\n');
 });

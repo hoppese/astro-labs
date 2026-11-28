@@ -2,7 +2,8 @@
 // what is on screen, goes to the local dev-voice server (tools/devvoice/server.mjs), which has Claude make the change and commits it
 // locally. Switched on and off from the ☰ menu (ui.js), which shows the item only when the page is served from this laptop; the token
 // comes from the local server, which gives it only to this page.
-// Speech recognition is Chrome's built-in one (it sends the audio to Google to be transcribed).
+// Speech: Whisper on this laptop when the server has it (whisper.cpp; the panel cuts the microphone into utterances at the pauses and
+// sends each, as 16 kHz WAV, to the local server), else Chrome's built-in recognizer (which sends the audio to Google).
 
 import { state } from '../state.js';
 import { refName } from '../objects.js';
@@ -207,7 +208,68 @@ function initDevVoice(token) {
     if (capturing) { clearTimeout(timer); timer = setTimeout(finish, SILENCE_MS + 800); live.textContent = '🎙 ' + (said + ' ' + interim.replace(WAKE, '')).trim(); }
     else if (interim) live.textContent = interim;
   }
-  function start() {
+  // ---- Whisper: record, cut at pauses, transcribe on this laptop ----
+  let whisper = null;                                                      // {ctx, stream, node} while listening with Whisper
+  let whisperOk = null;
+  const hasWhisper = async () => { if (whisperOk === null) { try { whisperOk = !!(await fetch(API + '/whisper', { headers: { 'x-dev-token': token } }).then((r) => r.json())).ok; } catch (e) { whisperOk = false; } } return whisperOk; };
+  function wavOf(chunks, rate) {
+    // join, then average down to 16 kHz mono, 16-bit
+    let n = 0; for (const c of chunks) n += c.length;
+    const all = new Float32Array(n); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+    const k = rate / 16000, m = Math.floor(all.length / k), pcm = new Int16Array(m);
+    for (let i = 0; i < m; i++) { let s = 0; const a = Math.floor(i * k), b = Math.max(a + 1, Math.floor((i + 1) * k)); for (let j = a; j < b; j++) s += all[j]; const v = s / (b - a); pcm[i] = Math.max(-1, Math.min(1, v)) * 32767; }
+    const buf = new ArrayBuffer(44 + pcm.length * 2), d = new DataView(buf), str = (p, t) => { for (let i = 0; i < t.length; i++) d.setUint8(p + i, t.charCodeAt(i)); };
+    str(0, 'RIFF'); d.setUint32(4, 36 + pcm.length * 2, true); str(8, 'WAVE'); str(12, 'fmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true);
+    d.setUint32(24, 16000, true); d.setUint32(28, 32000, true); d.setUint16(32, 2, true); d.setUint16(34, 16, true); str(36, 'data'); d.setUint32(40, pcm.length * 2, true);
+    new Int16Array(buf, 44).set(pcm);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+  async function heard(text) {
+    // one utterance, as Whisper wrote it: the same "Hey Claude" handling as the Chrome path
+    if (!text) { if (capturing) { clearTimeout(timer); timer = setTimeout(finish, SILENCE_MS); } return; }
+    if (capturing) said += ' ' + text;
+    else { const m = WAKE.exec(text); if (!m) { live.textContent = text; return; } capturing = true; said = text.slice(m.index + m[0].length); chime(); dot.classList.add('hot'); }
+    live.textContent = '🎙 ' + said.trim();
+    clearTimeout(timer); timer = setTimeout(finish, SILENCE_MS);        // a request may run over a pause: wait for more before sending
+  }
+  async function startWhisper() {
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    catch (e) { note('Microphone not allowed: allow it for this page, then press Start.', { cls: 'err' }); return false; }
+    const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), node = ctx.createScriptProcessor(4096, 1, 1), rate = ctx.sampleRate;
+    const pre = [], PRE = Math.ceil(0.4 * rate / 4096);                    // 0.4 s kept from before the speech began
+    let seg = null, quiet = 0, noise = 0.004;
+    node.onaudioprocess = (ev) => {
+      const x = new Float32Array(ev.inputBuffer.getChannelData(0));
+      let e = 0; for (let i = 0; i < x.length; i++) e += x[i] * x[i];
+      const rms = Math.sqrt(e / x.length), loud = rms > Math.max(0.012, noise * 3.2);
+      if (!seg) {
+        if (!loud) noise = noise * 0.95 + rms * 0.05;                    // the room's own level, followed slowly
+        pre.push(x); if (pre.length > PRE) pre.shift();
+        if (loud) { seg = pre.splice(0); quiet = 0; clearTimeout(timer); if (!capturing) live.textContent = '🎙 …'; }
+        return;
+      }
+      seg.push(x); quiet = loud ? 0 : quiet + x.length / rate;
+      const len = seg.length * 4096 / rate;
+      if (quiet > 0.8 || len > 25) {                                     // the end of an utterance: a pause, or 25 s
+        const chunk = seg; seg = null;
+        if (len - quiet < 0.35) return;                                  // a click or a breath
+        fetch(API + '/transcribe', { method: 'POST', headers: { 'content-type': 'audio/wav', 'x-dev-token': token }, body: wavOf(chunk, rate) })
+          .then((r) => r.json()).then((j) => heard((j.text || '').trim())).catch(() => { live.textContent = 'Could not reach the server to transcribe.'; });
+      }
+    };
+    src.connect(node); node.connect(ctx.destination);
+    whisper = { ctx, stream, node };
+    return true;
+  }
+  function stopWhisper() { if (!whisper) return; try { whisper.node.disconnect(); whisper.stream.getTracks().forEach((t) => t.stop()); whisper.ctx.close(); } catch (e) { /* fine */ } whisper = null; }
+
+  async function start() {
+    if (await hasWhisper()) {
+      if (!(await startWhisper())) return;
+      listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening (Whisper, on this laptop): say “Hey Claude, …”';
+      return;
+    }
     if (!SR) { note('This browser has no speech recognition (use Chrome). The ⌨ button still works.', { cls: 'err' }); return; }
     rec = new SR(); rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US';
     // newer Chrome can be told which words to expect (contextual biasing); older versions ignore this
@@ -216,9 +278,9 @@ function initDevVoice(token) {
     rec.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { note('Microphone not allowed: allow it for this page, then press Start.', { cls: 'err' }); stop(); } };
     rec.onend = () => { if (listening) try { rec.start(); } catch (e) { /* already running */ } };      // Chrome stops after a while: keep going
     try { rec.start(); } catch (e) { /* fine */ }
-    listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening: say “Hey Claude, …”';
+    listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening (Chrome’s recognizer): say “Hey Claude, …”';
   }
-  function stop() { listening = false; capturing = false; if (rec) try { rec.stop(); } catch (e) { /* fine */ } dot.classList.remove('on', 'hot'); micBtn.textContent = 'Start'; live.textContent = 'Not listening.'; }
+  function stop() { listening = false; capturing = false; stopWhisper(); if (rec) try { rec.stop(); } catch (e) { /* fine */ } dot.classList.remove('on', 'hot'); micBtn.textContent = 'Start'; live.textContent = 'Not listening.'; }
 
   // after a reload made by a change: say what changed, and listen again if it was listening; the list as it was
   try { if (sessionStorage.getItem('devVoice.list')) listEl.hidden = false; } catch (e) { /* fine */ }
