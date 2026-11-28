@@ -10,8 +10,9 @@ lede: The whole sky turns once around us in about a day. Time how long the Moon 
 
 <section id="idea">
   <h2>The idea: the sky is a clock</h2>
-  <p>As the Earth turns, the whole sky seems to turn the other way around us, steadily, once a day. Everything in it, the Moon included, moves at the same rate: 360° in one turn. So a time can be turned into an angle:</p>
-  <div class="eq"><i>angle</i> = 360° × <i>time taken</i> ÷ <i>time for one whole turn</i></div>
+  <p>As the Earth turns, the whole sky seems to turn the other way around us, steadily, about once a day. Everything in it, the Moon included, moves at the same steady rate, so the fraction of a whole turn (360°) that the Moon moves through is the same as the fraction of a whole turn’s <i>time</i> that passes.</p>
+  <p>For the Moon, “one whole turn” means the time it takes to come all the way round your sky and back to the same place, for instance from crossing your meridian (the north–south line overhead) one day to crossing it the next. That time is called <b>one lunar day</b>, and it is a little longer than 24 hours (<a href="#lunarday">see below</a>). So:</p>
+  <div class="eq"><div class="row"><span class="frac"><span><i>angle</i></span><span>360°</span></span> = <span class="frac"><span><i>time taken</i></span><span>1 <i>lunar day</i></span></span></div><div class="row"><span class="so">so</span><i>angle</i> = 360° × <span class="frac"><span><i>time taken</i></span><span>1 <i>lunar day</i></span></span></div></div>
   <p>If you time how long the Moon takes to move by its own diameter, the same rule turns that time into the Moon’s angular diameter. A rising Moon is ideal for this, because the horizon is a sharp, straight ruler to time it against.</p>
 </section>
 
@@ -31,7 +32,7 @@ lede: The whole sky turns once around us in about a day. Time how long the Moon 
     <!--FIG:mr_lunarday-->
     <figcaption><b>Why the lunar day is longer than 24 hours.</b> From above the North Pole: by the time the Earth has turned once, the Moon has moved on along its orbit, so the Earth must make an extra turn (orange) to bring the Moon back to the same place in your sky. That takes, on average, about 50 minutes, but it varies from day to day by as much as a quarter of an hour, because the Moon moves faster near perigee. The lab has you measure the lunar day for these very dates rather than use the average.</figcaption>
   </figure>
-  <p>The time the Moon takes to come back to the same place in your sky (for instance, to cross your <b>meridian</b>, the north–south line overhead, two days running) is the <b>lunar day</b>. That is the “time for one whole turn” in the equation for the Moon.</p>
+  <p>That is why the bottom of the fraction is <b>1 lunar day</b>, measured from the Moon on your meridian to the Moon on your meridian the next day, and not 24 hours.</p>
 </section>
 
 <section id="steps">
@@ -68,9 +69,9 @@ lede: The whole sky turns once around us in about a day. Time how long the Moon 
   <p>An angular size and a true size give a distance. For a small angle, measured in <b>radians</b>:</p>
   <figure>
     <!--FIG:mr_distance-->
-    <figcaption><b>A thin wedge.</b> Seen from your eye, the Moon of diameter <i>D</i> at distance <i>d</i> covers the angle θ. For a small angle, θ in radians is very nearly <i>D</i> ÷ <i>d</i>. The angle is drawn much wider than it really is.</figcaption>
+    <figcaption><b>A thin wedge.</b> Seen from your eye, the Moon of diameter <i>D</i> at distance <i>d</i> covers the angle θ. For a small angle, θ in radians is very nearly <span class="frac"><span><i>D</i></span><span><i>d</i></span></span>. The angle is drawn much wider than it really is.</figcaption>
   </figure>
-  <div class="eq"><i>d</i> = <i>D</i> ÷ θ &emsp; (θ in radians: degrees × π ÷ 180)</div>
+  <div class="eq"><div class="row">θ = <span class="frac"><span><i>D</i></span><span><i>d</i></span></span></div><div class="row"><span class="so">so</span><i>d</i> = <span class="frac"><span><i>D</i></span><span>θ</span></span></div><div class="row"><span class="eqnote">To put θ in radians:</span> <span class="frac"><span>θ in radians</span><span>π</span></span> = <span class="frac"><span>θ in degrees</span><span>180°</span></span></div></div>
   <ul>
     <li>Take <i>D</i> from the <a href="eclipse-timing.html">eclipse lab</a> (the Moon in Earth diameters) and the Earth’s size from the <a href="eratosthenes.html">noon Sun</a> lab, and you have the Moon’s distance in kilometres, as Aristarchus and Hipparchus did.</li>
     <li>Repeat the timing at another place (Richmond, Indiana, say: <kbd>Settings</kbd> → Location) and see how the slant changes the rise time.</li>

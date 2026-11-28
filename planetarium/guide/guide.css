@@ -61,6 +61,14 @@ p, li { max-width: 68ch; }
 .math { font-family: var(--serif); font-style: italic; }
 .eq { font: 19px var(--serif); text-align: center; margin: 16px 0; padding: 12px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; }
 .eq i { font-style: italic; }
+.eq .row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0 .35em; }
+.eq .row + .row { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--rule); }
+.eq .so { font: italic 16px var(--sans); color: var(--muted); margin-right: .4em; }
+.eq .eqnote { font: 15px var(--sans); color: var(--muted); }
+.frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 .15em; }
+.frac > span { padding: 0 .3em; line-height: 1.3; }
+.frac > span + span { border-top: 1.2px solid currentColor; }
+p .frac, figcaption .frac, li .frac { font-size: .92em; }
 
 /* figures */
 figure { margin: 22px 0 26px; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 14px 10px; }
