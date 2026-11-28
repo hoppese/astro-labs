@@ -18,6 +18,7 @@ import { swapObservers } from './compare.js';
 import { setSquareFrom } from './squareon.js';
 import { setFx } from './corrections.js';
 import { closePanels, toast } from '../xui.js';
+import { linkTerms } from '../glossary.js';
 
 export const lab = { current: null };
 const LAB_SHOW = { refraction: true, atmosphere: true, ground: true, meridian: false, azGrid: false, eqGrid: false, ecliptic: false, equator: false, conLines: true, conNames: true, starNames: true, planetNames: true, dso: true, conBounds: false };
@@ -69,6 +70,7 @@ function renderCard() {
     (INSTRUCTOR && truthFor(L.id) ? `<p class="lab-truth"><b>Instructor, seed ${getModelSeed() || 'none (catalog values)'}:</b> ${truthFor(L.id)}</p>` : '') +
     `<details><summary>About this measurement, restart, links</summary><p><i>${esc(L.who)}.</i> ${L.about}</p><p class="lab-seed">Your seed: <b>${see.seed}</b>. It makes your measurement errors${L.photometer ? ' and your sky' : ''} your own; give it to your instructor with your results.</p>` +
     `<div class="row"><button class="btn" data-act="restart" title="Put the date, place and view back to the start of this lab">Restart lab</button><button class="btn" data-act="list">All labs</button><button class="btn" data-act="link" title="Copy a link that opens this lab">Copy lab link</button>${L.notebook ? '' : `<button class="btn" data-act="all">${all ? 'One step at a time' : 'All steps at once'}</button>`}</div></details>`;
+  linkTerms(card.body);           // umbra, arcminute and the like: a definition on hover or click
 }
 export function labLink(id) { const u = new URL(location.href); u.search = '?lab=' + encodeURIComponent(id); u.hash = ''; return u.toString(); }
 

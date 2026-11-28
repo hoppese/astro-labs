@@ -18,6 +18,7 @@ import { refractHor } from './astro.js';
 import { allTargets, resolveCustom } from './labs/targets.js';
 import { openLoupe, closeLoupe, loupeOpen } from './notebook/loupe.js';
 import { see, noisePair } from './notebook/seeing.js';
+import { linkTerms } from './glossary.js';
 
 // byEye (lab notebook, js/notebook/host.js): stars and other point sources are NOT snapped to; a magnifier opens and the
 // student places the point on the image by eye (discs still snap to centre and limb). onRecord: the notebook's Record.
@@ -279,7 +280,7 @@ function updatePanel() {
   html += `<div class="mp-acts">${measure.onRecord ? `<button class="btn rec" data-act="record" title="Copy this reading into your notebook"${measure.list.length ? '' : ' disabled'}>Record</button>` : ''}${measure.list.length ? '<button class="btn" data-act="clear">Clear all</button>' : ''}${measure.active ? `<button class="btn${measure.snap ? ' on' : ''}" data-act="snap" aria-pressed="${measure.snap}" title="Snap clicks to objects and limbs">Snap</button><button class="btn" data-act="done">Done <kbd>R</kbd></button>` : ''}</div>`;
   if (html !== panel.dataset.html) {
     const L = panel.querySelector('.mp-list'), st = L ? L.scrollTop : 0, count = measure.list.length, f = panel.contains(document.activeElement) ? document.activeElement.dataset : null, sel = f && f.act ? `[data-act="${f.act}"]${f.n ? `[data-n="${f.n}"]` : ''}` : '';
-    panel.innerHTML = html; panel.dataset.html = html;
+    panel.innerHTML = html; panel.dataset.html = html; linkTerms(panel);
     const N = panel.querySelector('.mp-list'); N.scrollTop = count > lastCount ? 1e6 : st; lastCount = count;          // a new one is in sight
     if (sel) { const b = panel.querySelector(sel); if (b) b.focus({ preventScroll: true }); }
   }
