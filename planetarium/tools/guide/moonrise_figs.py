@@ -73,7 +73,14 @@ def lunarday():
     s.append(f'<path class="extra" marker-end="url(#mrho)" d="{pts(2*math.pi, tot - 0.02, 12)}"/>')
     lx, ly = P(r1 + 8, a1 + 2*math.pi + (a2 - a1) / 2)
     s.append(f'<text class="lbl sm" x="{f(lx + 4)}" y="{f(ly + 4)}" style="fill:#d2691e">a bit more</text>')
-    s.append(f'<text class="lbl sm" x="14" y="{H - 40}">the arrow: 1 lunar day,</text><text class="lbl sm" x="14" y="{H - 24}">one full turn of the Earth and a bit more</text>')
+    # the words along the bottom of the spiral, just outside it
+    tp = []
+    for i in range(41):
+        th = math.radians(195 + 150 * i / 40)
+        t = (th - a1) % (2 * math.pi)
+        tp.append(P(r0 + (r1 - r0) * t / tot + 17, th))
+    s.append('<path id="mrtp" fill="none" d="M' + ' L'.join(f'{f(x)},{f(y)}' for x, y in tp) + '"/>')
+    s.append('<text class="lbl"><textPath href="#mrtp" startOffset="50%" text-anchor="middle">one full turn of the Earth</textPath></text>')
     # the Moon's motion along its orbit
     s.append(f'<path class="arrow" marker-end="url(#mrh)" d="M{f(P(R+16, math.radians(40))[0])},{f(P(R+16, math.radians(40))[1])} A{R+16},{R+16} 0 0,0 {f(P(R+16, math.radians(62))[0])},{f(P(R+16, math.radians(62))[1])}"/>')
     s.append(f'<text class="lbl sm" x="{f(P(R+22, math.radians(58))[0])}" y="{f(P(R+22, math.radians(58))[1] - 6)}">the Moon moves along its orbit</text>')
