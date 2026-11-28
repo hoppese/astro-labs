@@ -64,7 +64,7 @@ export function fmtColumn(vals, sig) {
   const fin = vals.filter((v) => Number.isFinite(v) && v !== 0).map(Math.abs);
   if (!sig || fin.length < 2) return (v) => fmtNum(v, sig);
   const hi = Math.max(...fin), e = Math.floor(Math.log10(hi)), d = sig - 1 - e;
-  if (e >= 6 || e <= -4 || d <= 0 || fin.filter((v) => v < 10 ** (1 - d)).length > fin.length / 3) return (v) => fmtNum(v, sig);
+  if (e >= 6 || e <= -4 || d <= 0 || hi / Math.min(...fin) > 1000 || fin.filter((v) => v < 10 ** (1 - d)).length > fin.length / 3) return (v) => fmtNum(v, sig);      // (a column spanning many powers of ten, star radii say: significant figures throughout)
   return (v) => { if (!Number.isFinite(v)) return ''; const a = Math.abs(v); if (a !== 0 && a < 0.5 * 10 ** -d) return fmtNum(v, 2); const [i, f] = a.toFixed(d).split('.'); return (v < 0 ? '−' : '') + group(i) + (f ? '.' + f : ''); };
 }
 /** Spreadsheet column letter: 0 -> A, 25 -> Z, 26 -> AA. */

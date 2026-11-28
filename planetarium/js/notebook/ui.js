@@ -550,9 +550,9 @@ export function createNotebook(root, opts = {}) {
     nb.recordMap = nb.recordMap.filter((m) => S.colById(nb, m.col));
     if (!nb.recordMap.length) { recordSetup(); return false; }
     const R = Object.fromEntries(host.readings().map((r) => [r.key, r]));
-    const missing = nb.recordMap.filter((m) => !R[m.raw] || R[m.raw].value == null);
+    const missing = nb.recordMap.filter((m) => !R[m.raw] || (R[m.raw].value == null && !R[m.raw].optional));      // (an optional reading may stay blank: the clusters lab's per-cluster columns)
     if (missing.length) { status(`Nothing recorded: ${[...new Set(missing.map((m) => (R[m.raw] ? R[m.raw].why || R[m.raw].label + ' has no reading' : m.raw)))].join('; ')}.`, 'warn'); if (host.afterMiss) host.afterMiss(); return false; }
-    const cells = {}; for (const m of nb.recordMap) cells[m.col] = R[m.raw].value;
+    const cells = {}; for (const m of nb.recordMap) if (R[m.raw].value != null) cells[m.col] = R[m.raw].value;
     const i = S.addRow(nb, cells);
     changed({ structure: true });
     const tr = tableWrap.querySelector(`tr[data-r="${i}"]`); if (tr) { tr.classList.add('flash'); tr.scrollIntoView({ block: 'nearest' }); setTimeout(() => tr.classList.remove('flash'), 1200); }
@@ -638,7 +638,8 @@ export function createNotebook(root, opts = {}) {
     for (const p of layout.hit) { const d = Math.hypot(p.px - x, p.py - y); if (d < bd) { bd = d; best = p; } }
     if (!best) { tip.hidden = true; return; }
     const g = nb.graph, cx = S.colById(nb, g.x), cy = S.colById(nb, best.s ? g.y2 : g.y);
-    tip.innerHTML = `<b>row ${best.i + 1}</b><br>${esc(cx.name || S.letterOf(nb, cx.id))}: ${esc(withUnit(fmtNum(best.x, cx.sig || 5), S.unitInfo(nb, cx).label))}<br>${esc(cy.name || S.letterOf(nb, cy.id))}: ${esc(withUnit(fmtNum(best.y, cy.sig || 5), S.unitInfo(nb, cy).label))}`;
+    const row = nb.rows[best.i], tc = row && nb.cols.find((c) => c.kind === 'text' && row[c.id] != null && String(row[c.id]).trim());      // the row's words (a star's name), if it has any
+    tip.innerHTML = (tc ? `<b>${esc(String(row[tc.id]))}</b> (row ${best.i + 1})` : `<b>row ${best.i + 1}</b>`) + `<br>${esc(cx.name || S.letterOf(nb, cx.id))}: ${esc(withUnit(fmtNum(best.x, cx.sig || 5), S.unitInfo(nb, cx).label))}<br>${esc(cy.name || S.letterOf(nb, cy.id))}: ${esc(withUnit(fmtNum(best.y, cy.sig || 5), S.unitInfo(nb, cy).label))}`;
     tip.hidden = false;
     tip.style.left = Math.min(r.width - tip.offsetWidth - 4, Math.max(4, best.px + 12)) + 'px'; tip.style.top = Math.max(4, best.py - tip.offsetHeight - 8) + 'px';
   });

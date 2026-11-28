@@ -141,7 +141,7 @@ export function setStarEpoch(years) {
 
 /** Plain-object view of one star. */
 /** Proper names of faint stars, which the name list (bright stars only) does not reach: by Hipparcos number. */
-export const FAINT_NAMES = { 87937: 'Barnard’s Star', 70890: 'Proxima Centauri', 24186: 'Kapteyn’s Star', 54035: 'Lalande 21185', 57548: 'Ross 128', 3829: 'Van Maanen’s Star', 36208: 'Luyten’s Star', 92403: 'Ross 154', 114046: 'Lacaille 9352', 1475: 'Groombridge 34', 110893: 'Kruger 60' };
+export const FAINT_NAMES = { 87937: 'Barnard’s Star', 70890: 'Proxima Centauri', 24186: 'Kapteyn’s Star', 54035: 'Lalande 21185', 57548: 'Ross 128', 3829: 'Van Maanen’s Star', 36208: 'Luyten’s Star', 92403: 'Ross 154', 114046: 'Lacaille 9352', 1475: 'Groombridge 34', 110893: 'Kruger 60', 49908: 'Groombridge 1618' };
 export function starRecord(k, i) {
   const t = stars.tiers[k], d = t.data, o = i * NF;
   const ext = NF >= 13;

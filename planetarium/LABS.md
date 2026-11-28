@@ -425,12 +425,77 @@ peak 2.898e6 / T):
   half the G band), Capella 0.05 vs 0.42 (G). Ca I 422.7 vs G band: Capella 0.17 vs 0.42 (G), Aldebaran 0.44 vs 0.29 (K). Pollux (K0 III) was
   dropped after the first student run: at the G/K boundary it fails the rule (0.25 vs 0.41).
 
+### `binaries` Weighing stars: an eclipsing and a spectroscopic binary (Goodricke, Vogel)
+Preset: 2027-10-22 11:30 UTC, Richmond, Algol (HIP 14576) selected, equatorial mount, ground and air off, the Spectrograph card open,
+the notebook (template: hours since the lab's start, counts). Built to fit one 50-minute class (Part A ~20 min, Part B ~25), write-up
+after. After one student-agent pass (which took far longer than a class) it was cut down: one eclipse at half-hour steps, a button to
+the next one, eight button times for Spica, its period given. Both stars are models (js/variables.js Algol; js/spectro.js SB2).
+- Part A, Algol (GCVS 5.1 elements, seed 0): V 2.12 out of eclipse, 3.39 at primary minimum, so 69% of the light lost; the eclipse lasts
+  0.14 P = 9.6 h first to last contact; minima 2027-10-22 18:50 UTC (7.3 h after the start, so the drop begins ~2.5 h in) and
+  10-25 15:39 UTC (76.2 h; the "Jump to Oct 25, 12:00" button lands ~3.7 h before it); P 2.8673 d = 68.82 h. A student's seed moves the
+  minima by at most about ±1.5 h (σ ~30 min) and P by ~1e-5. A 0.06 mag secondary eclipse half a period later (optional).
+- Part B, Spica (circular model; Tkachenko et al. 2016: P 4.0146 d, M 11.43 + 7.21 M☉, i 63.1°, so K1 123, K2 196 km/s; seed 0):
+  velocities star 1 / star 2 at the eight button times (h after the start): 60.5: 110/−173 · 72.5: 118/−186 · 84.5: 58/−91 ·
+  96.5: −35/58 · 108.5: −107/174 · 120.5: −117/189 · 132.5: −58/95 · 144.5: 36/−54 (the closest pair is 89 km/s, 0.17 nm, apart).
+  He I 587.56 swings ±0.241 nm (deep line) and ±0.384 nm (shallow); M1/M2 = K2/K1 = 1.59; (M1+M2) sin³i = 13.5 M☉; sin³ 63.1° = 0.709;
+  M1 + M2 = 19.0, M1 11.7, M2 7.3 M☉ (the published 11.43 and 7.21 differ because the real orbit is eccentric, e = 0.12). A student's
+  seed moves K by ~2%, the phase by ~0.02 cycle. Pins to ±0.01 nm give masses good to ~10%. The model draws Spica's lines at 0.3 of a
+  single star's width and with 0.4% noise so the second star's dip (about 0.045 deep) is clear; the card's y-axis starts just below
+  the deepest dip when dividing by the continuum.
+- Last step: an eclipse means i ≈ 90°, so sin³ i ≈ 1 and the masses need no outside measurement of the tilt.
+
+### `hr-diagram` Build the H–R diagram, and find the sizes of stars (Hertzsprung, Russell)
+Preset: 2027-02-10 02:30 UTC (21:30 local), Richmond, Alhena (the comparison, V 1.93, given in step 2) selected, the notebook open, ground
+and air off (any star at any hour). Twenty stars: ten main sequence (σ Ori O9.5 V to Lalande 21185 M2 V), five giants (Mirzam, Bellatrix,
+Capella, Pollux, Aldebaran), four supergiants (Rigel, Polaris, Wezen, Betelgeuse) and the catalogue's only white dwarf, Van Maanen's
+Star (V 12.4; Sirius B and Procyon B are not in it). Saiph was left out: a hot supergiant whose V-band radius comes out dwarf-sized
+(T too low from its color, L too low without a bolometric correction) would muddle step 6. Draft: not yet run by student agents.
+Chain, all notebook formula columns, typed as the card gives them (A star, B B, C G, D R counts, E distance (Record's "Distance of a
+star, from its parallax", pc), F "T in K" (no unit: the parser has no kelvin, and a K unit would leave K⁻² on R), G m `1.93 - 2.5 *
+log(C / <Alhena's G>)`, H "abs M" `[G] - 5 * log(E / 10)` (bare G is the gravitational constant), I L `10^((4.83 - H) / 2.5)`, J R
+`sqrt(I) / (F / 5772)^2`). The card names the stars as Record writes them (Tabit = π³ Ori, Ran = ε Eri); all twenty are found by
+search (Groombridge 1618 added to the faint-name list, with Gmb 1618 / GJ 380). The Sun is measured too: B, G, R, Record, and its
+distance typed (1 AU = 0.000004848 pc): T 5,780 K, M 4.83, L 1.
+- T = 9410 / (0.98 − ln(B/R)): a least-squares fit of ln(B/R) = A − C/T to the photometer model on 3,000–10,000 K (A 0.9785,
+  C 9412); within 1% there, 9,880 at 10,000 K, 11,620 at 12,000, 13,980 at 15,000, 17,270 at 20,000, 22,040 at 30,000.
+- m = 1.93 − 2.5 log(G / G_Alhena), M = m − 5 log(d / 10 pc), L/L☉ = 10^((4.83 − M)/2.5) (V band only), R/R☉ = √L / (T/5772)².
+Key, no noise (T from the formula, the type's T in parentheses where they differ; M; L; R):
+- Main sequence: σ Ori 22,660 (31,650), −3.82, 2,870, 3.5 · Regulus 13,230 (14,000), −0.57, 144, 2.3 · Sirius 9,600, 1.45, 22, 1.7 ·
+  Castor 8,800, 0.61, 49, 3.0 · Procyon 6,530, 2.67, 7.3, 2.1 · π³ Ori 6,410, 3.66, 3.0, 1.4 · χ¹ Ori 5,930, 4.70, 1.13, 1.00 ·
+  ε Eri 5,040, 6.18, 0.29, 0.70 · Groombridge 1618 3,980, 8.16, 0.047, 0.45 · Lalande 21185 3,550, 10.46, 0.0056, 0.20
+- Giants: Mirzam 20,370 (26,000), −3.92, 3,150, 4.5 · Bellatrix 17,620 (20,600), −2.80, 1,130, 3.6 · Capella 4,800, −0.51, 137, 17 ·
+  Pollux 4,660, 1.08, 32, 8.6 · Aldebaran 4,040, −0.68, 160, 26
+- Supergiants: Rigel 12,040 (12,500), −6.93, 50,700, 52 · Polaris 6,300, −3.62, 2,390, 41 · Wezen 6,190, −6.63, 38,500, 171 ·
+  Betelgeuse 3,680, −5.47, 13,200, 282 (about 282 Suns across)
+- White dwarf: Van Maanen's Star 6,170, 14.22, 0.00018, 0.0116 (about 1.3 Earths across)
+- Step 6: stars the Sun's size lie on a diagonal through the Sun (L ∝ T⁴ at fixed R): bigger stars up and to the right.
+
 ### `canopus` A star you cannot see from Greece (Aristotle, Posidonius)
 Preset: 100 BC, Rhodes, second observer Alexandria, refraction off.
 - Canopus on the meridian: Rhodes **0° 53′ 57″**, Alexandria **6° 07′ 45″**: difference **5.230°** (latitudes differ by 5.23°).
 - 25 Nov, with keys: meridian at 19:49:25 (Rhodes) and, after Swap, 19:42:55 UTC (Alexandria; step back).
 - 360 / 5.23 × 5000 = 344,000 stadia; Posidonius's 7.5° gives 240,000.
 - With refraction on, Canopus at Rhodes stands at 1° 16′.
+
+### `clusters` Star clusters: main-sequence fitting and the turnoff (Hyades, Pleiades, Praesepe)
+Preset: 2027-02-10 02:30 UTC (21:30 local), Richmond, looking at the Pleiades (fov 40°: Hyades and Pleiades together; Praesepe low in
+the east), the notebook open. Draft: not yet run by student agents. js/labs/clusters.js rings 52 members (data/clusters.json from
+tools/build_clusters.py: Gaia Collaboration 2018, A&A 616 A10 members, G and BP−RP from Gaia DR2 via GAVO; G < 12; up to 6 of the
+brightest per cluster, then one star per 0.1 mag of BP−RP from the middle of the main sequence), and while the lab runs the photometer
+measures a ringed star from its own Gaia photometry (phot.override): G − A_G and a temperature from the dereddened BP−RP (→ B−V →
+Ballesteros, as any star without a type), so bright HYG members and faint Gaia-tile members are on one footing. Record offers the
+star's cluster and its last G exposure in that cluster's own column (optional readings: blank for the other two).
+Key, no noise (m = 25 − 2.5 log G counts):
+- Color R/B: Hyades 1.05 (bluest) to 4.66, giants 2.45, 2.59 (m 3.4, 3.3); Pleiades 0.83 to 2.05; Praesepe 0.92 (a blue straggler),
+  then 1.05, giants 1.82, 2.27, 2.33.
+- Fit over R/B 1.4–2.1 (the Hyades' bluer stars have evolved): Pleiades Δm ≈ 2.24, d ≈ 133 pc (Gaia parallax 136); Praesepe Δm ≈ 3.07,
+  d ≈ 195 pc (186). The Hyades' higher metallicity shifts the fit by about 0.1–0.2 mag in the full member lists; accept 120–155 pc.
+- Turnoff (table in step 6): the bluest main-sequence point of the MIST v1.2 isochrones (Choi et al. 2016, ApJ 823, 102), [Fe/H] = 0,
+  in Gaia DR2 BP−RP (tools/build_clusters.py --turnoff), turned into this photometer's R/B. Pleiades 0.83 → ~160 Myr (Gaia Collaboration
+  2018: 98 Myr; lithium depletion 112–125 Myr); Hyades 1.05 → ~0.8 Gyr (790 Myr); Praesepe 1.05 → ~0.8 Gyr (710 Myr), its 0.92 star a blue
+  straggler. Chamukuy (R/B 1.32, m 3.3) is well above the band: an evolved star, not the turnoff.
+- Notebook columns as step 2 names them: A star, B cluster, C B counts, D R counts, E/F/G Hyades/Pleiades/Praesepe G; then H = D / C,
+  I/J/K = 25 − 2.5 log10(E/F/G).
 
 ## Standard candles
 
@@ -491,6 +556,20 @@ M = −19.20, m − M = 29.64, **d ≈ 8.5 Mpc**, against M82's TRGB distance of
 SN 2011fe (Ia): rises 20 days to V 9.99, fades about 2.6 mag in the next 60 days, then 0.025 mag/day.
 SN 2023ixf (II): first light MJD 60082.788, V peak 11.11 about 6 days later, slides about 1 mag over a 65-day plateau, drops about
 2.2 mag between 75 and 95 days after the peak, then 0.0098 mag/day. Peaks: M = −19.20 and −18.08, so the Ia is **2.8 times** more luminous.
+
+### `hubble` The Hubble law (Slipher, Hubble)
+Preset: 2027-04-15 02:00 UTC (10 pm in Richmond), M101 tracked, FOV 1.2°, the Spectrograph open. Velocities are measured with the
+Spectrograph on a **model** galaxy spectrum (`js/spectro.js` `makeGalaxy`: old-star continuum, Ca II H and K, G band, Mg b, Fe, Na D,
+weak Balmer absorption; spirals add Hα, [N II], [O II] emission), every line at (1 + z) with z OpenNGC's. Distances come from the
+angular size with a true diameter the student calibrates on M101 (6.85 Mpc, the sn-ia lab's Cepheid distance). Key, from the catalogue:
+- Velocities (cz): M101 +243, M82 +219, M31 −300 km/s (blueshifted: the discussion point). The eleven: NGC 4254 (M 99) 2,428;
+  NGC 5987 3,010; NGC 5908 3,348; NGC 5533 3,875; NGC 3646 4,263; NGC 2998 4,770; NGC 4921 5,471; NGC 3891 6,290; NGC 2955 7,094;
+  NGC 4662 6,975; NGC 6195 8,991 km/s. Pinning the K line to ±0.1 nm is about ±80 km/s.
+- M101: 23.99′ at 6.85 Mpc, so D ≈ 47.8 kpc. Distances from d = D / θ: 32.6, 42.8, 48.8, 57.5, 53.2, 67.3, 83.8, 95.5, 103.4, 89.8,
+  114.1 Mpc (same order). Fit through the origin: **H0 ≈ 72 km/s/Mpc**, 1/H0 ≈ **13.6 billion years**.
+- Calibrated on M31 instead (177.8′ at 0.78 Mpc, D ≈ 40.3 kpc): H0 ≈ 85, 11.5 billion years: the assumption sets the answer.
+The galaxies were chosen as spirals of cz 2,400–9,000 km/s whose catalogue sizes give a sensible H0 with M101's diameter: a random set
+of spirals of all sizes would give a much lower H0, because a sample picked by apparent size favors big galaxies.
 
 ## Time and the calendar
 
@@ -575,6 +654,7 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 | `cepheid-calibrate` | Magnitude now, Variable | Distance stays: it is the calibration |
 | `sn-ia` | Magnitude now | the peak is measured |
 | `sn-types` | Magnitude now, Type | the type is the result |
+| `hubble` | Redshift z, c × z, Radial velocity (object panel); z and cz columns and the cz filter in the Hubble's-law panel; the redshift in the Spectrograph | the velocity is measured; Size stays (the distances use it) |
 | `kepler-mars` | Elongation, Distance, Light time | the angle is measured, Mars's place is the result |
 | `jupiter-mass` | From Jupiter (moons) | the separation; Jupiter's Distance stays: the prompt uses it |
 | `venus-phases` | Angular diameter | measured; Illuminated stays |
@@ -585,6 +665,9 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 | `proper-motion` | Proper motion, Distance, Parallax | the distance is the student’s own, from the Barnard lab, or the instructor’s |
 | `star-colors` | Color index, spectral type, temperature | the color is what the lab measures |
 | `star-spectra` | Color index | B−V gives the temperature; the spectrograph also prints no type and offers no line labels |
+| `clusters` | Magnitude, Color index, Distance, Parallax, Proper motion, Radial velocity, Variable | the brightness and color are measured; a member's parallax would give the cluster's distance |
+| `binaries` | Variable, Magnitude (and Magnitude now), Radial velocity; the Spectrograph prints no type and no “double-lined” | Algol's period and depth are what Part A measures; Spica's catalogued velocity is the pair's; the types would name the answer |
+| `hr-diagram` | Color index, spectral type, temperature, Magnitude (and Magnitude now, Variable) | measured: the comparison's V is in the prompt. Distance stays: it is given (the parallax labs measure it) |
 | `zodiac`, `synodic`, `retrograde`, `aberration`, `precession-pole`, `precession-equinox` | nothing | their rows are the raw readings |
 
 Also not offered: date-box steps that are the answer (`months` and `moonrise`: synodic and sidereal month; `moonrise`, `sidereal-day`: sidereal day, and the keys `{` `}` there; `synodic`, `retrograde`: Mars year),

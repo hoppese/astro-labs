@@ -53,6 +53,7 @@ const TOOLS = [
 ];
 const HOUR = 3600000, DAY = 86400000;
 const STEPS = [['\u22121 s', -1000], ['+1 s', 1000], ['\u22121 min', -60000], ['+1 min', 60000],
+  ['\u221230 min', -HOUR / 2], ['+30 min', HOUR / 2],
   ['\u22121 h', -HOUR], ['+1 h', HOUR], ['\u22121 day', -DAY], ['+1 day', DAY],
   ['\u22121 sid. d', -SIDEREAL_DAY_MS], ['+1 sid. d', SIDEREAL_DAY_MS], ['\u22121 week', -7 * DAY], ['+1 week', 7 * DAY],
   ['\u22121 month', 'm-1'], ['+1 month', 'm1'], ['\u22121 year', 'y-1'], ['+1 year', 'y1'],

@@ -72,7 +72,7 @@ function renderCard() {
       : `<div class="lab-nav"><span>All ${L.steps.length} steps</span></div><ol>${L.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`) +
     // the instructor's key for THIS student's sky (their seed; open the lab with &seed=<their seed>&instructor=1)
     (INSTRUCTOR && truthFor(L.id) ? `<p class="lab-truth"><b>Instructor, seed ${getModelSeed() || 'none (catalog values)'}:</b> ${truthFor(L.id)}</p>` : '') +
-    `<details><summary>About this measurement, restart, links</summary><p><i>${esc(L.who)}.</i> ${L.about}</p><p class="lab-seed">Your seed: <b>${see.seed}</b>. It makes your measurement errors${L.photometer ? ' and your sky' : ''} your own; give it to your instructor with your results.</p>` +
+    `<details><summary>About this measurement, restart, links</summary><p><i>${esc(L.who)}.</i> ${L.about}</p>${see.seed > 0 ? `<p class="lab-seed">Your seed: <b>${see.seed}</b>. It makes your measurement errors${L.photometer ? ' and your sky' : ''} your own; give it to your instructor with your results.</p>` : ''}` +
     `<div class="row"><button class="btn" data-act="restart" title="Put the date, place and view back to the start of this lab">Restart lab</button><button class="btn" data-act="list">All labs</button><button class="btn" data-act="link" title="Copy a link that opens this lab">Copy lab link</button>${L.notebook ? '' : `<button class="btn" data-act="all">${all ? 'One step at a time' : 'All steps at once'}</button>`}</div></details>`;
   linkTerms(card.body);           // umbra, arcminute and the like: a definition on hover or click
 }
@@ -94,6 +94,7 @@ const DO = {
   shadow: () => setFx('earthShadow', !state.fx.earthShadow),
   square: (b) => { setSquareFrom(b.dataset.from || 'Moon'); const c = getCard('squareon'); if (c) c.open(); },
   goto: (b) => { state.playing = false; emit('rate'); setTime(Date.parse(b.dataset.t)); },
+  nextring: (b) => emit('nextring', b.dataset.cl),      // js/labs/clusters.js: the next ringed star of a cluster
 };
 export function openLabsList() {
   if (!modal) {

@@ -22,7 +22,9 @@ import { see, noisePair } from './seeing.js';
 import { rowHidden, running } from '../labs/hidden.js';
 import { lab, labStep, setLabStep } from '../labs/labs.js';
 import { counts as photoCounts, phot, lastExp, filterWaiting } from '../photometer.js';
+import { spectroPins } from '../labs/spectrograph.js';
 import { setModelSeed } from '../variables.js';
+import { starRecord } from '../catalog.js';
 
 const q = new URLSearchParams(location.search);
 const num = (k) => { const v = parseFloat(q.get(k)); return Number.isFinite(v) ? v : null; };
@@ -40,6 +42,8 @@ function readings() {
   const out = [], t = state.timeMs, jd = t / 86400000 + 2440587.5, p = wallParts(t, 'UTC');
   out.push({ key: 'year', group: 'Clock', label: 'Date as a decimal year', unit: 'yr', kind: 'data', value: (2000 + (jd - 2451545) / 365.25).toFixed(5), sig: 0 });
   out.push({ key: 'jd', group: 'Clock', label: 'Julian Date', unit: 'd', kind: 'data', value: jd.toFixed(5), sig: 0 });
+  { const t0 = lab.current && lab.current.setup && Date.parse(lab.current.setup.t);      // a time axis with readable numbers (JD ticks all read 2.46 × 10^6)
+    out.push({ key: 'hrs', group: 'Clock', label: 'Hours since the lab’s start', unit: 'hr', kind: 'data', value: Number.isFinite(t0) ? ((t - t0) / 3600000).toFixed(3) : null, sig: 0, why: 'no lab with a start time is running' }); }
   out.push({ key: 'utc', group: 'Clock', label: 'Date and time (UTC), as words', kind: 'text', value: fmtDate(p) + ' ' + fmtTime(p) });
   const m = lastMeasure(), why = measure.active ? 'the angle tool has no finished measurement yet: click near each of two objects on the sky' : 'the angle tool is closed: press R, then click near each of two objects on the sky';
   out.push({ key: 'sep', group: 'Angle tool (last measurement)', label: 'Separation in arcseconds', unit: 'arcsec', kind: 'data', value: m ? (m.sep * 3600).toFixed(2) : null, sig: 0, why });
@@ -55,6 +59,8 @@ function readings() {
   let aa = null; if (ref) { const h = refHorApparent(ref, frame, bodies); if (h) aa = horToAzAlt(h); }
   out.push({ key: 'obj', group: 'Selected object (its panel)', label: 'Name', kind: 'text', value: ref ? refName(ref) : null, why: why3 });
   out.push({ key: 'dist', group: 'Selected object (its panel)', label: 'Distance from the observer', unit: 'AU', kind: 'data', value: b ? +b.dist.toPrecision(7) : null, sig: 5, why: ref ? why4 : why3 });
+  { const st = ref && ref.kind === 'star' ? starRecord(ref.k, ref.i) : null;      // a catalogue star's distance (from its parallax), as its panel shows it
+    out.push({ key: 'pc', group: 'Selected object (its panel)', label: 'Distance of a star, from its parallax', unit: 'pc', kind: 'data', value: st && st.dist ? +st.dist.toPrecision(5) : null, sig: 4, why: ref ? 'the selected object is not a catalogue star with a parallax' : why3 }); }
   out.push({ key: 'diam', group: 'Selected object (its panel)', label: 'Angular diameter', unit: 'arcsec', kind: 'data', value: b ? +(2 * b.angRadius * 3600).toPrecision(5) : null, sig: 4, why: ref ? why4 : why3 });
   out.push({ key: 'lit', group: 'Selected object (its panel)', label: 'Illuminated fraction', unit: '%', kind: 'data', value: b && b.phaseFrac != null ? r3(b.phaseFrac * 100, 2) : null, sig: 0, why: ref ? why4 : why3 });
   out.push({ key: 'alt', group: 'Selected object (its panel)', label: 'Altitude', unit: 'deg', kind: 'data', value: aa ? r3(aa.alt, 3) : null, sig: 0, why: why3 });
@@ -79,9 +85,13 @@ function readings() {
       const e = lastExp[x], ok = e && e.key === k;
       out.push({ key: 'counts' + x, group: 'Photometer (selected object)', label: `Last exposure through the ${x} (${name}) filter`, unit: 'counts', kind: 'data', value: ok ? e.n : null, sig: 0, why: ref ? `no ${x} exposure of this object yet: choose ${x} in its panel’s Photometer row` : why3 });
     } }
+  { const sp = spectroPins(), why5 = sp ? 'not pinned: click on the spectrum to pin a wavelength' : 'the Spectrograph card is closed, or shows no spectrum';      // the Spectrograph's pins (cleared when a binary's clock moves)
+    for (const k of [0, 1]) out.push({ key: 'pin' + (k + 1), group: 'Spectrograph (pinned wavelengths)', label: `Pin ${k + 1}`, unit: 'nm', kind: 'data', value: sp && sp.pins[k] != null ? sp.pins[k].toFixed(3) : null, sig: 0, why: why5 }); }
+  // readings that belong to the running lab alone (js/labs/clusters.js: the star's cluster, its G counts in that cluster's column)
+  if (running.readings) out.push(...running.readings(ref, bodies));
   // a reading the running lab asks the student to find is not offered either (labs/hidden.js)
-  for (const [k, l] of [['dist', 'distance'], ['diam', 'angular diameter'], ['lit', 'illuminated']]) { const r = out.find((x) => x.key === k); if (rowHidden(l)) { r.value = null; r.why = 'hidden during this lab'; } }
-  return out;
+  for (const [k, l] of [['dist', 'distance'], ['pc', 'distance'], ['diam', 'angular diameter'], ['lit', 'illuminated']]) { const r = out.find((x) => x.key === k); if (rowHidden(l)) { r.value = null; r.why = 'hidden during this lab'; } }
+  return out.filter((r) => !(r.key === 'pc' && rowHidden('distance')));      // (a star's parallax distance is not even offered when the lab hides distance: the clusters lab)
 }
 
 // ---- observing conditions -------------------------------------------------------------------------------------------------

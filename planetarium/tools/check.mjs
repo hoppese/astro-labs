@@ -443,5 +443,7 @@ line(); line('== 28. Labs: prompts, stopwatch, angle tool, what gives answers aw
 await (await import('./check-labs.mjs')).checkLabs({ line });
 line(); line('== 30. Spectrograph: model spectra (Wien, Balmer at A, Doppler) and the Hipparcos types (tools/check-spectro.mjs; a failure throws) ==');
 await (await import('./check-spectro.mjs')).checkSpectro({ line });
+line(); line('== 34. The Hubble-law lab: model galaxy spectra and the key (tools/check-hubble.mjs; a failure throws) ==');
+await (await import('./check-hubble.mjs')).checkHubble({ line });
 line(); line('== 29. Pointing a phone at the sky: attitude, compass, calibration, WMM2025, targets (tools/check-point.mjs; a failure throws) ==');
 await (await import('./check-point.mjs')).checkPoint({ line });

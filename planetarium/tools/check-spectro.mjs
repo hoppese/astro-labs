@@ -37,6 +37,18 @@ export async function checkSpectro({ line }) {
   // noise: fixed for one student and star, different for another student
   const a = S.makeStar({ type: 'G2V', key: 7, seed: 11 }), b = S.makeStar({ type: 'G2V', key: 7, seed: 11 }), c = S.makeStar({ type: 'G2V', key: 7, seed: 12 });
   if (a.flux(550) !== b.flux(550) || a.flux(550) === c.flux(550)) fail('noise is not a fixed function of seed, star and wavelength');
+  // a double-lined binary (Spica): the two stars' He I 587.56 lines sit where their orbit velocities put them, and merge at conjunction
+  { const el = S.sb2Elements(65474, 0), dip = (b, lo, hi) => { let best = 2, at = 0; for (let l = lo; l <= hi; l += 0.001) { const t = b.transmission(l); if (t < best) { best = t; at = l; } } return at; };
+    for (const ph of [0.25, 0.75]) {
+      const jd = el.T0 + ph * el.P, b = S.makeBinary(65474, jd, 0, 0), [v1, v2] = S.sb2Velocities(el, jd), z1 = 587.56 * (1 + v1 / S.C_KMS), z2 = 587.56 * (1 + v2 / S.C_KMS);
+      const d1 = dip(b, z1 - 0.1, z1 + 0.1), d2 = dip(b, z2 - 0.1, z2 + 0.1);
+      if (Math.abs(d1 - z1) > 0.02 || Math.abs(d2 - z2) > 0.02) fail(`Spica at phase ${ph}: dips at ${d1.toFixed(3)} and ${d2.toFixed(3)}, want ${z1.toFixed(3)} and ${z2.toFixed(3)}`);
+      if (Math.abs(v1 - el.gamma - (ph === 0.25 ? 1 : -1) * el.K1) > 1e-6 || Math.abs(v2 - el.gamma + (ph === 0.25 ? 1 : -1) * el.K2) > 1e-6) fail('Spica velocities');
+    }
+    const msin = 1.0361e-7 * (el.K1 + el.K2) ** 3 * el.P, M = msin / Math.sin(el.inc * Math.PI / 180) ** 3, M1 = M * el.K2 / (el.K1 + el.K2);
+    if (Math.abs(M - (el.M1 + el.M2)) / (el.M1 + el.M2) > 0.05 || Math.abs(el.K2 / el.K1 - el.M1 / el.M2) > 0.02) fail(`Spica masses from the model: ${M.toFixed(2)} (want ${el.M1 + el.M2}), ratio ${(el.K2 / el.K1).toFixed(3)}`);
+    const s1 = S.sb2Elements(65474, 5), s2 = S.sb2Elements(65474, 5); if (s1.K1 !== s2.K1 || s1.K1 === el.K1) fail('Spica per-student elements');
+    line(`  Spica (double-lined, circular model): He I 587.56 split ±${(587.56 * el.K1 / S.C_KMS).toFixed(3)} and ±${(587.56 * el.K2 / S.C_KMS).toFixed(3)} nm; from K1 ${el.K1}, K2 ${el.K2}, P ${el.P} d and i ${el.inc}°: M1 + M2 ${M.toFixed(1)}, M1 ${M1.toFixed(1)} M☉ (published ${el.M1} + ${el.M2})`); }
   // B−V fallback
   const sun = S.teffFromBV(0.65); if (Math.abs(sun - 5800) > 150) fail('B−V 0.65 gives ' + sun);
   line(`  B−V fallback: B−V 0.65 → ${Math.round(sun)} K`);

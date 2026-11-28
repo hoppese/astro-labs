@@ -180,3 +180,74 @@ export function makeStar(info) {
   };
   return { T, x: p.x, lum: p.lum, typeText: p.text, fromColour, rv, lines, flux, transmission, continuum, peak: lamMax };
 }
+
+// ---- galaxies (the Hubble-law lab) ----
+// HONESTY: a MODEL integrated spectrum, built from two catalogued facts about the galaxy, its redshift z and its Hubble type
+// (OpenNGC): the light of many old stars (a blend of blackbodies at 4,300 K, 5,500 K and, for spirals, 9,000 K from young
+// stars), the absorption lines that dominate such light (ionized calcium H and K, the CH G band, magnesium b, iron, sodium D,
+// weak hydrogen), broadened by the stars' motions inside the galaxy; spirals add emission from their gas (hydrogen α, [N II],
+// [O II]). Every wavelength is times (1 + z). Depths and widths are schematic, as in a textbook figure, not fits to the galaxy.
+const GAL_LINES = [      // [name, air nm, depth (absorption > 0, emission < 0) for an elliptical, for a spiral, width nm]
+  ['[O II]', 372.7, 0, -0.45, 0.45], ['Ca II K', 393.37, 0.55, 0.45, 0.95], ['Ca II H', 396.85, 0.5, 0.42, 0.95],
+  ['Hδ', 410.17, 0.08, 0.1, 0.8], ['G band (CH)', 430.5, 0.3, 0.24, 1.3], ['Hγ', 434.05, 0.06, 0.08, 0.8],
+  ['Hβ', 486.13, 0.1, -0.12, 0.7], ['Mg b', 517.5, 0.3, 0.22, 1.1], ['Fe I', 527.0, 0.14, 0.1, 0.8],
+  ['Fe I', 533.5, 0.1, 0.07, 0.8], ['Na D', 589.3, 0.22, 0.16, 0.9], ['Hα', 656.28, 0.08, -0.6, 0.55], ['[N II]', 658.35, 0, -0.2, 0.5],
+];
+/** Is this Hubble type a spiral or irregular (gas, young stars, emission lines)? */
+const gassy = (h) => !!h && /^(S|I)/.test(h) && !/^S0/.test(h);
+/** A model galaxy for the spectrograph: info {z, hubble?: type text, key?, seed?, noise?}. Same shape as makeStar's result. */
+export function makeGalaxy(info) {
+  if (info.z == null || !isFinite(info.z)) return null;
+  const sp = gassy(info.hubble), z = 1 + info.z;
+  const mixT = sp ? [[4300, 0.45], [5500, 0.4], [9000, 0.15]] : [[4300, 0.6], [5500, 0.4]];
+  const raw = (lam) => { let s = 0; for (const [T, w] of mixT) s += w * planck(lam, T) / planck(WIEN / T, T); return s; };
+  let top = 0, peak = 0; for (let l = 300; l <= 1000; l += 1) { const v = raw(l); if (v > top) { top = v; peak = l; } }
+  const continuum = (lam) => raw(lam / z) / top;          // the whole spectrum is stretched by (1 + z)
+  const lines = GAL_LINES.map(([name, lab, dE, dS, w]) => ({ name, lab, depth: sp ? dS : dE, width: w * z, obs: lab * z, band: false, emission: (sp ? dS : dE) < 0 })).filter((l) => l.depth !== 0);
+  const seed = info.seed || 1, key = info.key || 0, sig = info.noise == null ? 0.01 : info.noise;
+  const transmission = (lam) => { let t = 1; for (const l of lines) { const d = lam - l.obs; if (Math.abs(d) < l.width * 6) t *= 1 - l.depth * Math.exp(-0.5 * (d / l.width) ** 2); } return t; };
+  const flux = (lam, withNoise = true) => { const f = continuum(lam) * transmission(lam); return withNoise && sig ? f * (1 + sig * gauss(seed, key, Math.round(lam * 100))) : f; };
+  return { galaxy: true, z: info.z, spiral: sp, T: null, x: null, lum: null, typeText: info.hubble || null, fromColour: false, rv: info.z * C_KMS, lines, flux, transmission, continuum, peak: peak * z };
+}
+
+// ---- double-lined spectroscopic binaries ----
+// The spectrum of such a star is the sum of its two stars' spectra, each Doppler-shifted by its own velocity round the pair's centre of
+// mass, so its lines split and merge as the stars go round. A MODEL like the rest, from published elements:
+//   Spica (α Vir, HIP 65474): period 4.0145898 d (Tkachenko et al. 2016, MNRAS 458, 1964); masses 11.43 and 7.21 M☉ and inclination
+//   63.1° from the same paper, which give the velocity amplitudes K1 = 123 and K2 = 196 km/s used here (K1 + K2 from Kepler's third law,
+//   K1 / K2 = M2 / M1). The real orbit is slightly eccentric (e = 0.12) and turns (apsidal motion); here it is a circle, and the zero of
+//   its phase (T0) is ours: the phase on a real date is not a prediction. Types B1 III-IV and B2 V; the second star gives a fifth of the
+//   light at 550 nm. Spica's lines are broadened by rotation; here they are much narrower than in a single star of the type (0.3 of the
+//   width), and the noise smaller (0.4%), so that the two stars' lines split clearly: a teaching choice, said on the lab card.
+export const SB2 = {
+  65474: { name: 'Spica', P: 4.0145898, T0: 2461000.25, K1: 123, K2: 196, gamma: 1.0, types: ['B1III-IV', 'B2V'], ratio: 0.2, widths: 0.3, noise: 0.004, inc: 63.1, M1: 11.43, M2: 7.21 },
+};
+/** This student's version of a binary's elements: amplitudes within 2%, the period within 1 part in 10^5, the phase within 0.02 cycle
+ *  (seed 0: the published values). */
+export function sb2Elements(hip, seed = 0) {
+  const b = SB2[hip]; if (!b) return null;
+  if (!seed) return { ...b };
+  const n = (i) => Math.max(-2.5, Math.min(2.5, gauss(seed, hip, 900 + i)));
+  return { ...b, K1: b.K1 * (1 + 0.02 * n(0)), K2: b.K2 * (1 + 0.02 * n(1)), P: b.P * (1 + 1e-5 * n(2)), T0: b.T0 + 0.02 * n(3) * b.P };
+}
+/** The two stars' radial velocities (km/s) at Julian Date jd: circular orbits, star 1 receding fastest a quarter period after T0. */
+export function sb2Velocities(el, jd) {
+  const s = Math.sin(2 * Math.PI * (jd - el.T0) / el.P);
+  return [el.gamma + el.K1 * s, el.gamma - el.K2 * s];
+}
+/** The pair as one star for the spectrograph (the same shape as makeStar's), at Julian Date jd. */
+export function makeBinary(hip, jd, seed = 0, noise) {
+  const el = sb2Elements(hip, seed); if (!el) return null;
+  if (noise == null) noise = el.noise;      // a quieter spectrum than a single star's 1%, so that the faint second star's lines show
+  const [v1, v2] = sb2Velocities(el, jd);
+  const a = makeStar({ type: el.types[0], rv: v1, noise: 0 }), b = makeStar({ type: el.types[1], rv: v2, noise: 0 });
+  for (const st of [a, b]) for (const l of st.lines) if (!l.band) l.width *= el.widths;
+  const wb = el.ratio * a.continuum(550) / b.continuum(550), k = 1 / (1 + wb);
+  const continuum = (lam) => k * (a.continuum(lam) + wb * b.continuum(lam));
+  const clean = (lam) => k * (a.continuum(lam) * a.transmission(lam) + wb * b.continuum(lam) * b.transmission(lam));
+  const transmission = (lam) => clean(lam) / continuum(lam);
+  const flux = (lam, withNoise = true) => (withNoise && noise ? clean(lam) * (1 + noise * gauss(seed || 1, hip, Math.round(lam * 100))) : clean(lam));
+  const lines = [...a.lines.map((l) => ({ ...l, star: 1 })), ...b.lines.map((l) => ({ ...l, star: 2, name: l.name + ' (2)' }))];
+  return { T: a.T, x: a.x, lum: a.lum, typeText: el.types.join(' + '), fromColour: false, rv: v1, rv2: v2, binary: el, lines, flux, transmission, continuum, peak: a.peak };
+}
+

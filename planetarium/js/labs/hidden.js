@@ -19,9 +19,13 @@ export const HIDDEN = {
   'cepheid-distance': ['distance', 'variable', 'magnitude now'], 'rr-lyrae': ['distance', 'variable', 'magnitude now'], 'cepheid-calibrate': ['variable', 'magnitude now'],
   'kepler-earth': ['ecliptic lon', 'ra / dec', 'distance', 'light time', 'angular diameter', 'elongation', 'illuminated'], 'kepler-orbit': ['ecliptic lon', 'ra / dec', 'distance', 'light time', 'angular diameter', 'elongation', 'illuminated'],
   'sn-ia': ['magnitude now'], 'sn-types': ['magnitude now', 'type'],
+  hubble: ['redshift', 'c × z', 'radial velocity'],      // the student measures the velocity with the spectrograph
   canopus: TRANSIT, 'sidereal-day': TRANSIT, analemma: TRANSIT, 'polaris-latitude': [...TRANSIT, 'ra / dec'], 'precession-pole': [], 'precession-equinox': [],
+  binaries: ['variable', 'magnitude', 'radial velocity'],      // Algol's period and depth are what Part A measures; Spica's catalogued velocity is the pair's, not a star's
+  clusters: ['magnitude', 'color index', 'distance', 'parallax', 'proper motion', 'radial velocity', 'variable', 'spectral', 'temperature'],      // the color and brightness are what the lab measures; a member's parallax gives its distance away
   'star-spectra': ['color index', 'variable'],      // B−V gives the temperature away; Polaris's variable type hints at its class
   'star-colors': ['color index', 'spectral', 'temperature', 'variable'],      // the color the lab measures, and anything that names the temperature
+  'hr-diagram': ['color index', 'spectral', 'temperature', 'variable', 'magnitude', 'radius', 'luminosity'],      // what the lab measures (the comparison's magnitude is in the prompt); distance stays: it is given
 };
 /** Is the row with this label (may contain HTML) hidden now? */
 export function rowHidden(label) {
@@ -32,7 +36,9 @@ export function rowHidden(label) {
 /** True while the running lab asks for the latitude: the place shows its name only (ui.js, the screenshot caption). */
 export const latitudeHidden = () => running.id === 'polaris-latitude' && !INSTRUCTOR;
 /** True while the running lab asks the student to classify spectra: the spectrograph prints no type and has no line labels (labs/spectrograph.js). */
-export const spectroHidden = () => ['star-spectra'].includes(running.id) && !INSTRUCTOR;
+export const spectroHidden = () => ['star-spectra', 'binaries'].includes(running.id) && !INSTRUCTOR;      // binaries: Spica's two types and “double-lined”, Algol's type, are what the lab finds
+/** True while the running lab asks for galaxies' velocities (hubble): the catalogue's z and c × z are shown nowhere (js/hubble.js, the spectrograph). */
+export const redshiftHidden = () => running.id === 'hubble' && !INSTRUCTOR;
 
 // ---- other things that would give a lab's answer away ----
 // steps of the date box (ui.js) whose size IS what the lab measures: the label without its sign, as in ui.js STEPS

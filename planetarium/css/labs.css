@@ -71,9 +71,9 @@
 
 /* one step at a time; the buttons above the text, so that they stay under the pointer whatever the text's length */
 .lab-card .lab-step { margin-top: 2px; }
-.lab-card .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 .15em; font-size: .92em; line-height: 1.2; }
-.lab-card .frac > span { padding: 0 .25em; }
-.lab-card .frac > span + span { border-top: 1px solid currentColor; }
+.lab-card .frac, .nbp-lab .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 .15em; font-size: .92em; line-height: 1.2; }
+.lab-card .frac > span, .nbp-lab .frac > span { padding: 0 .25em; }
+.lab-card .frac > span + span, .nbp-lab .frac > span + span { border-top: 1px solid currentColor; }
 .lab-card .lab-tab { border-collapse: collapse; margin: 4px 0 6px; font-variant-numeric: tabular-nums; }
 .lab-card .lab-tab th, .lab-card .lab-tab td { padding: 1px 10px 1px 0; text-align: right; }
 .lab-card .lab-tab th { font-weight: 600; }

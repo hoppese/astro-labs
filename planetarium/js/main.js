@@ -25,6 +25,7 @@ import { initDiag } from './diag.js';
 import { initSteady } from './steady.js';
 import { initLayout } from './layout.js';
 import { initLabsSuite } from './labs/index.js';
+import { clustersClick } from './labs/clusters.js';
 import { initDeepStars, deep } from './deepstars.js';
 import { initPoint } from './point/index.js';
 import { fieldAdjust } from './render/density.js';
@@ -50,7 +51,7 @@ async function start() {
   initInfo(document.getElementById('infoPanel'));
   initUI({ search });
   initMeasure(canvas, document.getElementById('measurePanel'));
-  initInput(canvas, { onClickSky: (x, y, ref) => extrasClick(x, y, ref) || measureClick(x, y, ref) });
+  initInput(canvas, { onClickSky: (x, y, ref) => extrasClick(x, y, ref) || measureClick(x, y, ref) || clustersClick(x, y, ref) });
   // keep grid labels clear of the top bar and the bottom bar
   const bar = document.querySelector('.bottombar');
   const inset = () => {

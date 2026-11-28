@@ -8,6 +8,7 @@ import { state, on } from './state.js';
 import { getFrame } from './skyframe.js';
 import { getBodies, BODIES, SMALL, MOON_PARENT } from './ephem.js';
 import { stars, starRecord, constellations, dso, loadAllTiers, loadDeepDso, DSO_TYPES, F, FAINT_NAMES } from './catalog.js';
+import { rowHidden } from './labs/hidden.js';
 import { refHorApparent } from './objects.js';
 import { select, centerOn } from './nav.js';
 import { fmtMag } from './astro.js';
@@ -23,9 +24,12 @@ export function norm(s) {
 }
 
 let index = null;        // [{key, label, sub, mag, ref, w}]
+/** Throw the index away (built again on the next search), as a newly loaded star tier does; also for the checks (tools/check-hubble.mjs). */
+export const dropIndex = () => { index = null; };
 function build() {
   index = [];
-  const add = (key, label, sub, mag, ref, w) => index.push({ key: norm(key), label, sub, mag, ref, w });
+  dsoIndexed = 0;      // a rebuilt index (a fainter star tier loaded: on('catalog') below) must take in the deep-sky objects again, or M 31, M 82… vanish from search
+  const add =(key, label, sub, mag, ref, w) => index.push({ key: norm(key), label, sub, mag, ref, w });
   for (const b of BODIES) add(b.name, b.name, b.kind === 'planet' ? 'Planet' : b.kind === 'sun' ? 'Star' : b.kind === 'dwarf' ? 'Dwarf planet' : "Earth's moon", null, { kind: 'body', id: b.id }, 100);
   for (const b of SMALL) { add(b.name, b.name, b.kind === 'dwarf' ? 'Dwarf planet' : b.kind === 'comet' ? 'Comet' : 'Asteroid', null, { kind: 'body', id: b.id }, 58); if (b.id === 'Halley') add('1P', b.name, 'Comet', null, { kind: 'body', id: b.id }, 40); }
   for (const id of Object.keys(MOON_PARENT)) add(id, id, 'Moon of ' + MOON_PARENT[id], null, { kind: 'body', id }, 60);
@@ -122,6 +126,8 @@ function addDso() {
 }
 
 /** Ranked matches for a query string. */
+// other catalogue names of the faint named stars (Gliese, abbreviations), searched as well as FAINT_NAMES
+const FAINT_ALT = { 49908: ['Gmb 1618', 'GJ 380', 'Gliese 380'], 54035: ['GJ 411', 'Gliese 411'], 3829: ['GJ 35', 'Gliese 35', 'Van Maanen 2'], 87937: ['GJ 699', 'Gliese 699'], 70890: ['GJ 551', 'Gliese 551', 'Alpha Centauri C'] };
 export function search(q, limit = 12) {
   if (!index) build();
   if (dsoIndexed < dso.rows.length) addDso();
@@ -130,7 +136,7 @@ export function search(q, limit = 12) {
   const out = [];
   // catalogue numbers that are not in the name index
   // named stars too faint for the name index (Barnard's, Proxima): found by their Hipparcos number
-  const faint = n.length >= 3 ? Object.keys(FAINT_NAMES).filter((h) => norm(FAINT_NAMES[h]).startsWith(n)) : [];
+  const faint = n.length >= 3 ? Object.keys(FAINT_NAMES).filter((h) => norm(FAINT_NAMES[h]).startsWith(n) || (FAINT_ALT[h] || []).some((x) => norm(x).startsWith(n))) : [];
   const m = /^(hip|hd)\s*(\d+)$/.exec(n), unloaded = stars.tiers.some((t) => !t.loaded);
   for (const [field, want, name] of (m ? [[m[1] === 'hip' ? F.hip : F.hd, +m[2], '']] : faint.map((h) => [F.hip, +h, FAINT_NAMES[h]]))) {
     for (const t of stars.tiers) {
@@ -190,7 +196,7 @@ export function initSearch(root) {
     return `<button class="opt" role="option" id="sopt${i}" data-i="${i}" aria-selected="false">` +
       `<span class="up${up ? '' : ' down'}" title="${up ? 'Above the horizon now' : 'Below the horizon now'}">${up ? '▲' : '▽'}</span>` +
       `<span>${esc(e.label)}</span><span class="sub">${esc(e.sub || '')}</span>` +
-      (e.mag != null ? `<span class="mag">${fmtMag(e.mag, 1)}</span>` : '') + `</button>`;
+      (e.mag != null && !rowHidden('Magnitude') ? `<span class="mag">${fmtMag(e.mag, 1)}</span>` : '') + `</button>`;      // (not while a lab hides magnitudes)
   };
   function show() {
     const q = input.value.trim();
@@ -238,7 +244,7 @@ export function initSearch(root) {
   list.addEventListener('pointerdown', (e) => e.preventDefault());      // keep focus in the input
   list.addEventListener('click', (e) => { const b = e.target.closest('.opt'); if (b) choose(+b.dataset.i); });
   document.addEventListener('pointerdown', (e) => { if (!root.contains(e.target)) hide(); });
-  on('catalog', (what) => { if (what === 'stars') index = null; if (!list.hidden && rerun) rerun(); });      // (a fainter tier holds RR Lyrae: build again with it)
+  on('catalog', (what) => { if (what === 'stars') dropIndex(); if (!list.hidden && rerun) rerun(); });      // (a fainter tier holds RR Lyrae: build again with it)
   return { focus() { input.focus(); input.select(); } };
 }
 export { state };

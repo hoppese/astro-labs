@@ -26,6 +26,7 @@ export const ZP = 25;
 /** The V magnitude the photometer sees for a reference now (variables and transients from their models), or null. */
 export function trueMag(ref, bodies, timeMs = state.timeMs) {
   if (!ref) return null;
+  if (phot.override) { const o = phot.override(ref); if (o) return o.mag; }
   if (ref.kind === 'star') { const s = starRecord(ref.k, ref.i), v = VAR_BY_HIP.get(s.hip); return v ? varMag(v, jdOf(timeMs)) : s.mag; }
   if (ref.kind === 'gaia') return ref.t.mag[ref.i];      // the tile's value: it does not change when the full record arrives (the panel and Record then agree)
   if (ref.kind === 'tr') return TRANSIENT[ref.id] ? transientMag(TRANSIENT[ref.id], jdOf(timeMs)) : null;
@@ -36,7 +37,7 @@ export function trueMag(ref, bodies, timeMs = state.timeMs) {
 // Gaia BP−RP to B−V (the same polynomial as deepstars.js bprpToBv, Gaia DR3 documentation table 5.9; copied so that this module stays free of the renderer)
 const bprpToBv = (x) => { x = x < -0.5 ? -0.5 : x > 4 ? 4 : x; return -0.04152 + x * (0.70164 + x * (0.1448 + x * (-0.05292 + x * 0.006061))); };
 export const FILTERS = { B: { c: 440, w: 40 }, G: { c: 550, w: 36 }, R: { c: 640, w: 64 } };      // centre and Gaussian sigma, nm
-export const phot = { filter: 'clear' };
+export const phot = { filter: 'clear', override: null };      // override(ref) -> {mag, T} | null: a lab's own photometry for some stars (js/labs/clusters.js)
 export const T_SUN = 5772, T_A0V = 9700;
 /** Photons per second per unit area through filter f from a blackbody at T, up to a constant. */
 function band(f, T) {
@@ -57,13 +58,14 @@ export function ratioBR(T) { return K.B * band('B', T) / (K.R * band('R', T)); }
  *  catalogue of types is still loading (call loadTypes()). */
 export function tempOf(ref) {
   if (!ref) return null;
+  if (phot.override) { const o = phot.override(ref); if (o) return o.T; }
   if (ref.kind === 'star') { if (!typesLoaded()) return undefined; const s = starRecord(ref.k, ref.i), t = starTemp(typeOfHip(s.hip), s.bv); return t ? t.T : null; }
   if (ref.kind === 'gaia') { const c = ref.t.col[ref.i], t = c === c ? starTemp(null, bprpToBv(c)) : null; return t ? t.T : null; }
   if (ref.kind === 'body') return T_SUN;
   return null;
 }
 /** Waiting for the catalogue of types: the filters cannot measure this one yet. */
-export const filterWaiting = (ref) => !!ref && ref.kind === 'star' && !typesLoaded();
+export const filterWaiting = (ref) => !!ref && ref.kind === 'star' && !typesLoaded() && !(phot.override && phot.override(ref));
 export { loadTypes };
 // the last exposure through each filter (Record offers them together: select a star, take B, then R, then Record)
 export const lastExp = { B: null, G: null, R: null };

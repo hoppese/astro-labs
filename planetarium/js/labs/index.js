@@ -16,6 +16,7 @@ import { initShadow, drawShadow } from './shadow.js';
 import { initStopwatch, mark } from './stopwatch.js';
 import { initCorrections, setFx } from './corrections.js';
 import { initSpectrograph } from './spectrograph.js';
+import { initClusters, drawClusters } from './clusters.js';
 import { initEvents } from './events.js';
 import { initCompare, drawCompare } from './compare.js';
 import { initSquareOn } from './squareon.js';
@@ -114,6 +115,7 @@ export function initLabsSuite() {
   initLabs();                     // the lab card sits at the top of the dock
   initStopwatch(); initEvents(); initCompare(); initSquareOn(); initTrails(); initCorrections(); initSpectrograph();
   addOverlay(drawShadow); addOverlay(drawTrail); addOverlay(drawCompare);
+  initClusters(); addOverlay(drawClusters);
   buildMenu();
   window.addEventListener('keydown', keys, true);
   document.addEventListener('labs-cards', syncMenu);

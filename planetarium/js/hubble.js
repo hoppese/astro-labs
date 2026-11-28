@@ -17,6 +17,7 @@ import { clipToSky } from './render/groundshade.js';
 import { makePanel, esc, toast, download, isNarrow, loadJSON, saveJSON, readNumber } from './xui.js';
 import { keepFocus } from './focus.js';
 import { goToDso } from './dsolist.js';
+import { redshiftHidden } from './labs/hidden.js';
 
 export const C_KM_S = 299792.458;
 // Counted in OpenNGC's NGC.csv + addendum.csv (downloaded 2026-11-23): objects of type G, GPair, GTrpl, GGroup.
@@ -32,6 +33,12 @@ let table = [];                 // [{id, d: '12.3' (string as typed), src: '' | 
 let hover = -1, plotPts = [];
 
 const cz = (o) => o.z * C_KM_S;
+// THE HUBBLE LAB (labs/presets.js 'hubble'): the catalogue's z and cz are not shown; each row has a velocity the student measured
+// with the spectrograph and typed in (km/s), and that is what is plotted.
+const LAB = () => redshiftHidden();
+const readVel = (text) => { const t = String(text ?? '').trim(); if (!t) return null; const v = +t.replace(/[\s,]/g, '').replace(/^[−–]/, '-').replace(/km\/?s$/i, ''); return isFinite(v) ? v : NaN; };
+/** The velocity (km/s) plotted for a row: the measured one in the lab, c × z otherwise. null if none, NaN if unreadable. */
+const velOf = (r, o) => (LAB() ? readVel(r.v) : o ? cz(o) : null);
 const magOf = (o) => (o.vmag != null ? { v: o.vmag, band: 'V' } : o.bmag != null ? { v: o.bmag, band: 'B' } : null);
 const odd = (o) => { const t = dsoDoubt(o); return t ? `<sup title="${esc('Doubtful: ' + t)}">?</sup>` : ''; };
 const nameOf = (o) => (o.m ? 'M ' + o.m : o.id);
@@ -44,7 +51,13 @@ function index() {
   for (const o of dso.rows) if (GAL.has(o.type)) byId.set(o.id, o);
 }
 const galaxies = () => dso.rows.filter((o) => GAL.has(o.type));
-const save = () => saveJSON(STORE, table.map((r) => ({ id: r.id, d: r.d, src: r.src, D: r.D })));
+// the lab keeps its own table (STORE + '.lab'), so a lab run never starts with velocities or distances from free use
+let tableLab = null, typedD = '', sizeOpen = false;
+const storeKey = () => STORE + (tableLab ? '.lab' : '');
+const readTable = (key) => { const saved = loadJSON(key, []); return Array.isArray(saved) ? saved.filter((r) => r && typeof r.id === 'string').map((r) => ({ id: r.id, d: String(r.d ?? ''), src: r.src || '', D: String(r.D ?? ''), v: String(r.v ?? '') })) : []; };
+/** Use the lab's table while the Hubble lab runs, the free one otherwise. */
+function syncTable() { const L = LAB(); if (L === tableLab) return; tableLab = L; table = readTable(storeKey()); typedD = (table.find((r) => r.src === 'size') || {}).D || ''; sizeOpen = !!typedD; }
+const save = () => saveJSON(storeKey(), table.map((r) => ({ id: r.id, d: r.d, src: r.src, D: r.D, v: r.v || '' })));
 /** A distance as typed: {v} in Mpc, {empty} or {err}. */
 function readDist(text) {
   const t = String(text).trim(), other = /(kpc|kiloparsecs?|\bpc|parsecs?|ly|light.?years?|km|au)\.?$/i.exec(t);
@@ -69,13 +82,13 @@ export function fitThroughOrigin(pts) {
 }
 function points() {
   const out = [];
-  for (const r of table) { const o = byId && byId.get(r.id), d = dist(r); if (o && d != null) out.push({ d, v: cz(o), name: nameOf(o), id: r.id }); }
+  for (const r of table) { const o = byId && byId.get(r.id), d = dist(r), v = velOf(r, o); if (o && d != null && v != null && isFinite(v)) out.push({ d, v, name: nameOf(o), id: r.id }); }
   return out;
 }
 
 // ---- step 1: pick galaxies -------------------------------------------------------------------
 function candidates() {
-  const magLim = f.mag === '' ? Infinity : +f.mag, minCz = f.minCz === '' ? -Infinity : +f.minCz;
+  const magLim = f.mag === '' ? Infinity : +f.mag, minCz = f.minCz === '' || LAB() ? -Infinity : +f.minCz;
   const q = f.q.trim().toLowerCase().replace(/\s+/g, '');
   const out = [];
   for (const o of galaxies()) {
@@ -106,20 +119,20 @@ function pickHtml() {
       `<td class="ty">${esc(o.hubble || '–')}</td>` +
       `<td class="n">${m ? fmtMag(m.v, 1) + (m.band === 'B' ? '<sup>B</sup>' : '') + odd(o) : '–'}</td>` +
       `<td class="n">${o.maj != null ? fnum(o.maj, o.maj < 10 ? 2 : 1) : '–'}</td>` +
-      `<td class="n">${o.z.toFixed(5).replace('-', '−')}</td><td class="n">${int(cz(o))}</td></tr>`;
+      (LAB() ? '' : `<td class="n">${o.z.toFixed(5).replace('-', '−')}</td><td class="n">${int(cz(o))}</td>`) + '</tr>';
   }
   const more = list.length > shown ? `<button type="button" class="btn dl-more" data-act="more">Show ${Math.min(PAGE, list.length - shown)} more (${(list.length - shown).toLocaleString('en-US')} left)</button>` : '';
   return `
     <div class="hb-filters">
       <label>Brighter than<select class="field" data-f="mag"><option value="">Any</option>${[9, 10, 11, 12, 13, 14].map((m) => `<option value="${m}">mag ${m}</option>`).join('')}</select></label>
-      <label>cz at least<select class="field" data-f="minCz"><option value="">Any (incl. blueshifts)</option><option value="0">0 km/s</option><option value="500">500 km/s</option><option value="1500">1,500 km/s</option><option value="3000">3,000 km/s</option><option value="6000">6,000 km/s</option></select></label>
+      <label${LAB() ? ' hidden' : ''}>cz at least<select class="field" data-f="minCz"><option value="">Any (incl. blueshifts)</option><option value="0">0 km/s</option><option value="500">500 km/s</option><option value="1500">1,500 km/s</option><option value="3000">3,000 km/s</option><option value="6000">6,000 km/s</option></select></label>
       <label>Shape<select class="field" data-f="morph">${MORPH.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></label>
       <label>Name<input class="field" type="search" data-f="q" placeholder="e.g. M 87, NGC 4889" autocomplete="off" spellcheck="false"></label>
     </div>
-    <div class="hb-count"><span>${list.length.toLocaleString('en-US')} galaxies match</span><span>Tick a box to add a galaxy to your table. Click a name to see it.</span></div>
-    ${list.length ? `<div class="hb-scroll"><table class="hb-table"><thead><tr><th class="ck"></th>${th('name', 'Galaxy', 'nm')}<th class="ty">Type</th>${th('mag', 'Mag', 'n')}${th('size', 'Size ′', 'n')}${th('z', 'z', 'n')}<th class="n">cz km/s</th></tr></thead><tbody>${body}</tbody></table>${more}</div>`
+    <div class="hb-count"><span>${list.length.toLocaleString('en-US')} ${list.length === 1 ? 'galaxy matches' : 'galaxies match'}</span><span>Tick a box to add a galaxy to your table. Click a name to see it.</span></div>
+    ${list.length ? `<div class="hb-scroll"><table class="hb-table"><thead><tr><th class="ck"></th>${th('name', 'Galaxy', 'nm')}<th class="ty">Type</th>${th('mag', 'Mag', 'n')}${th('size', 'Size ′', 'n')}${LAB() ? '' : th('z', 'z', 'n') + '<th class="n">cz km/s</th>'}</tr></thead><tbody>${body}</tbody></table>${more}</div>`
     : '<div class="xp-empty">No galaxy matches these filters. <button class="btn" data-act="reset">Reset filters</button></div>'}
-    <div class="xp-foot">Magnitude is V where OpenNGC has it, otherwise B (marked <sup>B</sup>); <sup>?</sup> = a doubtful value, left as the catalog has it (point at it for the reason). Size is the catalog's major axis in arcminutes. cz = c × z.</div>`;
+    <div class="xp-foot">Magnitude is V where OpenNGC has it, otherwise B (marked <sup>B</sup>); <sup>?</sup> = a doubtful value, left as the catalog has it (point at it for the reason). Size is the catalog's major axis in arcminutes.${LAB() ? ' Redshifts are hidden in this lab: measure each galaxy’s with the Spectrograph.' : ' cz = c × z.'}</div>`;
 }
 
 // ---- step 2: my table and the plot -----------------------------------------------------------
@@ -134,19 +147,20 @@ function dataHtml() {
     const m = magOf(o);
     body += `<tr data-id="${esc(r.id)}"><td class="nm"><button type="button" class="hb-go" title="Show ${esc(nameOf(o))} on the sky">${esc(nameOf(o))}</button></td>` +
       `<td class="n">${m ? fmtMag(m.v, 1) + (m.band === 'B' ? '<sup>B</sup>' : '') + odd(o) : '–'}</td><td class="n">${o.maj != null ? fnum(o.maj, o.maj < 10 ? 2 : 1) : '–'}</td>` +
-      `<td class="n">${o.z.toFixed(5).replace('-', '−')}</td><td class="n">${int(cz(o))}</td>` +
+      (LAB() ? `<td class="d"><input type="text" inputmode="decimal" class="field hb-v${r.v && !isFinite(readVel(r.v)) ? ' bad' : ''}" value="${esc(r.v || '')}" placeholder="?" aria-label="Velocity of ${esc(nameOf(o))} you measured, in km/s"></td>`
+        : `<td class="n">${o.z.toFixed(5).replace('-', '−')}</td><td class="n">${int(cz(o))}</td>`) +
       `<td class="d"><input type="text" inputmode="decimal" class="field hb-d${r.d !== '' && dist(r) == null ? ' bad' : ''}" value="${esc(r.d)}" placeholder="?" aria-label="Distance to ${esc(nameOf(o))} in megaparsecs">${r.src === 'size' ? `<span class="src" title="Filled in from the angular size with an assumed diameter of ${esc(r.D)} kpc">θ</span>` : ''}</td>` +
       `<td class="x"><button type="button" class="hb-x" aria-label="Remove ${esc(nameOf(o))}" title="Remove from the table">&times;</button></td></tr>`;
   }
-  const lastD = (table.find((r) => r.src === 'size') || {}).D || '';
+  const lastD = typedD;
   return `
-    <div class="hb-scroll short"><table class="hb-table mine"><thead><tr><th class="nm">Galaxy</th><th class="n">Mag</th><th class="n">Size ′</th><th class="n">z</th><th class="n">v = cz km/s</th><th class="d">Distance Mpc</th><th class="x"></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="hb-scroll short${LAB() ? ' tall' : ''}"><table class="hb-table mine"><thead><tr><th class="nm">Galaxy</th><th class="n">Mag</th><th class="n">Size ′</th>${LAB() ? '<th class="d">v km/s (measured)</th>' : '<th class="n">z</th><th class="n">v = cz km/s</th>'}<th class="d">Distance Mpc</th><th class="x"></th></tr></thead><tbody>${body}</tbody></table></div>
     <div class="hb-msg" role="status"></div>
     <div class="hb-acts">
       <button type="button" class="btn" data-act="copy">Copy table</button><button type="button" class="btn" data-act="csv">Download CSV</button>
       <button type="button" class="btn" data-tab="pick">Add galaxies</button><button type="button" class="btn quiet" data-act="clear">Clear table</button>
     </div>
-    <details class="hb-size"${lastD ? ' open' : ''}><summary>Estimate distances from angular size</summary>
+    <details class="hb-size"${sizeOpen || lastD ? ' open' : ''}><summary>Estimate distances from angular size</summary>
       <p>If every galaxy had the same true diameter <i>D</i>, a galaxy that looks θ across would be at <b>d = D / θ</b> (θ in radians). Type the diameter <i>you</i> assume; the app has no way to know it. Only rows with an empty distance are filled, and they are marked <span class="src">θ</span>.</p>
       <div class="hb-sizeRow"><label>Assumed true diameter <span class="unit"><input type="text" inputmode="decimal" class="field" id="hbD" value="${esc(lastD)}" placeholder="?" aria-label="Assumed true diameter in kiloparsecs"> kpc</span></label>
       <button type="button" class="btn" data-act="fill">Fill empty rows</button><button type="button" class="btn quiet" data-act="unfill">Remove θ estimates</button></div>
@@ -158,12 +172,14 @@ function resultHtml() {
   const pts = points(), fit = fitThroughOrigin(pts);
   if (!fit) {
     const need = 3 - pts.length;
-    return `<span class="wait">Enter ${need === 3 ? 'at least three distances' : need + ' more distance' + (need > 1 ? 's' : '')} to fit a line. ${pts.length} of ${table.length} rows have one.</span>`;
+    const what = LAB() ? 'a distance and a velocity' : 'one';
+    return `<span class="wait">Enter ${need === 3 ? 'at least three distances' : need + ' more distance' + (need > 1 ? 's' : '')}${LAB() ? ' and velocities' : ''} to fit a line. ${pts.length} of ${table.length} rows have ${what}.</span>`;
   }
+  if (LAB() && pts.length < 5) return `<span class="wait">${pts.length} galaxies have a velocity and a distance. The slope (H<sub>0</sub>) is shown once five do.</span>`;
   const gyr = 977.8 / fit.H;       // 1 / (km/s/Mpc) in billions of years
   return `<span class="h0">H<sub>0</sub> = <b>${fit.H.toFixed(fit.H < 10 ? 2 : 1)}</b> ± ${fit.se.toFixed(fit.se < 10 ? 2 : 1)} km/s per Mpc</span>` +
     `<span class="sub">slope of the best-fit line through the origin, ${fit.n} galaxies; the ± is the scatter of your points about the line.` +
-    (fit.H > 0 ? ` 1 / H<sub>0</sub> = ${gyr.toFixed(gyr < 10 ? 2 : 1)} billion years.` : '') + `</span>`;
+    (fit.H > 0 && !LAB() ? ` 1 / H<sub>0</sub> = ${gyr.toFixed(gyr < 10 ? 2 : 1)} billion years.` : '') + `</span>`;      // (in the lab, turning 1 / H0 into years is a step)
 }
 
 function niceStep(span, n) {
@@ -178,7 +194,7 @@ function drawPlot() {
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
   const pts = points(), fit = fitThroughOrigin(pts);
   const L = 68, Rm = 14, T = 12, B = 38, pw = w - L - Rm, ph = h - T - B;
-  const allV = table.map((r) => (byId && byId.get(r.id) ? cz(byId.get(r.id)) : 0));
+  const allV = table.map((r) => { const v = velOf(r, byId && byId.get(r.id)); return v != null && isFinite(v) ? v : 0; });
   const vMax = Math.max(1000, ...allV) * 1.08, vMin = Math.min(0, ...allV) * 1.08;
   const dMax = pts.length ? Math.max(...pts.map((p) => p.d)) * 1.12 : 100;
   const X = (d) => L + d / dMax * pw, Y = (v) => T + ph - (v - vMin) / (vMax - vMin) * ph;
@@ -200,7 +216,7 @@ function drawPlot() {
   }
   g.font = sans; g.fillStyle = '#b9c6d6';
   g.fillText(pts.length ? 'distance (Mpc)' : 'distance (Mpc): enter distances in the table', L + pw / 2, T + ph + 21);
-  g.save(); g.translate(13, T + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = 'middle'; g.fillText('velocity cz (km/s)', 0, 0); g.restore();
+  g.save(); g.translate(13, T + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = 'middle'; g.fillText(LAB() ? 'velocity v (km/s)' : 'velocity cz (km/s)', 0, 0); g.restore();
   // fit line
   if (fit) {
     g.save(); g.beginPath(); g.rect(L, T, pw, ph); g.clip();
@@ -222,6 +238,11 @@ function refreshResult() {
 
 // ---- step 3: where distances come from ---------------------------------------------------------
 function aboutHtml() {
+  if (LAB()) return `<div class="hb-about">
+    <h3>In this lab</h3>
+    <p><b>Velocities</b> you measure: select a galaxy, open the <b>Spectrograph</b> (Labs menu), find a line you know, such as calcium K (393.37 nm in the lab) or hydrogen α (656.28 nm, bright in spirals), pin where it is, and the velocity is the speed of light times the shift, divided by the rest wavelength. The catalogue’s redshifts are hidden.</p>
+    <p><b>Distances</b> you work out: from a measured distance (the Cepheid and supernova labs), or from the angular size and a true diameter you assume, d = D / θ (the helper on the table does that arithmetic with the D you type).</p>
+    <p>OpenNGC contains no distances, and this app does not make any up.</p></div>`;
   const gal = galaxies(), withZ = gal.filter((o) => o.z != null);
   const far = withZ.filter((o) => cz(o) > 1500).length, blue = withZ.filter((o) => o.z < 0).length;
   const loaded = dso.deepLoaded;
@@ -248,7 +269,7 @@ function aboutHtml() {
 }
 
 // ---- wiring ----------------------------------------------------------------------------------------
-function render() { if (panel && panel.isOpen()) keepFocus(panel.body, rebuild); }
+function render() { syncTable(); if (panel && panel.isOpen()) keepFocus(panel.body, rebuild); }
 function rebuild() {
   if (dso.deepLoaded && !byId) index();
   const n = table.length;
@@ -271,11 +292,11 @@ function setTab(t) { tab = t; shown = PAGE; hover = -1; render(); }
 
 function tsv(sep) {
   const q = (s) => (sep === ',' && /[",\n]/.test(String(s)) ? '"' + String(s).replace(/"/g, '""') + '"' : String(s));
-  const rows = [['galaxy', 'common_name', 'type', 'magnitude', 'mag_band', 'major_axis_arcmin', 'minor_axis_arcmin', 'z', 'cz_km_s', 'distance_Mpc', 'distance_source']];
+  const rows = [['galaxy', 'common_name', 'type', 'magnitude', 'mag_band', 'major_axis_arcmin', 'minor_axis_arcmin', 'z', LAB() ? 'v_measured_km_s' : 'cz_km_s', 'distance_Mpc', 'distance_source']];
   for (const r of table) {
     const o = byId.get(r.id); if (!o) continue;
     const m = magOf(o), d = dist(r);
-    rows.push([nameOf(o), (o.names || [])[0] || '', o.hubble || '', m ? m.v : '', m ? m.band : '', o.maj ?? '', o.min ?? '', o.z, cz(o).toFixed(0), d ?? '',
+    rows.push([nameOf(o), (o.names || [])[0] || '', o.hubble || '', m ? m.v : '', m ? m.band : '', o.maj ?? '', o.min ?? '', LAB() ? '' : o.z, LAB() ? (r.v || '') : cz(o).toFixed(0), d ?? '',
       d == null ? '' : r.src === 'size' ? `angular size with assumed diameter ${r.D} kpc` : 'entered by student']);
   }
   return rows.map((r) => r.map(q).join(sep)).join('\n') + '\n';
@@ -304,7 +325,7 @@ function bind() {
         if (act.dataset.sure) { table = []; save(); emit('render'); render(); }
         else { act.dataset.sure = '1'; act.textContent = 'Really clear? Click again'; setTimeout(() => { if (act.isConnected) { delete act.dataset.sure; act.textContent = 'Clear table'; } }, 3500); }
       } else if (a === 'fill') fillFromSize();
-      else if (a === 'unfill') { for (const r of table) if (r.src === 'size') { r.d = ''; r.src = ''; r.D = ''; } save(); render(); }
+      else if (a === 'unfill') { const inp = panel.body.querySelector('#hbD'); if (inp) typedD = inp.value; sizeOpen = true; for (const r of table) if (r.src === 'size') { r.d = ''; r.src = ''; r.D = ''; } save(); render(); }
       return;
     }
     const tr = t.closest('tr[data-id]');
@@ -332,6 +353,12 @@ function bind() {
       f.q = t.value; clearTimeout(qTimer);
       qTimer = setTimeout(() => { const pos = t.selectionStart; render(); const n = body.querySelector('[data-f="q"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (err) { /* fine */ } } }, 220);
       return;
+    }
+    if (t.classList.contains('hb-v')) {
+      const tr = t.closest('tr[data-id]'), r = table.find((x) => x.id === tr.dataset.id);
+      if (!r) return;
+      r.v = t.value.trim(); t.classList.toggle('bad', r.v !== '' && !isFinite(readVel(r.v)));
+      save(); refreshResult(); return;
     }
     if (t.classList.contains('hb-d')) {
       const tr = t.closest('tr[data-id]'), r = table.find((x) => x.id === tr.dataset.id);
@@ -372,16 +399,18 @@ function fillFromSize() {
   const inp = panel.body.querySelector('#hbD'), rd = readNumber(inp.value, /\s*(kpc|kiloparsecs?)\.?$/i), D = rd.v;
   if (rd.err) { toast(rd.err, { kind: 'warn' }); inp.focus(); return; }
   if (!(D > 0)) { toast('Type the true diameter you want to assume, in kiloparsecs, first.', { kind: 'warn' }); inp.focus(); return; }
-  let n = 0, skipped = 0;
+  typedD = inp.value.trim(); sizeOpen = true;
+  let n = 0, redo = 0, skipped = 0;
   for (const r of table) {
     if (dist(r) != null && r.src !== 'size') continue;          // keep what the student typed; empty or unreadable rows are filled
     const o = byId.get(r.id);
     if (!o || !(o.maj > 0)) { skipped++; continue; }
     const theta = o.maj / 60 * Math.PI / 180;                 // major axis in radians
-    r.d = String(+(D / 1000 / theta).toPrecision(3)); r.src = 'size'; r.D = String(D); n++;
+    if (r.src === 'size' && dist(r) != null) redo++; else n++;
+    r.d = String(+(D / 1000 / theta).toPrecision(3)); r.src = 'size'; r.D = String(D);
   }
   save(); render();
-  toast(`${n} distance${n === 1 ? '' : 's'} computed as d = ${D} kpc ÷ angular size.` + (skipped ? ` ${skipped} skipped: no size in the catalog.` : ''), { ms: 5000 });
+  toast(`${n} distance${n === 1 ? '' : 's'} computed` + (redo ? `, ${redo} recomputed` : '') + ` as d = ${D} kpc / angular size.` + (skipped ? ` ${skipped} skipped: no size in the catalog.` : ''), { ms: 5000 });
 }
 
 function ensureData() {
@@ -390,14 +419,16 @@ function ensureData() {
 }
 
 function add(idx, announce = false, quiet = false) {
+  syncTable();
   const o = dso.rows[idx];
   if (!o || o.z == null || table.some((r) => r.id === o.id)) return;
-  table.push({ id: o.id, d: '', src: '', D: '' }); save(); emit('render');
+  table.push({ id: o.id, d: '', src: '', D: '', v: '' }); save(); emit('render');
   if (!byId) index(); else byId.set(o.id, o);
   if (announce) toast(`${nameOf(o)} added to the Hubble table (${table.length} galax${table.length === 1 ? 'y' : 'ies'}).`);
   if (!quiet) render();
 }
 function remove(idx, quiet = false) {
+  syncTable();
   const id = typeof idx === 'string' ? idx : dso.rows[idx].id;
   table = table.filter((r) => r.id !== id); save(); emit('render');
   if (!quiet) render();
@@ -406,6 +437,7 @@ function remove(idx, quiet = false) {
 const sp = [0, 0];
 /** Ring the table's galaxies on the sky so the student can see what they picked. */
 function draw(ctx, R) {
+  syncTable();
   if (!table.length || !byId || !panel.isOpen()) return;
   ctx.save();
   if (R.ground) clipToSky(ctx);
@@ -425,13 +457,13 @@ function draw(ctx, R) {
 }
 
 export function initHubble() {
-  const saved = loadJSON(STORE, []);
-  if (Array.isArray(saved)) table = saved.filter((r) => r && typeof r.id === 'string').map((r) => ({ id: r.id, d: String(r.d ?? ''), src: r.src || '', D: String(r.D ?? '') }));
+  tableLab = null; syncTable();
   let bound = false;
   panel = makePanel({
     id: 'hubblePanel', title: 'Hubble’s-law lab', cls: 'wide',
     onOpen() { if (!bound) { bind(); bound = true; } ensureData(); render(); },
   });
   on('catalog', (w) => { if (w === 'dso' && panel.isOpen()) { index(); render(); } });
+  on('lab', () => render());
   return { panel, draw, add, remove, has: (idx) => { const o = dso.rows[idx]; return !!o && table.some((r) => r.id === o.id); }, table: () => table, fit: () => fitThroughOrigin(points()), csv: () => (byId ? tsv(',') : '') };
 }

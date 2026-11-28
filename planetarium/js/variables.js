@@ -6,6 +6,10 @@
 //     type, V at maximum and minimum, period, a Julian Date of maximum, and M−m, the rise from minimum to maximum as a share of the period.
 //     The shape between those numbers (a smooth fall, then a quicker rise of the catalog's length) is ours. Periods drift and catalog
 //     epochs can be decades old, so the phase today can be off by a fraction of a cycle.
+//   - Algol (β Persei), the eclipsing binary: GCVS 5.1 too (type EA/SD, V 2.12 out of eclipse, 3.39 at the middle of the primary
+//     eclipse, a primary minimum on HJD 2445641.5135, period 2.8673043 d, eclipse lasting 14% of the period). The eclipse's shape (a
+//     rounded V), the secondary eclipse (0.06 mag, half a period later, from the literature) and the steady light between are ours;
+//     the real star's minima also wander by hours (a third star, and a slowly changing period).
 //   - M31 V1, the Cepheid Hubble found in Andromeda in 1923: position, period 31.4 d and a maximum on JD 2455430.5 from Templeton et al.
 //     2011 (AAVSO; arXiv:1111.0262); mean V ≈ 19.4 as quoted there. The V amplitude (0.8 mag) and the rise time are our estimate for a
 //     31-day Cepheid: the paper measured in R.
@@ -68,11 +72,12 @@ const G = [
   [13367, 'SU Cassiopeiae', 'DCEPS', 5.70, 6.18, 2450008.52, 1.9493236, 40],
   [11767, 'Polaris', 'DCEPS', 1.86, 2.13, 2431495.813, 3.9696, 50],
   [95497, 'RR Lyrae', 'RRAB', 7.06, 8.12, 2442923.4193, 0.56686776, 19],
+  [14576, 'Algol', 'EA/SD', 2.12, 3.39, 2445641.5135, 2.8673043, 14],      // eclipsing: epoch = primary minimum, last number = eclipse length (% of P)
 ];
 /** GCVS designations, for search. */
-export const GCVS_NAME = { 110991: 'del Cep', 97804: 'eta Aql', 34088: 'zet Gem', 26069: 'bet Dor', 47854: 'l Car', 87072: 'X Sgr', 89968: 'Y Sgr', 102949: 'T Vul', 88567: 'W Sgr', 95820: 'U Aql', 59551: 'S Mus', 93124: 'FF Aql', 13367: 'SU Cas', 11767: 'alf UMi', 95497: 'RR Lyr' };
-export const TYPE_NAME = { DCEP: 'Classical Cepheid', DCEPS: 'Classical Cepheid (first overtone)', RRAB: 'RR Lyrae star' };
-export const VARIABLES = G.map(([hip, name, type, max, min, epoch, P, mm]) => ({ hip, name, type, max, min, epoch, P, rise: mm / 100 }));
+export const GCVS_NAME = { 110991: 'del Cep', 97804: 'eta Aql', 34088: 'zet Gem', 26069: 'bet Dor', 47854: 'l Car', 87072: 'X Sgr', 89968: 'Y Sgr', 102949: 'T Vul', 88567: 'W Sgr', 95820: 'U Aql', 59551: 'S Mus', 93124: 'FF Aql', 13367: 'SU Cas', 11767: 'alf UMi', 95497: 'RR Lyr', 14576: 'bet Per' };
+export const TYPE_NAME = { DCEP: 'Classical Cepheid', DCEPS: 'Classical Cepheid (first overtone)', RRAB: 'RR Lyrae star', 'EA/SD': 'Eclipsing binary (Algol type)' };
+export const VARIABLES = G.map(([hip, name, type, max, min, epoch, P, mm]) => ({ hip, name, type, max, min, epoch, P, rise: mm / 100, ecl: /^E/.test(type) ? mm / 100 : 0 }));
 export const VAR_BY_HIP = new Map(VARIABLES.map((v) => [v.hip, v]));
 // Polaris: its swing has shrunk from the catalog's 0.27 mag to about 0.03-0.1 since the 1960s and grown again; the catalog range is
 // not used for it (the star would flicker by more than it does today). It stays in the list so that its panel can say so.
@@ -90,8 +95,24 @@ export function shape(ph, rise) {
 export function varMag(v, jd) {
   if (v.quiet) return (v.max + v.min) / 2;
   const j = jitterOf(v.hip, 'var'), P = v.P * j.P, f = (jd - v.epoch) / P + j.dph, ph = f - Math.floor(f);
+  if (v.ecl) { const e = recentEpoch(v), g = (jd - e) / eclP(v, j) + j.dph * ECL_PH; return eclipseMag(v, j, g - Math.floor(g)); }
   const mid = (v.max + v.min) / 2 + j.dm, half = (v.min - v.max) / 2 * j.amp;
   return mid - half + 2 * half * shape(ph, v.rise);
+}
+const SECONDARY = 0.06;      // Algol's secondary eclipse in V (mag)
+// A student's period shift (1 part in 10^4) counted from a 1983 epoch would move today's eclipses by more than a day; it is applied
+// from a recent minimum instead (the catalog's ephemeris carried to 2026), so that each student's eclipses move by hours, not days.
+const ECL_PH = 0.25;      // an eclipse's timing is shifted a quarter as much as a pulsation's (σ about 30 min for Algol): a lab can start just before it
+const eclP = (v, j) => v.P * (1 + (j.P - 1) * 0.1);      // and its period a tenth as much (1 part in 10^5): an eclipsing binary's period is known very well
+const recentEpoch = (v) => v.epoch + Math.round((2461000 - v.epoch) / v.P) * v.P;
+/** An eclipsing binary (v.ecl = eclipse length as a share of the period; phase 0 = primary minimum): steady light, and two eclipses of
+ *  that length, the primary of the catalog's depth (times this student's depth factor), the secondary half a period later. The light
+ *  lost goes as 1 − x² across an eclipse (x from −1 to 1): a rounded V, as a partial eclipse looks. */
+function eclipseMag(v, j, ph) {
+  const lost = (dph, depthMag) => { const x = dph / (v.ecl / 2); return Math.abs(x) >= 1 ? 0 : (1 - Math.pow(10, -0.4 * depthMag)) * (1 - x * x); };
+  const d1 = ph > 0.5 ? ph - 1 : ph, d2 = ph - 0.5;
+  const L = Math.min(0.97, lost(d1, (v.min - v.max)) * j.amp + lost(d2, SECONDARY));
+  return v.max + j.dm - 2.5 * Math.log10(1 - L);
 }
 
 // ---- objects the star catalog does not have ---------------------------------------------------------------------------------
@@ -163,6 +184,7 @@ export const transientMagNow = (id, timeMs) => (TRANSIENT[id] ? transientMag(TRA
 /** A catalog variable as this student's sky has it: period, mean magnitude, range. */
 export function varTruth(hip) {
   const v = VAR_BY_HIP.get(hip), j = jitterOf(hip, 'var'), mid = (v.max + v.min) / 2 + j.dm, half = (v.min - v.max) / 2 * j.amp;
+  if (v.ecl) return { name: v.name, P: eclP(v, j), max: v.max + j.dm, min: eclipseMag(v, j, 0), dur: v.ecl * eclP(v, j), epoch: recentEpoch(v) - j.dph * ECL_PH * eclP(v, j) };
   return { name: v.name, P: v.P * j.P, mean: mid, max: mid - half, min: mid + half };
 }
 /** M31 V1 or a supernova as this student's sky has it: {P, mean} or {peak, tPeak}. */

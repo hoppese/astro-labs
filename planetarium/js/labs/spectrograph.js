@@ -7,19 +7,29 @@
 // classify stars (labs/hidden.js spectroHidden), the type is not printed and the line labels cannot be switched on.
 
 import { state, on } from '../state.js';
-import { starRecord, starLabel } from '../catalog.js';
+import { starRecord, starLabel, dso } from '../catalog.js';
 import { makeCard } from './dock.js';
 import { el, esc } from './util.js';
-import { loadTypes, typeOfHip, makeStar } from '../spectro.js';
+import { loadTypes, typeOfHip, makeStar, makeGalaxy, makeBinary, SB2 } from '../spectro.js';
+import { jdOf } from '../variables.js';
 import { see } from '../notebook/seeing.js';
-import { spectroHidden } from './hidden.js';
+import { spectroHidden, redshiftHidden } from './hidden.js';
+
+const GALAXY = new Set(['G', 'GPair', 'GTrpl', 'GGroup']);
 
 const VIEWS = { vis: [380, 750], wide: [300, 1000] };
-const sp = { view: 'vis', lo: 380, hi: 750, rect: false, labels: false, pins: [], hover: null, star: null, name: '', note: '', loaded: false, failed: false };
+const sp = { binary: 0, view: 'vis', lo: 380, hi: 750, rect: false, labels: false, pins: [], hover: null, star: null, name: '', note: '', loaded: false, failed: false };
 let card = null, plot = null, strip = null, read = null, head = null;
+let lastGal = null;      // the Hubble lab: the last galaxy shown, kept when a click lands on a faint star by accident
 
 /** The star the card shows: the selection, as {star (js/spectro.js), name, typeText} or a reason why there is none. */
 function current() {
+  const c = pick();
+  if (c.galaxy) lastGal = c;
+  else if (lastGal && redshiftHidden() && (!state.selected || state.selected.kind === 'star' || state.selected.kind === 'gaia')) return { ...lastGal, kept: true };
+  return c;
+}
+function pick() {
   const ref = state.selected;
   if (!ref) return { why: 'Select a star to see its spectrum.' };
   if (ref.kind === 'body') {
@@ -27,14 +37,32 @@ function current() {
     return { why: 'Planets and moons shine by reflected sunlight: select a star.' };
   }
   if (ref.kind === 'gaia') return { why: 'This Gaia star has no catalogued spectral type yet. Try a brighter star (one with a name or a Hipparcos number).' };
+  if (ref.kind === 'dso') {      // a galaxy: the light of all its stars together (js/spectro.js makeGalaxy)
+    const o = dso.rows[ref.idx];
+    if (!o || !GALAXY.has(o.type)) return { why: 'Select a star or a galaxy: a nebula or a cluster has no single spectrum here.' };
+    if (o.z == null) return { why: 'The catalogue has no redshift for this galaxy, so there is no model of its spectrum.' };
+    return { name: (o.names && o.names[0]) || (o.m ? 'M ' + o.m : o.id), galaxy: { z: o.z, hubble: o.hubble, key: 7e6 + ref.idx } };
+  }
   if (ref.kind !== 'star') return { why: 'Select a star to see its spectrum.' };
   const s = starRecord(ref.k, ref.i);
+  if (SB2[s.hip]) return { name: starLabel(s), binary: s.hip };      // a double-lined binary: two spectra, shifting with the orbit (js/spectro.js)
   return { name: starLabel(s), info: { type: typeOfHip(s.hip), bv: s.bv, rv: s.rv || 0, key: s.hip || (ref.k * 1e6 + ref.i) } };
 }
 function rebuild() {
   const c = current();
-  sp.pins = []; sp.hover = null;
+  if (!(c.kept && sp.star && sp.star.galaxy && sp.name === c.name)) sp.pins = [];
+  sp.hover = null; sp.binary = c.binary || 0;
   if (c.why) { sp.star = null; sp.name = ''; sp.note = c.why; return; }
+  if (c.binary) {
+    sp.star = makeBinary(c.binary, jdOf(state.timeMs), see.seed); sp.name = c.name;
+    sp.note = spectroHidden() ? 'Spectral type hidden during this lab.' : `Two stars, ${esc(sp.star.typeText)}: a double-lined binary. Its spectrum changes as the clock runs.`;
+    return;
+  }
+  if (c.galaxy) {
+    sp.star = makeGalaxy({ ...c.galaxy, seed: see.seed }); sp.name = c.name;
+    sp.note = (c.kept ? 'Still the last galaxy you selected: click or search for another galaxy to change it. ' : '') + `A galaxy: the light of all its stars${sp.star.spiral ? ' and glowing gas' : ''}. ` + (redshiftHidden() ? 'Its redshift is hidden during this lab: measure it.' : `Catalogued redshift z = ${c.galaxy.z} (OpenNGC).`);
+    return;
+  }
   sp.star = makeStar({ ...c.info, seed: see.seed });
   sp.name = c.name;
   if (!sp.star) { sp.note = 'No spectral type or colour is catalogued for this star.'; return; }
@@ -72,13 +100,15 @@ function draw() {
   ctx.fillText('wavelength (nm)', M.l + pw / 2, h - 3);
   if (!sp.star) { ctx.fillStyle = '#8fa3b8'; ctx.textAlign = 'center'; ctx.fillText('no spectrum', M.l + pw / 2, M.t + ph / 2); drawStrip(); return; }
   const n = Math.round(pw * 4), ys = new Float64Array(n + 1);
-  let top = 0;
-  for (let i = 0; i <= n; i++) { const v = value(sp.lo + span * i / n); ys[i] = v; if (v > top) top = v; }
+  let top = 0, low = Infinity;
+  for (let i = 0; i <= n; i++) { const v = value(sp.lo + span * i / n); ys[i] = v; if (v > top) top = v; if (v < low) low = v; }
   top = sp.rect ? Math.max(1.1, top * 1.03) : top * 1.08 || 1;
-  const y = (v) => M.t + ph - v / top * ph;
+  // divided by the continuum, the plot starts just below the deepest dip (not at 0), so that shallow lines show: a faint second star's, say
+  const bot = sp.rect ? Math.max(0, Math.floor((low - 0.03) / 0.05) * 0.05) : 0;
+  const y = (v) => M.t + ph - (v - bot) / (top - bot) * ph;
   ctx.textAlign = 'right';
-  const ystep = [0.05, 0.1, 0.2, 0.5, 1].find((s) => top / s <= 5);
-  for (let v = 0; v <= top + 1e-9; v += ystep) { const Y = y(v); ctx.beginPath(); ctx.moveTo(M.l, Y); ctx.lineTo(M.l + pw, Y); ctx.stroke(); ctx.fillText(v.toFixed(ystep < 0.1 ? 2 : 1), M.l - 4, Y + 3); }
+  const ystep = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1].find((s) => (top - bot) / s <= 5);
+  for (let v = bot; v <= top + 1e-9; v += ystep) { const Y = y(v); ctx.beginPath(); ctx.moveTo(M.l, Y); ctx.lineTo(M.l + pw, Y); ctx.stroke(); ctx.fillText(v.toFixed(ystep < 0.1 ? 2 : 1), M.l - 4, Y + 3); }
   // line labels (not during a lab that asks for them)
   if (sp.labels && !spectroHidden()) {
     ctx.fillStyle = '#e8b86a'; ctx.strokeStyle = 'rgba(232,184,106,0.5)'; ctx.textAlign = 'left';
@@ -132,8 +162,8 @@ function build() {
   const hide = spectroHidden();
   if (hide) sp.labels = false;
   card.body.innerHTML = '';
-  head = el('div', { class: 'spg-head' }, (sp.name ? `<b>${esc(sp.name)}</b><small>${sp.note}</small>` : `<small>${sp.note}</small>`) + `<span class="spg-ycap">${sp.rect ? 'Brightness relative to the continuum (1 = no line)' : 'Brightness relative to this star’s peak'}</span>`);
-  plot = el('canvas', { class: 'spg-plot', 'aria-label': 'Spectrum: brightness against wavelength' });
+  head = el('div', { class: 'spg-head' }, (sp.name ? `<b>${esc(sp.name)}</b><small>${sp.note}</small>` : `<small>${sp.note}</small>`) + `<span class="spg-ycap">${sp.rect ? 'Brightness relative to the continuum (1 = no line)' : (sp.star && sp.star.galaxy ? 'Brightness relative to this galaxy’s peak' : 'Brightness relative to this star’s peak')}</span>`);
+  plot = el('canvas', { class: 'spg-plot', tabindex: '0', 'aria-label': 'Spectrum: brightness against wavelength. Click to pin a wavelength; the arrow keys then nudge the last pin.' });
   strip = el('canvas', { class: 'spg-strip', 'aria-hidden': 'true' });
   read = el('div', { class: 'spg-read', role: 'status' });
   const opts = el('div', { class: 'row' },
@@ -143,7 +173,9 @@ function build() {
     `<label class="chk"><input type="checkbox" data-k="rect"${sp.rect ? ' checked' : ''}><span>Divide by the continuum<small>The lines against a flat 1, for measuring their depths and positions.</small></span></label>` +
     `<label class="chk"><input type="checkbox" data-k="labels"${sp.labels ? ' checked' : ''}${hide ? ' disabled' : ''}><span>Label the lines${hide ? '<small>Not during this lab: identifying them is the task.</small>' : ''}</span></label>`);
   const pinRow = el('div', { class: 'row' }, '<button class="btn" data-act="clear" type="button">Clear pins</button>');
-  const foot = el('p', { class: 'hint' }, 'A <b>model</b> spectrum built from the star’s catalogued spectral type and radial velocity, not an observed one (how: js/spectro.js).');
+  const foot = el('p', { class: 'hint' }, sp.star && sp.star.galaxy
+    ? 'A <b>model</b> galaxy spectrum built from the galaxy’s catalogued redshift and Hubble type (OpenNGC), not an observed one.'
+    : 'A <b>model</b> spectrum built from the star’s catalogued spectral type and radial velocity, not an observed one.');
   card.body.append(head, plot, strip, read, opts, chks, pinRow, foot);
   draw(); readout();
 }
@@ -151,6 +183,9 @@ function lamAt(e) {
   const r = plot.getBoundingClientRect(), pw = r.width - M.l - M.r, f = (e.clientX - r.left - M.l) / pw;
   return f < 0 || f > 1 ? null : sp.lo + f * (sp.hi - sp.lo);
 }
+
+/** For the notebook's Record (js/notebook/host.js): the pinned wavelengths (nm), in the order pinned, and whose spectrum, or null. */
+export function spectroPins() { return card && card.isOpen() && sp.star ? { name: sp.name, pins: sp.pins.slice() } : null; }
 
 export function initSpectrograph() {
   card = makeCard('spectro', 'Spectrograph', { onOpen: render });
@@ -160,12 +195,18 @@ export function initSpectrograph() {
     if (e.target === plot && sp.star) { const l = lamAt(e); if (l != null) { sp.pins = [...sp.pins.slice(-1), l]; draw(); readout(); } return; }
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.act === 'clear') { sp.pins = []; draw(); readout(); }
-    else if (b.dataset.view) { sp.view = b.dataset.view; if (VIEWS[sp.view]) [sp.lo, sp.hi] = VIEWS[sp.view]; sp.pins = []; build(); }
+    else if (b.dataset.view) {
+      const was = sp.view; sp.view = b.dataset.view;
+      if (VIEWS[sp.view]) [sp.lo, sp.hi] = VIEWS[sp.view];
+      else if (was !== 'zoom' && redshiftHidden()) [sp.lo, sp.hi] = [385, 410];      // the Hubble lab: calcium K and H, where a redshift is measured
+      sp.pins = []; build();
+    }
   });
   card.body.addEventListener('change', (e) => {
     const k = e.target.dataset.k; if (!k) return;
-    if (k === 'lo' || k === 'hi') {      // any two numbers are taken: put in order, kept inside 250–1100 nm, at least 0.05 nm apart
-      const v = +e.target.value; if (!isFinite(v)) { e.target.value = k === 'lo' ? sp.lo : sp.hi; return; }
+    if (k === 'lo' || k === 'hi') {      // a wavelength from 250 to 1100 nm is taken (anything else is refused, with a word why); the two are put in order, at least 0.05 nm apart
+      const v = +e.target.value;
+      if (!isFinite(v) || v < 250 || v > 1100) { e.target.value = k === 'lo' ? sp.lo : sp.hi; if (read) read.innerHTML = 'The spectrograph covers 250 to 1100 nm: type a wavelength in that range.'; return; }
       let lo = k === 'lo' ? v : sp.lo, hi = k === 'hi' ? v : sp.hi;
       if (lo > hi) [lo, hi] = [hi, lo];
       lo = Math.max(250, Math.min(1099.95, lo)); hi = Math.min(1100, Math.max(250.05, hi));
@@ -177,8 +218,27 @@ export function initSpectrograph() {
     else if (k === 'rect') { sp.rect = e.target.checked; build(); }
     else if (k === 'labels') { sp.labels = e.target.checked && !spectroHidden(); draw(); }
   });
+  // the From and To boxes: typing replaces what is there (appending to it once made 380385 nm, clamped to 1100)
+  card.body.addEventListener('focusin', (e) => { if (e.target.matches && e.target.matches('.spg-zoom input')) e.target.select(); });
+  // a pin can be nudged with the arrow keys once the plot has the focus (clicking it gives it the focus): a quarter of a pixel's
+  // width of wavelength a press, ten times that with Shift
+  card.body.addEventListener('keydown', (e) => {
+    if (e.target !== plot || !sp.pins.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    const pw = Math.max(1, plot.clientWidth - M.l - M.r), step = (sp.hi - sp.lo) / pw / 4 * (e.shiftKey ? 10 : 1);
+    sp.pins[sp.pins.length - 1] += e.key === 'ArrowLeft' ? -step : step;
+    e.preventDefault(); e.stopPropagation(); draw(); readout();
+  });
   on('selection', render);
-  on('lab', render);
+  on('lab', () => { lastGal = null; render(); });
+  // a binary's lines move with the clock: rebuild its spectrum when the time changes (at most once a frame), keeping the pins and the zoom
+  let queued = false;
+  const moved = () => {
+    if (!sp.binary || !card || !card.isOpen() || queued) return;
+    queued = true;
+    // (the pins are cleared: a wavelength pinned at one time is not a reading at the next, and Record copies the pins)
+    requestAnimationFrame(() => { queued = false; if (!sp.binary) return; sp.star = makeBinary(sp.binary, jdOf(state.timeMs), see.seed); sp.pins = []; draw(); readout(); });
+  };
+  on('time', moved); on('tick', moved);
   window.addEventListener('resize', () => requestAnimationFrame(draw));
   return card;
 }

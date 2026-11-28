@@ -41,6 +41,7 @@ export const UNITS = [
   U('sidday', 'sidereal d', 'sidereal days', 'time', 86164.0905, '1 sidereal day = 86,164.0905 s = 23 h 56 min 4.09 s (one turn of the Earth against the stars)'),
   U('yr', 'yr', 'years (Julian)', 'time', JULIAN_YEAR_S, '1 Julian year = 365.25 d exactly = 31,557,600 s'),
 
+  U('nm', 'nm', 'nanometers', 'length', 1e-9, '1 m = 10⁹ nm (wavelengths of light)'),
   U('cm', 'cm', 'centimeters', 'length', 0.01, '1 m = 100 cm'),
   U('m', 'm', 'meters', 'length', 1, 'the SI meter'),
   U('km', 'km', 'kilometers', 'length', 1000, '1 km = 1000 m'),

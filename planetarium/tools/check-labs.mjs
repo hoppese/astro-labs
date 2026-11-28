@@ -14,7 +14,7 @@ export async function checkLabs({ line }) {
     for (const s of L.steps) {
       const text = s.replace(/<svg.*?<\/svg>/gs, '').replace(/<[^>]*>/g, '');
       need(!/\$\{|undefined|\[object/.test(s), L.id + ': unfilled text'); need(!KEYS.test(text), `${L.id}: a key value in the prompt: ${(KEYS.exec(text) || [])[0]}`);
-      for (const m of s.matchAll(/data-do="(\w+)"/g)) need(['swap', 'shadow', 'goto', 'light', 'square'].includes(m[1]), L.id + ' button ' + m[1]);
+      for (const m of s.matchAll(/data-do="(\w+)"/g)) need(['swap', 'shadow', 'goto', 'light', 'square', 'nextring'].includes(m[1]), L.id + ' button ' + m[1]);
       for (const m of s.matchAll(/data-t="([^"]+)"/g)) need(Number.isFinite(Date.parse(m[1])), L.id + ' date ' + m[1]);
       longest = Math.max(longest, text.length); n++;
     }
@@ -111,7 +111,12 @@ export async function checkLabs({ line }) {
 
   // ---- standard candles (js/variables.js, js/photometer.js): the models stay inside the catalog's numbers and hit the published peaks
   { const Vb = await import('../js/variables.js'), Ph = await import('../js/photometer.js'), jd0 = 2461300;
-    for (const v of Vb.VARIABLES) { if (v.quiet) continue; let lo = 99, hi = -99, sum = 0; const n = 2000;
+    // Algol (eclipsing): steady at V max, primary minimum of the catalog's depth at the epoch, a 0.06 secondary half a period later, eclipse length 14% of P
+    { const v = Vb.VAR_BY_HIP.get(14576), at = (ph) => Vb.varMag(v, v.epoch + 5 * v.P + ph * v.P);
+      need(Math.abs(at(0) - v.min) < 1e-6 && Math.abs(at(0.25) - v.max) < 1e-9 && Math.abs(at(0.5) - v.max - 0.06) < 1e-6, 'Algol minimum, maximum, secondary');
+      need(at(0.069) > v.max && Math.abs(at(0.071) - v.max) < 1e-9, 'Algol eclipse length');
+      line(`  Algol (model): V ${v.max} to ${at(0).toFixed(2)} at the middle of the eclipse, ${(0.14 * v.P * 24).toFixed(1)} h long, secondary +0.06 mag`); }
+    for (const v of Vb.VARIABLES) { if (v.quiet || v.ecl) continue; let lo = 99, hi = -99, sum = 0; const n = 2000;
       for (let k = 0; k < n; k++) { const m = Vb.varMag(v, jd0 + v.P * k / n); lo = Math.min(lo, m); hi = Math.max(hi, m); sum += m; }
       need(Math.abs(lo - v.max) < 0.01 && Math.abs(hi - v.min) < 0.01 && Math.abs(sum / n - (v.max + v.min) / 2) < 0.01, 'variable range ' + v.name);
       need(Math.abs(Vb.varMag(v, v.epoch + 3 * v.P) - v.max) < 1e-6, 'maximum at the catalog epoch: ' + v.name); }
@@ -155,6 +160,30 @@ export async function checkLabs({ line }) {
       need(Ph.counts(jref, bodies, t, 'R') === Ph.lastExp.R.n && Ph.lastExp.R.key === 'bJupiter', 'the last R exposure is remembered for Record');
       const L = (await import('../js/labs/presets.js')).labById('star-colors'), rows = [...L.steps.join(' ').matchAll(/<td>([\d.]+)<\/td><td>([\d,]+) K<\/td>/g)];
       need(rows.length >= 10 && rows.every((m) => Ph.ratioBR(+m[2].replace(/,/g, '')).toFixed(2) === m[1]), `star-colors table must be the model's: ${rows.map((m) => m[1] + '@' + m[2]).join(' ')}`);
+      // the hr-diagram lab: its temperature formula is a fit to this same model, and the chain it asks for (m from G counts against Alhena,
+      // M, L in the V band, R from L and T) puts the twenty stars in the right size classes: supergiants >> giants >> dwarfs >> the white dwarf
+      { const Sp = await import('../js/spectro.js'); await C.loadAllTiers(); const byHip = new Map();
+        for (const t of C.stars.tiers) for (let i = 0; i < t.n; i++) { const h = t.data[i * C.stars.NF + 4]; if (h) byHip.set(h, { kind: 'star', k: t.k, i }); }
+        const Tx = []; for (let T = 3000; T <= 10000; T += 250) Tx.push(T);
+        const xs = Tx.map((T) => 1 / T), ys = Tx.map((T) => Math.log(Ph.ratioBR(T))), mx = xs.reduce((a, b) => a + b) / xs.length, my = ys.reduce((a, b) => a + b) / ys.length;
+        const sl = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / xs.reduce((a, x) => a + (x - mx) ** 2, 0), A = my - sl * mx;
+        const HL = (await import('../js/labs/presets.js')).labById('hr-diagram'), all = HL.steps.join(' ');
+        need(all.includes('9410 / (0.98 - ln(B / D))') && Math.abs(A - 0.98) < 0.005 && Math.abs(-sl / 9410 - 1) < 0.002, `hr-diagram formula vs the fit: A ${A.toFixed(4)}, C ${(-sl).toFixed(0)}`);
+        const Tf = (x) => 9410 / (0.98 - Math.log(x)), t0 = Date.parse('2027-02-10T02:30:00Z');
+        const R = (hip) => { const ref = byHip.get(hip), st = C.starRecord(ref.k, ref.i), T = Tf(Ph.ratioBR(Ph.tempOf(ref))), M = Ph.trueMag(ref, null, t0) - 5 * Math.log10(st.dist / 10);
+          return { T, Ttype: Ph.tempOf(ref), Rr: Math.sqrt(Math.pow(10, (4.83 - M) / 2.5)) / (T / 5772) ** 2 }; };
+        const sup = [24436, 11767, 34444, 27989].map(R), gia = [24608, 37826, 21421].map(R), dw = [32349, 36850, 37279, 22449, 27913, 16537, 49908, 54035].map(R), wd = R(3829);
+        for (const s of [...dw, ...gia]) need(Math.abs(s.T / s.Ttype - 1) < 0.015, `hr-diagram: formula T ${s.T.toFixed(0)} vs ${s.Ttype}`);
+        const lo = (a) => Math.min(...a.map((s) => s.Rr)), hi = (a) => Math.max(...a.map((s) => s.Rr));
+        need(lo(sup) > 1.5 * hi(gia) && lo(gia) > 2 * hi(dw) && hi(dw) < 3.5 && wd.Rr < 0.02 && Math.abs(R(27989).Rr / 282 - 1) < 0.02, `hr-diagram radii: supergiants ${lo(sup).toFixed(0)}+, giants ${lo(gia).toFixed(1)}-${hi(gia).toFixed(1)}, dwarfs up to ${hi(dw).toFixed(2)}, white dwarf ${wd.Rr.toFixed(4)}`);
+        // every star the card lists is found by the search box under the name the card gives (the name before any bracket),
+        // and the Sun's row (its distance typed, 1 AU = 4.848e-6 pc) comes out near 5,800 K and L = 1
+        { const Se = await import('../js/search.js'), names = /The stars: ([^.]+)\./.exec(all)[1].split(/, | and /).map((x) => x.replace(/\s*\(.*\)/, '').trim());
+          const miss = names.filter((nm) => { const r = Se.search(nm, 1)[0]; return !r || !r.ref || r.ref.kind !== 'star'; });
+          need(names.length === 20 && !miss.length, `hr-diagram: ${names.length} stars, not found by search: ${miss.join(', ')}`);
+          const sun = E.compute(makeFrame(t0, { lat: 39.83, lon: -84.89, elev: 0 }), true, true).byId.Sun, Ms = sun.mag - 5 * Math.log10(4.848e-6 / 10), Ts = Tf(Ph.ratioBR(Ph.tempOf({ kind: 'body', id: 'Sun' })));
+          need(Math.abs(Ms - 4.83) < 0.1 && Math.abs(Ts / 5772 - 1) < 0.01, `hr-diagram: the Sun's row M ${Ms.toFixed(2)}, T ${Ts.toFixed(0)}`); }
+        line(`  hr-diagram: T = 9410 / (0.98 − ln B/R) fits the filter model (A ${A.toFixed(3)}, C ${(-sl).toFixed(0)}); radii: supergiants ${lo(sup).toFixed(0)}–${hi(sup).toFixed(0)}, giants ${lo(gia).toFixed(1)}–${hi(gia).toFixed(1)}, dwarfs ${lo(dw).toFixed(2)}–${hi(dw).toFixed(2)}, Van Maanen's Star ${wd.Rr.toFixed(4)} R☉`); }
       line(`  photometer filters: G = clear within ${(Math.abs(mg / Nj - 1) * 100).toFixed(2)}%; B/R from ${rs[0].toFixed(2)} (2,500 K) to ${rs[rs.length - 1].toFixed(2)} (40,000 K); the star-colors table (${rows.length} rows) matches the model`); }
     // the answer keys of LABS.md, from the models
     const dCep = Vb.VAR_BY_HIP.get(110991), Mv = (P) => -2.43 * (Math.log10(P) - 1) - 4.05, pc = (mu) => Math.pow(10, mu / 5 + 1);
@@ -192,4 +221,22 @@ export async function checkLabs({ line }) {
         Object.assign(state, { aboveAU: was[0], aboveLat: was[1], aboveLon: was[2], abovePan: was[3] }); }
       line(`  standing on ${E.SURFACES.length} bodies: horizon frame within ${(err * X.RAD).toFixed(2)} deg of the Earth's; Earth from Tranquility Base az ${tq.az.toFixed(0)} alt ${tq.alt.toFixed(1)}, from the far side alt ${far.alt.toFixed(0)}`); }
     line(`  from ${E.VANTAGES.length} other bodies: all finite; Jupiter from Io ${(2 * io.angRadius).toFixed(2)} deg, ${(io.phaseFrac * 100).toFixed(0)}% lit; Earth from the Moon ${(2 * moon.angRadius).toFixed(2)} deg; from the Sun mag ${sun.mag.toFixed(2)}`); }
+
+  // ---- the clusters lab: the member file, the colors the photometer gives them, and main-sequence fitting with the key's method
+  { const { readFileSync } = await import('node:fs'), Cl = await import('../js/labs/clusters.js'), Ph = await import('../js/photometer.js'), Sp = await import('../js/spectro.js');
+    const J = JSON.parse(readFileSync(new URL('../data/clusters.json', import.meta.url))), D = Cl.prepare(J);
+    need(D.clusters.map((c) => c.id).join() === 'hyades,pleiades,praesepe' && D.members.length >= 45 && D.members.every((m) => m.T > 3000 && m.T < 20000), 'clusters: the member file');
+    const pts = (id) => D.clusters.find((c) => c.id === id).members.map((m) => ({ x: Ph.filterFactor('R', m.T) / Ph.filterFactor('B', m.T), m: m.g0 }));
+    const H = pts('hyades').filter((p) => p.x > 1.3 && p.x < 2.4 && p.m > 5).sort((a, b) => a.x - b.x);
+    const at = (x) => { for (let i = 1; i < H.length; i++) if (H[i].x >= x) { const a = H[i - 1], b = H[i], f = Math.log(x / a.x) / Math.log(b.x / a.x); return a.m + f * (b.m - a.m); } return NaN; };
+    const fit = (id, mmin) => { const d = pts(id).filter((p) => p.x >= 1.4 && p.x <= 2.1 && p.m > mmin).map((p) => p.m - at(p.x)).filter(Number.isFinite).sort((a, b) => a - b); return { n: d.length, dm: d[d.length >> 1] }; };
+    const P = fit('pleiades', 8), Q = fit('praesepe', 8.5), dP = 47.5 * 10 ** (P.dm / 5), dQ = 47.5 * 10 ** (Q.dm / 5);
+    need(P.n >= 4 && Math.abs(dP / 135.8 - 1) < 0.08, `clusters: Pleiades by main-sequence fitting ${dP.toFixed(1)} pc from ${P.n} stars (Gaia 136)`);
+    need(Q.n >= 3 && Math.abs(dQ / 186.2 - 1) < 0.1, `clusters: Praesepe by main-sequence fitting ${dQ.toFixed(1)} pc from ${Q.n} stars (Gaia 186)`);
+    // the turnoff table is the photometer's own colors for MIST v1.2's turnoffs (tools/build_clusters.py --turnoff: log age 7.6 8.0 8.2 8.4 8.6 8.8 9.0 9.4 10.0)
+    const bv = (x) => -0.04152 + x * (0.70164 + x * (0.1448 + x * (-0.05292 + x * 0.006061)));
+    const L = (await import('../js/labs/presets.js')).labById('clusters'), rows = [...L.steps.join(' ').matchAll(/<td>([\d.]+)<\/td><td>[\d. ]+(?:million|billion)/g)].map((m) => m[1]);
+    const want = [-0.336, -0.224, -0.170, -0.114, -0.052, 0.061, 0.246, 0.541, 0.805].map((c) => (1 / Ph.ratioBR(Sp.starTemp(null, bv(c)).T)).toFixed(2));
+    need(rows.join() === want.join(), `clusters: turnoff table ${rows.join()} should be ${want.join()}`);
+    line(`  clusters: ${D.members.length} ringed members; main-sequence fitting puts the Pleiades at ${dP.toFixed(0)} pc (${P.n} stars; Gaia 136) and Praesepe at ${dQ.toFixed(0)} pc (${Q.n}; Gaia 186); the turnoff table is the photometer's`); }
 }
