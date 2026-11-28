@@ -121,7 +121,7 @@ export const LABS = [
       `Mark the instant the Moon is completely inside the umbra (totality begins).`,
       `Mark the instant the Moon’s leading edge first comes out again (totality ends).`,
       `Mark the instant the Moon is completely clear of the umbra. You now have four marks.`,
-      `From mark 1 to mark 2 the Moon moved by its own diameter. From mark 1 to mark 3 its leading edge crossed the whole shadow. Press two mark numbers to see the time between them. What is the shadow’s diameter in Moon diameters?`,
+      `From mark 1 to mark 2 the Moon moved by its own diameter. From mark 1 to mark 3 its leading edge crossed the whole shadow. Press two mark numbers to see the time between them. Because the Moon moves at a steady rate, the ratio of the times is the ratio of the distances: shadow diameter ÷ Moon diameter = (time from mark 1 to 3) ÷ (time from mark 1 to 2). What is the shadow’s diameter in Moon diameters?`,
       `Check: click <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button> to draw the shadow, zoom out until you see all of it, and with ${ANGLE} measure the umbra and the Moon, each from edge to edge. Why might this not agree exactly with your timing?`,
     ],
     about: `The Moon passes almost through the center of the shadow in this eclipse. The Sun is not a point, so the Earth’s shadow tapers: at the Moon it is narrower than the Earth by about one Moon diameter (because the Sun and Moon look the same size). Earth’s diameter ≈ (shadow + 1) Moon diameters. The model enlarges the shadow by 1.4% for the Earth’s atmosphere, as eclipse predictions do. ${STEPKEYS} See ${tao}.` },
