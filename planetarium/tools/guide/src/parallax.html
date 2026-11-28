@@ -1,0 +1,162 @@
+<!--
+title: How far is a star? Parallax, in the field and in the sky
+lede: Hold up your thumb and look at it with one eye, then the other: it jumps against the wall behind it. Nearby things jump more than far ones. In Part 1 you use that with two cones on a field; in Part 2 you do exactly the same thing with the Earth's orbit and a real star.
+-->
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>The distance to something you cannot walk to, from how much it seems to shift when you look at it from two places. This is the first rung of the ladder beyond the solar system: every other way of finding the distances of stars and galaxies is checked, in the end, against parallax.</p>
+  <p>The lab has two parts, and they are the same measurement twice:</p>
+  <ul>
+    <li><b>Part 1, outdoors:</b> a circle of string on a field is the Earth’s orbit, two traffic cones are “stars”, and the trees far behind them are the distant stars. You photograph the cones with your phone from different places round the circle and measure how far they jump.</li>
+    <li><b>Part 2, in the planetarium:</b> the Earth’s real orbit round the Sun, real nearby stars, and the faint stars far behind them.</li>
+  </ul>
+  <p>Your instructor may ask you to do the two parts on different days. Do Part 1 first if you can: everything in Part 2 is easier once you have seen it happen with a cone.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: the nearer, the bigger the jump</h2>
+  <p>Look at something from one place, then step sideways and look again. Against a very distant background (far trees, faraway stars) a nearby object seems to move; the background hardly does. That apparent shift is <b>parallax</b>. The farther away the object, the smaller the shift, and the shift together with how far you stepped gives the distance.</p>
+  <figure>
+    <!--FIG:px_field-->
+    <figcaption><b>Part 1: the field, from above.</b> A peg and a string mark a circle a few meters across: this is the Earth’s orbit, and its radius is your <b>field AU</b>. January and July are at the two ends of the diameter square-on to the cones; April is the mark nearest them. From January and from July the lines of sight past each cone land on different trees: the cone seems to jump. The far cone’s lines (dotted) land closer together than the near cone’s (dashed): it jumps less.</figcaption>
+  </figure>
+  <figure>
+    <!--FIG:px_orbit-->
+    <figcaption><b>Part 2: the same picture in the sky.</b> Looking down on the North Pole (NP). The Earth goes round the Sun once a year (arrow). Six months apart, in January and July here, it is at the two ends of a diameter of its orbit, and the lines of sight to a nearby star land on different far stars. The angle <i>p</i> at the star, between the line to the Sun and the line to the Earth, is the star’s <b>parallax</b>: the angle that 1 AU spans, seen from the star.</figcaption>
+  </figure>
+  <p>In both pictures the shift you see between January and July is twice <i>p</i>, because the two ends of the diameter are two radii apart. So <b>the parallax is half the shift</b>.</p>
+</section>
+
+<section id="triangle">
+  <h2>From the angle to the distance</h2>
+  <p>The peg (or the Sun), January (or the Earth) and the cone (or the star) make a long, thin right-angled triangle. The short side is the radius <i>R</i>, the long side is the distance <i>d</i>, and the small angle at the far corner is <i>p</i>.</p>
+  <figure>
+    <!--FIG:px_triangle-->
+    <figcaption><b>The thin triangle.</b> The side opposite <i>p</i> is the radius <i>R</i>; the side next to it is the distance <i>d</i>. So tan <i>p</i> is <i>R</i> over <i>d</i>. For a small angle measured in radians, tan <i>p</i> is very nearly <i>p</i> itself.</figcaption>
+  </figure>
+  <div class="eq"><div class="row">tan <i>p</i> = <span class="frac"><span><i>R</i></span><span><i>d</i></span></span></div><div class="row"><span class="so">so</span><i>d</i> = <span class="frac"><span><i>R</i></span><span>tan <i>p</i></span></span> &ensp;≈&ensp; <span class="frac"><span><i>R</i></span><span><i>p</i></span></span> <span class="eqnote">(<i>p</i> in radians)</span></div></div>
+  <p>Astronomers make this even simpler by choosing a unit of distance to go with the unit of angle.</p>
+  <ul>
+    <li><b>The parsec.</b> One parsec is the distance at which 1 AU spans an angle of 1 arcsecond (1″, a 3600th of a degree). A star twice as far has half the parallax, so</li>
+  </ul>
+  <div class="eq"><div class="row"><span class="frac"><span><i>d</i> in parsecs</span><span>1 parsec</span></span> = <span class="frac"><span>1″</span><span><i>p</i></span></span></div><div class="row"><span class="so">so</span><i>d</i> in parsecs = <span class="frac"><span>1</span><span><i>p</i> in arcseconds</span></span></div></div>
+  <ul>
+    <li><b>The pardegree</b> is the same idea for the field, where the angles are degrees, not arcseconds: the distance at which one field AU (your circle’s radius) spans 1°. It is about 57.3 field AU. So</li>
+  </ul>
+  <div class="eq"><div class="row"><i>d</i> in pardegrees ≈ <span class="frac"><span>1</span><span><i>p</i> in degrees</span></span></div></div>
+  <p>On the field the angles are big (several degrees), so the shortcut is a few percent off the exact <i>R</i> over tan <i>p</i>: work out both and see. For stars the angles are far smaller than an arcsecond, and the shortcut is exact for all practical purposes.</p>
+</section>
+
+<section id="part1">
+  <h2>Part 1: cones on a field (the Parallax Lab)</h2>
+  <p>You need a phone, a laptop (or just the phone), and the <b>Parallax Lab</b> app at <a href="https://parallax.sethhopper.com" target="_blank" rel="noopener">parallax.sethhopper.com</a>. Your instructor will give you the link for your class: it sets the circle’s radius, the units and whether there are one or two cones. (The app is not open to the public yet.)</p>
+  <h3>The setup</h3>
+  <ul>
+    <li><b>The circle:</b> a peg in the ground and a string 3 to 4 m long. The circle it sweeps out is the Earth’s orbit; its radius is <b>1 field AU</b>. The month marks are already on it: January and July at the two ends of the diameter square-on to the cones, April nearest the cones.</li>
+    <li><b>Two cones:</b> a near one (orange) and one about twice as far (yellow), a little to either side of the line from the peg, so that they never hide each other.</li>
+    <li><b>The background:</b> the farthest things you can see behind the cones: distant trees, a pole, the corner of a building. The farther, the better (see <a href="#wrong1">What can go wrong</a>).</li>
+  </ul>
+  <h3>Step by step</h3>
+  <ol class="steps">
+    <li><b>Start on the laptop.</b> Open your class link. It shows a QR code and a short code. Scan the QR code with your phone: the phone is now the camera, and every photo you take appears on the laptop within a few seconds. (No laptop? The phone can do everything on its own.)</li>
+    <li><b>Calibrate the camera.</b> The app needs to know how many degrees one pixel of your photo spans. Photograph something of known width (a door, a taped line on a wall) from a measured distance, square-on, in the middle of the frame; then tap its two ends. Use the main (1×) lens, hold the phone the same way (landscape) for every photo, and don’t zoom.</li>
+    <li><b>Take the lab photos.</b> The phone asks for them in turn. Stand on the <b>January</b> mark and photograph the cones with your distant reference in the frame; then <b>April</b>; then <b>July</b>, keeping the same reference in view.</li>
+    <li><b>Predict, then see it.</b> Before the photos open, the app asks you which cone will shift more, and by how much if one is twice as far. Then it lays the photos on top of each other: line up the far trees, and press <b>Swap</b> (<kbd>S</kbd>) to flip between them. The trees hold still; the cones jump. Was your prediction right?</li>
+    <li><b>Measure.</b> In each photo, tap each cone and your reference (the same feature in every photo: the foot of a trunk, a pole, a corner). The app turns your taps into the angle from the reference to each cone. It does not subtract anything for you: that is your job.</li>
+    <li><b>Work it out</b> in the notebook: the shift of each cone between January and July, the parallax <i>p</i> (half the shift), and the distance, both as <i>R</i> over tan <i>p</i> and in pardegrees.</li>
+    <li><b>Finish.</b> The last screen shows your numbers and makes one summary picture: download it and hand it in.</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in for Part 1">
+    <tr><th></th><th>Near cone</th><th>Far cone</th></tr>
+    <tr><td>Angle from the reference, January</td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Angle from the reference, July</td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Shift (July − January)</td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Parallax <i>p</i> (half the shift)</td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Distance, <i>R</i> over tan <i>p</i></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Distance in pardegrees</td><td class="blank"></td><td class="blank"></td></tr>
+  </table>
+  <p>The far cone is about twice as far as the near one. Is its parallax about half as big? And what did April show you, standing straight in line with the cones?</p>
+  <h3 id="home">At home: your own baseline</h3>
+  <p>No circle? Lay a tape measure on the ground, square-on to a cone (or any object) with distant trees or buildings behind it. Take a <b>Middle</b> photo at the middle of the tape, then step a few meters to the <b>Left</b> and to the <b>Right</b>, reading the tape where you stand each time. The distance between Left and Right is your baseline; half of it plays the part of the AU, and everything else is the same.</p>
+  <h3 id="wrong1">What can go wrong in Part 1</h3>
+  <ul>
+    <li><b>A background that is not far enough.</b> Your reference shifts a little too, so the cone’s shift looks smaller than it is and the distance comes out too big. In one rule:
+      <div class="eq"><div class="row"><span class="frac"><span>1</span><span>distance you find</span></span> = <span class="frac"><span>1</span><span>true distance</span></span> − <span class="frac"><span>1</span><span>distance of the reference</span></span></div></div>
+      With trees only four times as far as the cone, you get a distance a third too big, however carefully you tap. To be within 10% the reference must be about 11 times as far as the cone. Choose the farthest thing you can see, not the biggest tree: the far cone suffers most.</li>
+    <li><b>Changing the lens or the zoom</b> after calibrating: every angle is then wrong by the same factor.</li>
+    <li><b>Tapping a different feature</b> as the reference in different photos.</li>
+    <li><b>Tilting the phone</b> differently from photo to photo: the app lets you level the photos against each other; do it before you measure.</li>
+    <li><b>Standing off the marks:</b> the baseline is then not what you think.</li>
+  </ul>
+</section>
+
+<section id="same">
+  <h2>The same thing twice</h2>
+  <table class="rec" aria-label="Part 1 and Part 2 side by side">
+    <tr><th>Part 1: the field</th><th>Part 2: the sky</th></tr>
+    <tr><td>The circle’s radius: 1 field AU</td><td>The Earth’s distance from the Sun: 1 AU</td></tr>
+    <tr><td>The peg</td><td>The Sun</td></tr>
+    <tr><td>You, walking round the circle</td><td>The Earth, going round its orbit</td></tr>
+    <tr><td>A cone</td><td>A nearby star</td></tr>
+    <tr><td>The far trees</td><td>The distant stars</td></tr>
+    <tr><td>January, April, July marks</td><td>January, April, July</td></tr>
+    <tr><td>A shift of degrees</td><td>A shift of a fraction of an arcsecond</td></tr>
+    <tr><td>The pardegree</td><td>The parsec</td></tr>
+  </table>
+  <p>The only real difference is the size of the angle. A cone 20 m away shifts by degrees; the nearest star shifts by less than one arcsecond, the width of a coin seen from about 5 km away. That is why it took until 1838 for anyone to see a star’s parallax, and why the Greeks, who looked for it and saw nothing, concluded that the Earth does not move.</p>
+</section>
+
+<section id="part2">
+  <h2>Part 2: a real star (the planetarium)</h2>
+  <p>Through the year the Earth carries you round the Sun, so a nearby star swings round a small ellipse against the far stars, once a year. Half the long axis of that ellipse is the parallax <i>p</i>.</p>
+  <figure>
+    <!--FIG:px_ellipse-->
+    <figcaption><b>What you see through the year.</b> Left: the far stars stay put, and the nearby star goes round a small ellipse. It is an ellipse, not a line, because from the star the Earth’s orbit is a circle seen at a slant (only a star in the plane of the Earth’s orbit swings back and forth along a line). Half the long axis is <i>p</i>. Right: a star that also moves through space drifts steadily as well, so its ellipse is pulled out into a wavy track: the drift is its <b>proper motion</b>, the wave its parallax.</figcaption>
+  </figure>
+  <h3 id="bessel">61 Cygni, as Bessel did it</h3>
+  <p><a class="go" href="../?lab=parallax" target="_blank" rel="noopener">Open “Distance of a star by parallax” ↗</a></p>
+  <ol class="steps">
+    <li><b>The star.</b> The lab centres 61 Cygni A in a tiny field, with proper motion and aberration switched off, so that only parallax moves it. Its panel gives its coordinates (RA and Dec, J2000) to 0.01″.</li>
+    <li><b>A year, month by month.</b> Write down RA and Dec, then step a month at a time for a year: click the date and time at the bottom, then <b>+1 month</b>.</li>
+    <li><b>The loop.</b> Turn each change of RA into arcseconds on the sky (1 second of RA is 15″ × cos Dec) and plot the loop. Half its length is <i>p</i>.</li>
+    <li><b>The distance.</b> The distance in parsecs is 1 over <i>p</i> in arcseconds; 1 parsec is 3.26 light-years.</li>
+    <li><b>What Bessel faced.</b> Switch proper motion and aberration back on (the <b>Corrections</b> card): what would Bessel have had to untangle?</li>
+  </ol>
+  <h3 id="proxima">Proxima Centauri, the nearest star</h3>
+  <p><a class="go" href="../?lab=proxima-parallax" target="_blank" rel="noopener">Open “Proxima Centauri: the nearest star” ↗</a></p>
+  <p>This one is a notebook lab, measured the way it is really done: against a faint background star, as a telescope sees it, with every star a slightly blurred disc that comes out a little different in each exposure. You are at Cape Town, because Proxima never rises for most of the north.</p>
+  <ol class="steps">
+    <li><b>A reference star.</b> Choose one of the faint stars near Proxima as your <b>reference star</b>: your own choice. Note which one, so you can find it again.</li>
+    <li><b>Measure.</b> With the angle tool (<kbd>R</kbd>) measure from the reference star to Proxima: click near each star, and in the magnifier place the cross on the centre of its image. You get a <b>separation</b> and a <b>position angle</b>.</li>
+    <li><b>Record.</b> Set up your notebook (your own column names and units; <b>Choose what Record copies</b>) and press <b>Record</b>.</li>
+    <li><b>Many dates.</b> Change the date (click the date and time, not the small clock picture) and measure again. Follow the star for at least a year and a half, on dates of your own choosing. More dates, better answer.</li>
+    <li><b>East and north.</b> Split each separation into how far <b>east</b> and how far <b>north</b> of the reference star Proxima is (a right-angled triangle; the lab card draws it). Check: what would each be if the position angle were 0°? 90°?</li>
+    <li><b>Drift and wave.</b> Graph each against the date. One part is a steady drift (proper motion); the other repeats every year (parallax). Fit them together by hand in the notebook (the model “Ellipse with a steady drift”), and from <i>p</i> find the distance.</li>
+  </ol>
+  <h3 id="barnard">Barnard’s star: parallax and proper motion</h3>
+  <p><a class="go" href="../?lab=barnard-parallax" target="_blank" rel="noopener">Open “Barnard’s star: parallax and proper motion” ↗</a></p>
+  <p>The same steps as for Proxima, from Richmond. Barnard’s star crosses the sky faster than any other star, so here the drift is large and the yearly wave rides on top of it (the right-hand picture above). Separate the two: the wave’s size gives the distance, the drift’s rate gives how fast it crosses the sky. The lab “A star that moves” turns that rate into a speed in km/s.</p>
+  <table class="rec" aria-label="A table to fill in for Part 2">
+    <tr><th>Star</th><th>Parallax <i>p</i> (″)</th><th>Distance (pc)</th><th>Distance (light-years)</th></tr>
+    <tr><td>61 Cygni A</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Proxima Centauri</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Barnard’s star</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+  </table>
+  <h3 id="wrong2">What can go wrong in Part 2</h3>
+  <ul>
+    <li><b>Using the whole width of the loop</b> instead of half: the distance comes out half as big.</li>
+    <li><b>Forgetting cos Dec</b> (61 Cygni): a second of RA is a smaller angle on the sky away from the equator.</li>
+    <li><b>Too few dates, or all in one season:</b> you need the star at both ends of its ellipse. A year and a half, spread out, lets you tell the drift from the wave.</li>
+    <li><b>Mixing up east and north</b> when you split the separation: check with position angles of 0° and 90°.</li>
+    <li><b>Expecting the exact catalogue value:</b> the star images are simulated with measurement error, so two students get slightly different answers, as two astronomers would. The background star also has a tiny parallax and motion of its own.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li>The Moon’s distance from <a href="lunar-parallax.html">two observers</a> is the same idea with the Earth itself as the baseline: thousands of kilometres instead of a few meters or 300 million.</li>
+    <li>Parallax only reaches a few thousand light-years, even from space (the Gaia satellite). Beyond that, astronomers use stars whose true brightness they know, <b>standard candles</b>, calibrated on stars whose distances parallax gives: the next rung of the ladder (the Cepheid labs).</li>
+    <li>Read Terence Tao’s account of this rung of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>
