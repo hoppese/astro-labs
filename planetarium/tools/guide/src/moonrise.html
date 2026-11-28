@@ -1,0 +1,79 @@
+<!--
+title: How big does the Moon look? Timing a moonrise
+lede: The whole sky turns once around us in about a day. Time how long the Moon takes to rise by its own diameter, compare it with how long the sky takes to turn all the way round, and you have the Moon’s size in the sky, with nothing but a clock.
+-->
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>The Moon’s <b>angular diameter</b>: how wide it looks, as an angle. With the Moon’s true size (the <a href="eclipse-timing.html">eclipse lab</a> gives it in Earth sizes), that angle gives its distance, which is the step Aristarchus took after measuring the eclipse.</p>
+  <p>You need: the planetarium (the lab puts you on the equator at Quito, looking east, just before the full Moon rises), the stopwatch it opens, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: the sky is a clock</h2>
+  <p>As the Earth turns, the whole sky seems to turn the other way around us, steadily, once a day. Everything in it, the Moon included, moves at the same rate: 360° in one turn. So a time can be turned into an angle:</p>
+  <div class="eq"><i>angle</i> = 360° × <i>time taken</i> ÷ <i>time for one whole turn</i></div>
+  <p>If you time how long the Moon takes to move by its own diameter, the same rule turns that time into the Moon’s angular diameter. A rising Moon is ideal for this, because the horizon is a sharp, straight ruler to time it against.</p>
+</section>
+
+<section id="rise">
+  <h2>Why on the equator</h2>
+  <p>On the equator, stars and the Moon (when it is near the celestial equator, as here) rise <b>straight up</b>. Farther north or south they rise at a slant, and the slant makes the timing longer: the Moon has to travel farther along its tilted path before it clears the horizon.</p>
+  <figure>
+    <!--FIG:mr_rise-->
+    <figcaption><b>Two marks.</b> Mark 1: the top edge of the Moon touches the horizon. Mark 2: its bottom edge clears it. On the equator the Moon moves straight up, by exactly one diameter, between the two. At 40° north the same rise takes it along a tilted path, about a third farther, so it takes about a third longer. The lab puts you at Quito, on the equator, for that reason.</figcaption>
+  </figure>
+</section>
+
+<section id="lunarday">
+  <h2>One whole turn: the lunar day</h2>
+  <p>“Once a day” is not quite right for the Moon. While the Earth turns, the Moon moves along its own orbit in the same direction, about 13° a day. So after the Earth has turned once, the Moon is not back in the same place in your sky yet: the Earth has to turn a little more.</p>
+  <figure>
+    <!--FIG:mr_lunarday-->
+    <figcaption><b>Why the lunar day is longer than 24 hours.</b> From above the North Pole: by the time the Earth has turned once, the Moon has moved on along its orbit, so the Earth must make an extra turn (orange) to bring the Moon back to the same place in your sky. That takes, on average, about 50 minutes, but it varies from day to day by as much as a quarter of an hour, because the Moon moves faster near perigee. The lab has you measure the lunar day for these very dates rather than use the average.</figcaption>
+  </figure>
+  <p>The time the Moon takes to come back to the same place in your sky (for instance, to cross your <b>meridian</b>, the north–south line overhead, two days running) is the <b>lunar day</b>. That is the “time for one whole turn” in the equation for the Moon.</p>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=moonrise" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Mark 1: the top edge on the horizon.</b> The lab starts a minute or two before the Moon rises, looking due east with refraction switched off. Step the clock a second at a time (<kbd>Shift</kbd> + <kbd>→</kbd>) to the instant the Moon’s top edge first reaches the horizon, and press <b>Mark time</b> (or <kbd>X</kbd>).</li>
+    <li><b>Mark 2: the bottom edge clears.</b> Step on to the instant the whole Moon is above the horizon, its bottom edge just touching it, and mark again. Press the two mark numbers to see the rise time in seconds.</li>
+    <li><b>The lunar day.</b> Switch on the meridian line (<kbd>;</kbd>). Select the Moon and press <kbd>T</kbd> to follow it. Run the clock (<kbd>L</kbd> to speed up, <kbd>7</kbd> to stop) to the moment the meridian cuts the Moon in half, step to the second, and mark. Do the same the next day. The time between the two marks is the lunar day.</li>
+    <li><b>Work it out,</b> with the equation above: both times in the same unit (seconds is easiest), and the answer in degrees. Convert to arcminutes (1° = 60′).</li>
+    <li><b>Check by measuring.</b> Go back to mark 2 (its ↩ button in the stopwatch), open the angle tool (<kbd>R</kbd>) and measure the Moon from edge to edge. How close is your timing?</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th>Mark</th><th>Time (UTC)</th><th>Interval</th><th>Seconds</th></tr>
+    <tr><td>1: top edge on the horizon</td><td class="blank"></td><td>rise time (1 → 2)</td><td class="blank"></td></tr>
+    <tr><td>2: bottom edge clears</td><td class="blank"></td><td>lunar day (3 → 4)</td><td class="blank"></td></tr>
+    <tr><td>3: Moon on the meridian</td><td class="blank"></td><td></td><td></td></tr>
+    <tr><td>4: the next day</td><td class="blank"></td><td></td><td></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>Refraction.</b> The air bends light near the horizon, lifting the Moon and squashing it, so that it seems to rise later and slower. The lab switches refraction off; with it on (as in the real sky) the timing comes out too long. Try it.</li>
+    <li><b>Judging the instant.</b> A second or two at each mark is a few percent of the rise time. Step back and forth over each moment.</li>
+    <li><b>The average lunar day.</b> “24 h 50 min” is only an average; the real one varies by up to a quarter of an hour. Measure it for these dates.</li>
+    <li><b>Measuring at the wrong moment.</b> The Moon’s angular size changes as its distance does, and from one place on the Earth it is also a little bigger overhead than on the horizon (you are then nearer to it by the Earth’s radius). Measure with the angle tool at mark 2, the moment you timed.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further: the distance to the Moon</h2>
+  <p>An angular size and a true size give a distance. For a small angle, measured in <b>radians</b>:</p>
+  <figure>
+    <!--FIG:mr_distance-->
+    <figcaption><b>A thin wedge.</b> Seen from your eye, the Moon of diameter <i>D</i> at distance <i>d</i> covers the angle θ. For a small angle, θ in radians is very nearly <i>D</i> ÷ <i>d</i>. The angle is drawn much wider than it really is.</figcaption>
+  </figure>
+  <div class="eq"><i>d</i> = <i>D</i> ÷ θ &emsp; (θ in radians: degrees × π ÷ 180)</div>
+  <ul>
+    <li>Take <i>D</i> from the <a href="eclipse-timing.html">eclipse lab</a> (the Moon in Earth diameters) and the Earth’s size from the <a href="eratosthenes.html">noon Sun</a> lab, and you have the Moon’s distance in kilometres, as Aristarchus and Hipparchus did.</li>
+    <li>Repeat the timing at another place (Richmond, Indiana, say: <kbd>Settings</kbd> → Location) and see how the slant changes the rise time.</li>
+    <li>Read Terence Tao’s account of this rung of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>
