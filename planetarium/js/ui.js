@@ -337,8 +337,13 @@ export function landOn(id) {
 function lookAround() {
   const id = lookTarget(state.vantage), b = getBodies(getFrame()).byId[id];
   cam.fov = 90; emit('fov');
-  if (b && b.hor[2] > Math.sin(3 * Math.PI / 180)) { const ref = { kind: 'body', id }; select(ref); centerOn(ref); return; }
-  select(null); stopTracking();
+  stopTracking();
+  if (b && b.hor[2] > Math.sin(3 * Math.PI / 180)) {
+    // facing it, but low enough that the ground stays in the picture (a planet high up is then above the top edge, selected)
+    const a = horToAzAlt(b.hor); select({ kind: 'body', id });
+    lookAtHor(azAltToHor(a.az, Math.max(10, Math.min(a.alt, 20)))); emit('render'); return;
+  }
+  select(null);
   lookAtHor(azAltToHor(state.surface.lat >= 0 ? 180 : 0, 25)); emit('render');
 }
 /** The solar-system view: from above the Sun, looking at it, with a field that holds the orbits out to about the distance (js/orbitcam.js moves about from there). */
