@@ -86,7 +86,7 @@ export function initInput(canvas, { onClickSky } = {}) {
     pointers.delete(e.pointerId);
     canvas.classList.remove('dragging');
     if (pointers.size === 0) {
-      holdCentre(false);
+      holdCentre(false); emit('render');      // (a drag over the zenith may have tilted the view: it now levels itself)
       const touch = e.pointerType === 'touch';
       if (e.type === 'pointerup' && moved <= (e.pointerType === 'mouse' ? CLICK_SLOP : TAP_SLOP) && downAt) {
         // with the object sheet open on a small screen a tap is first of all a way to put it away: only a tap right on something else selects that

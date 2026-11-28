@@ -428,6 +428,8 @@ await (await import('./check-jpl.mjs')).default(line);
 await (await import('./check-sun.mjs')).default(line);
 line(); line('== 25. Following with an offset, the middle of the free sky (tools/check-track.mjs; a failure throws) ==');
 await (await import('./check-track.mjs')).checkTrack({ line });
+line(); line('== 31. Dragging the sky: over the zenith and the pole, on a phone (tools/check-drag.mjs; a failure throws) ==');
+await (await import('./check-drag.mjs')).checkDrag({ line });
 line(); line('== 26. Moons crossing their planets, their shadows, occultations and eclipses (tools/check-moons.mjs; a failure throws) ==');
 await (await import('./check-moons.mjs')).checkMoons(line);
 line(); line('== 27. What students type and click (tools/check-student.mjs; a failure throws) ==');
@@ -439,5 +441,7 @@ await (await import('./check-student.mjs')).checkStudent({ line });
   line(); line('== Development modules (js/dev/): they parse =='); }
 line(); line('== 28. Labs: prompts, stopwatch, angle tool, what gives answers away (tools/check-labs.mjs; a failure throws) ==');
 await (await import('./check-labs.mjs')).checkLabs({ line });
+line(); line('== 30. Spectrograph: model spectra (Wien, Balmer at A, Doppler) and the Hipparcos types (tools/check-spectro.mjs; a failure throws) ==');
+await (await import('./check-spectro.mjs')).checkSpectro({ line });
 line(); line('== 29. Pointing a phone at the sky: attitude, compass, calibration, WMM2025, targets (tools/check-point.mjs; a failure throws) ==');
 await (await import('./check-point.mjs')).checkPoint({ line });

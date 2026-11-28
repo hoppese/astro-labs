@@ -13,7 +13,7 @@ export const FOV_MIN = 0.00004, FOV_MAX = 180;      // 0.14 arcsec to all-sky
 
 export const cam = {
   lon: -180, lat: 28, fov: 90,
-  roll: 0,                    // degrees the picture is turned from the mount's own up; only following with an offset uses it (nav.js), and it eases back to 0
+  roll: 0,                    // degrees the picture is turned from the mount's own up; following with an offset and a drag over the mount's pole (trackBall) use it; it eases back to 0 once nothing holds it (nav.js)
   w: 800, h: 600, cx: 400, cy: 300, s: 1,      // (cx, cy): where the view direction is on screen: the middle of the sky left free by the panels (layout.js)
   ox: 0, oy: 0,               // (cx, cy) less the middle of the canvas
   V: IDENTITY.slice(),        // HOR -> view (rows: right, up, forward)
@@ -84,9 +84,10 @@ export const centerHor = () => [cam.V[6], cam.V[7], cam.V[8]];
  *  equatorial): there a point on the far side of the pole moves the "wrong" way when the camera tilts, and a
  *  step-by-step search either sticks or oscillates. The screen point fixes a direction v in view space; a
  *  camera tilt b puts it at mount latitude asin(vy cos b + vz sin b), which is solved for b; the turn about
- *  the mount's axis then follows. The camera cannot tip over the pole (b stays within +-90), so a drag that
- *  would need to stops at the pole and swings the sky round it instead, as an alt-az or equatorial mount does. */
-let poleGrab = null, poleSide = 0, poleOf = null;
+ *  the mount's axis then follows. The camera cannot tip over the pole (b stays within +-90). A drag that would
+ *  need to (dragging a star across the zenith, say) used to stop at the pole and only swing the sky round it,
+ *  which on a phone felt like a wall. Now the view turns freely there instead (trackBall): the grabbed point
+ *  stays under the finger and the picture may tilt; the tilt (roll) eases back to level once the finger lifts (nav.js). */
 export function bringUnder(g, x, y, frame) {
   const qx = (x - cam.cx) / cam.s, qy = -(y - cam.cy) / cam.s, ca = Math.cos(cam.roll * DEG), sa = Math.sin(cam.roll * DEG);
   const px = cam.roll ? qx * ca - qy * sa : qx, py = cam.roll ? qx * sa + qy * ca : qy;      // on the mount's own axes
@@ -105,26 +106,35 @@ export function bringUnder(g, x, y, frame) {
     // opposite way (longitude jumping by about half a turn) would flip the whole view upside down in one step.
     const lonFor = (bb) => { const mx = -vy * Math.sin(bb) + vz * Math.cos(bb); return Math.hypot(mx, vx) > 1e-9 ? g.lon - Math.atan2(-vx, mx) * RAD : cam.lon; };
     const flip = Math.abs(mod(lonFor(clamp(best, -H, H)) - cam.lon + 180, 360) - 180) > 100 && Math.abs(cam.lat) > 60;
-    if (over(best) > 1e-9 || flip) {
-      // Out of reach: the mount is hard against its pole. Putting the grabbed point "as near as possible" would
-      // whip the sky half a turn as the pointer crosses the centre, so instead hold the pole and turn the sky
-      // about it by exactly as much as the pointer swings round the centre of the view.
-      const ang = Math.atan2(py, px), up = (flip ? cam.lat : best) > 0 ? 1 : -1;
-      // (weighted by the pointer's distance from the centre: close to the axis a tiny movement is a huge swing)
-      const lever = Math.min(1, Math.hypot(x - cam.cx, y - cam.cy) / 90);
-      if (poleGrab !== null && poleSide === up && poleOf === g) cam.lon += up * wrap(ang - poleGrab) * RAD * lever * lever;
-      poleGrab = ang; poleSide = up; poleOf = g;       // (`g` is one object per drag, so a new drag starts afresh)
-      cam.lat = up * 90;
-      update(frame);
-      return;
-    }
+    const short = Math.abs(S) > Rr + 1e-12;                         // no upright tilt brings the point this far round at all
+    if (short || over(best) > 1e-9 || flip) { trackBall(g, qx, qy, frame); return; }      // out of reach upright: turn freely
     b = best;
   }
-  poleGrab = null;
   const cb = Math.cos(b), sb = Math.sin(b);
   const mx = -vy * sb + vz * cb, my = -vx;                         // the point's mount direction for a camera at longitude 0
   cam.lat = b * RAD;
   if (Math.hypot(mx, my) > 1e-9) cam.lon = g.lon - Math.atan2(my, mx) * RAD;      // (at the pole itself longitude is free: leave it)
+  update(frame);
+}
+
+/** Turn the view by the smallest rotation that puts mount-frame point g under the screen offset (qx, qy) (in units of
+ *  cam.s, y up), allowing the picture to tilt: sets lon, lat and roll. Used where an upright camera cannot reach. */
+function trackBall(g, qx, qy, frame) {
+  const r2 = qx * qx + qy * qy, vz = (4 - r2) / (4 + r2), k = (1 + vz) / 2, v = [qx * k, qy * k, vz];      // where g must appear (view space)
+  const gl = g.lon * DEG, gb = g.lat * DEG, gm = [Math.cos(gb) * Math.cos(gl), Math.cos(gb) * Math.sin(gl), Math.sin(gb)];
+  const Vm = mulMM(cam.V, cam.M), v0 = mulMV(Vm, gm);             // mount -> view now, and where g appears now
+  let ax = [v0[1] * v[2] - v0[2] * v[1], v0[2] * v[0] - v0[0] * v[2], v0[0] * v[1] - v0[1] * v[0]];
+  const sn = Math.hypot(ax[0], ax[1], ax[2]), cs = v0[0] * v[0] + v0[1] * v[1] + v0[2] * v[2];
+  if (sn < 1e-12) return;
+  ax = ax.map((c) => c / sn);
+  const t = 1 - cs, [x, y, z] = ax;                                // Rodrigues: the turn taking v0 to v
+  const Q = [cs + x * x * t, x * y * t - z * sn, x * z * t + y * sn, y * x * t + z * sn, cs + y * y * t, y * z * t - x * sn, z * x * t - y * sn, z * y * t + x * sn, cs + z * z * t];
+  const N = mulMM(Q, Vm), R = [N[0], N[1], N[2]], f = [N[6], N[7], N[8]];
+  const lat = Math.asin(clamp(f[2], -1, 1)), lon = Math.hypot(f[0], f[1]) > 1e-9 ? Math.atan2(f[1], f[0]) : cam.lon * DEG;
+  const sl = Math.sin(lon), cl = Math.cos(lon), r = [sl, -cl, 0];
+  const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  cam.lat = lat * RAD; cam.lon = lon * RAD;
+  cam.roll = Math.atan2(R[0] * u[0] + R[1] * u[1] + R[2] * u[2], R[0] * r[0] + R[1] * r[1] + R[2] * r[2]) * RAD;
   update(frame);
 }
 

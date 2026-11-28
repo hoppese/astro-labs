@@ -182,7 +182,7 @@ export function stepNav(now, frame) {
   }
   const h = trackedHor(frame);
   if (h && hold) return placeHeld(frame, h, dt) || sliding;
-  const rolling = easeRoll(dt);
+  const rolling = aim.held ? false : easeRoll(dt);      // (not while a finger holds the sky: a drag over the zenith may have tilted it on purpose)
   if (h) { update(frame); lookAtHor(h); }
   return rolling || sliding;
 }
