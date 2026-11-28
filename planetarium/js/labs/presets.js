@@ -122,7 +122,7 @@ export const LABS = [
       `Mark the instant the Moon’s leading edge first comes out again (totality ends).`,
       `Mark the instant the Moon is completely clear of the umbra. You now have four marks.`,
       `From mark 1 to mark 2 the Moon moved by its own diameter. From mark 1 to mark 3 its leading edge crossed the whole shadow. Press two mark numbers to see the time between them. What is the shadow’s diameter in Moon diameters?`,
-      `Check: <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button>, zoom out until you see all of it, and with ${ANGLE} measure the umbra and the Moon, each from edge to edge. Why might this not agree exactly with your timing?`,
+      `Check: click <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button> to draw the shadow, zoom out until you see all of it, and with ${ANGLE} measure the umbra and the Moon, each from edge to edge. Why might this not agree exactly with your timing?`,
     ],
     about: `The Moon passes almost through the center of the shadow in this eclipse. The Sun is not a point, so the Earth’s shadow tapers: at the Moon it is narrower than the Earth by about one Moon diameter (because the Sun and Moon look the same size). Earth’s diameter ≈ (shadow + 1) Moon diameters. The model enlarges the shadow by 1.4% for the Earth’s atmosphere, as eclipse predictions do. ${STEPKEYS} See ${tao}.` },
   { id: 'eclipse-shape', group: 'Earth and Moon', title: 'The Earth’s round shadow', who: 'Aristotle, about 350 BC',
@@ -131,7 +131,7 @@ export const LABS = [
     steps: [
       `Look at the edge of the shadow on the Moon. Step the clock through the partial phase (<kbd>Shift</kbd> + <kbd>↑</kbd> is 1 minute): is the edge ever straight, or curved the other way?`,
       `Estimate by eye how many times bigger than the Moon the circle is that this arc belongs to.`,
-      `<button class="btn" data-do="shadow">Outline of the Earth’s shadow</button>, zoom out, and measure the circle’s diameter and the Moon’s with ${ANGLE}: click near an edge to snap to it, away from the place where the two edges cross.`,
+      `Click <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button> to draw the shadow, zoom out, and measure the circle’s diameter and the Moon’s with ${ANGLE}: click near an edge to snap to it, away from the place where the two edges cross.`,
     ],
     about: `Only a sphere casts a round shadow from every direction, which was Aristotle’s argument that the Earth is a ball. See ${tao}.` },
   { id: 'moonrise', group: 'Earth and Moon', title: 'Angular size of the Moon from the time it takes to rise', who: 'Aristarchus',

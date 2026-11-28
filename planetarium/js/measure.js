@@ -159,10 +159,11 @@ export function fromNorth(a, rho, pa, frame) {
 export function fmtSep(sep) {
   const dms = fmtDMS(sep, { sign: false, dp: 1 });
   // under 5 arcminutes the reading is given in arcseconds to 0.01 (what small-angle astrometry needs), with arcminutes beside it
-  return sep >= 1 ? `${sep.toFixed(4)}° (${dms})` : sep >= 5 / 60 ? `${(sep * 60).toFixed(3)}′ (${dms.replace(/^0° /, '')})` : sep >= 1 / 60 ? `${(sep * 3600).toFixed(2)}″ (${(sep * 60).toFixed(4)}′)` : `${(sep * 3600).toFixed(2)}″`;
+  // degrees and arcminutes are both given above 5′, so a novice can compare readings made in different units
+  return sep >= 1 ? `${sep.toFixed(4)}° = ${(sep * 60).toFixed(2)}′ (${dms})` : sep >= 5 / 60 ? `${(sep * 60).toFixed(3)}′ = ${sep.toFixed(4)}° (${dms.replace(/^0° /, '')})` : sep >= 1 / 60 ? `${(sep * 3600).toFixed(2)}″ (${(sep * 60).toFixed(4)}′)` : `${(sep * 3600).toFixed(2)}″`;
 }
-/** Short form for the label drawn on the arc. */
-const fmtArc = (s) => (s >= 1 ? s.toFixed(3) + '°' : s >= 1 / 60 ? (s * 60).toFixed(2) + '′' : (s * 3600).toFixed(1) + '″');
+/** Short form for the label drawn on the arc: arcminutes carry their value in degrees, degrees theirs in arcminutes. */
+const fmtArc = (s) => (s >= 1 ? `${s.toFixed(3)}° = ${(s * 60).toFixed(1)}′` : s >= 1 / 60 ? `${(s * 60).toFixed(2)}′ = ${s.toFixed(3)}°` : (s * 3600).toFixed(1) + '″');
 
 export function toggleMeasure(on) {
   measure.active = on === undefined ? !measure.active : on;
@@ -261,7 +262,7 @@ function updatePanel() {
   if (!measure.active && !measure.list.length) { panel.hidden = true; return; }
   const frame = getFrame(), bodies = getBodies(frame);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  let html = '<div class="mp-head">Angular distance</div>';
+  let html = '<div class="mp-head">Angular distance <span class="mp-units">1° = 60′ (arcmin) = 3600″ (arcsec)</span></div>';
   if (measure.active) html += `<div class="mp-hint">${dropped ? '<b>The clock has moved</b>, so the first point was dropped: click it again.' : measure.pending ? 'Click the second point (' + esc(nameOf(measure.pending)) + ' → ?) <button class="mp-x" data-act="undo" title="Take back the first point" aria-label="Take back the first point">&times;</button>' : (measure.byEye ? 'Click near each of two objects. A magnifier opens: place the cross on the center of the image by eye.' + (measure.snap ? ' Discs still snap to center and limb.' : '') : measure.snap ? 'Click two points. Clicks snap to objects; near the edge of a disc they snap to its limb. Each snapped point is off by about half a screen pixel, as a hand would be: zoom in for a finer reading.' : 'Click two points (free: no snapping).')}</div>`;
   const rows = measure.list.map((m) => {
     const a = eqjOf(m.a, frame, bodies), b = eqjOf(m.b, frame, bodies);
