@@ -8,7 +8,7 @@
 //   look: {az, alt} or {ra, dec} in degrees (used when there is no target)
 //   mount: 'altaz' | 'eq'            show: {key: bool}  (state.show)   fx: {key: bool} (state.fx)
 //   lightTime: bool                  rate: number        play: bool
-//   tools: ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections', 'measure']
+//   tools: ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections', 'spectro', 'measure']
 //   obs2: {name, lat, lon, tz}       align: 'stars' | 'sun'
 //   trail: {body, step, before, after, frame}       events: category id
 
@@ -72,7 +72,7 @@ export async function applySetup(s, { ephemeral = true } = {}) {
   if (s.align) setAlign(s.align);
   if (s.closeOthers || s.events) resetEvents(s.events, ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(s.target) ? s.target : '');
   if (s.tools) {
-    for (const id of ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections']) { const c = getCard(id); if (!c) continue; if (s.tools.includes(id)) c.open(); else if (s.closeOthers) c.close(); }
+    for (const id of ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections', 'spectro']) { const c = getCard(id); if (!c) continue; if (s.tools.includes(id)) c.open(); else if (s.closeOthers) c.close(); }
     if (s.tools.includes('measure') !== measure.active) toggleMeasure(s.tools.includes('measure'));
   }
   if (s.clearMeasures) clearMeasures();

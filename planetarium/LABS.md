@@ -396,6 +396,35 @@ Preset: Barnard's star (HIP 87937; shown under that number, HYG has no names bel
 - Angle tool with Snap off, same 10 years, before the data fix: 100.3″. HYG lists this star's pmdec as 9999.99
   mas/yr (a clipped field); `tools/build_stars.py` now restores the Hipparcos value 10326.93 for this one star.
 
+### `star-colors` The colors of the stars, and their temperatures (color photometry)
+Preset: 2027-02-10 02:30 UTC (21:30 local), Richmond, Rigel selected, the notebook open; the same night and the same eleven stars as
+`star-spectra`, so the two temperatures can be compared. Draft: one student-agent pass (fixes made).
+The filter counts are a model (js/photometer.js): a blackbody at the star's temperature from its Hipparcos type (js/spectro.js starTemp,
+the Spectrograph's own; B−V by Ballesteros only for stars with no type), photons counted through Gaussian bands (B 440 nm σ 40,
+G 550 σ 36, R 640 σ 64), scaled so G = the clear V counts and an A0 V star (9,700 K) gives B = G = R. data/sptype.txt loads on the
+first filter click ("measuring…" until then). Key, no noise (each exposure ~0.5%, so a ratio ±0.01):
+- Alnitak O9.5 Ib 31,650 K, B/R 1.76 · Bellatrix B2 III 20,600 K, 1.56 · Rigel B8 Ia 12,500 K, 1.22 · Sirius A0 9,700 K, 1.00
+- Castor A2 V 8,840 K, 0.92 · Procyon F5 IV-V 6,510 K, 0.63 · Polaris F7 Ib 6,280 K, 0.60 · Capella G8 III 4,800 K, 0.38
+- Pollux K0 III 4,660 K, 0.35 · Aldebaran K5 III 4,050 K, 0.26 · Betelgeuse M2 Ib 3,690 K, 0.21
+- Step 5: 3,000 → 4,000 K moves the ratio 0.12 → 0.25; 15,000 → 30,000 K only 1.36 → 1.74. A 1% ratio error is about ±13 K near
+  3,500 K and about ±1,300 K near 30,000 K: color temperatures of the hottest stars are uncertain.
+- Notebook columns as step 2 names them: A star, B B counts, C R counts; the ratio is the formula `B / C`.
+
+### `star-spectra` Spectra: sorting the stars, and their temperatures (Cannon, Wien)
+Preset: 2027-02-10 02:30 UTC (21:30 local), Richmond, Rigel selected, the Spectrograph card open. Draft: not yet run by student agents.
+The spectra are models (js/spectro.js): a blackbody at the temperature of the Hipparcos type, with schematic lines. Key (type, model T,
+peak 2.898e6 / T):
+- Alnitak O9.5 Ib, 31,650 K, 92 nm · Bellatrix B2 III, 20,600 K, 141 nm · Rigel B8 Ia, 12,500 K, 232 nm · Sirius A0 V, 9,700 K, 299 nm
+- Castor A2 V, 8,840 K, 328 nm · Procyon F5 IV-V, 6,510 K, 445 nm · Polaris F7 Ib, 6,280 K, 461 nm
+- Capella G8 III, 4,800 K, 604 nm · Aldebaran K5 III, 4,050 K, 715 nm · Betelgeuse M2 Ib, 3,690 K, 785 nm
+- The six hottest peak at or beyond the left end of the 300–1000 nm view: only a lower limit on T. Peaks read by eye on the M star sit
+  off the continuum's because the TiO bands cut into the top of the curve.
+- Line markers: He II 468.6 only in Alnitak (weak); He I 447/588 strongest in Bellatrix; Hβ deepest in Sirius and Castor; Ca II K
+  deep from Procyon on; Na D and the G band in Capella and Aldebaran; TiO only in Betelgeuse.
+- The cool-end rules, model depths below the continuum: Hδ 410 vs G band 430: Procyon 0.15 vs 0.11, Polaris 0.11 vs 0.16 (F: Hδ at least
+  half the G band), Capella 0.05 vs 0.42 (G). Ca I 422.7 vs G band: Capella 0.17 vs 0.42 (G), Aldebaran 0.44 vs 0.29 (K). Pollux (K0 III) was
+  dropped after the first student run: at the G/K boundary it fails the rule (0.25 vs 0.41).
+
 ### `canopus` A star you cannot see from Greece (Aristotle, Posidonius)
 Preset: 100 BC, Rhodes, second observer Alexandria, refraction off.
 - Canopus on the meridian: Rhodes **0° 53′ 57″**, Alexandria **6° 07′ 45″**: difference **5.230°** (latitudes differ by 5.23°).
@@ -554,6 +583,8 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 | `romer` | Light time, Seen vs. actual, Spot crosses center | the delay is the result (the Red Spot’s times shift by exactly it); Distance stays |
 | `parallax`, `barnard-parallax`, `proxima-parallax` | Distance, Parallax, Proper motion (every star) | the results; RA / Dec to 0.01″ stays for 61 Cygni only |
 | `proper-motion` | Proper motion, Distance, Parallax | the distance is the student’s own, from the Barnard lab, or the instructor’s |
+| `star-colors` | Color index, spectral type, temperature | the color is what the lab measures |
+| `star-spectra` | Color index | B−V gives the temperature; the spectrograph also prints no type and offers no line labels |
 | `zodiac`, `synodic`, `retrograde`, `aberration`, `precession-pole`, `precession-equinox` | nothing | their rows are the raw readings |
 
 Also not offered: date-box steps that are the answer (`months` and `moonrise`: synodic and sidereal month; `moonrise`, `sidereal-day`: sidereal day, and the keys `{` `}` there; `synodic`, `retrograde`: Mars year),

@@ -12,6 +12,7 @@ import { makeCard, getCard, getDock } from './dock.js';
 import { clearMarks, restoreMarks } from './stopwatch.js';
 import { el, esc } from './util.js';
 import { running } from './hidden.js';
+import { phot } from '../photometer.js';
 import { fmtLat, fmtLon } from '../astro.js';
 import { rememberLab, forgetLab, savedLab, resumeText } from './resume.js';
 import { setTime } from '../clock.js';
@@ -36,7 +37,7 @@ export async function startLab(id, { extra = null, at = 0, fresh = false, marks 
   if (!L) return false;
   starting = true; offer = null;
   emit('lab-start', L);           // js/point/: a phone held at the sky lets go, with everything put back, before the lab sets its own
-  lab.current = L; running.id = L.id; running.photometer = !!L.photometer; running.lonErr = L.lonErr || 0; state.keepTracked = false;
+  lab.current = L; running.id = L.id; running.photometer = !!L.photometer; phot.filter = 'clear'; running.lonErr = L.lonErr || 0; state.keepTracked = false;
   clearMarks(); closePanels(); closeBoxes();
   // start clean: no leftovers from another lab
   const base = { closeOthers: true, tools: [], obs2: null, trail: null, clearMeasures: true, lightTime: true, play: false, rate: 1, mount: 'altaz',
@@ -81,7 +82,7 @@ export function labLink(id) { const u = new URL(location.href); u.search = '?lab
 async function endLab() {
   if (!lab.current) return;
   card.close();
-  for (const id of ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections']) getCard(id).close();
+  for (const id of ['stopwatch', 'events', 'compare', 'squareon', 'trails', 'corrections', 'spectro']) getCard(id).close();
   await applySetup({ closeOthers: true, tools: [], obs2: null, trail: null, clearMeasures: true, lightTime: true, t: Date.now(), play: true, rate: 1, mount: 'altaz', target: '', fov: 90,
     fx: { aberration: true, parallax: true, properMotion: true, earthShadow: false }, show: { ...LAB_SHOW } });
 }

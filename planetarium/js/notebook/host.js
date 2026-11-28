@@ -21,7 +21,7 @@ import { createNotebook } from './ui.js';
 import { see, noisePair } from './seeing.js';
 import { rowHidden, running } from '../labs/hidden.js';
 import { lab, labStep, setLabStep } from '../labs/labs.js';
-import { counts as photoCounts } from '../photometer.js';
+import { counts as photoCounts, phot, lastExp, filterWaiting } from '../photometer.js';
 import { setModelSeed } from '../variables.js';
 
 const q = new URLSearchParams(location.search);
@@ -71,8 +71,14 @@ function readings() {
     };
     out.push({ key: 'sunlon', group: 'Ecliptic longitudes (J2000)' + (err ? `, as measured: about ${err}′ of error` : ''), label: 'The Sun', unit: 'deg', kind: 'data', value: lonOf({ kind: 'body', id: 'Sun' }, 1), sig: 0 });
     out.push({ key: 'elon', group: 'Ecliptic longitudes (J2000)' + (err ? `, as measured: about ${err}′ of error` : ''), label: 'The selected object', unit: 'deg', kind: 'data', value: ref && ref.kind !== 'con' ? lonOf(ref, 2) : null, sig: 0, why: why3 }); }
-  { const n = ref ? photoCounts(ref, bodies) : null;
-    out.push({ key: 'counts', group: 'Photometer (selected object)', label: 'Counts in one exposure', unit: 'counts', kind: 'data', value: n, sig: 0, why: ref ? 'nothing to measure there' : why3 }); }
+  { const f = phot.filter, n = ref ? photoCounts(ref, bodies) : null;
+    out.push({ key: 'counts', group: 'Photometer (selected object)', label: 'Counts in one exposure' + (f === 'clear' ? ' (no filter)' : ` (${f} filter)`), unit: 'counts', kind: 'data', value: n, sig: 0, why: ref ? (f === 'clear' ? 'nothing to measure there' : filterWaiting(ref) ? 'measuring… (the catalogue of star types is loading; try again in a moment)' : 'nothing in the catalog to model its color from') : why3 });
+    // the last exposure through each filter, of this object: select a star, take B, then R (its panel's filter buttons), then Record both
+    const k = ref ? refKey(ref) : null;
+    for (const [x, name] of [['B', 'blue'], ['G', 'green'], ['R', 'red']]) {
+      const e = lastExp[x], ok = e && e.key === k;
+      out.push({ key: 'counts' + x, group: 'Photometer (selected object)', label: `Last exposure through the ${x} (${name}) filter`, unit: 'counts', kind: 'data', value: ok ? e.n : null, sig: 0, why: ref ? `no ${x} exposure of this object yet: choose ${x} in its panel’s Photometer row` : why3 });
+    } }
   // a reading the running lab asks the student to find is not offered either (labs/hidden.js)
   for (const [k, l] of [['dist', 'distance'], ['diam', 'angular diameter'], ['lit', 'illuminated']]) { const r = out.find((x) => x.key === k); if (rowHidden(l)) { r.value = null; r.why = 'hidden during this lab'; } }
   return out;

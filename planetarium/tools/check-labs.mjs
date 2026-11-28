@@ -136,6 +136,26 @@ export async function checkLabs({ line }) {
     for (let k = 0; k < 200; k++) c.push(Ph.counts(ref, null, t + k * 1000));
     const mc = c.reduce((a, b) => a + b) / c.length, sd = Math.sqrt(c.reduce((a, b) => a + (b - mc) ** 2, 0) / c.length), N = Math.pow(10, -0.4 * (9.99 - 25));
     need(Math.abs(mc / N - 1) < 0.002 && Math.abs(sd / Math.sqrt(N + (0.005 * N) ** 2) - 1) < 0.2 && Ph.counts(ref, null, t) === Ph.counts(ref, null, t + 400), `photometer counts: mean/N ${mc / N}, sd ratio ${sd / Math.sqrt(N + (0.005 * N) ** 2)}, model seed ${Vb.getModelSeed()}`);
+    // filters (js/photometer.js): a blackbody at T(B−V) through B, G, R; G = the clear counts on average; B−V = 0 gives B = G = R;
+    // hotter = bluer; the star-colors lab's calibration table is the same model
+    { const bodies = { byId: { Jupiter: { mag: 5 } } }, jref = { kind: 'body', id: 'Jupiter' }, Nj = Math.pow(10, -0.4 * (5 - 25)), cg = [], cc = [];
+      for (let k = 0; k < 200; k++) { cg.push(Ph.counts(jref, bodies, t + k * 1000, 'G')); cc.push(Ph.counts(jref, bodies, t + k * 1000, 'clear')); }
+      const mg = cg.reduce((a, b) => a + b) / cg.length, mcl = cc.reduce((a, b) => a + b) / cc.length;
+      need(Math.abs(mg / Nj - 1) < 0.002 && Math.abs(mcl / Nj - 1) < 0.002 && cg[0] !== cc[0], `filter G mean/N ${mg / Nj}, clear ${mcl / Nj}; G and clear must be separate exposures`);
+      need(Math.abs(Ph.filterFactor('B', Ph.T_A0V) - 1) < 1e-9 && Math.abs(Ph.filterFactor('R', Ph.T_A0V) - 1) < 1e-9, `an A0 V star: B ${Ph.filterFactor('B', Ph.T_A0V)}, R ${Ph.filterFactor('R', Ph.T_A0V)}, both should be 1`);
+      // the filters and the spectrograph give a star one and the same temperature (js/spectro.js starTemp), from its Hipparcos type
+      { const Sp = await import('../js/spectro.js'), { readFileSync } = await import('node:fs'), m = new Map(); let hip = 0;
+        for (const ln of readFileSync(new URL('../data/sptype.txt', import.meta.url), 'utf8').split('\n')) { if (!ln) continue; const sp = ln.indexOf(' '); hip += sp > 0 ? +ln.slice(0, sp) : 1; m.set(hip, ln.slice(sp + 1)); }
+        Sp.useTypes(m);
+        const T = (h, bv) => Sp.starTemp(m.get(h), bv).T, al = T(26727, -0.199), be = T(25336, -0.224), bg = T(27989, 1.5), ad = T(21421, 1.538);
+        need(al > be && be > T(24436, -0.03) && ad > bg && Ph.ratioBR(al) > Ph.ratioBR(be) && Ph.ratioBR(ad) > Ph.ratioBR(bg), `type temperatures in order: Alnitak ${al}, Bellatrix ${be}, Aldebaran ${ad}, Betelgeuse ${bg}`);
+        need(Sp.typesLoaded(), 'types loaded for the check'); }
+      const Ts = [2500, 3000, 4000, 6000, 10000, 20000, 40000], rs = Ts.map(Ph.ratioBR);
+      need(rs.every((r, i) => !i || r > rs[i - 1]), `B/R must rise with temperature: ${rs.map((r) => r.toFixed(3))}`);
+      need(Ph.counts(jref, bodies, t, 'R') === Ph.lastExp.R.n && Ph.lastExp.R.key === 'bJupiter', 'the last R exposure is remembered for Record');
+      const L = (await import('../js/labs/presets.js')).labById('star-colors'), rows = [...L.steps.join(' ').matchAll(/<td>([\d.]+)<\/td><td>([\d,]+) K<\/td>/g)];
+      need(rows.length >= 10 && rows.every((m) => Ph.ratioBR(+m[2].replace(/,/g, '')).toFixed(2) === m[1]), `star-colors table must be the model's: ${rows.map((m) => m[1] + '@' + m[2]).join(' ')}`);
+      line(`  photometer filters: G = clear within ${(Math.abs(mg / Nj - 1) * 100).toFixed(2)}%; B/R from ${rs[0].toFixed(2)} (2,500 K) to ${rs[rs.length - 1].toFixed(2)} (40,000 K); the star-colors table (${rows.length} rows) matches the model`); }
     // the answer keys of LABS.md, from the models
     const dCep = Vb.VAR_BY_HIP.get(110991), Mv = (P) => -2.43 * (Math.log10(P) - 1) - 4.05, pc = (mu) => Math.pow(10, mu / 5 + 1);
     line(`  standard candles: ${Vb.VARIABLES.length} variables inside their catalog ranges, peaks of 3 supernovae, M31 V1 mean 19.40, photometer noise ${(sd / mc * 100).toFixed(2)}% at mag 9.99; `

@@ -74,8 +74,11 @@
 .lab-card .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 .15em; font-size: .92em; line-height: 1.2; }
 .lab-card .frac > span { padding: 0 .25em; }
 .lab-card .frac > span + span { border-top: 1px solid currentColor; }
+.lab-card .lab-tab { border-collapse: collapse; margin: 4px 0 6px; font-variant-numeric: tabular-nums; }
+.lab-card .lab-tab th, .lab-card .lab-tab td { padding: 1px 10px 1px 0; text-align: right; }
+.lab-card .lab-tab th { font-weight: 600; }
 .lab-card .lab-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; color: var(--muted); font-size: 11.5px; }
-.lab-card .lab-nav .btn { min-width: 40px; display: inline-flex; align-items: center; justify-content: center; }
+.lab-card .lab-nav .btn { min-width: 40px; min-height: 26px; padding: 3px 10px; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; }      /* (notebook.css's .lab-nav .btn has padding 0)
 .lab-card.stepwise h3, .lab-card.stepwise .who { display: none; }
 .lab-card.stepwise .lcard-head .ttl { white-space: normal; line-height: 1.25; }
 .lab-card .lab-step .btn { padding: 2px 8px; margin: 1px 0; white-space: nowrap; }
@@ -155,3 +158,12 @@ html.nb-slim .bottombar .place { display: none; }
 .lab-seed { font-size: 12px; color: #9fb0bf; }
 .sq-cv { display: block; width: 100%; aspect-ratio: 1 / 0.92; margin-top: 7px; border-radius: 8px; background: #05080e; cursor: crosshair; touch-action: none; }
 .sq-read { font-family: var(--mono); font-size: 12px; color: #eef2f6; }
+
+/* spectrograph (js/labs/spectrograph.js) */
+.spg-head { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; } .spg-head b { color: #fff; font-size: 13px; } .spg-head small { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+.spg-plot { display: block; cursor: crosshair; touch-action: none; }
+.spg-strip { display: block; margin-top: 2px; border-radius: 3px; }
+.spg-read { margin-top: 6px; font: 400 11.5px var(--mono); color: #cfd9e5; line-height: 1.5; min-height: 1.5em; } .spg-read b { color: #ffd66b; font-weight: 600; }
+.spg-zoom input[type=number] { width: 70px; }
+.spg-ycap { color: var(--muted); font-size: 11px; margin-top: 4px; }
+.spg-views { display: inline-flex; gap: 4px; } .spg-views .btn { padding: 4px 9px; }

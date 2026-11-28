@@ -180,8 +180,10 @@ export function createNotebook(root, opts = {}) {
       (c.kind === 'const' ? `<div class="nb-h2">= <b>${esc(fmtNum(+c.value, c.sig))}</b></div><div class="nb-h3">${esc(c.from || '')}</div>` : '') + (r.head ? `<div class="nb-h2">${esc(r.head)}${r.rule && !waiting ? ` <b>${esc(r.rule)}</b>` : ''}</div>` : r.kind === 'recorded' ? `<div class="nb-h2 rec">${esc(r.text)}</div>` : '') +
       (r.error ? `<div class="nb-h3 err">${esc(r.error)}</div>` : waiting ? '<div class="nb-h3"><button class="nb-link" data-predict="' + c.id + '">bigger or smaller? tap to fill</button></div>' : r.why ? `<div class="nb-h3${r.warn ? ' err' : ''}">${esc(r.why)}</div>` : '') + '</th>';
   }
+  let shownCols = null;      // the columns the table showed last time: a column just added is scrolled into view
   function renderTable() {
     if (!nb.cols.length) {
+      shownCols = [];
       tableWrap.innerHTML = `<div class="nb-empty"><p><b>This table is empty.</b> Set it up yourself: add a column for each thing you will measure or type in, give it a name and a unit.</p>
         <p><button class="nb-btn primary" data-act="addcol" aria-haspopup="true">Add Column</button>${host ? ' <button class="nb-btn" data-act="recsetup">Choose what Record copies</button>' : ''} <button class="nb-btn" data-act="import">Open a CSV file</button></p>
         <p class="nb-hint">You can also paste a block of cells here. To try the graph and the sliders first: <button class="nb-link" data-act="practice" aria-haspopup="true">practice data</button> (made up).</p>
@@ -199,6 +201,12 @@ export function createNotebook(root, opts = {}) {
     html += '</tbody></table>' + (nb.rows.length ? '' : '<div class="nb-hint pad">No rows yet. Press <b>Add Row</b> and type' + (host ? ', or <b>Record</b> to copy a reading from the sky' : '') + '. You can also paste a block of cells.</div>');
     const was = [tableWrap.scrollLeft, tableWrap.scrollTop];
     tableWrap.innerHTML = html; tableWrap.scrollLeft = was[0]; tableWrap.scrollTop = was[1];
+    { const ids = nb.cols.map((c) => c.id), added = shownCols ? ids.filter((id) => !shownCols.includes(id)) : [];
+      if (shownCols && shownCols.every((id) => ids.includes(id)) && added.length >= 1 && added.length <= 3) {
+        const th = tableWrap.querySelector(`th[data-col="${added[added.length - 1]}"]`), w = tableWrap.getBoundingClientRect(), r = th && th.getBoundingClientRect();
+        if (r && (r.right > w.right || r.left < w.left)) tableWrap.scrollLeft += r.right > w.right ? r.right - w.right + 8 : r.left - w.left - 8;
+      }
+      shownCols = ids; }
     refreshComputed();
   }
   // a typed cell keeps exactly what was typed; a recorded number is shown with the column's figures

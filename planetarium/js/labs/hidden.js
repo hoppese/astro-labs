@@ -20,6 +20,8 @@ export const HIDDEN = {
   'kepler-earth': ['ecliptic lon', 'ra / dec', 'distance', 'light time', 'angular diameter', 'elongation', 'illuminated'], 'kepler-orbit': ['ecliptic lon', 'ra / dec', 'distance', 'light time', 'angular diameter', 'elongation', 'illuminated'],
   'sn-ia': ['magnitude now'], 'sn-types': ['magnitude now', 'type'],
   canopus: TRANSIT, 'sidereal-day': TRANSIT, analemma: TRANSIT, 'polaris-latitude': [...TRANSIT, 'ra / dec'], 'precession-pole': [], 'precession-equinox': [],
+  'star-spectra': ['color index', 'variable'],      // B−V gives the temperature away; Polaris's variable type hints at its class
+  'star-colors': ['color index', 'spectral', 'temperature', 'variable'],      // the color the lab measures, and anything that names the temperature
 };
 /** Is the row with this label (may contain HTML) hidden now? */
 export function rowHidden(label) {
@@ -29,6 +31,8 @@ export function rowHidden(label) {
 }
 /** True while the running lab asks for the latitude: the place shows its name only (ui.js, the screenshot caption). */
 export const latitudeHidden = () => running.id === 'polaris-latitude' && !INSTRUCTOR;
+/** True while the running lab asks the student to classify spectra: the spectrograph prints no type and has no line labels (labs/spectrograph.js). */
+export const spectroHidden = () => ['star-spectra'].includes(running.id) && !INSTRUCTOR;
 
 // ---- other things that would give a lab's answer away ----
 // steps of the date box (ui.js) whose size IS what the lab measures: the label without its sign, as in ui.js STEPS

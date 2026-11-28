@@ -15,6 +15,7 @@ import { getCard } from './dock.js';
 import { initShadow, drawShadow } from './shadow.js';
 import { initStopwatch, mark } from './stopwatch.js';
 import { initCorrections, setFx } from './corrections.js';
+import { initSpectrograph } from './spectrograph.js';
 import { initEvents } from './events.js';
 import { initCompare, drawCompare } from './compare.js';
 import { initSquareOn } from './squareon.js';
@@ -38,6 +39,7 @@ const MENU = [
   { id: 'squareon', ico: '&#9673;', label: 'Earth seen square-on (from the Moon or Sun)', card: 'squareon' },
   { id: 'trails', ico: '&#8767;', label: 'Path of an object', card: 'trails' },
   { id: 'corrections', ico: '&#916;', label: 'Corrections · effects', card: 'corrections' },
+  { id: 'spectro', ico: '&#127752;', label: 'Spectrograph', card: 'spectro' },
   { id: 'shadow', ico: '&#9681;', label: 'Outline of the Earth’s shadow', run: () => setFx('earthShadow', !state.fx.earthShadow), on: () => state.fx.earthShadow },
   { id: 'measure', ico: '&#8736;', label: 'Measure an angle', k: 'R', run: () => toggleMeasure(), on: () => measure.active },
   { id: 'notebook', ico: '&#9638;', label: 'Lab notebook · table, graph, model', run: () => toggleNotebook(), on: () => notebookOpen() },
@@ -110,7 +112,7 @@ export function initLabsSuite() {
   document.head.appendChild(link);
   initShadow();
   initLabs();                     // the lab card sits at the top of the dock
-  initStopwatch(); initEvents(); initCompare(); initSquareOn(); initTrails(); initCorrections();
+  initStopwatch(); initEvents(); initCompare(); initSquareOn(); initTrails(); initCorrections(); initSpectrograph();
   addOverlay(drawShadow); addOverlay(drawTrail); addOverlay(drawCompare);
   buildMenu();
   window.addEventListener('keydown', keys, true);

@@ -17,7 +17,7 @@ export function fmtNum(x, sig = 4) {
   if (x === 0) return '0';
   const neg = x < 0, a = Math.abs(x);
   const full = !sig;
-  const p = full ? 10 : Math.max(1, Math.min(15, sig));
+  const p = full ? (Number.isInteger(a) && a < 1e15 ? Math.max(10, String(a).length) : 10) : Math.max(1, Math.min(15, sig));      // a whole number (photometer counts) keeps every digit
   let [m, e] = a.toExponential(p - 1).split('e'); e = +e;
   if (full) m = String(+m);
   let out;

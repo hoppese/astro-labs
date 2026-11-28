@@ -23,7 +23,7 @@ import { sun, initSun, groupsAt, onDisc, cycleFacts } from './sunspots.js';
 import { openSunPanel } from './sunpanel.js';
 import { rowHidden, running, groundStays } from './labs/hidden.js';
 import { moonLight } from './labs/shadow.js';
-import { counts as photoCounts } from './photometer.js';
+import { counts as photoCounts, phot, filterWaiting, loadTypes } from './photometer.js';
 import { VAR_BY_HIP, TYPE_NAME, varMag, jdOf, TRANSIENT, transientMag } from './variables.js';
 import { smallWindow } from './layout.js';
 
@@ -59,6 +59,7 @@ export function initInfo(el) {
     else if (act === 'whenup') { const u = upNext(state.selected); if (u) { setTime(u.go); centerOn(state.selected); } }
     else if (act === 'sunpanel') openSunPanel();
     else if (act === 'parent') { select({ kind: 'body', id: b.dataset.id }); }
+    else if (act === 'filter') { phot.filter = b.dataset.f; render(true); }
   });
 }
 
@@ -240,7 +241,7 @@ function render(force) {
     type = 'Star';
     const vr = VAR_BY_HIP.get(s.hip);
     if (vr) {      // a Cepheid or RR Lyrae star: its brightness now from the catalog's elements (js/variables.js), and the elements themselves
-      type = TYPE_NAME[vr.type];
+      type = rowHidden('Variable') ? 'Star' : TYPE_NAME[vr.type];      // a Cepheid's type names its spectral class (labs/hidden.js)
       row('Magnitude now', vr.quiet ? fmtMag(s.mag) + ' (V; varies by a few hundredths)' : fmtMag(varMag(vr, jdOf(state.timeMs))) + ' (V, a model)');
       row('Variable', `V ${vr.max.toFixed(2)} to ${vr.min.toFixed(2)}, period ${vr.P} days (GCVS)`);
     } else row('Magnitude', fmtMag(s.mag) + ' (V)');
@@ -248,7 +249,7 @@ function render(force) {
     row('Distance', s.dist ? `${sig(s.dist * LY_PER_PC, 3)} ly (${sig(s.dist, 3)} pc)` : ND);
     // where the place and proper motion come from (tools/build_stars.py); everything else is HYG's
     if (s.src != null && ASTROMETRY[s.src]) note = 'Position and proper motion: ' + ASTROMETRY[s.src] + '.';
-    if (vr) note = (vr.quiet ? 'Polaris is a Cepheid whose swing has shrunk to a few hundredths of a magnitude; it is drawn steady. ' : 'Its brightness here is a <b>model</b>, not a measurement: a smooth curve through the catalog’s maximum, minimum, period, date of maximum and rise time (General Catalogue of Variable Stars). Real curves have bumps this one lacks, and the phase today can be off by part of a cycle. ') + (note || '');
+    if (vr && !rowHidden('Variable')) note = (vr.quiet ? 'Polaris is a Cepheid whose swing has shrunk to a few hundredths of a magnitude; it is drawn steady. ' : 'Its brightness here is a <b>model</b>, not a measurement: a smooth curve through the catalog’s maximum, minimum, period, date of maximum and rise time (General Catalogue of Variable Stars). Real curves have bumps this one lacks, and the phase today can be off by part of a cycle. ') + (note || '');
   } else if (ref.kind === 'gaia') {
     // a star of the Gaia DR3 layers: every number is Gaia's own (the tile's rounded copy until the full record arrives)
     const s = deepRecord(ref);
@@ -337,7 +338,13 @@ function render(force) {
   }
 
   // the standard-candle labs: what the photometer collects from it in one exposure (js/photometer.js)
-  if (running.photometer && ref.kind !== 'con' && ref.kind !== 'dso') { const n = photoCounts(ref, getBodies(getFrame())); if (n != null) row('Photometer', n.toLocaleString('en-US') + ' counts (one exposure)'); }
+  if (running.photometer && ref.kind !== 'con' && ref.kind !== 'dso') {
+    const n = photoCounts(ref, getBodies(getFrame())), f = phot.filter;
+    const fb = ['clear', 'B', 'G', 'R'].map((x) => `<button class="btn phot-f${x === f ? ' on' : ''}" data-act="filter" data-f="${x}" aria-pressed="${x === f}" title="${x === 'clear' ? 'No filter' : { B: 'Blue', G: 'Green', R: 'Red' }[x] + ' filter'}">${x === 'clear' ? 'Clear' : x}</button>`).join('');
+    const wait = f !== 'clear' && filterWaiting(ref);
+    if (wait) loadTypes().then(() => render(true), () => {});      // the catalogue of types, once (js/spectro.js)
+    row('Photometer', (wait ? '<span class="nodata">measuring…</span>' : n != null ? n.toLocaleString('en-US') + ' counts (one exposure' + (f === 'clear' ? '' : `, ${f} filter`) + ')' : '<span class="nodata">nothing in the catalog to model its color from</span>') + `<div class="phot-fs">${fb}</div>`);
+  }
 
   // --- where it is ---
   const j = toSph(eqj), d = toSph(mulMV(frame.Mjd, eqj));
