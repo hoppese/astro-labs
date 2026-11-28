@@ -64,6 +64,34 @@ can Read.
   thought), answer it without editing.
 - Finish with a reply of 1 to 3 plain sentences saying what you changed (or why not). It is shown to him as a pop-up.`;
 
+// ---- what he wants, from what he says: a fast model reads the running transcript (no tools, no files) and returns requests ----
+const INTENT = `You listen to Seth, an astronomy instructor, thinking aloud while he tests his planetarium web app. You get a transcript
+(speech recognition: expect misheard words) as numbered lines with times in seconds. Lines before the marker NEW were handled already:
+use them only as context. Find, in the NEW lines, requests for the assistant to change, fix, add, remove or check something in the app.
+He may or may not say "Hey Claude". Ignore musing, reading text aloud, talking to other people, and remarks that ask for nothing.
+- Merge pieces of one request split by pauses into one request; separate requests stay separate.
+- Write each request as one clear, self-contained instruction in his words (resolve "it"/"that" from the context or the recent requests).
+- A follow-up to a recent request ("also make it bigger", "no, the other one") is a NEW request, written so that it stands alone.
+- If he cancels ("never mind", "scratch that") a request that was not sent yet, drop it.
+- If he seems to be in the middle of a request (trailing off, "and...", "it should be...", a setup without the ask), return
+  "waiting": true and no requests, unless the message says he has stopped talking.
+Return ONLY JSON: {"requests": ["..."], "waiting": false}`;
+function readIntent({ lines = [], cut = 0, recent = [], final = false }) {
+  const text = lines.map((l, i) => (i === cut ? 'NEW\n' : '') + `#${i} [${Math.round(l.t)}s] ${String(l.text).slice(0, 600)}`).join('\n');
+  const prompt = `${INTENT}\n\nRecent requests already sent (do not repeat): ${JSON.stringify(recent.slice(-6))}\n${final ? 'He has stopped talking for a while: return any request that is there, even if it looks unfinished.\n' : ''}\nTranscript:\n${text}`;
+  return new Promise((resolve) => {
+    const p = spawn('claude', ['-p', prompt, '--model', 'haiku', '--output-format', 'json', '--tools', ''], { cwd: HERE, env: process.env });
+    let out = '';
+    p.stdout.on('data', (d) => { out += d; });
+    p.on('close', () => {
+      try {
+        const r = String(JSON.parse(out).result || ''), m = r.match(/\{[\s\S]*\}/), j = m ? JSON.parse(m[0]) : {};
+        resolve({ requests: Array.isArray(j.requests) ? j.requests.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()) : [], waiting: !!j.waiting });
+      } catch (e) { resolve({ requests: [], waiting: false, error: 'could not read the model' }); }
+    });
+  });
+}
+
 let session = null, busy = false, seq = 0;
 const jobs = new Map(), queue = [];
 
@@ -165,6 +193,12 @@ const server = http.createServer((req, res) => {
     let unpushed = [];
     try { unpushed = git('log', '--format=%h %s', '@{upstream}..HEAD').split('\n').filter(Boolean).map((l) => ({ hash: l.slice(0, l.indexOf(' ')), subject: l.slice(l.indexOf(' ') + 1) })); } catch (e) { /* no upstream: fine */ }
     send(200, { head: git('rev-parse', 'HEAD'), busy, jobs: [...jobs.values()].reverse().map((j) => ({ id: j.id, text: j.text, state: j.state, ok: j.ok, reply: j.reply, commit: j.commit, undone: !!j.undone, at: j.at, startedAt: j.startedAt, doneAt: j.doneAt, ahead: queue.indexOf(j) })), unpushed });
+    return;
+  }
+  if (req.method === 'POST' && url.pathname === '/intent') {
+    let body = '';
+    req.on('data', (d) => { body += d; if (body.length > 2e5) req.destroy(); });
+    req.on('end', async () => { let o; try { o = JSON.parse(body); } catch (e) { send(400, { error: 'bad json' }); return; } const r = await readIntent(o); if (r.requests.length || r.waiting) console.log('[intent]', JSON.stringify(r)); send(200, r); });
     return;
   }
   if (req.method === 'GET' && url.pathname === '/whisper') { send(200, { ok: WHISPER_OK }); return; }

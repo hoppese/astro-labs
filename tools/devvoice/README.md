@@ -5,7 +5,11 @@
 3. Open http://127.0.0.1:8111/planetarium/ in Chrome, switch on **☰ → Dev voice** (the item appears only when the page is served from
    this laptop, never on the live site), press **Start** on the small panel at the bottom right, and allow the microphone.
    The panel's **Changes** list shows every request: waiting, working, changed, answered, undone, and the commits not yet pushed.
-4. Use the app. Say **“Hey Claude, …”** and what should change (“…the photometer row should be bold”); pause to send.
+4. Use the app and talk. With Whisper the panel listens all the time: every utterance goes into a running transcript, and after about
+   2.5 s of quiet a fast model (Claude Haiku, through the same `claude` command, no tools) reads the new part, with the earlier part as
+   context, and picks out what you asked for: pieces split by pauses are joined, follow-ups (“also make it bigger”) understood, musing
+   ignored. If you stopped mid-thought it waits (up to about 12 s of quiet). Each request shows as **About to do: …** for 3 s with
+   **Cancel**, then goes to the queue. No wake word is needed (with Chrome's recognizer, the fallback, “Hey Claude, …” still is).
    “Hey Claude, cancel” drops it. **Undo** reverts the last change.
    Chrome’s recognizer often mishears the name (common slips such as “a slot” or “hey cloud” are accepted). For better accuracy press
    **`** (backtick) or ⌨: a request box opens, focused, so any dictation tool you prefer can fill it; Enter sends, Esc closes.
