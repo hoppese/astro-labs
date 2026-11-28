@@ -69,14 +69,9 @@ Student marks the four umbral contacts.
 - The shadow uses the eclipse-prediction model: Earth's radius 6371 + 88 km of atmosphere (1.4% enlargement).
 - Other central eclipses: 2000-07-16, 2029-06-26 (umbra/Moon 2.66 and 2.74).
 
-### `eclipse-shape` The Earth's round shadow (Aristotle)
-Preset: 2019-01-21 04:05 UTC, Richmond, partial phase. Done in full in the integration pass (real clicks and keys):
-- Stepped 04:05 → 04:30 UTC a minute at a time (`Shift + ↑`): the edge on the Moon is a circular arc throughout, never
-  straight, always curved the same way.
-- Outline on (Labs menu), zoomed out to 3.7°, angle tool: umbra limb to limb **1.5563°** (93.38′); Moon limb to limb
-  **33.910′** (info panel 33.9′). Umbra / Moon = **2.754** (model 2.75).
-- Take the Moon's limbs where the shadow's edge does not cross them (top and bottom here): a click where the two
-  outlines meet snaps to the umbra ("Umbra limb → Moon limb" in the list tells you it did).
+- **Shape (merged in from `eclipse-shape`, 2026-11-28):** step 2 now asks for the edge's shape during the partial phase and a by-eye
+  estimate of the circle's size. Measured in the old lab (2019-01-21, Richmond): the edge is a circular arc throughout; umbra / Moon
+  limb to limb = 2.754 (model 2.75). Old links `?lab=eclipse-shape` open this lab.
 
 ### `moonrise` Angular size of the Moon from its rising time (Aristarchus)
 Preset: 2027-09-15 23:04:30 UTC, Quito (on the equator), looking east, full Moon at declination +0.4°,
@@ -501,7 +496,7 @@ recorded (8° and 6°). Rate 2.29° in 165 years = **1.39° per century = 50.0�
 
 | Rung (Tao) | Lab |
 |---|---|
-| Aristotle: round shadow in lunar eclipses | `eclipse-shape` |
+| Aristotle: round shadow in lunar eclipses | `eclipse-timing` (merged 2026-11-28) |
 | Aristotle: stars seen in Egypt but not Greece | `canopus` |
 | Eratosthenes | `eratosthenes` |
 | Aristarchus: eclipse duration → Moon's distance and size | `eclipse-timing` |
@@ -539,7 +534,6 @@ it. The "Look it up" links are left. Checked by starting every lab and reading t
 | Lab | Hidden | Why; what stays on purpose |
 |---|---|---|
 | `eclipse-timing`, `eclipse-two-sites` | Distance, Light time, Angular diameter; `eclipse-timing` also Magnitude | sizes are measured, the Moon's distance is the result; the magnitude would show the contacts |
-| `eclipse-shape` | Angular diameter | measured limb to limb |
 | `moonrise` | Angular diameter, Rise / Set, Transit, Hour angle | the result; the lunar day is timed (Hour angle reads 0 at the answer). No “Hide the ground” button |
 | `lunar-parallax`, `moon-apsides`, `sun-apsides`, `sun-moon-size` | Distance, Light time, Angular diameter | the results |
 | `months` | Rise / Set, Transit, Hour angle | crossings are timed at the meridian line |

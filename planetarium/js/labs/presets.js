@@ -113,27 +113,19 @@ export const GROUPS = ['Earth and Moon', 'The Sun', 'The planets', 'The astronom
 
 export const LABS = [
   // ------------------------------------------------------------------ Earth and Moon
-  { id: 'eclipse-timing', group: 'Earth and Moon', title: 'Size of the Moon from a lunar eclipse', who: 'Aristarchus, about 270 BC',
-    blurb: 'Time the Moon crossing the Earth’s shadow.',
+  { id: 'eclipse-timing', group: 'Earth and Moon', title: 'The Earth’s shadow on the Moon: its shape, and the Moon’s size', who: 'Aristotle, about 350 BC; Aristarchus, about 270 BC',
+    blurb: 'Watch the round edge of the shadow, then time the Moon crossing it.',
     setup: { t: '2018-07-27T17:50:00Z', loc: P.nairobi, target: 'Moon', track: true, fov: 2.4, mount: 'eq', show: { refraction: false }, fx: { earthShadow: false }, tools: ['stopwatch'] },
     steps: [
       `The Moon is about to enter the Earth’s dark inner shadow (the umbra). Zoom in on it, ${RUN} until the dark edge first touches the Moon, step to the moment and press <b>Mark time</b>.${FINE}`,
+      `The shape of the shadow. As the Moon slides in, look at the edge of the shadow on it, stepping a few minutes at a time (<kbd>Shift</kbd> + <kbd>↑</kbd> is 1 minute). Is the edge ever straight, or curved the other way? Estimate by eye how many times bigger than the Moon the circle is that this arc belongs to, and write it down.`,
       `Mark the instant the Moon is completely inside the umbra (totality begins).`,
       `Mark the instant the Moon’s leading edge first comes out again (totality ends).`,
       `Mark the instant the Moon is completely clear of the umbra. You now have four marks.`,
       `From mark 1 to mark 2 the Moon moved by its own diameter. From mark 1 to mark 3 its leading edge crossed the whole shadow. Press two mark numbers to see the time between them. Because the Moon moves at a steady rate, the ratio of the times is the ratio of the distances: shadow diameter ÷ Moon diameter = (time from mark 1 to 3) ÷ (time from mark 1 to 2). What is the shadow’s diameter in Moon diameters?`,
-      `Check: click <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button> to draw the shadow, zoom out until you see all of it, and with ${ANGLE} measure the umbra and the Moon, each from edge to edge. Why might this not agree exactly with your timing?`,
+      `Check: click <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button> to draw the shadow, zoom out until you see all of it, and with ${ANGLE} measure the umbra and the Moon, each from edge to edge (click near an edge to snap to it, away from where the two edges cross). How do the timing, the measurement and your estimate by eye compare? Why might they not agree exactly?`,
     ],
-    about: `The Moon passes almost through the center of the shadow in this eclipse. The Sun is not a point, so the Earth’s shadow tapers: at the Moon it is narrower than the Earth by about one Moon diameter (because the Sun and Moon look the same size). Earth’s diameter ≈ (shadow + 1) Moon diameters. The model enlarges the shadow by 1.4% for the Earth’s atmosphere, as eclipse predictions do. ${STEPKEYS} See ${tao}.` },
-  { id: 'eclipse-shape', group: 'Earth and Moon', title: 'The Earth’s round shadow', who: 'Aristotle, about 350 BC',
-    blurb: 'The edge of the shadow on the Moon is always an arc of a circle.',
-    setup: { t: '2019-01-21T04:05:00Z', loc: P.richmond, target: 'Moon', track: true, fov: 1.5, mount: 'eq', show: { refraction: false }, fx: { earthShadow: false } },
-    steps: [
-      `Look at the edge of the shadow on the Moon. Step the clock through the partial phase (<kbd>Shift</kbd> + <kbd>↑</kbd> is 1 minute): is the edge ever straight, or curved the other way?`,
-      `Estimate by eye how many times bigger than the Moon the circle is that this arc belongs to.`,
-      `Click <button class="btn" data-do="shadow">Outline of the Earth’s shadow</button> to draw the shadow, zoom out, and measure the circle’s diameter and the Moon’s with ${ANGLE}: click near an edge to snap to it, away from the place where the two edges cross.`,
-    ],
-    about: `Only a sphere casts a round shadow from every direction, which was Aristotle’s argument that the Earth is a ball. See ${tao}.` },
+    about: `Only a sphere casts a round shadow from every direction: Aristotle’s argument that the Earth is a ball. The Moon passes almost through the center of the shadow in this eclipse. The Sun is not a point, so the Earth’s shadow tapers: at the Moon it is narrower than the Earth by about one Moon diameter (because the Sun and Moon look the same size). Earth’s diameter ≈ (shadow + 1) Moon diameters. The model enlarges the shadow by 1.4% for the Earth’s atmosphere, as eclipse predictions do. ${STEPKEYS} See ${tao}.` },
   { id: 'moonrise', group: 'Earth and Moon', title: 'Angular size of the Moon from the time it takes to rise', who: 'Aristarchus',
     blurb: 'How long does the Moon take to climb over the horizon?',
     setup: { t: '2027-09-15T23:04:30Z', loc: P.quito, look: { az: 89.65, alt: 0.25 }, target: 'Moon', fov: 1.6, show: { refraction: false, atmosphere: false, azGrid: false, conLines: false, conNames: false }, tools: ['stopwatch'] },
@@ -562,4 +554,6 @@ export const LABS = [
     about: 'Hipparchus found that Spica was 6° from the equinox where Timocharis had found 8°, and concluded the equinox moves at least 1° a century. Precession here is the full IAU model in astronomy-engine.' },
 ];
 
-export const labById = (id) => LABS.find((l) => l.id === id);
+/** Labs that were merged into another keep working from old links. */
+const MERGED = { 'eclipse-shape': 'eclipse-timing' };
+export const labById = (id) => LABS.find((l) => l.id === (MERGED[id] || id));

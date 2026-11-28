@@ -9,7 +9,7 @@ export const INSTRUCTOR = typeof location !== 'undefined' && new URLSearchParams
 // 'hour angle' is hidden where the student times a crossing of the meridian by eye (it reads 0 at the answer)
 const DIST = ['distance', 'light time'], SIZE = ['angular diameter'], TRANSIT = ['rise / set', 'transit'], STAR = ['distance', 'parallax', 'proper motion'];
 export const HIDDEN = {
-  'eclipse-timing': [...DIST, ...SIZE, 'magnitude'], 'eclipse-shape': SIZE, moonrise: [...SIZE, ...TRANSIT, 'hour angle'], 'lunar-parallax': [...DIST, ...SIZE],
+  'eclipse-timing': [...DIST, ...SIZE, 'magnitude'], moonrise: [...SIZE, ...TRANSIT, 'hour angle'], 'lunar-parallax': [...DIST, ...SIZE],
   'eclipse-two-sites': [...DIST, ...SIZE], 'moon-apsides': [...DIST, ...SIZE], months: [...TRANSIT, 'hour angle'],
   'half-moon': [...DIST, 'elongation'], 'sun-moon-size': [...DIST, ...SIZE], eratosthenes: TRANSIT, 'sun-apsides': [...DIST, ...SIZE],
   obliquity: [...TRANSIT, 'ra / dec'], zodiac: [], elongation: ['elongation'], synodic: [], retrograde: [],

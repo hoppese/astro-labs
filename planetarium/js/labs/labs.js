@@ -3,6 +3,7 @@
 
 import { state, emit, set } from '../state.js';
 import { LABS, GROUPS, labById, truthFor } from './presets.js';
+import { GUIDES } from './guides.js';
 import { INSTRUCTOR } from './hidden.js';
 import { see } from '../notebook/seeing.js';
 import { getModelSeed } from '../variables.js';
@@ -62,6 +63,8 @@ function renderCard() {
   card.root.classList.add('stepwise');
   card.title.textContent = L.title;
   card.body.innerHTML = `<h3>${esc(L.title)}</h3><div class="who">${esc(L.who)}</div>` +
+    // the full guide (guide/<id>.html: background, diagrams from other points of view, the steps in detail), where there is one
+    (GUIDES.has(L.id) ? `<a class="lab-guide" href="guide/${L.id}.html" target="_blank" rel="noopener">Full guide: background, diagrams, step by step ↗</a>` : '') +
     // one step at a time, so that the prompt leaves the sky (and the stopwatch) free; its buttons above the text, so that they stay where they are
     (offer ? `<p class="lab-offer">You were here before: ${esc(resumeText(offer))}. <button class="btn" data-act="resume">Go back there</button></p>` : '') +
     (!all || L.notebook ? `<div class="lab-nav"><button class="btn" data-act="prev" aria-label="Previous step"${step ? '' : ' disabled'}>&lsaquo;</button><span>Step ${step + 1} of ${L.steps.length}</span><button class="btn" data-act="next" aria-label="Next step"${step < L.steps.length - 1 ? '' : ' disabled'}>&rsaquo;</button></div><div class="lab-step">${L.steps[step]}</div>`

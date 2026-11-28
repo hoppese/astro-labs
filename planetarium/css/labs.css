@@ -146,6 +146,8 @@ html.nb-slim .bottombar .place { display: none; }
 @media (min-width: 561px) and (max-height: 520px) { .labsdock { max-height: calc(100% - 58px - var(--bar-h) - 10px); } }
 
 /* Earth seen square-on (js/labs/squareon.js) */
+.lab-guide { display: inline-block; margin: 2px 0 8px; font-size: 12.5px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.lab-guide:hover { text-decoration: underline; }
 .lab-truth { margin: 8px 0; padding: 7px 9px; border: 1px dashed rgba(240,190,90,.5); border-radius: 6px; font-size: 12.5px; color: #f0d9a8; }
 .lab-seed { font-size: 12px; color: #9fb0bf; }
 .sq-cv { display: block; width: 100%; aspect-ratio: 1 / 0.92; margin-top: 7px; border-radius: 8px; background: #05080e; cursor: crosshair; touch-action: none; }
