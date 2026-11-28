@@ -133,35 +133,25 @@ def taper():
     return '\n'.join(s)
 
 def chord(hu_m, hp_m):
-    """An ordinary eclipse: the Moon's path passes off the shadow's center, so the Moon crosses a chord, shorter than the diameter.
-    The right triangle (half the chord, the miss distance, the radius) is how the two are related."""
-    W, H = 760, 470
-    cx, cy, rm = 300, 232, 50
+    """An ordinary eclipse, in the style of the eclipse maps: the Moon's path passes off the shadow's center, with the Moon drawn at
+    even intervals along it; the one wholly inside the umbra is coppery (eclipsed)."""
+    W, H = 760, 270
+    cx, cy, rm = 380, 138, 27
     ru, rp = hu_m * rm, hp_m * rm
-    b = 0.55 * ru                              # how far the Moon's path passes from the center
-    my = cy + b
-    half = math.sqrt(ru**2 - b**2)
-    s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs4t fs4d"><title id="fs4t">An off-center eclipse: a chord, not a diameter</title>'
-         '<desc id="fs4d">The Moon\'s path passes below the center of the umbra. Along its path the umbra is only a chord wide, shorter than the diameter. Half the chord, the miss distance and the umbra\'s radius make a right triangle.</desc>']
+    b = 0.42 * ru                              # the path passes this far above the center
+    my = cy - b
+    step = 2.3 * rm                            # a little over a Moon diameter between copies: gaps, as on eclipse maps
+    xs = [cx + k * step for k in range(-3, 4)]; reach = 3 * step
+    s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs4t fs4d"><title id="fs4t">An off-center eclipse</title>'
+         '<desc id="fs4d">The Moon\'s path passes above the center of the Earth\'s shadow. The Moon is drawn seven times along it; only the middle one is wholly inside the umbra, coppery. Along this path the umbra is narrower than its full diameter.</desc>']
     s.append(f'<circle class="pen face" cx="{cx}" cy="{cy}" r="{f(rp)}"/><circle class="umb face" cx="{cx}" cy="{cy}" r="{f(ru)}"/>')
-    # the diameter (dashed, through the center) and the chord along the Moon's path
-    s.append(f'<line class="guide-l light" x1="{f(cx-ru)}" y1="{cy}" x2="{f(cx+ru)}" y2="{cy}"/>')
-    s.append(f'<line class="orbit" x1="{f(cx+rp+40)}" y1="{f(my)}" x2="{f(cx-rp-40)}" y2="{f(my)}"/>')
-    s.append(f'<line class="chord" x1="{f(cx-half)}" y1="{f(my)}" x2="{f(cx+half)}" y2="{f(my)}"/>')
-    # the Moon at mid-eclipse, outlined
-    s.append(f'<circle class="moon ring" cx="{f(cx-half*0.62)}" cy="{f(my)}" r="{rm}"/><text class="lbl sm" x="{f(cx-half*0.62)}" y="{f(my+rm+18)}" text-anchor="middle">the Moon</text>')
-    # the right triangle: center -> foot of the perpendicular -> end of the chord
-    s.append(f'<path class="tri" d="M{cx},{cy} L{cx},{f(my)} L{f(cx+half)},{f(my)} Z"/>')
-    s.append(f'<path class="tri-sq" d="M{cx},{f(my-12)} h12 v12"/>')
-    s.append(f'<circle cx="{cx}" cy="{cy}" r="3" class="dotc"/>')
-    # labels (outside the copper, or light on it)
-    s.append(f'<text class="lbl uf" x="{f(cx-ru*0.55)}" y="{f(cy-ru*0.45)}" text-anchor="middle">umbra</text>')
-    s.append(f'<text class="lbl uf sm2" x="{f(cx-ru*0.5)}" y="{cy-6}" text-anchor="middle">diameter</text>')
-    s.append(f'<text class="lbl uf sm2" x="{f(cx-8)}" y="{f((cy+my)/2+4)}" text-anchor="end">miss distance</text>')
-    s.append(f'<text class="lbl uf sm2" x="{f(cx+half*0.55)}" y="{f(cy+b*0.38)}" text-anchor="middle" transform="rotate({math.degrees(math.atan2(b, half)):.1f} {f(cx+half*0.55)} {f(cy+b*0.38)})">radius</text>')
-    s.append(f'<text class="lbl" x="{f(cx+rp+48)}" y="{f(my-10)}">the chord</text><text class="lbl sm" x="{f(cx+rp+48)}" y="{f(my+10)}">the part of the umbra</text><text class="lbl sm" x="{f(cx+rp+48)}" y="{f(my+27)}">the Moon crosses</text>')
-    s.append(f'<path class="dim" d="M{f(cx+half)},{f(my)} L{f(cx+rp+42)},{f(my-14)}"/>')
-    s.append(f'<text class="lbl pf" x="{f(cx-rp*0.72)}" y="{f(cy-rp*0.74)}" text-anchor="middle">penumbra</text>')
+    s.append(f'<line class="orbit" x1="{f(cx-reach-rm-30)}" y1="{f(my)}" x2="{f(cx+reach+rm+30)}" y2="{f(my)}"/>')
+    for x in xs:
+        inside = math.hypot(x - cx, my - cy) <= ru - rm
+        s.append(f'<circle class="{"moon eclipsed" if inside else "moon"}" cx="{f(x)}" cy="{f(my)}" r="{rm}"/>')
+    s.append(f'<path class="arrow" d="M{f(cx-reach-rm-14)},{f(my-rm-14)} h-46 m8,-6 l-8,6 l8,6"/><text class="lbl sm" x="{f(cx-reach-rm-37)}" y="{f(my-rm-24)}" text-anchor="middle">the Moon moves</text>')
+    s.append(f'<text class="lbl uf" x="{cx}" y="{f(cy+ru*0.62)}" text-anchor="middle">umbra</text>')
+    s.append(f'<text class="lbl pf" x="{cx}" y="{f(cy+rp-18)}" text-anchor="middle">penumbra</text>')
     s.append(f'<text class="lbl sm" x="{W-10}" y="{H-8}" text-anchor="end">not to scale</text>')
     s.append('</svg>')
     return '\n'.join(s)

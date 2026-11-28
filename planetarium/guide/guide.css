@@ -70,6 +70,7 @@ svg.fig { width: 100%; height: auto; display: block; overflow: visible; }
 svg.fig .sun { fill: var(--f-sun); stroke: var(--f-sun-line); stroke-width: 1.5; }
 svg.fig .earth { fill: var(--f-earth); }
 svg.fig .moon { fill: var(--f-moon); stroke: var(--f-moon-line); stroke-width: 1.2; }
+svg.fig .moon.eclipsed { fill: #b4532a; stroke: #7a3216; }
 svg.fig .moon.dim { fill: #7a7468; }
 svg.fig .moon.ring { fill: color-mix(in srgb, var(--f-moon) 55%, transparent); }
 svg.fig .umb { fill: var(--f-umb); }
