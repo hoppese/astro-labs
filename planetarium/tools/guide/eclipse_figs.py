@@ -114,16 +114,17 @@ def taper():
     s.append(f'<line class="guide-l" x1="{xe}" y1="{top0}" x2="{xm+10}" y2="{top0}"/><line class="guide-l" x1="{xe}" y1="{bot0}" x2="{xm+10}" y2="{bot0}"/>')
     s.append(f'<line class="ray u" x1="{xe}" y1="{top0}" x2="{xm}" y2="{f(top1)}"/><line class="ray u" x1="{xe}" y1="{bot0}" x2="{xm}" y2="{f(bot1)}"/>')
     s.append(f'<circle class="earth" cx="{xe}" cy="{cy}" r="{re}"/><text class="lbl" x="{xe}" y="{cy+5}" text-anchor="middle" style="fill:#fff">Earth</text>')
-    s.append(f'<text class="lbl u" x="{(xe+xm)/2+30}" y="{cy+5}" text-anchor="middle">umbra</text>')
+    s.append(f'<text class="lbl u" x="{(xe+xm)/2}" y="{cy+5}" text-anchor="middle">umbra</text>')
     # the two gaps at the Moon's distance, and one Moon beside them of the same total size
     for y0, y1 in ((top0, top1), (bot1, bot0)):
         s.append(f'<path class="dim" d="M{xm+14},{f(y0)} h8 V{f(y1)} h-8"/>')
     s.append(f'<text class="lbl sm" x="{xm+30}" y="{f((top0+top1)/2+4)}">gap</text><text class="lbl sm" x="{xm+30}" y="{f((bot0+bot1)/2+4)}">gap</text>')
-    rM = gap                                    # a Moon whose diameter is the two gaps together
-    mx = xm + 120
-    s.append(f'<circle class="moon" cx="{mx}" cy="{cy}" r="{f(rM)}"/><path class="dim" d="M{mx+rM+10},{f(cy-rM)} h8 V{f(cy+rM)} h-8"/>')
-    s.append(f'<text class="lbl sm" x="{mx}" y="{f(cy+rM+22)}" text-anchor="middle">the Moon:</text><text class="lbl sm" x="{mx}" y="{f(cy+rM+38)}" text-anchor="middle">gap + gap</text>')
-    s.append(f'<path class="dim" d="M{xe},{H-20} H{xm}"/><path class="dim" d="M{xe},{H-26} v12 M{xm},{H-26} v12"/><text class="lbl sm" x="{(xe+xm)/2}" y="{H-28}" text-anchor="middle">the distance to the Moon</text>')
+    # the Moon itself, at the end of the distance (in the umbra: eclipsed), and its width beside it: the two gaps together
+    rM = gap
+    s.append(f'<circle class="moon eclipsed" cx="{f(xm - rM - 4)}" cy="{cy}" r="{f(rM)}"/>')
+    s.append(f'<path class="dim" d="M{xm+62},{f(cy-rM)} h8 V{f(cy+rM)} h-8"/><path class="guide-l" d="M{f(xm-rM-4)},{f(cy-rM)} H{xm+62} M{f(xm-rM-4)},{f(cy+rM)} H{xm+62}"/>')
+    s.append(f'<text class="lbl sm" x="{xm+78}" y="{cy-4}">the Moon’s width</text><text class="lbl sm" x="{xm+78}" y="{cy+14}">= gap + gap</text>')
+    s.append(f'<path class="dim" d="M{xe},{H-20} H{xm}"/><path class="dim" d="M{xe},{H-26} v12 M{xm},{H-26} v12"/><text class="lbl sm" x="{(xe+xm)/2}" y="{H-28}" text-anchor="middle">the distance from the Earth to the Moon</text>')
     s.append(f'<text class="lbl sm" x="{xe+86}" y="{top0-10}">each edge closes in at half the angle the Sun covers</text>')
     s.append('</svg>')
     return '\n'.join(s)
