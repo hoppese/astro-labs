@@ -61,9 +61,12 @@ function initDevVoice(token) {
     #devVoice .dv-foot{padding:6px 9px;border-top:1px solid #2a3848;color:#8496a9;font-size:12px}
     #devVoice .dv-empty{padding:8px 9px;color:#8496a9}
     #devVoice .dv-ask{display:flex;gap:6px;margin-bottom:6px}#devVoice .dv-ask[hidden]{display:none}
+    #devVoice .dv-mic{display:flex;gap:6px;align-items:center;margin-bottom:6px;background:#16202c;border:1px solid #3a4b5f;border-radius:8px;padding:5px 8px;color:#9fb0c2}#devVoice .dv-mic[hidden]{display:none}
+    #devVoice .dv-mic select{flex:1;min-width:0;background:#0f1720;color:#e8eef5;border:1px solid #3a4b5f;border-radius:5px;font:inherit}
     #devVoice .dv-ask textarea{flex:1;min-height:54px;resize:vertical;background:#0f1720;color:#e8eef5;border:1px solid #f0c46a;border-radius:8px;padding:6px 8px;font:inherit}</style>
     <div class="dv-msgs"></div>
     <div class="dv-list" hidden></div>
+    <div class="dv-mic" hidden>Mic <select aria-label="Microphone"></select></div>
     <div class="dv-ask" hidden><textarea placeholder="Type or dictate a request; Enter sends, Shift+Enter for a new line, Esc closes" aria-label="Request for Claude"></textarea></div>
     <div class="dv-bar"><span class="dv-dot"></span><span class="dv-live">Dev voice ready, say “Hey Claude”</span><button data-a="type" title="Type or dictate a request (the \` key)">⌨</button><button data-a="list" title="What you asked for: done, in the works, undone">Changes</button><button data-a="undo" title="Undo the last change">Undo</button><button data-a="mic">Start</button></div>`;
   document.body.appendChild(box);
@@ -232,10 +235,35 @@ function initDevVoice(token) {
     live.textContent = '🎙 ' + said.trim();
     clearTimeout(timer); timer = setTimeout(finish, SILENCE_MS);        // a request may run over a pause: wait for more before sending
   }
-  async function startWhisper() {
+  // ---- which microphone: the one chosen in the panel's menu (remembered), else this laptop's own rather than the system default,
+  // which can be an iPhone nearby (Continuity Microphone) or a headset ----
+  const MIC_KEY = 'astro-labs.devvoice.mic', micBox = box.querySelector('.dv-mic'), micSel = micBox.querySelector('select');
+  const AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+  async function openMic() {
+    let want = ''; try { want = localStorage.getItem(MIC_KEY) || ''; } catch (e) { /* fine */ }
+    const get = (id) => navigator.mediaDevices.getUserMedia({ audio: id ? { ...AUDIO, deviceId: { exact: id } } : AUDIO });
     let stream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
-    catch (e) { note('Microphone not allowed: allow it for this page, then press Start.', { cls: 'err' }); return false; }
+    try { stream = await get(want); } catch (e) { if (want) { try { stream = await get(''); } catch (e2) { return null; } } else return null; }
+    // labels are readable once the microphone is allowed: list them, and if nothing was chosen, move to the built-in one
+    const mics = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+    const used = stream.getAudioTracks()[0], usedId = used && used.getSettings().deviceId;
+    if (!want) {
+      const own = mics.find((d) => /macbook|built-in|internal/i.test(d.label));
+      if (own && own.deviceId !== usedId) { stream.getTracks().forEach((t) => t.stop()); try { stream = await get(own.deviceId); } catch (e) { stream = await get(''); } }
+    }
+    const now = stream.getAudioTracks()[0], nowId = now && now.getSettings().deviceId;
+    micSel.innerHTML = mics.map((d) => `<option value="${esc(d.deviceId)}"${d.deviceId === nowId ? ' selected' : ''}>${esc(d.label || 'Microphone')}</option>`).join('');
+    micBox.hidden = mics.length < 2;
+    return stream;
+  }
+  micSel.addEventListener('change', async () => {
+    try { localStorage.setItem(MIC_KEY, micSel.value); } catch (e) { /* fine */ }
+    if (whisper) { stopWhisper(); await startWhisper(); live.textContent = 'Listening (Whisper) on ' + micSel.selectedOptions[0].textContent; }
+  });
+
+  async function startWhisper() {
+    const stream = await openMic();
+    if (!stream) { note('Microphone not allowed: allow it for this page, then press Start.', { cls: 'err' }); return false; }
     const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), node = ctx.createScriptProcessor(4096, 1, 1), rate = ctx.sampleRate;
     const pre = [], PRE = Math.ceil(0.4 * rate / 4096);                    // 0.4 s kept from before the speech began
     let seg = null, quiet = 0, noise = 0.004;
@@ -267,7 +295,7 @@ function initDevVoice(token) {
   async function start() {
     if (await hasWhisper()) {
       if (!(await startWhisper())) return;
-      listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening (Whisper, on this laptop): say “Hey Claude, …”';
+      listening = true; dot.classList.add('on'); micBtn.textContent = 'Stop'; live.textContent = 'Listening (Whisper) on ' + (micSel.selectedOptions[0] ? micSel.selectedOptions[0].textContent : 'the microphone') + ': say “Hey Claude, …”';
       return;
     }
     if (!SR) { note('This browser has no speech recognition (use Chrome). The ⌨ button still works.', { cls: 'err' }); return; }
