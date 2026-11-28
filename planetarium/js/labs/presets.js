@@ -154,7 +154,7 @@ export const LABS = [
       `Measure the Sun’s diameter on the dashed yellow circle, edge to edge (in Richmond the real Sun is behind the Moon). What fraction of the Sun’s width is the shift? That fraction is all Hipparchus knew.`,
       `Open ${SQUARE('Moon')} and measure how far Atlanta is from Richmond as the Moon sees them (<b>Zoom to the places</b> first). Estimate the Moon’s distance from the shift.${RADIANS}`,
     ],
-    about: `In a straight line the towns are 677 km apart, but that line is slanted to the Moon. Using its full length overestimates the distance: the same difficulty Hipparchus had. See ${tao}.` },
+    about: `The straight line between the towns is slanted to the Moon. Using its full length overestimates the distance: the same difficulty Hipparchus had. See ${tao}.` },
   { id: 'moon-apsides', group: 'Earth and Moon', title: 'The Moon’s oval orbit', who: 'Hipparchus; Ptolemy',
     blurb: 'The Moon looks bigger at perigee than at apogee.',
     setup: { t: '2026-11-25T21:02:00Z', loc: P.richmond, target: 'Moon', track: true, fov: 1.2, mount: 'eq', show: DARK, tools: ['events'], events: 'apsis' },
@@ -192,7 +192,7 @@ export const LABS = [
     setup: { t: '2024-04-08T18:25:00Z', loc: P.richmond, target: 'Sun', track: true, fov: 1.5, mount: 'eq', show: { refraction: false, atmosphere: false }, tools: [] },
     steps: [
       `The atmosphere is switched off, so that the dark Moon can be seen outside the Sun (in a real sky it has the color of the sky there). With ${ANGLE} measure the Sun’s diameter and the Moon’s, edge to edge: click near each edge, where the other body is not in the way.`,
-      `Their distances are in the ratio you found with the half Moon. What is the ratio of their true diameters?`,
+      `Their distances are in the ratio you found with the half Moon. The two angular sizes are close but not quite equal, so use both: <span class="frac"><span>Sun’s diameter</span><span>Moon’s diameter</span></span> = <span class="frac"><span>Sun’s angular size</span><span>Moon’s angular size</span></span> × <span class="frac"><span>Sun’s distance</span><span>Moon’s distance</span></span>. What is the ratio of their true diameters?`,
       `Run the clock on to totality. Which of the two is slightly bigger today?`,
       `An annular eclipse leaves a ring of Sun. Open the Events finder (Labs menu) and find one: the list says what is seen of each at your place. Go to one, wherever it is seen: you can measure both diameters even where the Moon misses the Sun. Which is bigger then, and why does it change?`,
     ],

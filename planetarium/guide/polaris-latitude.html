@@ -1,0 +1,123 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Where on Earth are you? Latitude from the pole star · Lab guide</title><meta name="description" content="The whole sky turns about one point, the celestial pole, and how high that point stands above your northern horizon is your latitude. The pole star marks it, almost: it circles the pole once a day, so you watch it at its highest and its lowest and take the point halfway between."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="guide.css"></head><body><div class="band"><div class="in"><a href="../">Planetarium</a><span class="crumb">›</span><a href="index.html">Lab guides</a><span class="sp"></span></div></div><div class="wrap"><header class="lab"><div class="eyebrow">Time and the calendar · lab guide</div><h1>Where on Earth are you? Latitude from the pole star</h1><p class="who">Navigators</p><p><a class="go" href="../?lab=polaris-latitude" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p><p class="lede">The whole sky turns about one point, the celestial pole, and how high that point stands above your northern horizon is your latitude. The pole star marks it, almost: it circles the pole once a day, so you watch it at its highest and its lowest and take the point halfway between.</p></header><nav class="toc" aria-label="On this page"><b>On this page</b><ol><li><a href="#goal">What you will find out</a></li><li><a href="#idea">The idea: the pole stands at your latitude</a></li><li><a href="#offset">The pole star is not quite at the pole</a></li><li><a href="#steps">In the planetarium, step by step</a></li><li><a href="#wrong">What can go wrong</a></li><li><a href="#further">Going further</a></li></ol></nav><main>
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>Your <b>latitude</b>, how far north of the equator you are, from nothing but the height of a star, and how far the pole star, Polaris, is from the true pole. Navigators found their latitude this way for centuries.</p>
+  <p>It is the other half of the <a href="eratosthenes.html">Eratosthenes lab</a>: latitude tells you where on the round Earth you are, and two latitudes plus the distance between them give the size of the Earth.</p>
+  <p>You need: the planetarium (the lab puts you in Richmond, Indiana, looking north at Polaris, with refraction switched off), the stopwatch it opens, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: the pole stands at your latitude</h2>
+  <p>As the Earth turns, the sky seems to turn about a fixed point straight out along the Earth’s axis: the <b>celestial pole</b>. That point is so far away that the direction to it is the same from everywhere on the Earth: parallel to the axis. But your horizon tilts as you go round the curve of the Earth. At the North Pole the celestial pole is straight overhead; on the equator it sits on the horizon; in between, it stands as high above your northern horizon as you are north of the equator.</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 500" role="img" aria-labelledby="pl1t pl1d"><title id="pl1t">Why the pole’s altitude is your latitude</title><desc id="pl1d">A cut through the Earth with north at the top. An observer stands at latitude phi: the angle at the centre between the equator and the observer. The horizon there is the line touching the Earth at the observer. The celestial pole is so far away that the direction to it, seen from anywhere, is parallel to the Earth's axis, straight up the page. The angle between the northern horizon and that direction, the pole's altitude, is the same angle phi.</desc><defs><marker id="plh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahead"/></marker><marker id="plo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="aheado"/></marker></defs>
+<line x1="250" y1="484" x2="250" y2="150" class="guide-l"/>
+<path class="arrow" marker-end="url(#plh)" d="M250,160 V40"/>
+<text class="lbl sm" x="242" y="52" text-anchor="end">the Earth’s axis,</text><text class="lbl sm" x="242" y="69" text-anchor="end">pointing at the celestial pole</text>
+<circle class="earth" cx="250" cy="310" r="150"/>
+<text class="lbl sm" x="246" y="178" text-anchor="end" style="fill:#fff">North Pole</text>
+<line x1="100" y1="310" x2="400" y2="310" style="stroke:#fff;stroke-width:1.2;stroke-dasharray:5 4"/>
+<text class="lbl sm" x="110" y="328" style="fill:#fff">equator</text>
+<line x1="250" y1="310" x2="336.0" y2="187.1" style="stroke:#fff;stroke-width:1.4;stroke-dasharray:5 4"/>
+<path d="M294,310 A44,44 0 0,0 275.2,274.0" style="fill:none;stroke:#fde5cf;stroke-width:2"/>
+<text class="lbl" x="301.4" y="288.2" style="fill:#fde5cf">φ</text>
+<circle cx="250" cy="310" r="3" style="fill:#fff"/>
+<text class="lbl sm" x="242" y="300" text-anchor="end" style="fill:#fff">centre</text>
+<line x1="336.0" y1="187.1" x2="410.6" y2="80.6" class="guide-l"/>
+<text class="lbl sm" x="416.6" y="84.6">straight up (the zenith)</text>
+<line x1="434.3" y1="256.0" x2="213.2" y2="101.1" style="stroke:#2e9e4f;stroke-width:2.4"/>
+<text class="lbl sm" x="207.2" y="93.1" text-anchor="end" style="fill:#2e9e4f">your horizon, looking north</text>
+<text class="lbl sm" x="438.3" y="272.0" style="fill:#2e9e4f">south</text>
+<path class="extra" marker-end="url(#plo)" d="M336.0,187.1 V37.1"/>
+<text class="lbl sm" x="344.0" y="51.1" style="fill:#d2691e">to the celestial pole:</text><text class="lbl sm" x="344.0" y="68.1" style="fill:#d2691e">parallel to the axis</text>
+<path d="M285.2,151.6 A62,62 0 0,1 336.0,125.1" style="fill:none;stroke:var(--f-ink);stroke-width:1.8"/>
+<text class="lbl" x="288.8" y="123.3">φ</text>
+<circle cx="336.0" cy="187.1" r="4" class="dotc2"/><text class="lbl" x="306.0" y="213.1" style="fill:#fff">you</text>
+<text class="lbl sm" x="750" y="492" text-anchor="end">cut through the Earth, north up · latitude drawn at a made-up value · not to scale</text>
+</svg>
+    <figcaption><b>Why the pole’s altitude is your latitude.</b> Your latitude φ is the angle at the centre of the Earth between the equator and you. Your horizon (green) touches the Earth where you stand, at right angles to “straight up”. The direction to the celestial pole (orange) is parallel to the Earth’s axis. Turn the equator line through 90° and it becomes the axis; turn the radius to you through 90° and it becomes your horizon: so the angle between your horizon and the pole is the same φ. The latitude is drawn at a made-up value.</figcaption>
+  </figure>
+  <div class="eq"><div class="row"><i>latitude</i> = <i>altitude of the celestial pole</i></div></div>
+  <p>So if there were a star exactly at the pole, its altitude would be your latitude, at any hour of the night.</p>
+</section>
+
+<section id="offset">
+  <h2>The pole star is not quite at the pole</h2>
+  <p>Polaris is close to the celestial pole, but not on it. Like every other star it goes round the pole once a day, on a small circle. It is at its <b>highest</b> when it crosses the meridian above the pole, and at its <b>lowest</b> twelve hours later, crossing the meridian below the pole. The pole itself is exactly halfway between.</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 380" role="img" aria-labelledby="pl2t pl2d"><title id="pl2t">The pole star circles the pole</title><desc id="pl2d">Looking north. The celestial pole is a point above the northern horizon. The pole star is not exactly at the pole: once a day it goes round it, counterclockwise, on a small circle. On the meridian above the pole it is at its highest; twelve hours later, on the meridian below the pole, it is at its lowest. The pole is halfway between the two.</desc><defs><marker id="plh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahead"/></marker><marker id="plo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="aheado"/></marker></defs>
+<rect class="ground" x="30" y="330" width="700" height="40"/><line class="horizon" x1="30" y1="330" x2="730" y2="330"/>
+<text class="lbl sm onground" x="380" y="355" text-anchor="middle">N</text>
+<line x1="380" y1="330" x2="380" y2="18" style="stroke:#2e9e4f;stroke-width:1.6"/>
+<text class="lbl sm" x="388" y="26" style="fill:#2e9e4f">the meridian (green line)</text>
+<circle cx="380" cy="140" r="78" class="orbitc"/>
+<path class="arrow" marker-end="url(#plh)" d="M300.3,94.0 A92,92 0 0,0 296.6,178.9"/>
+<text class="lbl sm" x="280.0" y="176.0" text-anchor="end">once a day</text>
+<path d="M373,140 h14 M380,133 v14" style="stroke:#d2691e;stroke-width:2.2"/>
+<text class="lbl" x="392" y="145" style="fill:#d2691e">the celestial pole</text>
+<circle cx="380" cy="62" r="6" style="fill:#fff6c8;stroke:#c9a227;stroke-width:1.5"/>
+<text class="lbl sm" x="394" y="66">highest: on the meridian above the pole</text>
+<circle cx="380" cy="218" r="6" style="fill:#fff6c8;stroke:#c9a227;stroke-width:1.5"/>
+<text class="lbl sm" x="394" y="222">lowest: on the meridian below the pole, 12 hours later</text>
+<circle cx="306.7" cy="113.3" r="4" style="fill:#fff6c8;stroke:#c9a227;stroke-width:1;opacity:.6"/>
+<circle cx="453.3" cy="113.3" r="4" style="fill:#fff6c8;stroke:#c9a227;stroke-width:1;opacity:.6"/>
+<path class="dim" marker-end="url(#plh)" d="M90,330 V64"/>
+<line x1="90" y1="62" x2="372" y2="62" class="guide-l"/>
+<text class="lbl sm" x="96" y="56">greatest altitude</text>
+<path class="dim" marker-end="url(#plh)" d="M140,330 V142"/>
+<line x1="140" y1="140" x2="372" y2="140" class="guide-l"/>
+<text class="lbl sm" x="146" y="134">the pole’s altitude</text>
+<path class="dim" marker-end="url(#plh)" d="M190,330 V220"/>
+<line x1="190" y1="218" x2="372" y2="218" class="guide-l"/>
+<text class="lbl sm" x="196" y="212">least altitude</text>
+<text class="lbl sm" x="750" y="320" text-anchor="end">looking north · the circle drawn many times too big</text>
+</svg>
+    <figcaption><b>The pole star’s little circle.</b> Looking north, Polaris goes round the celestial pole once a day, counterclockwise. Its greatest altitude is the pole’s altitude plus the radius of the circle; its least altitude is the pole’s altitude minus the same radius. Average the two and the radius cancels. The circle is drawn many times too big.</figcaption>
+  </figure>
+  <div class="eq">
+    <div class="row"><i>altitude of the pole</i> = <span class="frac"><span><i>greatest altitude</i> + <i>least altitude</i></span><span>2</span></span></div>
+    <div class="row"><i>distance of Polaris from the pole</i> = <span class="frac"><span><i>greatest altitude</i> − <i>least altitude</i></span><span>2</span></span></div>
+  </div>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=polaris-latitude" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Read Polaris’s altitude.</b> Polaris is selected and followed. In its panel, the second number of <b>Az / Alt</b> is its altitude. Write it down with the time.</li>
+    <li><b>Step through a whole day.</b> Press <kbd>&gt;</kbd> to step the clock forward one hour (<kbd>&lt;</kbd> steps back), reading the altitude each time, for 24 hours. Turn the readings into decimal degrees as you go (1° = 60′, 1′ = 60″). The meridian is drawn as the green line: Polaris is highest and lowest as it crosses it.</li>
+    <li><b>Find the greatest and least.</b> Near the top and bottom the altitude changes very slowly, so hourly steps get close. To be sure, go back to the hour with the greatest reading and step by minutes (<kbd>Shift</kbd> + <kbd>↑</kbd> or <kbd>↓</kbd>) either side; do the same at the least.</li>
+    <li><b>Work it out</b> with the two equations above: the pole’s altitude (your latitude) and Polaris’s distance from the pole.</li>
+    <li><b>Switch refraction on</b> (<kbd>F</kbd>) and read the greatest and least altitudes again. How much does the air change your latitude?</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th></th><th>Time (UTC)</th><th>Altitude of Polaris</th><th>With refraction</th></tr>
+    <tr><td>Greatest altitude</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Least altitude</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Average: your latitude</td><td></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Half the difference: Polaris from the pole</td><td></td><td class="blank"></td><td class="blank"></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>Taking Polaris for the pole.</b> A single reading of Polaris’s altitude can be off by as much as the radius of its circle, at most hours of the night. That is the whole point of averaging the highest and the lowest.</li>
+    <li><b>Missing the turning point.</b> Hour-by-hour readings can straddle the true highest and lowest moments. The altitude barely changes there, so the error is small, but check with minute steps.</li>
+    <li><b>Refraction.</b> The air bends starlight and lifts every star a little, more the lower it is. It lifts both of Polaris’s readings by almost the same amount, so it does not cancel in the average: it moves your latitude by that amount. Real navigators corrected for it from tables.</li>
+    <li><b>Mixing degrees, minutes and seconds.</b> Convert to decimal degrees before averaging.</li>
+    <li><b>The southern hemisphere.</b> There is no bright star near the south celestial pole, so this exact method only works in the north. The idea still works with any star: average its highest and lowest altitudes, if it never sets.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li><b>The size of the Earth from two latitudes.</b> Two places due north–south of each other differ in latitude by the angle between them at the centre of the Earth, just as in the <a href="eratosthenes.html">Eratosthenes lab</a>:
+      <div class="eq"><div class="row"><span class="frac"><span><i>difference in latitude</i></span><span>360°</span></span> = <span class="frac"><span><i>distance between them</i></span><span><i>circumference of the Earth</i></span></span></div><div class="row"><span class="so">so</span><i>circumference</i> = <span class="frac"><span>360°</span><span><i>difference in latitude</i></span></span> × <i>distance between them</i></div></div>
+      Change the place (<kbd>Settings</kbd> → Location) to a town a few hundred kilometres due north or south of Richmond, repeat the lab, and find the Earth’s circumference.</li>
+    <li><b>The pole wanders.</b> Polaris has not always been the pole star, and it will not stay one: see the lab <a href="../?lab=precession-pole" target="_blank" rel="noopener">The wandering pole</a>.</li>
+    <li>Go to the North Pole and to the equator (<kbd>Settings</kbd> → Location) and see where Polaris stands.</li>
+  </ul>
+</section>
+</main></div></body></html>

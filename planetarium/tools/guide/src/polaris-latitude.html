@@ -1,0 +1,75 @@
+<!--
+title: Where on Earth are you? Latitude from the pole star
+lede: The whole sky turns about one point, the celestial pole, and how high that point stands above your northern horizon is your latitude. The pole star marks it, almost: it circles the pole once a day, so you watch it at its highest and its lowest and take the point halfway between.
+-->
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>Your <b>latitude</b>, how far north of the equator you are, from nothing but the height of a star, and how far the pole star, Polaris, is from the true pole. Navigators found their latitude this way for centuries.</p>
+  <p>It is the other half of the <a href="eratosthenes.html">Eratosthenes lab</a>: latitude tells you where on the round Earth you are, and two latitudes plus the distance between them give the size of the Earth.</p>
+  <p>You need: the planetarium (the lab puts you in Richmond, Indiana, looking north at Polaris, with refraction switched off), the stopwatch it opens, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: the pole stands at your latitude</h2>
+  <p>As the Earth turns, the sky seems to turn about a fixed point straight out along the Earth’s axis: the <b>celestial pole</b>. That point is so far away that the direction to it is the same from everywhere on the Earth: parallel to the axis. But your horizon tilts as you go round the curve of the Earth. At the North Pole the celestial pole is straight overhead; on the equator it sits on the horizon; in between, it stands as high above your northern horizon as you are north of the equator.</p>
+  <figure>
+    <!--FIG:pl_earth-->
+    <figcaption><b>Why the pole’s altitude is your latitude.</b> Your latitude φ is the angle at the centre of the Earth between the equator and you. Your horizon (green) touches the Earth where you stand, at right angles to “straight up”. The direction to the celestial pole (orange) is parallel to the Earth’s axis. Turn the equator line through 90° and it becomes the axis; turn the radius to you through 90° and it becomes your horizon: so the angle between your horizon and the pole is the same φ. The latitude is drawn at a made-up value.</figcaption>
+  </figure>
+  <div class="eq"><div class="row"><i>latitude</i> = <i>altitude of the celestial pole</i></div></div>
+  <p>So if there were a star exactly at the pole, its altitude would be your latitude, at any hour of the night.</p>
+</section>
+
+<section id="offset">
+  <h2>The pole star is not quite at the pole</h2>
+  <p>Polaris is close to the celestial pole, but not on it. Like every other star it goes round the pole once a day, on a small circle. It is at its <b>highest</b> when it crosses the meridian above the pole, and at its <b>lowest</b> twelve hours later, crossing the meridian below the pole. The pole itself is exactly halfway between.</p>
+  <figure>
+    <!--FIG:pl_circle-->
+    <figcaption><b>The pole star’s little circle.</b> Looking north, Polaris goes round the celestial pole once a day, counterclockwise. Its greatest altitude is the pole’s altitude plus the radius of the circle; its least altitude is the pole’s altitude minus the same radius. Average the two and the radius cancels. The circle is drawn many times too big.</figcaption>
+  </figure>
+  <div class="eq">
+    <div class="row"><i>altitude of the pole</i> = <span class="frac"><span><i>greatest altitude</i> + <i>least altitude</i></span><span>2</span></span></div>
+    <div class="row"><i>distance of Polaris from the pole</i> = <span class="frac"><span><i>greatest altitude</i> − <i>least altitude</i></span><span>2</span></span></div>
+  </div>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=polaris-latitude" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Read Polaris’s altitude.</b> Polaris is selected and followed. In its panel, the second number of <b>Az / Alt</b> is its altitude. Write it down with the time.</li>
+    <li><b>Step through a whole day.</b> Press <kbd>&gt;</kbd> to step the clock forward one hour (<kbd>&lt;</kbd> steps back), reading the altitude each time, for 24 hours. Turn the readings into decimal degrees as you go (1° = 60′, 1′ = 60″). The meridian is drawn as the green line: Polaris is highest and lowest as it crosses it.</li>
+    <li><b>Find the greatest and least.</b> Near the top and bottom the altitude changes very slowly, so hourly steps get close. To be sure, go back to the hour with the greatest reading and step by minutes (<kbd>Shift</kbd> + <kbd>↑</kbd> or <kbd>↓</kbd>) either side; do the same at the least.</li>
+    <li><b>Work it out</b> with the two equations above: the pole’s altitude (your latitude) and Polaris’s distance from the pole.</li>
+    <li><b>Switch refraction on</b> (<kbd>F</kbd>) and read the greatest and least altitudes again. How much does the air change your latitude?</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th></th><th>Time (UTC)</th><th>Altitude of Polaris</th><th>With refraction</th></tr>
+    <tr><td>Greatest altitude</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Least altitude</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Average: your latitude</td><td></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Half the difference: Polaris from the pole</td><td></td><td class="blank"></td><td class="blank"></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>Taking Polaris for the pole.</b> A single reading of Polaris’s altitude can be off by as much as the radius of its circle, at most hours of the night. That is the whole point of averaging the highest and the lowest.</li>
+    <li><b>Missing the turning point.</b> Hour-by-hour readings can straddle the true highest and lowest moments. The altitude barely changes there, so the error is small, but check with minute steps.</li>
+    <li><b>Refraction.</b> The air bends starlight and lifts every star a little, more the lower it is. It lifts both of Polaris’s readings by almost the same amount, so it does not cancel in the average: it moves your latitude by that amount. Real navigators corrected for it from tables.</li>
+    <li><b>Mixing degrees, minutes and seconds.</b> Convert to decimal degrees before averaging.</li>
+    <li><b>The southern hemisphere.</b> There is no bright star near the south celestial pole, so this exact method only works in the north. The idea still works with any star: average its highest and lowest altitudes, if it never sets.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li><b>The size of the Earth from two latitudes.</b> Two places due north–south of each other differ in latitude by the angle between them at the centre of the Earth, just as in the <a href="eratosthenes.html">Eratosthenes lab</a>:
+      <div class="eq"><div class="row"><span class="frac"><span><i>difference in latitude</i></span><span>360°</span></span> = <span class="frac"><span><i>distance between them</i></span><span><i>circumference of the Earth</i></span></span></div><div class="row"><span class="so">so</span><i>circumference</i> = <span class="frac"><span>360°</span><span><i>difference in latitude</i></span></span> × <i>distance between them</i></div></div>
+      Change the place (<kbd>Settings</kbd> → Location) to a town a few hundred kilometres due north or south of Richmond, repeat the lab, and find the Earth’s circumference.</li>
+    <li><b>The pole wanders.</b> Polaris has not always been the pole star, and it will not stay one: see the lab <a href="precession-pole.html">The wandering pole</a>.</li>
+    <li>Go to the North Pole and to the equator (<kbd>Settings</kbd> → Location) and see where Polaris stands.</li>
+  </ul>
+</section>

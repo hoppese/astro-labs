@@ -1,0 +1,87 @@
+<!--
+title: The Moon’s oval orbit: nearer looks bigger
+lede: The Moon is not always the same distance away. Measure how big it looks at its nearest and at its farthest, and those two angles tell you how much farther it is at one than at the other, and how squashed its orbit is, without knowing either distance.
+-->
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>Two things about the Moon’s orbit: the <b>ratio of its greatest to its least distance</b>, and its <b>eccentricity</b>, the number that says how far the orbit is from a circle. Hipparchus and Ptolemy knew the Moon’s distance changed; you will measure by how much.</p>
+  <p>You need: the planetarium (the lab opens at a perigee, looking at the Moon through a narrow view with the ground switched off), the Events finder it opens, the angle tool, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: an oval, with the Earth off-center</h2>
+  <p>The Moon’s orbit is an <b>ellipse</b>, an oval, and the Earth is not at its middle but at a point off to one side called a <b>focus</b>. So once each orbit the Moon passes its nearest point, <b>perigee</b>, and half an orbit later its farthest, <b>apogee</b>.</p>
+  <figure>
+    <!--FIG:ap_orbit-->
+    <figcaption><b>The orbit from above.</b> Looking down on the North Pole (NP). The Earth sits at a focus of the oval, off the middle. Half the long axis of the oval is called <i>a</i>. The Earth is <i>a</i><i>e</i> from the middle, so the Moon is <i>a</i>(1 − <i>e</i>) away at perigee and <i>a</i>(1 + <i>e</i>) away at apogee; <i>e</i> is the eccentricity (0 for a circle). The real orbit is much rounder than this; it is drawn squashed so you can see the idea.</figcaption>
+  </figure>
+</section>
+
+<section id="size">
+  <h2>Nearer looks bigger</h2>
+  <p>The Moon itself does not change size, but the nearer it is, the wider the angle it covers from your eye. For small angles the rule is simple: twice as far looks half as big. The angular size is <b>inversely proportional</b> to the distance.</p>
+  <figure>
+    <!--FIG:ap_sizes-->
+    <figcaption><b>The same Moon, near and far.</b> From your eye the nearer Moon fills a wider wedge (orange) than the farther one (black). On the right, how the two look in the sky. The real difference is small enough that you would hardly notice it by eye; the angle tool will.</figcaption>
+  </figure>
+  <p>So the ratio of the two sizes is the ratio of the two distances, the other way up:</p>
+  <div class="eq">
+    <div class="row"><span class="frac"><span><i>size at perigee</i></span><span><i>size at apogee</i></span></span> = <span class="frac"><span><i>distance at apogee</i></span><span><i>distance at perigee</i></span></span></div>
+    <div class="row"><span class="so">so</span><i>distance at apogee</i> = <span class="frac"><span><i>size at perigee</i></span><span><i>size at apogee</i></span></span> × <i>distance at perigee</i></div>
+  </div>
+  <p>You do not need to know either distance: the ratio comes out on its own.</p>
+</section>
+
+<section id="ecc">
+  <h2>From the two sizes to the eccentricity</h2>
+  <p>Call the bigger angle (at perigee) <i>big</i> and the smaller one (at apogee) <i>small</i>. From the figure, the two distances are <i>a</i>(1 − <i>e</i>) and <i>a</i>(1 + <i>e</i>), and the sizes go the other way round, so:</p>
+  <div class="eq">
+    <div class="row"><span class="frac"><span><i>big</i></span><span><i>small</i></span></span> = <span class="frac"><span><i>a</i>(1 + <i>e</i>)</span><span><i>a</i>(1 − <i>e</i>)</span></span> = <span class="frac"><span>1 + <i>e</i></span><span>1 − <i>e</i></span></span></div>
+    <div class="row"><span class="so">so</span><i>big</i> (1 − <i>e</i>) = <i>small</i> (1 + <i>e</i>), and <i>e</i> = <span class="frac"><span><i>big</i> − <i>small</i></span><span><i>big</i> + <i>small</i></span></span></div>
+  </div>
+  <p>The <i>a</i> cancels: the eccentricity, too, comes straight from the two angles.</p>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=moon-apsides" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Find the two dates.</b> The Events finder lists the Moon’s perigees and apogees. Click a perigee and the next apogee after it: the clock jumps to each. (If it says “below your horizon”, that does not matter: the ground is switched off, so you can see the Moon anyway.)</li>
+    <li><b>Measure at perigee.</b> With the angle tool (<kbd>R</kbd>), click one edge of the Moon and then the opposite edge, straight across its middle. Zoom in first so that each edge is sharp; work in arcminutes (1° = 60′).</li>
+    <li><b>Measure at apogee.</b> Click the apogee in the Events finder. The angle tool’s row follows the Moon, so you do not have to measure again: read the new value in the same row. Better still, measure afresh as well and compare.</li>
+    <li><b>Work it out.</b> The ratio of the two distances, then the eccentricity, with the equations above.</li>
+    <li><b>Extra.</b> On one night, measure the Moon when it has just risen and again when it is highest. Why is it a little different? (See below.)</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th></th><th>Date and time (UTC)</th><th>Angular diameter (′)</th></tr>
+    <tr><td>Perigee</td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>Apogee</td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td colspan="2">Ratio of the distances, <span class="frac"><span>apogee</span><span>perigee</span></span></td><td class="blank"></td></tr>
+    <tr><td colspan="2">Eccentricity <i>e</i></td><td class="blank"></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>Where you measure from.</b> The planetarium shows the Moon as seen from your place on the Earth’s surface, not from the Earth’s center. When the Moon is overhead you are one Earth radius nearer to it, so it looks slightly bigger; on the horizon, or below it, you are about as far away as the center is, or farther. That changes your two sizes a little, and so your eccentricity. It is the reason for the extra step.
+      <figure>
+        <!--FIG:ap_surface-->
+        <figcaption><b>Overhead is nearer.</b> When the Moon is overhead, you are nearer to it than the Earth’s center is by one Earth radius (orange). That is about 1 part in 60 of the Moon’s distance: small, but as big as some of the differences you are measuring.</figcaption>
+      </figure>
+    </li>
+    <li><b>Judging the edges.</b> A small slip at an edge is a few percent of the difference between the two sizes, and the eccentricity depends on that difference. Zoom in and measure each one more than once.</li>
+    <li><b>Not every perigee is the same.</b> The Sun tugs on the Moon’s orbit, so the orbit’s shape changes from month to month: some perigees are nearer than others. Your answer is for this pair; another pair gives a slightly different value.</li>
+    <li><b>The “supermoon”.</b> A full Moon near perigee is sometimes called a supermoon. Your numbers show how much bigger it really is. Is that something you would notice by eye, with nothing beside it to compare?</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li>The <a href="sun-apsides.html">Earth’s oval orbit</a> lab does the same with the Sun: measure it in January and in July. Which orbit is closer to a circle?</li>
+    <li>If you know the Moon’s average distance (from the <a href="lunar-parallax.html">two-observer</a> lab), you can turn your ratio into the actual distances at perigee and apogee.</li>
+    <li>The <a href="moonrise.html">moonrise</a> lab measures the Moon’s angular size a different way, from a stopwatch. When you do it, check how close that Moon was to perigee or apogee.</li>
+    <li>Read Terence Tao’s account of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>

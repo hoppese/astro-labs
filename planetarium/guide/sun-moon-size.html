@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>How big is the Sun? The same size as the Moon in the sky · Lab guide</title><meta name="description" content="In a total eclipse the Moon only just covers the Sun. Two things that look the same size have their true sizes in the same ratio as their distances, so once you know how many times farther away the Sun is, you know how many times bigger it is."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="guide.css"></head><body><div class="band"><div class="in"><a href="../">Planetarium</a><span class="crumb">›</span><a href="index.html">Lab guides</a><span class="sp"></span></div></div><div class="wrap"><header class="lab"><div class="eyebrow">The Sun · lab guide</div><h1>How big is the Sun? The same size as the Moon in the sky</h1><p class="who">Aristarchus</p><p><a class="go" href="../?lab=sun-moon-size" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p><p class="lede">In a total eclipse the Moon only just covers the Sun. Two things that look the same size have their true sizes in the same ratio as their distances, so once you know how many times farther away the Sun is, you know how many times bigger it is.</p></header><nav class="toc" aria-label="On this page"><b>On this page</b><ol><li><a href="#goal">What you will find out</a></li><li><a href="#idea">The idea: the same angle</a></li><li><a href="#edges">Measuring two discs that overlap</a></li><li><a href="#steps">In the planetarium, step by step</a></li><li><a href="#wrong">What can go wrong</a></li><li><a href="#further">Going further</a></li></ol></nav><main>
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>How many times bigger the Sun really is than the Moon. This is the second half of Aristarchus’s argument, about 270 BC: the <a href="half-moon.html">half Moon</a> gave him how many times farther away the Sun is, and an eclipse shows that the two look the same size. Together they give the Sun’s true size in Moon sizes, and then, with the Moon’s size, in Earth sizes.</p>
+  <p>You need: the planetarium (the lab puts you in Richmond, Indiana, on 8 April 2024, during the partial phase of the total solar eclipse, with the Sun selected and followed), the angle tool, your result from the half-Moon lab, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: the same angle</h2>
+  <p>How big something looks depends on two things: how big it really is, and how far away. A coin at arm’s length can cover the full Moon. When two things look exactly the same size, the lines from your eye that graze the edges of the near one also graze the edges of the far one.</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 340" role="img" aria-labelledby="sm1t sm1d"><title id="sm1t">Same angle, so size in proportion to distance</title><desc id="sm1d">An eye on the left. Two lines from the eye just graze the top and bottom of the near, small Moon and carry on to graze the top and bottom of the far, big Sun. The Moon and the Sun fill the same angle at the eye, so the Sun is as many times bigger as it is farther away.</desc>
+<path class="wedge" d="M60,135 L620.0,41.3 L620.0,228.7 Z"/>
+<line class="sight" x1="60" y1="135" x2="620.0" y2="41.3"/><line class="sight" x1="60" y1="135" x2="620.0" y2="228.7"/>
+<circle class="sun" cx="620.0" cy="135" r="93.7"/>
+<circle class="moon" cx="230.0" cy="135" r="28.4"/>
+<circle cx="60" cy="135" r="5" class="dotc2"/><text class="lbl sm" x="60" y="159" text-anchor="middle">you</text>
+<path class="dim" d="M104,127.6 A44,44 0 0,1 104,142.4"/><text class="lbl" x="112" y="140">α</text>
+<path class="dim" d="M224.0,106.6 h-8 V163.4 h8"/><text class="lbl sm" x="210.0" y="96.6" text-anchor="middle">Moon’s diameter</text>
+<path class="dim" d="M723.7,41.3 h8 V228.7 h-8"/><text class="lbl sm" x="737.7" y="140">Sun’s</text><text class="lbl sm" x="737.7" y="156">diameter</text>
+<path class="dim" d="M60,242.7 V274.7 M230.0,248.7 V260.7 M620.0,256.7 V274.7"/>
+<path class="dim" d="M60,252.7 H230.0"/><text class="lbl sm" x="145.0" y="246.7" text-anchor="middle">Moon’s distance</text>
+<path class="dim" d="M60,268.7 H620.0"/><text class="lbl sm" x="340.0" y="284.7" text-anchor="middle">Sun’s distance</text>
+<text class="lbl sm" x="750" y="334" text-anchor="end">not to scale: the angle α hugely exaggerated, the Sun really much farther and much bigger</text>
+</svg>
+    <figcaption><b>Two triangles with the same angle.</b> From your eye, the Moon (near and small) and the Sun (far and big) fill the same angle α. The two triangles have the same shape, one a scaled-up copy of the other, so the Sun is as many times bigger than the Moon as it is farther away. Not to scale: the real angle is about half a degree, and the Sun is very much farther and bigger than drawn.</figcaption>
+  </figure>
+  <p>For a small angle, measured in radians, the angle is the diameter over the distance, for each body:</p>
+  <div class="eq"><div class="row">α = <span class="frac"><span><i>Moon’s diameter</i></span><span><i>Moon’s distance</i></span></span> = <span class="frac"><span><i>Sun’s diameter</i></span><span><i>Sun’s distance</i></span></span></div><div class="row"><span class="so">so</span><span class="frac"><span><i>Sun’s diameter</i></span><span><i>Moon’s diameter</i></span></span> = <span class="frac"><span><i>Sun’s distance</i></span><span><i>Moon’s distance</i></span></span></div><div class="row"><span class="so">so</span><i>Sun’s diameter</i> = <span class="frac"><span><i>Sun’s distance</i></span><span><i>Moon’s distance</i></span></span> × <i>Moon’s diameter</i></div></div>
+  <p>The fraction on the right is exactly what the <a href="half-moon.html">half-Moon lab</a> measures. You do not need either distance in kilometres, only their ratio.</p>
+  <p>If the two angular sizes are not quite equal (and today they are not), the rule still works with one more factor: each diameter is its angular size times its distance, so</p>
+  <div class="eq"><div class="row"><span class="frac"><span><i>Sun’s diameter</i></span><span><i>Moon’s diameter</i></span></span> = <span class="frac"><span><i>Sun’s angular size</i></span><span><i>Moon’s angular size</i></span></span> × <span class="frac"><span><i>Sun’s distance</i></span><span><i>Moon’s distance</i></span></span></div></div>
+</section>
+
+<section id="edges">
+  <h2>Measuring two discs that overlap</h2>
+  <p>During the partial phase the Moon covers part of the Sun. The lab switches the atmosphere off, so that the dark Moon can be seen outside the Sun too. (In a real sky the part of the Moon off the Sun has the color of the sky and cannot be seen.) A diameter is measured from one edge to the opposite edge, through the center, and both edges must be ones you can see.</p>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 320" role="img" aria-labelledby="sm2t sm2d"><title id="sm2t">Where to click the edges</title><desc id="sm2d">A partial eclipse: the dark Moon overlaps part of the bright Sun. A dashed line joins their centers. To measure the Sun, click two opposite edges of the Sun on a line through its center at right angles to the dashed line, where the Moon does not cover either edge. Do the same for the Moon. Along the dashed line one edge of each lies where the two overlap.</desc>
+<rect x="0" y="0" width="760" height="290" rx="10" style="fill:#1b2230"/>
+<circle class="sun" cx="330" cy="150" r="80"/>
+<circle cx="440" cy="120" r="80" style="fill:#2c2f36;fill-opacity:.92;stroke:#6b7280;stroke-width:1.2"/>
+<line x1="229.7" y1="177.4" x2="540.3" y2="92.6" style="stroke:#e9e4d6;stroke-width:1.2;stroke-dasharray:5 4;opacity:.75"/>
+<line x1="351.0" y1="227.2" x2="309.0" y2="72.8" style="stroke:#8a5a00;stroke-width:2.2"/>
+<circle cx="351.0" cy="227.2" r="6" style="fill:#1b2230;stroke:#8a5a00;stroke-width:2.2"/>
+<circle cx="309.0" cy="72.8" r="6" style="fill:#1b2230;stroke:#8a5a00;stroke-width:2.2"/>
+<line x1="461.0" y1="197.2" x2="419.0" y2="42.8" style="stroke:#9fc2ff;stroke-width:2.2"/>
+<circle cx="461.0" cy="197.2" r="6" style="fill:#1b2230;stroke:#9fc2ff;stroke-width:2.2"/>
+<circle cx="419.0" cy="42.8" r="6" style="fill:#1b2230;stroke:#9fc2ff;stroke-width:2.2"/>
+<text class="lbl sm" x="295.0" y="76.8" text-anchor="end" style="fill:#f5c542">Sun: click this edge …</text>
+<text class="lbl sm" x="351.0" y="251.2" text-anchor="middle" style="fill:#f5c542">… and this one</text>
+<text class="lbl sm" x="419.0" y="28.8" text-anchor="middle" style="fill:#9fc2ff">Moon: click this edge …</text>
+<text class="lbl sm" x="475.0" y="201.2" style="fill:#9fc2ff">… and this one</text>
+<text class="lbl sm" x="548.3" y="84.6" style="fill:#e9e4d6">the line of centers:</text><text class="lbl sm" x="548.3" y="100.6" style="fill:#e9e4d6">not along it, one edge is hidden</text>
+<text class="lbl sm" x="750" y="312" text-anchor="end">as in the lab, with the atmosphere off so the dark Moon shows outside the Sun · sizes not the real ones</text>
+</svg>
+    <figcaption><b>Where to click.</b> Measure each body across the line that joins the two centers (dashed), not along it: there both edges of the Sun are bright and both edges of the Moon stand clear of the Sun. Along the dashed line one edge of each lies where the two overlap. The angle tool snaps to an edge when you click near it; its row then names the edge, for example <b>Sun limb</b> to <b>Sun limb</b>.</figcaption>
+  </figure>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=sun-moon-size" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Measure both diameters.</b> Open the angle tool (<kbd>R</kbd>). Click near one edge of the Sun, then near the opposite edge, across the line joining the centers as in the figure, and check that the row reads <b>Sun limb</b> to <b>Sun limb</b>. Do the same for the Moon (<b>Moon limb</b> to <b>Moon limb</b>). Write both in arcminutes, to the hundredth. Zooming in (<kbd>+</kbd> or the mouse wheel) makes the clicks more precise.</li>
+    <li><b>The ratio of the true diameters.</b> Use the rule above, with the ratio of the distances from your <a href="half-moon.html">half-Moon</a> result.</li>
+    <li><b>Totality.</b> Run the clock on (<kbd>Shift</kbd> + <kbd>↑</kbd> steps a minute) until the Sun is completely covered, and measure both again. Which of the two is slightly bigger today? Does that agree with the eclipse being total?</li>
+    <li><b>An annular eclipse.</b> Open the Events finder (Labs menu) and choose <b>Solar eclipses (anywhere on Earth)</b>. Find one marked annular and go to it: it does not matter whether it is seen from Richmond, because you can measure both diameters even where the Moon misses the Sun. Which is bigger now? Why might the two angular sizes change from one eclipse to another?</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th>When</th><th>Sun’s angular diameter</th><th>Moon’s angular diameter</th><th>Which is bigger?</th></tr>
+    <tr><td>partial phase (the start of the lab)</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>totality</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+    <tr><td>an annular eclipse: date</td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>A hidden edge.</b> Clicking along the line of centers puts one end of the measurement where the two discs overlap, and the tool may snap to the wrong body’s edge. Read the row: both ends must name the same body.</li>
+    <li><b>Center instead of edge.</b> A click well inside a disc snaps to its center, which measures a radius, not a diameter. Click close to the edge.</li>
+    <li><b>Not through the center.</b> Two edge points that are not opposite each other measure a chord, shorter than the diameter. The tool puts each point on the limb where you clicked, so click as nearly opposite as you can, or measure a few times and keep the largest.</li>
+    <li><b>Different moments.</b> Both angular sizes change slowly, and not by the same amount. Measure the two at the same instant.</li>
+    <li><b>The half-Moon ratio.</b> The answer here can only be as good as the distance ratio you bring from the half-Moon lab, and that ratio is very sensitive to the angle you measured there. Carry its uncertainty through.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li><b>The Sun in Earth sizes.</b> The <a href="eclipse-timing.html">lunar eclipse lab</a> gives the Moon’s diameter in Earth diameters. Multiply: the Sun’s diameter in Earth diameters. Aristarchus did this and found the Sun far bigger than the Earth, which is said to be why he put the Sun, not the Earth, at the center.</li>
+    <li><b>In kilometres.</b> With the Earth’s size (the <a href="eratosthenes.html">noon Sun</a> lab) or the Moon’s distance (the <a href="lunar-parallax.html">two-observer parallax</a> lab), every size and distance in this chain can be put in kilometres.</li>
+    <li>Read Terence Tao’s account of this rung of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>
+</main></div></body></html>

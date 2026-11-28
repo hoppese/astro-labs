@@ -17,7 +17,7 @@ import { esc } from './util.js';
 import { jovianEvents } from './jovian.js';
 import { ensure, jpl } from '../jpl.js';
 import { fmtClock } from '../timeutil.js';
-import { running, INSTRUCTOR, eventsHidden } from './hidden.js';
+import { running, INSTRUCTOR, eventsHidden, rowHidden } from './hidden.js';
 
 const DAY = 86400000;
 const ms = (t) => t.date.getTime();
@@ -87,7 +87,7 @@ export const CATEGORIES = [
   } },
   { id: 'apsis', label: 'Moon: perigee and apogee', span: 13.8, list(t0, n) {
     const out = []; let a = A.SearchLunarApsis(at(t0));
-    while (out.length < n) { out.push({ t: ms(a.time), text: a.kind === 0 ? 'Moon at perigee (closest)' : 'Moon at apogee (farthest)', target: 'Moon', detail: `${hms(a.time)} UTC, ${Math.round(a.dist_km).toLocaleString('en-US')} km (center to center)` }); a = A.NextLunarApsis(a); }
+    while (out.length < n) { out.push({ t: ms(a.time), text: a.kind === 0 ? 'Moon at perigee (closest)' : 'Moon at apogee (farthest)', target: 'Moon', detail: rowHidden('Distance') ? `${hms(a.time)} UTC` : `${hms(a.time)} UTC, ${Math.round(a.dist_km).toLocaleString('en-US')} km (center to center)` }); a = A.NextLunarApsis(a); }
     return out;
   } },
   { id: 'oppo', label: 'Oppositions and conjunctions', span: 420, planet: true, list(t0, n, body) {

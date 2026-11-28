@@ -1,0 +1,82 @@
+<!--
+title: Total here, partial there: the Moon’s distance from a solar eclipse
+lede: On 8 April 2024 the Sun went completely dark in Richmond, Indiana, while a few hundred kilometres south, in Atlanta, a sliver of it kept shining. The Moon sat in a slightly different place in front of the Sun for the two towns. Measure how far, and how far apart the towns are, and you have the distance to the Moon: Hipparchus’s method, with a modern eclipse.
+-->
+<section id="goal">
+  <h2>What you will find out</h2>
+  <p>The <b>distance to the Moon</b>, from one solar eclipse seen from two places. Hipparchus did this around 130 BC with an eclipse that was total near the Hellespont but covered only four fifths of the Sun in Alexandria. You do it with the eclipse of 8 April 2024, total in Richmond and partial in Atlanta.</p>
+  <p>It is the same surveying idea as the <a href="lunar-parallax.html">two-observer lab</a>, but here the Sun is the background instead of the stars. That is how Hipparchus could measure the shift without a telescope: he only had to know how much of the Sun was covered.</p>
+  <p>You need: the planetarium (the lab puts you in Richmond at mid-eclipse, with Atlanta as a second observer at the same instant), the angle tool, the <b>Earth seen square-on</b> picture, and a calculator.</p>
+</section>
+
+<section id="idea">
+  <h2>The idea: the Moon’s shadow is narrow</h2>
+  <p>The Sun is far bigger than the Moon, so the Moon’s shadow narrows to a point behind it. When the point of the dark <b>umbra</b> just reaches the Earth, the eclipse is total in a narrow strip. A few hundred kilometres to the side you are in the pale <b>penumbra</b>: the Moon covers only part of the Sun.</p>
+  <figure>
+    <!--FIG:es_cone-->
+    <figcaption><b>Umbra and penumbra on the Earth.</b> Lines touching the edges of the Sun and Moon outline the shadow. The umbra (dark) narrows to a point that reaches the ground at Richmond: the eclipse is total. Atlanta is in the penumbra (pale): from there the Moon covers only part of the Sun. Nothing here is to scale: really the Sun is 400 times farther than the Moon, and the shadow is very long and thin.</figcaption>
+  </figure>
+  <p>Seen from the sky, it is parallax again. From Richmond the Moon is right in front of the Sun. From Atlanta, looking from a different place, it is shifted a little against the Sun. The Sun hardly shifts at all: it is 400 times farther away.</p>
+</section>
+
+<section id="sky">
+  <h2>What you measure: the shift of the Moon</h2>
+  <figure>
+    <!--FIG:es_sky-->
+    <figcaption><b>The lab’s picture.</b> The dark disc is the Moon as Richmond sees it, right over the Sun. The dashed circles are what Atlanta sees at the same instant: the Sun (yellow), in practically the same place, and the Moon (blue), shifted so that part of the Sun shows. The shift is the angle from the center of one Moon to the center of the other. It is drawn here far bigger than it really is.</figcaption>
+  </figure>
+  <p>Hipparchus could not measure an angle that small directly. What he had was the fraction of the Sun that stayed uncovered, so he knew the shift as a <b>fraction of the Sun’s width</b>. With the Sun’s angular size, that fraction becomes an angle:</p>
+  <div class="eq"><div class="row"><span class="frac"><span>shift</span><span>Sun’s width</span></span> = the fraction of the Sun</div><div class="row"><span class="so">so</span>shift = the fraction × the Sun’s width</div></div>
+</section>
+
+<section id="triangle">
+  <h2>From the shift to the distance</h2>
+  <p>As in the two-observer lab, the shift <i>p</i> is the angle at the Moon of a long thin triangle whose short side is the baseline <i>b</i> between the towns: only the part of it that is <b>square-on</b> to the Moon (see the <a href="lunar-parallax.html#baseline">two-observer guide</a> for why). For a small angle in radians:</p>
+  <figure>
+    <!--FIG:es_triangle-->
+    <figcaption><b>A thin triangle.</b> The square-on baseline <i>b</i> between Richmond and Atlanta, the Moon at distance <i>d</i>, and the shift <i>p</i> between the two lines of sight.</figcaption>
+  </figure>
+  <div class="eq"><div class="row"><i>p</i> = <span class="frac"><span><i>b</i></span><span><i>d</i></span></span></div><div class="row"><span class="so">so</span><i>d</i> = <span class="frac"><span><i>b</i></span><span><i>p</i></span></span></div><div class="row"><span class="eqnote">To put <i>p</i> in radians:</span> <span class="frac"><span><i>p</i> in radians</span><span>π</span></span> = <span class="frac"><span><i>p</i> in degrees</span><span>180°</span></span></div></div>
+  <p>The baseline here is short, only a few hundred kilometres, so the shift is small and each click of the angle tool matters more than in the two-observer lab.</p>
+</section>
+
+<section id="steps">
+  <h2>In the planetarium, step by step</h2>
+  <p><a class="go" href="../?lab=eclipse-two-sites" target="_blank" rel="noopener">Open this lab in the planetarium ↗</a></p>
+  <ol class="steps">
+    <li><b>Total here, partial there.</b> The lab opens in Richmond at mid-eclipse, with the atmosphere and refraction switched off so that the dark Moon shows against the black sky. The dashed circles are the Sun (yellow) and the Moon (blue) as Atlanta sees them at the same instant. Is Atlanta’s Sun covered?</li>
+    <li><b>Measure the shift.</b> Open the angle tool (<kbd>R</kbd>). Click the center of the Moon, then the center of the dashed blue Moon: the tool snaps to both. Write down the angle.</li>
+    <li><b>Measure the Sun’s width.</b> In Richmond the real Sun is hidden behind the Moon, so measure the dashed yellow circle instead, from edge to edge (click near each edge: the tool snaps to the limb). Work out the shift as a fraction of the Sun’s width: the number Hipparchus had.</li>
+    <li><b>Measure the baseline.</b> Press <b>Earth seen square-on</b> in the step: it shows the Earth as the Moon sees it at this instant. Press <b>Zoom to the places</b>, then drag a ruler from Richmond to Atlanta and read the length in km.</li>
+    <li><b>Work it out,</b> with the equations above: the shift in radians, then the distance in km. Divide by 6,371 km for Earth radii, and compare with the <a href="lunar-parallax.html">two-observer lab</a>.</li>
+  </ol>
+  <table class="rec" aria-label="A table to fill in">
+    <tr><th>Quantity</th><th>Value</th></tr>
+    <tr><td>Shift <i>p</i> (center to center), in degrees</td><td class="blank"></td></tr>
+    <tr><td>Sun’s width (dashed yellow), in degrees</td><td class="blank"></td></tr>
+    <tr><td>Shift as a fraction of the Sun’s width</td><td class="blank"></td></tr>
+    <tr><td>Shift <i>p</i>, in radians</td><td class="blank"></td></tr>
+    <tr><td>Square-on baseline <i>b</i>, in km</td><td class="blank"></td></tr>
+    <tr><td>Distance <i>d</i>, in km and in Earth radii</td><td class="blank"></td></tr>
+  </table>
+</section>
+
+<section id="wrong">
+  <h2>What can go wrong</h2>
+  <ul>
+    <li><b>Using the straight-line distance between the towns.</b> The line from Richmond to Atlanta is slanted to the Moon, so it is longer than the square-on baseline, and the distance comes out too big. Hipparchus had the same difficulty, with towns he could only place roughly.</li>
+    <li><b>Leaving the angle in degrees.</b> <i>d</i> = <span class="frac"><span><i>b</i></span><span><i>p</i></span></span> needs <i>p</i> in radians. In degrees the answer is about 57 times too small.</li>
+    <li><b>Snapping to the wrong thing.</b> Near the edge of a disc the angle tool snaps to the limb, elsewhere to the center. For the shift, click well inside each Moon. For the Sun’s width, click right at the dashed yellow edge.</li>
+    <li><b>A small angle, a short baseline.</b> The shift is a small fraction of the Sun’s width, so a tiny error in it is a large fraction of the answer. Measure each angle more than once.</li>
+    <li><b>From the surface, not the center.</b> Richmond and Atlanta see the Moon from the Earth’s surface, which here is a few thousand km nearer the Moon than the Earth’s center is. The distance you get is from the towns.</li>
+  </ul>
+</section>
+
+<section id="further">
+  <h2>Going further</h2>
+  <ul>
+    <li>Hipparchus’s numbers were rough (he had “four fifths covered” and a guess at the distance between two places), and he got between about 71 and 83 Earth radii. How well can you do with only the fraction of the Sun, and the Sun’s width assumed to be half a degree?</li>
+    <li>Compare with the <a href="lunar-parallax.html">two-observer lab</a>, with its much longer baseline, and with the Moon’s size from the <a href="eclipse-timing.html">lunar eclipse</a> and the <a href="moonrise.html">moonrise</a> together.</li>
+    <li>Read Terence Tao’s account of this rung of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>
+  </ul>
+</section>
