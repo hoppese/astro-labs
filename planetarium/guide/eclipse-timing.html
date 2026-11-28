@@ -17,27 +17,44 @@
     <li>The <b>penumbra</b> surrounds it. There the Earth hides only <i>part</i> of the Sun, so the light is dimmed but not gone. It widens with distance.</li>
   </ul>
   <figure>
-    <svg class="fig" viewBox="0 0 760 330" role="img" aria-labelledby="fs1t fs1d"><title id="fs1t">The Earth's shadow seen from the side</title><desc id="fs1d">Light from the top and bottom edges of the Sun passes the Earth. The umbra is a cone that narrows behind the Earth; the penumbra spreads around it. The Moon's path crosses both. The Sun is drawn much too near and too small.</desc>
-<path class="pen" d="M430,139.0 L745,125.1 L745,204.9 L430,191.0 Z"/>
-<path class="umb" d="M430,139.0 L745,152.9 L745,177.1 L430,191.0 Z"/>
-<path class="ray u" d="M52,106.2 L182,128.4 M198,128.4 L745,152.9"/>
-<path class="ray p" d="M52,106.2 L182,180.4 M198,180.4 L745,204.9"/>
-<path class="ray u" d="M52,223.8 L182,201.6 M198,201.6 L745,177.1"/>
-<path class="ray p" d="M52,223.8 L182,149.6 M198,149.6 L745,125.1"/>
-<text class="lbl sm" x="190" y="316" text-anchor="middle">≈ distance shortened · not to scale</text>
-<circle class="sun" cx="52" cy="165" r="60"/><text class="lbl" x="52" y="170" text-anchor="middle" style="fill:#5a3b00">Sun</text>
-<circle class="earth" cx="430" cy="165" r="26"/><text class="lbl" x="430" y="211" text-anchor="middle">Earth</text>
-<line class="orbit" x1="590" y1="22" x2="590" y2="308"/><text class="lbl sm" x="598" y="32">the Moon’s path</text>
-<circle class="moon" cx="590" cy="67" r="8.7"/>
-<circle class="moon dim" cx="590" cy="165" r="8.7"/>
-<circle class="moon" cx="590" cy="263" r="8.7"/>
-<text class="lbl u" x="478" y="170">umbra</text>
-<text class="lbl p" x="616" y="123.9">penumbra</text><text class="lbl p" x="520" y="213.0">penumbra</text>
-<path class="dim" d="M593,175.7 L630,244.1"/><text class="lbl sm" x="634" y="256.1">the Moon in the umbra: eclipsed</text>
+    <svg class="fig" viewBox="0 0 1000 656" role="img" aria-labelledby="fs1t fs1d"><title id="fs1t">The Earth's shadow seen from the side</title><desc id="fs1d">Above: the Sun, the Earth and the lines that graze both. Below, magnified: the umbra narrowing behind the Earth, the penumbra widening around it, the Moon's path crossing both, and the two lines from the Sun's top edge, one past the top of the Earth and one past the bottom, nearly parallel and an Earth width apart.</desc><defs><clipPath id="zc"><rect x="104.5" y="280.0" width="791.0" height="336.0"/></clipPath></defs>
+<path class="pen" d="M831.5,98.0 L827.2,98.2 L992.0,77.2 L992.0,162.8 L827.2,141.8 L831.5,142.0 Z"/>
+<path class="umb" d="M831.5,98.0 L992.0,108.8 L992.0,131.2 L831.5,142.0 Z"/>
+<line class="ray u" x1="88.8" y1="48.2" x2="992.0" y2="108.8"/>
+<line class="ray u" x1="88.8" y1="191.8" x2="992.0" y2="131.2"/>
+<line class="ray p" x1="93.1" y1="48.6" x2="992.0" y2="162.8"/>
+<line class="ray p" x1="93.1" y1="191.4" x2="992.0" y2="77.2"/>
+<circle class="sun" cx="84" cy="120" r="72"/><text class="lbl" x="84" y="125" text-anchor="middle" style="fill:#5a3b00">Sun</text>
+<circle class="earth" cx="830" cy="120" r="22"/><text class="lbl" x="786" y="90" text-anchor="end">Earth</text>
+<line class="orbit" x1="948" y1="60" x2="948" y2="180"/>
+<rect class="zoombox" x="766" y="72" width="226" height="96"/><text class="lbl sm" x="758" y="164" text-anchor="end">magnified below</text>
+<text class="lbl sm" x="20" y="220">not to scale: the real Sun is 109 times the Earth’s width and 23,000 Earth widths away</text>
+<line class="zoomlink" x1="766" y1="168" x2="104.5" y2="280.0"/><line class="zoomlink" x1="992" y1="168" x2="895.5" y2="280.0"/>
+<rect class="zoompanel" x="104.5" y="280.0" width="791.0" height="336.0"/>
+<g clip-path="url(#zc)">
+<path class="pen" d="M333.7,371.2 L318.8,371.6 L895.5,298.4 L895.5,597.6 L318.8,524.4 L333.7,524.8 Z"/>
+<path class="umb" d="M333.7,371.2 L895.5,408.9 L895.5,487.1 L333.7,524.8 Z"/>
+<line class="ray u" x1="-2265.6" y1="196.6" x2="895.5" y2="408.9"/>
+<line class="ray u" x1="-2265.6" y1="699.4" x2="895.5" y2="487.1"/>
+<line class="ray p" x1="-2250.7" y1="198.0" x2="895.5" y2="597.6"/>
+<line class="ray p" x1="-2250.7" y1="698.0" x2="895.5" y2="298.4"/>
+<circle class="earth" cx="328.5" cy="448.0" r="77.0"/><text class="lbl" x="328.5" y="453.0" text-anchor="middle" style="fill:#fff">Earth</text>
+<line class="orbit" x1="741.5" y1="280.0" x2="741.5" y2="616.0"/>
+<circle class="moon" cx="741.5" cy="329.0" r="23.8"/>
+<circle class="moon dim" cx="741.5" cy="448.0" r="23.8"/>
+<circle class="moon" cx="741.5" cy="567.0" r="23.8"/>
+</g>
+<text class="lbl u" x="468.5" y="453.0">umbra</text>
+<text class="lbl p" x="468.5" y="343.0">penumbra</text>
+<text class="lbl p" x="468.5" y="567.0">penumbra</text>
+<text class="lbl sm" x="773.3" y="452.0">eclipsed</text><text class="lbl sm" x="735.5" y="298.0" text-anchor="end">the Moon’s path</text>
+<path class="dim" d="M369.5,373.2 h6 V530.1 h-6"/><text class="lbl sm" x="367.5" y="548.1" text-anchor="middle">one Earth width</text>
+<path class="dim" d="M670.5,393.4 h6 V568.3 h-6"/><text class="lbl sm" x="668.5" y="586.3" text-anchor="middle">about the same</text>
+<text class="lbl sm" x="114.5" y="604.0">the two lines from the Sun’s top edge: nearly parallel</text>
 </svg>
-    <figcaption><b>The Earth’s shadow from the side.</b> The solid gold lines come from the top and bottom edges of the Sun and just graze the Earth: inside them, no part of the Sun can be seen (umbra). The dashed lines cross over between the Sun and the Earth: between them and the gold lines, part of the Sun is hidden (penumbra). The Moon’s orbit takes it through both. Not to scale: the real Sun is 109 times as wide as the Earth and 400 times as far away as the Moon.</figcaption>
+    <figcaption><b>The Earth’s shadow from the side; below, the region behind the Earth magnified.</b> The solid gold lines touch the same side of the Sun and of the Earth: inside them no part of the Sun can be seen (umbra). The dashed lines cross over between the Sun and the Earth: between them and the gold lines, part of the Sun is hidden (penumbra). The Moon’s orbit takes it through both. Look at the two lines that start from the Sun’s top edge, one past the top of the Earth and one past the bottom: they are an Earth width apart where they pass the Earth, and nearly parallel. In reality, with the Sun 23,000 Earth widths away, they spread apart by only about 30 km on the way to the Moon. Not to scale.</figcaption>
   </figure>
-  <div class="note"><b>What you will see in the planetarium</b>The penumbra is faint: the Moon in it is only a little dimmer, and many people never notice it. The umbra is obvious: a dark, often coppery bite out of the Moon. This lab times the <b>umbra</b>.</div>
+  <div class="note"><b>What you will see in the planetarium (and in the real sky)</b>In the outer half of the penumbra the Moon is hardly dimmer: most of the Sun still lights it. Deeper in, more and more of the Sun is hidden, and a grey shading creeps over the Moon’s leading edge in the half hour before the umbra arrives. The umbra itself is unmistakable: a dark, often coppery bite with a fairly distinct edge. This lab times the <b>umbra</b>; the penumbra is under <a href="#further">Going further</a>.</div>
 </section>
 
 <section id="contacts">
@@ -45,27 +62,27 @@
   <p>Looking up from the Earth you see the shadow end-on, as a round dark patch that the Moon drifts through, moving about its own diameter every hour. (The Earth turns too, but the lab keeps the Moon in the middle of the view for you.) Astronomers name four moments:</p>
   <figure>
     <svg class="fig" viewBox="0 0 760 400" role="img" aria-labelledby="fs2t fs2d"><title id="fs2t">The four contacts of the Moon with the umbra</title><desc id="fs2d">Looking from the Earth: the round umbra inside the paler penumbra. The Moon moves from right to left; four outlines mark first contact, the start of totality, the end of totality and last contact.</desc>
-<circle class="pen" cx="380" cy="200" r="122.2"/><circle class="umb" cx="380" cy="200" r="69.8"/>
-<line class="orbit" x1="562.2" y1="212" x2="197.8" y2="212"/>
-<circle class="moon ring" cx="480.8" cy="212" r="32"/>
-<circle class="moon ring" cx="416.8" cy="212" r="32"/>
-<circle class="moon ring" cx="343.2" cy="212" r="32"/>
-<circle class="moon ring" cx="279.2" cy="212" r="32"/>
-<line class="guide-l" x1="480.8" y1="212" x2="480.8" y2="65.8"/><circle cx="480.8" cy="212" r="2.5" style="fill:var(--f-ink)"/>
-<text class="lbl" x="480.8" y="59.8" text-anchor="middle">U1</text>
-<line class="guide-l" x1="343.2" y1="212" x2="343.2" y2="65.8"/><circle cx="343.2" cy="212" r="2.5" style="fill:var(--f-ink)"/>
-<text class="lbl" x="343.2" y="59.8" text-anchor="middle">U3</text>
-<line class="guide-l" x1="416.8" y1="212" x2="416.8" y2="336.2"/><circle cx="416.8" cy="212" r="2.5" style="fill:var(--f-ink)"/>
-<text class="lbl" x="416.8" y="352.2" text-anchor="middle">U2</text>
-<line class="guide-l" x1="279.2" y1="212" x2="279.2" y2="336.2"/><circle cx="279.2" cy="212" r="2.5" style="fill:var(--f-ink)"/>
-<text class="lbl" x="279.2" y="352.2" text-anchor="middle">U4</text>
-<path class="arrow" d="M233.2,212 h-46 m8,-6 l-8,6 l8,6"/><text class="lbl sm" x="210.2" y="198" text-anchor="middle">the Moon moves</text>
-<text class="lbl u" x="380" y="152.2" text-anchor="middle">umbra</text><text class="lbl p" x="455.7" y="102.3" text-anchor="start">penumbra</text>
-<path class="dim" d="M448.8,370.158038147139 v8 H384.8 v-8"/><text class="lbl sm" x="416.8" y="396.158038147139" text-anchor="middle">U1 → U2: the leading edge moves one Moon diameter</text>
-<path class="dim" d="M448.8,37.84196185286103 v-8 H311.2 v8"/><text class="lbl sm" x="380.0" y="21.841961852861033" text-anchor="middle">U1 → U3: the leading edge crosses the whole umbra</text>
+<circle class="pen face" cx="380" cy="200" r="124.8"/><circle class="umb face" cx="380" cy="200" r="70.4"/>
+<line class="orbit" x1="564.8" y1="212" x2="195.2" y2="212"/>
+<circle class="moon ring" cx="481.4" cy="212" r="32"/>
+<circle class="moon ring" cx="417.4" cy="212" r="32"/>
+<circle class="moon ring" cx="342.6" cy="212" r="32"/>
+<circle class="moon ring" cx="278.6" cy="212" r="32"/>
+<line class="guide-l" x1="481.4" y1="212" x2="481.4" y2="63.2"/><circle cx="481.4" cy="212" r="2.5" style="fill:var(--f-ink)"/>
+<text class="lbl" x="481.4" y="57.2" text-anchor="middle">U1</text>
+<line class="guide-l" x1="342.6" y1="212" x2="342.6" y2="63.2"/><circle cx="342.6" cy="212" r="2.5" style="fill:var(--f-ink)"/>
+<text class="lbl" x="342.6" y="57.2" text-anchor="middle">U3</text>
+<line class="guide-l" x1="417.4" y1="212" x2="417.4" y2="338.8"/><circle cx="417.4" cy="212" r="2.5" style="fill:var(--f-ink)"/>
+<text class="lbl" x="417.4" y="354.8" text-anchor="middle">U2</text>
+<line class="guide-l" x1="278.6" y1="212" x2="278.6" y2="338.8"/><circle cx="278.6" cy="212" r="2.5" style="fill:var(--f-ink)"/>
+<text class="lbl" x="278.6" y="354.8" text-anchor="middle">U4</text>
+<path class="arrow" d="M232.6,212 h-46 m8,-6 l-8,6 l8,6"/><text class="lbl sm" x="209.6" y="170" text-anchor="middle">the Moon moves</text>
+<text class="lbl uf" x="380" y="151.6" text-anchor="middle">umbra</text><text class="lbl pf" x="457.4" y="100.2" text-anchor="start">penumbra</text>
+<path class="dim" d="M449.4,372.8 v8 H385.4 v-8"/><text class="lbl sm" x="417.4" y="398.8" text-anchor="middle">U1 → U2: the leading edge moves one Moon diameter</text>
+<path class="dim" d="M449.4,35.2 v-8 H310.6 v8"/><text class="lbl sm" x="380.0" y="19.200000000000003" text-anchor="middle">U1 → U3: the leading edge crosses the whole umbra</text>
 <text class="lbl sm" x="750" y="392" text-anchor="end">not to scale</text>
 </svg>
-    <figcaption><b>The four contacts of the umbra.</b> U1: the Moon’s leading edge first touches the umbra. U2: the Moon is just completely inside (totality begins). U3: its leading edge first comes out (totality ends). U4: it is completely clear. The arrows show which distances the times measure. Not to scale.</figcaption>
+    <figcaption><b>The four contacts of the umbra,</b> in roughly the colours an eclipse shows: the penumbra a faint pinkish grey, the umbra a deep copper. U1: the Moon’s leading edge first touches the umbra. U2: the Moon is just completely inside (totality begins). U3: its leading edge first comes out (totality ends). U4: it is completely clear. The arrows show which distances the times measure. Not to scale.</figcaption>
   </figure>
 </section>
 
@@ -89,7 +106,28 @@
   <p>Dividing one by the other, the speed cancels:</p>
   <div class="eq"><i>shadow diameter</i> ÷ <i>Moon diameter</i> = (<i>t</i><sub>3</sub> − <i>t</i><sub>1</sub>) ÷ (<i>t</i><sub>2</sub> − <i>t</i><sub>1</sub>)</div>
   <p>You can check it with the other pair: from U2 to U4 the trailing edge also crosses the whole umbra, and from U3 to U4 the Moon moves one diameter. Averaging the two estimates helps.</p>
-  <div class="warn"><b>A chord, not a diameter</b>The Moon does not always pass through the middle of the shadow. Off-center, it crosses a <i>chord</i> of the circle, shorter than the diameter. In this eclipse it passes very close to the center, so the chord is nearly the full width. In other eclipses you would have to correct for it.</div>
+  <div class="warn"><b>A chord, not a diameter</b>Usually the Moon does not pass through the middle of the shadow. Off-center, it crosses a <i>chord</i> of the circle, shorter than the diameter, and the timing then measures the chord. In this eclipse the Moon passes very close to the center, so the chord is nearly the full width. In other eclipses you have to correct for it.</div>
+  <figure>
+    <svg class="fig" viewBox="0 0 760 470" role="img" aria-labelledby="fs4t fs4d"><title id="fs4t">An off-center eclipse: a chord, not a diameter</title><desc id="fs4d">The Moon's path passes below the center of the umbra. Along its path the umbra is only a chord wide, shorter than the diameter. Half the chord, the miss distance and the umbra's radius make a right triangle.</desc>
+<circle class="pen face" cx="300" cy="232" r="195.0"/><circle class="umb face" cx="300" cy="232" r="110.0"/>
+<line class="guide-l light" x1="190.0" y1="232" x2="410.0" y2="232"/>
+<line class="orbit" x1="535.0" y1="292.5" x2="65.0" y2="292.5"/>
+<line class="chord" x1="208.1" y1="292.5" x2="391.9" y2="292.5"/>
+<circle class="moon ring" cx="243.0" cy="292.5" r="50"/><text class="lbl sm" x="243.0" y="360.5" text-anchor="middle">the Moon</text>
+<path class="tri" d="M300,232 L300,292.5 L391.9,292.5 Z"/>
+<path class="tri-sq" d="M300,280.5 h12 v12"/>
+<circle cx="300" cy="232" r="3" class="dotc"/>
+<text class="lbl uf" x="239.5" y="182.5" text-anchor="middle">umbra</text>
+<text class="lbl uf sm2" x="245.0" y="226" text-anchor="middle">diameter</text>
+<text class="lbl uf sm2" x="292.0" y="266.2" text-anchor="end">miss distance</text>
+<text class="lbl uf sm2" x="350.5" y="255.0" text-anchor="middle" transform="rotate(33.4 350.5 255.0)">radius</text>
+<text class="lbl" x="543.0" y="282.5">the chord</text><text class="lbl sm" x="543.0" y="302.5">the part of the umbra</text><text class="lbl sm" x="543.0" y="319.5">the Moon crosses</text>
+<path class="dim" d="M391.9,292.5 L537.0,278.5"/>
+<text class="lbl pf" x="159.6" y="87.7" text-anchor="middle">penumbra</text>
+<text class="lbl sm" x="750" y="462" text-anchor="end">not to scale</text>
+</svg>
+    <figcaption><b>An ordinary, off-center eclipse.</b> The Moon’s path (the dotted line) passes below the shadow’s center by the <i>miss distance</i>. Along it the umbra is only as wide as the gold <i>chord</i>. Half the chord, the miss distance and the radius form a right triangle, so <i>radius</i>² = (<i>chord</i> ÷ 2)² + <i>miss distance</i>². The timing gives the chord; the miss distance can be measured at mid-eclipse, from the Moon’s center to the shadow’s center (in the planetarium: the shadow outline and the angle tool). Not to scale.</figcaption>
+  </figure>
 </section>
 
 <section id="taper">
@@ -149,6 +187,11 @@
 
 <section id="further">
   <h2>Going further</h2>
+  <h3>Time the penumbra too</h3>
+  <p>The penumbra has contacts of its own: <b>P1</b> when the Moon first touches it and <b>P4</b> when it finally leaves. Run the clock back from U1 and forward from U4 to find them. They are much harder to judge than the umbral contacts, because the outer penumbra hardly dims the Moon at all: try it, and see how far apart two people’s times are.</p>
+  <p>The side view shows why the penumbra is worth the trouble. The line that bounds the umbra on top and the line that bounds the penumbra underneath both start from the Sun’s top edge, and they stay an Earth width apart all the way to the Moon. So, at the Moon:</p>
+  <div class="eq"><i>umbra radius</i> + <i>penumbra radius</i> ≈ <i>Earth diameter</i></div>
+  <p>That is a second, independent route to the Earth’s size in Moon diameters, with no need to know that the Sun and Moon look the same size. Do your two routes agree?</p>
   <ul>
     <li>With the Moon’s size in Earth diameters and the Earth’s size (Eratosthenes: the <a href="../?lab=eratosthenes" target="_blank" rel="noopener">noon Sun</a> lab), you have the Moon’s size in kilometres. Then its angular size in the sky (the <a href="../?lab=moonrise" target="_blank" rel="noopener">moonrise</a> lab) gives its distance: Aristarchus’s next step.</li>
     <li>Read Terence Tao’s account of these rungs of the <a href="https://terrytao.wordpress.com/2025/02/13/cosmic-distance-ladder-video-with-grant-sanderson-3blue1brown-commentary-and-corrections/" target="_blank" rel="noopener">cosmic distance ladder</a>.</li>

@@ -110,9 +110,12 @@ export function drawShadow(ctx) {
     ctx.save();
     { ctx.translate(m.x, m.y); ctx.transform(q[0], q[1], q[2], q[3], 0, 0); ctx.translate(-m.x, -m.y); }
     ctx.beginPath(); ctx.arc(m.x, m.y, rm + 0.3, 0, 2 * Math.PI); ctx.clip();
-    // penumbra: a soft grey that deepens toward the umbra (to the eye only its inner part is noticeable)
+    // penumbra: the light left is the part of the Sun's disc the Earth does not hide. From the Moon the Earth's edge crosses the Sun as
+    // a nearly straight line, so at a fraction t of the way out from the umbra the Sun shows (acos(-x) + x sqrt(1 - x^2)) / pi of its
+    // disc, x = 2t - 1: dark at the umbra, half at the middle, full at the outer edge (as in photographs and in Stellarium). Kept a
+    // little short of black at the umbra's edge, so that the umbra's own coppery edge (what the contacts are timed by) stays distinct.
     const dk = 1 - R.sky.day, g = ctx.createRadialGradient(cx, cy, ru * k, cx, cy, rp * k);
-    g.addColorStop(0, `rgba(8,8,10,${0.34 * dk})`); g.addColorStop(0.45, `rgba(8,8,10,${0.13 * dk})`); g.addColorStop(1, 'rgba(8,8,10,0)');
+    for (let i = 0; i <= 12; i++) { const t = i / 12, x = 2 * t - 1, vis = (Math.acos(-x) + x * Math.sqrt(1 - x * x)) / Math.PI; g.addColorStop(t, `rgba(8,8,10,${(0.86 * (1 - vis) * dk).toFixed(3)})`); }
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rp * k, 0, 2 * Math.PI); ctx.fill();
     // umbra: dark, coppery (sunlight bent through the Earth's atmosphere), a little brighter toward its edge
     const ug = ctx.createRadialGradient(cx, cy, 0, cx, cy, ru * k);

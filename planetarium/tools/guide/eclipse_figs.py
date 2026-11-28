@@ -5,41 +5,64 @@ import math
 def f(x): return f"{x:.1f}"
 
 def side():
-    """Side view. The Sun is drawn big and near with a break (≈) in its rays; past the break the rays have the slope that gives the
-    real proportions at the Moon: each shadow edge moves by one Moon RADIUS between the Earth and the Moon, so the umbra there is
-    (Earth − 1) and the penumbra (Earth + 1) Moon diameters, with the Earth 3.67 Moon diameters across."""
-    W, H, cy = 760, 330, 165
-    xs, R = 52, 60            # the Sun, drawn (not to scale)
-    xb = 190                  # the break in the rays
-    xe, r = 430, 26           # Earth
-    xm = 590                  # where the Moon's orbit crosses
-    rm = r / 3.67
-    sl = rm / (xm - xe)       # slope of every shadow edge past the break
-    rd = r / 3.0              # the Moon as DRAWN: too big on purpose, so that the picture does not hand over the ratio the lab measures
-    xr = 745
-    def outer(x): return r - sl * (x - xe)          # half-height of the umbra boundary (converging)
-    def inner(x): return r + sl * (x - xe)          # half-height of the penumbra boundary (diverging)
-    hu, hp = outer(xm), inner(xm)
+    """Side view, two panels from ONE geometry (true tangent lines to the Sun and the Earth): above, the whole line-up with a box round
+    the region behind the Earth; below, that box magnified, where the umbra, the penumbra, the Moon and the two nearly parallel lines
+    from the Sun's top edge (an Earth width apart) can be read."""
+    W = 1000
+    xs, R = 84, 72; xe, r = 830, 22; xm = 948; rd = 6.8; xr = 992; cy = 120
+    D = xe - xs
+    def tangent(inner, sg):
+        nx = (R + r) / D if inner else (R - r) / D
+        n = (nx, sg * math.sqrt(1 - nx * nx))
+        p1 = (xs + R * n[0], cy + R * n[1]); p2 = (xe - r * n[0], cy - r * n[1]) if inner else (xe + r * n[0], cy + r * n[1])
+        return p1, p2
+    def y_at(ln, x): (x1, y1), (x2, y2) = ln; return y1 + (y2 - y1) * (x - x1) / (x2 - x1)
+    ot, ob, it_, ib = tangent(False, -1), tangent(False, 1), tangent(True, -1), tangent(True, 1)
+    # the box, and the magnified panel's mapping
+    bx0, bx1, bh = xe - 64, xr, 48
+    k = 3.5; X0 = (W - (bx1 - bx0) * k) / 2; Y0 = 250 + bh * k + 30
+    def Z(x, y): return X0 + (x - bx0) * k, Y0 + (y - cy) * k
+    H = int(Y0 + bh * k + 40)
     s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs1t fs1d"><title id="fs1t">The Earth\'s shadow seen from the side</title>'
-         f'<desc id="fs1d">Light from the top and bottom edges of the Sun passes the Earth. The umbra is a cone that narrows behind the Earth; the penumbra spreads around it. The Moon\'s path crosses both. The Sun is drawn much too near and too small.</desc>']
-    s.append(f'<path class="pen" d="M{xe},{f(cy-r)} L{xr},{f(cy-inner(xr))} L{xr},{f(cy+inner(xr))} L{xe},{f(cy+r)} Z"/>')
-    s.append(f'<path class="umb" d="M{xe},{f(cy-r)} L{xr},{f(cy-outer(xr))} L{xr},{f(cy+outer(xr))} L{xe},{f(cy+r)} Z"/>')
-    for sg in (-1, 1):
-        # outer ray: Sun's top edge -> Earth's top edge (umbra boundary); inner ray: Sun's top edge -> Earth's bottom edge (penumbra boundary)
-        yo_b = cy + sg * (r + sl * (xe - xb)); yi_b = cy - sg * (r - sl * (xe - xb))
-        s.append(f'<path class="ray u" d="M{xs},{f(cy+sg*R*0.98)} L{xb-8},{f(yo_b)} M{xb+8},{f(yo_b)} L{xr},{f(cy + sg*outer(xr))}"/>')
-        s.append(f'<path class="ray p" d="M{xs},{f(cy+sg*R*0.98)} L{xb-8},{f(yi_b)} M{xb+8},{f(yi_b)} L{xr},{f(cy - sg*inner(xr))}"/>')
-    s.append(f'<text class="lbl sm" x="{xb}" y="{H-14}" text-anchor="middle">≈ distance shortened · not to scale</text>')
+         '<desc id="fs1d">Above: the Sun, the Earth and the lines that graze both. Below, magnified: the umbra narrowing behind the Earth, the penumbra widening around it, the Moon\'s path crossing both, and the two lines from the Sun\'s top edge, one past the top of the Earth and one past the bottom, nearly parallel and an Earth width apart.</desc>'
+         f'<defs><clipPath id="zc"><rect x="{f(X0)}" y="{f(Y0 - bh*k)}" width="{f((bx1-bx0)*k)}" height="{f(2*bh*k)}"/></clipPath></defs>']
+    # ---- overview ----
+    def poly(pts, cls, T=lambda x, y: (x, y)): return f'<path class="{cls}" d="M' + ' L'.join(f'{f(T(x, y)[0])},{f(T(x, y)[1])}' for x, y in pts) + ' Z"/>'
+    def shadow(T, xend):
+        out = [poly([ot[1], ib[1], (xend, y_at(ib, xend)), (xend, y_at(it_, xend)), it_[1], ob[1]], 'pen', T),
+               poly([ot[1], (xend, y_at(ot, xend)), (xend, y_at(ob, xend)), ob[1]], 'umb', T)]
+        for ln, cls in ((ot, 'u'), (ob, 'u'), (it_, 'p'), (ib, 'p')):
+            x1, y1 = T(*ln[0]); x2, y2 = T(xend, y_at(ln, xend))
+            out.append(f'<line class="ray {cls}" x1="{f(x1)}" y1="{f(y1)}" x2="{f(x2)}" y2="{f(y2)}"/>')
+        return out
+    s += shadow(lambda x, y: (x, y), xr)
     s.append(f'<circle class="sun" cx="{xs}" cy="{cy}" r="{R}"/><text class="lbl" x="{xs}" y="{cy+5}" text-anchor="middle" style="fill:#5a3b00">Sun</text>')
-    s.append(f'<circle class="earth" cx="{xe}" cy="{cy}" r="{r}"/><text class="lbl" x="{xe}" y="{cy+r+20}" text-anchor="middle">Earth</text>')
-    s.append(f'<line class="orbit" x1="{xm}" y1="22" x2="{xm}" y2="{H-22}"/><text class="lbl sm" x="{xm+8}" y="32">the Moon’s path</text>')
-    for y, c in ((cy - 98, 'moon'), (cy, 'moon dim'), (cy + 98, 'moon')):
-        s.append(f'<circle class="{c}" cx="{xm}" cy="{y}" r="{f(rd)}"/>')
-    s.append(f'<text class="lbl u" x="{xe+48}" y="{cy+5}">umbra</text>')
-    s.append(f'<text class="lbl p" x="{xm+26}" y="{f(cy-hp-8)}">penumbra</text><text class="lbl p" x="{xe+90}" y="{f(cy+inner(xe+90)+18)}">penumbra</text>')
-    s.append(f'<path class="dim" d="M{xm+3},{f(cy+rd+2)} L{xm+40},{f(cy+hp+46)}"/><text class="lbl sm" x="{xm+44}" y="{f(cy+hp+58)}">the Moon in the umbra: eclipsed</text>')
+    s.append(f'<circle class="earth" cx="{xe}" cy="{cy}" r="{r}"/><text class="lbl" x="{xe-44}" y="{cy-30}" text-anchor="end">Earth</text>')
+    s.append(f'<line class="orbit" x1="{xm}" y1="{cy-60}" x2="{xm}" y2="{cy+60}"/>')
+    s.append(f'<rect class="zoombox" x="{bx0}" y="{cy-bh}" width="{bx1-bx0}" height="{2*bh}"/><text class="lbl sm" x="{bx0-8}" y="{cy+bh-4}" text-anchor="end">magnified below</text>')
+    s.append(f'<text class="lbl sm" x="20" y="{cy+100}">not to scale: the real Sun is 109 times the Earth’s width and 23,000 Earth widths away</text>')
+    # ---- the magnified panel ----
+    zx0, zy0 = Z(bx0, cy - bh); zx1, zy1 = Z(bx1, cy + bh)
+    s.append(f'<line class="zoomlink" x1="{bx0}" y1="{cy+bh}" x2="{f(zx0)}" y2="{f(zy0)}"/><line class="zoomlink" x1="{bx1}" y1="{cy+bh}" x2="{f(zx1)}" y2="{f(zy0)}"/>')
+    s.append(f'<rect class="zoompanel" x="{f(zx0)}" y="{f(zy0)}" width="{f(zx1-zx0)}" height="{f(zy1-zy0)}"/>')
+    s.append('<g clip-path="url(#zc)">')
+    s += shadow(Z, xr)
+    ex, ey = Z(xe, cy); s.append(f'<circle class="earth" cx="{f(ex)}" cy="{f(ey)}" r="{f(r*k)}"/><text class="lbl" x="{f(ex)}" y="{f(ey+5)}" text-anchor="middle" style="fill:#fff">Earth</text>')
+    mx, _ = Z(xm, cy); s.append(f'<line class="orbit" x1="{f(mx)}" y1="{f(zy0)}" x2="{f(mx)}" y2="{f(zy1)}"/>')
+    for dy, c in ((-34, 'moon'), (0, 'moon dim'), (34, 'moon')):
+        _, my = Z(xm, cy + dy); s.append(f'<circle class="{c}" cx="{f(mx)}" cy="{f(my)}" r="{f(rd*k)}"/>')
+    s.append('</g>')
+    ux, uy = Z(xe + 40, cy); s.append(f'<text class="lbl u" x="{f(ux)}" y="{f(uy+5)}">umbra</text>')
+    px_, py_ = Z(xe + 40, cy - 30); s.append(f'<text class="lbl p" x="{f(px_)}" y="{f(py_)}">penumbra</text>')
+    px_, py_ = Z(xe + 40, cy + 34); s.append(f'<text class="lbl p" x="{f(px_)}" y="{f(py_)}">penumbra</text>')
+    s.append(f'<text class="lbl sm" x="{f(mx+rd*k+8)}" y="{f(Z(xm, cy)[1]+4)}">eclipsed</text><text class="lbl sm" x="{f(mx-6)}" y="{f(zy0+18)}" text-anchor="end">the Moon’s path</text>')
+    # the two lines from the Sun's top edge: Earth width apart at the Earth, about the same at the Moon
+    for x, lab in ((xe + 10, 'one Earth width'), (xm - 22, 'about the same')):
+        X, Y1 = Z(x, y_at(ot, x)); _, Y2 = Z(x, y_at(it_, x))
+        s.append(f'<path class="dim" d="M{f(X+6)},{f(Y1)} h6 V{f(Y2)} h-6"/><text class="lbl sm" x="{f(X+4)}" y="{f(Y2+18)}" text-anchor="middle">{lab}</text>')
+    s.append(f'<text class="lbl sm" x="{f(zx0+10)}" y="{f(zy1-12)}">the two lines from the Sun’s top edge: nearly parallel</text>')
     s.append('</svg>')
-    return '\n'.join(s), hu / rd, hp / rd
+    return '\n'.join(s), (y_at(ob, xm) - y_at(ot, xm)) / 2 / rd, (y_at(it_, xm) - y_at(ib, xm)) / 2 / rd
 
 def face(hu_m, hp_m):
     """As seen from the Earth: the shadow's cross-section at the Moon, the Moon at the four contacts, labels outside."""
@@ -52,7 +75,7 @@ def face(hu_m, hp_m):
     u1 = cx + half + rm; u2 = cx + half - rm; u3 = cx - half + rm; u4 = cx - half - rm
     s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs2t fs2d"><title id="fs2t">The four contacts of the Moon with the umbra</title>'
          '<desc id="fs2d">Looking from the Earth: the round umbra inside the paler penumbra. The Moon moves from right to left; four outlines mark first contact, the start of totality, the end of totality and last contact.</desc>']
-    s.append(f'<circle class="pen" cx="{cx}" cy="{cy}" r="{f(rp)}"/><circle class="umb" cx="{cx}" cy="{cy}" r="{f(ru)}"/>')
+    s.append(f'<circle class="pen face" cx="{cx}" cy="{cy}" r="{f(rp)}"/><circle class="umb face" cx="{cx}" cy="{cy}" r="{f(ru)}"/>')
     s.append(f'<line class="orbit" x1="{f(cx+rp+60)}" y1="{my}" x2="{f(cx-rp-60)}" y2="{my}"/>')
     for x in (u1, u2, u3, u4): s.append(f'<circle class="moon ring" cx="{f(x)}" cy="{my}" r="{rm}"/>')
     top, bot = cy - rp - 18, cy + rp + 30
@@ -61,8 +84,8 @@ def face(hu_m, hp_m):
         s.append(f'<line class="guide-l" x1="{f(x)}" y1="{my}" x2="{f(x)}" y2="{f(y + (6 if up else -16))}"/><circle cx="{f(x)}" cy="{my}" r="2.5" style="fill:var(--f-ink)"/>')
         s.append(f'<text class="lbl" x="{f(x)}" y="{f(y)}" text-anchor="middle">{lab}</text>')
     ax = min(cx - rp, u4 - rm) - 14
-    s.append(f'<path class="arrow" d="M{f(ax)},{my} h-46 m8,-6 l-8,6 l8,6"/><text class="lbl sm" x="{f(ax-23)}" y="{my-14}" text-anchor="middle">the Moon moves</text>')
-    s.append(f'<text class="lbl u" x="{cx}" y="{f(cy-ru+22)}" text-anchor="middle">umbra</text><text class="lbl p" x="{f(cx+rp*0.62)}" y="{f(cy-rp*0.8)}" text-anchor="start">penumbra</text>')
+    s.append(f'<path class="arrow" d="M{f(ax)},{my} h-46 m8,-6 l-8,6 l8,6"/><text class="lbl sm" x="{f(ax-23)}" y="{my-rm-10}" text-anchor="middle">the Moon moves</text>')
+    s.append(f'<text class="lbl uf" x="{cx}" y="{f(cy-ru+22)}" text-anchor="middle">umbra</text><text class="lbl pf" x="{f(cx+rp*0.62)}" y="{f(cy-rp*0.8)}" text-anchor="start">penumbra</text>')
     yb = bot + 26
     s.append(f'<path class="dim" d="M{f(u1-rm)},{yb-8} v8 H{f(u2-rm)} v-8"/><text class="lbl sm" x="{f((u1+u2)/2-rm)}" y="{yb+18}" text-anchor="middle">U1 → U2: the leading edge moves one Moon diameter</text>')
     yt = top - 30
@@ -99,8 +122,44 @@ def taper():
     s.append('</svg>')
     return '\n'.join(s)
 
+def chord(hu_m, hp_m):
+    """An ordinary eclipse: the Moon's path passes off the shadow's center, so the Moon crosses a chord, shorter than the diameter.
+    The right triangle (half the chord, the miss distance, the radius) is how the two are related."""
+    W, H = 760, 470
+    cx, cy, rm = 300, 232, 50
+    ru, rp = hu_m * rm, hp_m * rm
+    b = 0.55 * ru                              # how far the Moon's path passes from the center
+    my = cy + b
+    half = math.sqrt(ru**2 - b**2)
+    s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs4t fs4d"><title id="fs4t">An off-center eclipse: a chord, not a diameter</title>'
+         '<desc id="fs4d">The Moon\'s path passes below the center of the umbra. Along its path the umbra is only a chord wide, shorter than the diameter. Half the chord, the miss distance and the umbra\'s radius make a right triangle.</desc>']
+    s.append(f'<circle class="pen face" cx="{cx}" cy="{cy}" r="{f(rp)}"/><circle class="umb face" cx="{cx}" cy="{cy}" r="{f(ru)}"/>')
+    # the diameter (dashed, through the center) and the chord along the Moon's path
+    s.append(f'<line class="guide-l light" x1="{f(cx-ru)}" y1="{cy}" x2="{f(cx+ru)}" y2="{cy}"/>')
+    s.append(f'<line class="orbit" x1="{f(cx+rp+40)}" y1="{f(my)}" x2="{f(cx-rp-40)}" y2="{f(my)}"/>')
+    s.append(f'<line class="chord" x1="{f(cx-half)}" y1="{f(my)}" x2="{f(cx+half)}" y2="{f(my)}"/>')
+    # the Moon at mid-eclipse, outlined
+    s.append(f'<circle class="moon ring" cx="{f(cx-half*0.62)}" cy="{f(my)}" r="{rm}"/><text class="lbl sm" x="{f(cx-half*0.62)}" y="{f(my+rm+18)}" text-anchor="middle">the Moon</text>')
+    # the right triangle: center -> foot of the perpendicular -> end of the chord
+    s.append(f'<path class="tri" d="M{cx},{cy} L{cx},{f(my)} L{f(cx+half)},{f(my)} Z"/>')
+    s.append(f'<path class="tri-sq" d="M{cx},{f(my-12)} h12 v12"/>')
+    s.append(f'<circle cx="{cx}" cy="{cy}" r="3" class="dotc"/>')
+    # labels (outside the copper, or light on it)
+    s.append(f'<text class="lbl uf" x="{f(cx-ru*0.55)}" y="{f(cy-ru*0.45)}" text-anchor="middle">umbra</text>')
+    s.append(f'<text class="lbl uf sm2" x="{f(cx-ru*0.5)}" y="{cy-6}" text-anchor="middle">diameter</text>')
+    s.append(f'<text class="lbl uf sm2" x="{f(cx-8)}" y="{f((cy+my)/2+4)}" text-anchor="end">miss distance</text>')
+    s.append(f'<text class="lbl uf sm2" x="{f(cx+half*0.55)}" y="{f(cy+b*0.38)}" text-anchor="middle" transform="rotate({math.degrees(math.atan2(b, half)):.1f} {f(cx+half*0.55)} {f(cy+b*0.38)})">radius</text>')
+    s.append(f'<text class="lbl" x="{f(cx+rp+48)}" y="{f(my-10)}">the chord</text><text class="lbl sm" x="{f(cx+rp+48)}" y="{f(my+10)}">the part of the umbra</text><text class="lbl sm" x="{f(cx+rp+48)}" y="{f(my+27)}">the Moon crosses</text>')
+    s.append(f'<path class="dim" d="M{f(cx+half)},{f(my)} L{f(cx+rp+42)},{f(my-14)}"/>')
+    s.append(f'<text class="lbl pf" x="{f(cx-rp*0.72)}" y="{f(cy-rp*0.74)}" text-anchor="middle">penumbra</text>')
+    s.append(f'<text class="lbl sm" x="{W-10}" y="{H-8}" text-anchor="end">not to scale</text>')
+    s.append('</svg>')
+    return '\n'.join(s)
+
 a, hu, hp = side()
 open(__file__.replace('eclipse_figs.py', 'fig_side.svg.html'), 'w').write(a)
-open(__file__.replace('eclipse_figs.py', 'fig_face.svg.html'), 'w').write(face(hu, hp))
+FACE = (2.2, 3.9)     # umbra and penumbra in Moon diameters as DRAWN face-on: deliberately not the real ratio (the lab measures it)
+open(__file__.replace('eclipse_figs.py', 'fig_face.svg.html'), 'w').write(face(*FACE))
 open(__file__.replace('eclipse_figs.py', 'fig_taper.svg.html'), 'w').write(taper())
+open(__file__.replace('eclipse_figs.py', 'fig_chord.svg.html'), 'w').write(chord(*FACE))
 print('umbra half-height / Moon radius', round(hu, 2), 'penumbra', round(hp, 2))
