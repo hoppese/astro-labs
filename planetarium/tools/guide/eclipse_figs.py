@@ -9,8 +9,11 @@ def side():
     the region behind the Earth; below, that box magnified, where the umbra, the penumbra, the Moon and the two nearly parallel lines
     from the Sun's top edge (an Earth width apart) can be read."""
     W = 1000
-    xs, R = 84, 72; xe, r = 830, 22; xm = 948; rd = 6.8; xr = 992; cy = 120
+    xs, R = 84, 72; xe, r = 830, 22; xm = 948; xr = 992; cy = 120
     D = xe - xs
+    # the Moon drawn exactly as wide as the umbra narrows between the Earth and the Moon, so that the picture shows
+    # Earth = umbra + one Moon (the ratio itself is not the real one: the Earth here is 2.8 Moons across, not 3.7)
+    rd = (R - r) / D * (xm - xe)
     def tangent(inner, sg):
         nx = (R + r) / D if inner else (R - r) / D
         n = (nx, sg * math.sqrt(1 - nx * nx))
@@ -55,8 +58,15 @@ def side():
     ux, uy = Z(xe + 40, cy); s.append(f'<text class="lbl u" x="{f(ux)}" y="{f(uy+5)}">umbra</text>')
     px_, py_ = Z(xe + 40, cy - 30); s.append(f'<text class="lbl p" x="{f(px_)}" y="{f(py_)}">penumbra</text>')
     px_, py_ = Z(xe + 40, cy + 34); s.append(f'<text class="lbl p" x="{f(px_)}" y="{f(py_)}">penumbra</text>')
-    s.append(f'<text class="lbl sm" x="{f(mx+rd*k+8)}" y="{f(Z(xm, cy)[1]+4)}">eclipsed</text><text class="lbl sm" x="{f(mx-6)}" y="{f(zy0+18)}" text-anchor="end">the Moon’s path</text>')
+    s.append(f'<text class="lbl u" x="{f(mx-rd*k-8)}" y="{f(Z(xm, cy)[1]+5)}" text-anchor="end" style="font-size:13.5px">eclipsed</text><text class="lbl sm" x="{f(mx-6)}" y="{f(zy0+18)}" text-anchor="end">the Moon’s path</text>')
     # the two lines from the Sun's top edge: Earth width apart at the Earth, about the same at the Moon
+    # Earth = umbra + one Moon: dotted lines level with the Earth's top and bottom, and the two half-Moon gaps at the Moon
+    for yy in (cy - r, cy + r):
+        a1 = Z(xe, yy); a2 = Z(xm + 18, yy); s.append(f'<line class="guide-l" x1="{f(a1[0])}" y1="{f(a1[1])}" x2="{f(a2[0])}" y2="{f(a2[1])}"/>')
+    gx = Z(xm + 14, cy)[0]
+    for y0, y1 in ((cy - r, y_at(ot, xm)), (y_at(ob, xm), cy + r)):
+        _, ga = Z(xm, y0); _, gb = Z(xm, y1)
+        s.append(f'<path class="dim" d="M{f(gx)},{f(ga)} h7 V{f(gb)} h-7"/><text class="lbl sm" x="{f(gx+12)}" y="{f((ga+gb)/2+4)}">½ Moon</text>')
     for x, lab in ((xe + 10, 'one Earth width'), (xm - 22, 'about the same')):
         X, Y1 = Z(x, y_at(ot, x)); _, Y2 = Z(x, y_at(it_, x))
         s.append(f'<path class="dim" d="M{f(X+6)},{f(Y1)} h6 V{f(Y2)} h-6"/><text class="lbl sm" x="{f(X+4)}" y="{f(Y2+18)}" text-anchor="middle">{lab}</text>')
