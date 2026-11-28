@@ -32,7 +32,7 @@ SEMESTERS = [
        blurb='From the sky overhead to the size of the solar system: the motions of the Sun, Moon and planets, then the '
              'ancient distance ladder (the Earth, the Moon, the Sun), Kepler and Newton, and the astronomical unit.',
        days=[
-    ('L', 'Welcome: astrology, astronomy, and the scale of things', ['1.1-1.7'], ['Syllabus'], [], 'Open with astrology (Ideas.txt)'),
+    ('L', 'Welcome: how far away is everything?', ['1.1-1.7'], ['Syllabus'], [], ''),
     ('L', 'The celestial sphere', ['2.1', '4.1'], ['CelestialTerminology'], [], ''),
     ('A', 'Lab: Where on Earth are you? Latitude and a round Earth', ['2.1'], [], ['polaris-latitude', 'canopus'], 'First lab: learn the planetarium and the angle tool'),
     ('L', 'Races across the sky: the solar and the sidereal day', ['4.3'], ['Races across the sky'], ['sidereal-day'], ''),
