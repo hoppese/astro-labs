@@ -187,6 +187,35 @@ def penradius():
     s.append('</svg>')
     return '\n'.join(s)
 
+def p1u3(hu_m, hp_m):
+    """Face-on: from P1 to U3 the Moon's leading edge goes from the near edge of the penumbra to the far edge of the umbra, one penumbra
+    radius plus one umbra radius: about one Earth diameter."""
+    W, H = 760, 420
+    cx, cy, rm = 330, 214, 38
+    ru, rp = hu_m * rm, hp_m * rm
+    s = [f'<svg class="fig" viewBox="0 0 {W} {H}" role="img" aria-labelledby="fs6t fs6d"><title id="fs6t">From P1 to U3</title>'
+         '<desc id="fs6d">The Moon moving left through the center of the shadow, outlined at P1 (touching the penumbra) and at U3 (its leading edge at the far edge of the umbra). Its leading edge travels one penumbra radius plus one umbra radius.</desc>']
+    s.append(f'<circle class="pen face" cx="{cx}" cy="{cy}" r="{f(rp)}"/><circle class="umb face" cx="{cx}" cy="{cy}" r="{f(ru)}"/>')
+    s.append(f'<line class="orbit" x1="{f(cx+rp+2*rm+10)}" y1="{cy}" x2="{f(cx-rp-30)}" y2="{cy}"/>')
+    p1, u3 = cx + rp + rm, cx - ru + rm
+    s.append(f'<circle class="moon ring" cx="{f(p1)}" cy="{cy}" r="{rm}"/><circle class="moon ring" cx="{f(u3)}" cy="{cy}" r="{rm}"/>')
+    s.append(f'<text class="lbl" x="{f(p1)}" y="{f(cy-rm-10)}" text-anchor="middle">P1</text><text class="lbl uf" x="{f(u3)}" y="{f(cy-rm-10)}" text-anchor="middle">U3</text>')
+    # leading edges
+    for x in (p1 - rm, u3 - rm): s.append(f'<line class="lead" x1="{f(x)}" y1="{f(cy-rm-4)}" x2="{f(x)}" y2="{f(cy+rm+4)}"/>')
+    s.append(f'<path class="arrow" d="M{f(p1+rm+84)},{cy} h-56 m8,-6 l-8,6 l8,6"/><text class="lbl sm" x="{f(p1+rm+56)}" y="{cy-12}" text-anchor="middle">the Moon moves</text>')
+    # the two radii, either side of the center, below the path
+    yb = cy + rp + 22
+    s.append(f'<circle cx="{cx}" cy="{cy}" r="3" class="dotc2"/><line class="guide-l" x1="{cx}" y1="{cy}" x2="{cx}" y2="{yb+6}"/>')
+    s.append(f'<line class="guide-l" x1="{f(cx+rp)}" y1="{cy}" x2="{f(cx+rp)}" y2="{yb+6}"/><line class="guide-l" x1="{f(cx-ru)}" y1="{cy}" x2="{f(cx-ru)}" y2="{yb+6}"/>')
+    s.append(f'<path class="dim" d="M{cx},{yb-6} v6 H{f(cx+rp)} v-6"/><text class="lbl sm" x="{f(cx+rp/2)}" y="{yb+18}" text-anchor="middle">penumbra radius</text>')
+    s.append(f'<path class="dim" d="M{f(cx-ru)},{yb-6} v6 H{cx} v-6"/><text class="lbl sm" x="{f(cx-ru/2)}" y="{yb+18}" text-anchor="middle">umbra radius</text>')
+    yt = 26
+    s.append(f'<path class="dim strong" d="M{f(p1-rm)},{yt+8} v-8 H{f(u3-rm)} v8"/><text class="lbl" x="{f((p1+u3)/2-rm)}" y="{yt-8}" text-anchor="middle">P1 → U3: the leading edge travels a penumbra radius + an umbra radius</text>')
+    s.append(f'<text class="lbl uf" x="{cx}" y="{f(cy+ru*0.62)}" text-anchor="middle">umbra</text><text class="lbl pf" x="{f(cx-rp*0.55)}" y="{f(cy-rp*0.72)}" text-anchor="middle">penumbra</text>')
+    s.append(f'<text class="lbl sm" x="{W-10}" y="{H-8}" text-anchor="end">not to scale</text>')
+    s.append('</svg>')
+    return '\n'.join(s)
+
 a, hu, hp = side()
 open(__file__.replace('eclipse_figs.py', 'fig_side.svg.html'), 'w').write(a)
 FACE = (2.2, 3.9)     # umbra and penumbra in Moon diameters as DRAWN face-on: deliberately not the real ratio (the lab measures it)
@@ -194,4 +223,5 @@ open(__file__.replace('eclipse_figs.py', 'fig_face.svg.html'), 'w').write(face(*
 open(__file__.replace('eclipse_figs.py', 'fig_taper.svg.html'), 'w').write(taper())
 open(__file__.replace('eclipse_figs.py', 'fig_chord.svg.html'), 'w').write(chord(*FACE))
 open(__file__.replace('eclipse_figs.py', 'fig_penradius.svg.html'), 'w').write(penradius())
+open(__file__.replace('eclipse_figs.py', 'fig_p1u3.svg.html'), 'w').write(p1u3(*FACE))
 print('umbra half-height / Moon radius', round(hu, 2), 'penumbra', round(hp, 2))

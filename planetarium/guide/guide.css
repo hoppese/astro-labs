@@ -84,6 +84,8 @@ svg.fig .chord { stroke: #f4c64e; stroke-width: 3; }
 svg.fig .tri { fill: none; stroke: #fde5cf; stroke-width: 1.4; }
 svg.fig .tri-sq { fill: none; stroke: #fde5cf; stroke-width: 1; }
 svg.fig .dotc { fill: #fde5cf; }
+svg.fig .dotc2 { fill: var(--f-ink); }
+svg.fig .lead { stroke: #d2691e; stroke-width: 2.4; }
 svg.fig .guide-l.light { stroke: #fde5cf; opacity: .75; }
 svg.fig .ray { fill: none; stroke-width: 1.4; }
 svg.fig .ray.u { stroke: var(--f-ray-u); }
